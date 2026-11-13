@@ -23,11 +23,11 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.crysound.crybot
         PRODUCT_NAME: Cry Bot
-        INFOPLIST_FILE: CryBot/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
     info:
+      path: CryBot/Info.plist
       properties:
         CFBundleDisplayName: Cry Bot
         CFBundleExecutable: $(EXECUTABLE_NAME)

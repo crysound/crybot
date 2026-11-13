@@ -7,6 +7,8 @@ xcodegen generate
 xcodebuild -scheme CryBot -sdk iphonesimulator -configuration Debug build CODE_SIGNING_ALLOWED=NO
 ```
 
+`xcodegen generate` 会按 `project.yml` 的 `info.path` 生成 `CryBot/Info.plist`，该文件是构建产物，不提交到仓库。
+
 服务器配置使用构建设置注入。因为 xcconfig 中的 `//` 会被解析为注释，默认值在 `project.yml` 的 settings 中留空；实际值从 `xcodebuild` 命令行传入：
 
 ```sh

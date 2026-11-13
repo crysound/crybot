@@ -71,3 +71,22 @@
 - 首次 CI 重点确认 XcodeGen 生成的 Info.plist 包含 Xcode 标准键并正确展开命令行传入的 `CRYBOT_SERVER_URL`、`CRYBOT_LOGIN_HOSTS`。
 - Android CI 重点确认 AGP 8.7.3 在 Gradle 8.11.1、compileSdk 35 下对 VectorDrawable aapt gradient 和 API 30 Insets 分支的 lint/build 结果。
 - Android 传统图标仍按上一轮约束只提交 `mipmap-xxxhdpi` 一份 PNG，其余密度由系统缩放。
+
+## 第 3 轮
+
+1. 已改：`info` 增加 `path: CryBot/Info.plist`，由 XcodeGen 生成并合并默认标准键；删除显式 `INFOPLIST_FILE`；生成物加入忽略；README 说明 Info.plist 由 xcodegen 生成。`mobile/ios/project.yml:30`、`mobile/ios/.gitignore:3`、`mobile/ios/README.md:10`。
+2. 已改：`showError` 局部变量 `text` 改名 `label` 并同步引用，`Button(...).apply { text = ... }` 现在落在按钮属性上。`mobile/android/app/src/main/kotlin/com/crysound/crybot/MainActivity.kt:130`、`:134`、`:136`、`:139`。全文件检查见下方「第 3 轮检查」。
+3. 已改：iOS `applicationNameForUserAgent = "Mobile/15E148 CryBotApp/<version> iOS"`；安卓保持 `<默认UA> CryBotApp/<version> Android`。`mobile/ios/CryBot/ViewController.swift:86`、`mobile/android/app/src/main/kotlin/com/crysound/crybot/MainActivity.kt:161`。
+4. 已改：根容器背景 `#170057`(`Color.rgb(23, 0, 87)`)；服务器地址表单、错误页、WebView 各自白底；`windowLightStatusBar=false` 保持不变。`MainActivity.kt:51`、`:89`、`:127`、`:156`，`mobile/android/app/src/main/res/values/styles.xml:7`。
+5. 已改：`SERVER_ADDRESS_INVALID` 改为只提 https。`mobile/ios/CryBot/en.lproj/Localizable.strings:4`、`mobile/ios/CryBot/zh-Hans.lproj/Localizable.strings:4`。
+6. 已改：`enqueueDownload` 返回是否已入队，「已开始下载」只在返回 true 后提示；入队失败只提示「无法开始下载」；API 26–28 等存储权限时返回 false 不提示；授权后入队成功才提示，拒绝授权提示「无法开始下载」。`MainActivity.kt:247`、`:295`-`:308`、`:350`-`:355`。
+7. 已改：文件选择 ActivityNotFound 时 `onReceiveValue(null)` 后返回 true。`MainActivity.kt:192`-`:195`。
+8. 已改：构建注入地址先 `validServer(...)`，无效时当作未注入，读取用户保存的地址并在错误页显示「更换服务器」。`MainActivity.kt:43`、`:79`-`:80`、`:138`。
+9. 已改：渐变方向 startX=23.6 startY=0 endX=84.4 endY=108。`mobile/android/app/src/main/res/drawable/icon_background.xml:10`-`:13`。
+
+### 第 3 轮检查
+
+- 遮蔽检查：`grep -n "apply {" -A3 MainActivity.kt` 逐个核对，`text =` 只出现在 `title`(:93)、`save`(:104)、`label`(:131)、`retry`(:134)、`change`(:139) 的 apply 内，函数内都没有名为 `text` 的局部变量；再用 `grep -nE "\b(val|var)\s+(text|title|hint|type|label|message|...)\b"` 查同名局部变量：`title`、`message`、`label` 三个局部变量所在函数中没有对同名属性的 apply 赋值；insets 回调里的 `left/top/right/bottom` 是有意声明的局部 val，各分支只赋值一次。
+- 解析检查：python 解析 `mobile/android` 下全部 XML 通过；PyYAML 解析 `project.yml` 通过，`info.path` 存在、无 `INFOPLIST_FILE`；`info.properties` 可序列化为 plist；全部 `.strings` 逐行格式检查通过；Contents.json 解析通过。
+- 泄漏 grep(内部域名、IP、邮箱、人名、私钥/密码字面量)：`mobile` 与本任务目录无命中。
+- 本机无 kotlinc/Gradle/Xcode，未本地编译，以 GitHub Actions 结果为准。

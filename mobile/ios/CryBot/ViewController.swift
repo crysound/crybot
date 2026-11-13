@@ -83,7 +83,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         configuration.websiteDataStore = .default()
         configuration.allowsInlineMediaPlayback = true
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0"
-        configuration.applicationNameForUserAgent = "CryBot/\(version)"
+        configuration.applicationNameForUserAgent = "Mobile/15E148 CryBotApp/\(version) iOS"
         webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = self
         webView.uiDelegate = self

@@ -1,7 +1,7 @@
 "SERVER_ADDRESS_TITLE" = "服务器地址";
 "SERVER_ADDRESS_HINT" = "https://bot.example.com";
 "SERVER_ADDRESS_SAVE" = "继续";
-"SERVER_ADDRESS_INVALID" = "请输入有效的 http 或 https 服务器地址。";
+"SERVER_ADDRESS_INVALID" = "请输入有效的 https 服务器地址。";
 "LOAD_ERROR" = "无法加载服务器。";
 "RETRY" = "重试";
 "CHANGE_SERVER" = "更换服务器";

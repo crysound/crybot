@@ -40,6 +40,7 @@ class MainActivity : Activity() {
     private var pendingPermissionResources: Array<String> = emptyArray()
     private var pendingDownload: DownloadManager.Request? = null
     private var currentServer: String = ""
+    private var serverWasInjected = false
     private val preferences by lazy { getSharedPreferences("crybot", MODE_PRIVATE) }
     private val configuredServer get() = BuildConfig.CRYBOT_SERVER_URL.trim().trimEnd('/')
 
@@ -47,7 +48,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.WHITE)
+            setBackgroundColor(Color.rgb(23, 0, 87))
             setOnApplyWindowInsetsListener { view, insets ->
                 val left: Int
                 val top: Int
@@ -75,7 +76,8 @@ class MainActivity : Activity() {
         }
         setContentView(container)
         container.requestApplyInsets()
-        currentServer = configuredServer.ifBlank { preferences.getString("server", "") ?: "" }
+        serverWasInjected = validServer(configuredServer)
+        currentServer = if (serverWasInjected) configuredServer else preferences.getString("server", "") ?: ""
         if (validServer(currentServer)) showWebView() else showServerForm()
     }
 
@@ -84,6 +86,7 @@ class MainActivity : Activity() {
         container.removeAllViews()
         val form = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.WHITE)
             setPadding(48, 96, 48, 48)
         }
         val title = TextView(this).apply {
@@ -121,17 +124,18 @@ class MainActivity : Activity() {
         container.removeAllViews()
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.WHITE)
             setPadding(48, 96, 48, 48)
         }
-        val text = TextView(this).apply {
+        val label = TextView(this).apply {
             text = getString(R.string.load_error)
             textSize = 20f
         }
         val retry = Button(this).apply { text = getString(R.string.retry) }
         retry.setOnClickListener { showWebView() }
-        layout.addView(text, LinearLayout.LayoutParams(-1, -2))
+        layout.addView(label, LinearLayout.LayoutParams(-1, -2))
         layout.addView(retry, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 24 })
-        if (BuildConfig.CRYBOT_SERVER_URL.isBlank()) {
+        if (!serverWasInjected) {
             val change = Button(this).apply { text = getString(R.string.change_server) }
             change.setOnClickListener { showServerForm() }
             layout.addView(change, LinearLayout.LayoutParams(-1, -2))
@@ -149,6 +153,7 @@ class MainActivity : Activity() {
 
     private fun createWebView() {
         webView = WebView(this)
+        webView.setBackgroundColor(Color.WHITE)
         val settings = webView.settings
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
@@ -187,7 +192,7 @@ class MainActivity : Activity() {
                 } catch (e: ActivityNotFoundException) {
                     fileCallback?.onReceiveValue(null)
                     fileCallback = null
-                    false
+                    true
                 }
             }
 
@@ -239,12 +244,13 @@ class MainActivity : Activity() {
                 }
                 request.addRequestHeader("Cookie", CookieManager.getInstance().getCookie(url) ?: "")
                 request.addRequestHeader("User-Agent", userAgent)
-                enqueueDownload(request)
+                if (enqueueDownload(request)) {
+                    Toast.makeText(this, getString(R.string.download_started), Toast.LENGTH_SHORT).show()
+                }
             } catch (e: RuntimeException) {
                 Toast.makeText(this, getString(R.string.download_failed), Toast.LENGTH_SHORT).show()
                 return@DownloadListener
             }
-            Toast.makeText(this, getString(R.string.download_started), Toast.LENGTH_SHORT).show()
         })
     }
 
@@ -286,15 +292,18 @@ class MainActivity : Activity() {
         return uri.scheme.equals("https", true) && !uri.host.isNullOrBlank()
     }
 
-    private fun enqueueDownload(request: DownloadManager.Request) {
+    private fun enqueueDownload(request: DownloadManager.Request): Boolean {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             pendingDownload = request
             requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), DOWNLOAD_PERMISSION_REQUEST)
+            return false
         } else {
             try {
                 (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
+                return true
             } catch (e: RuntimeException) {
                 Toast.makeText(this, getString(R.string.download_failed), Toast.LENGTH_SHORT).show()
+                return false
             }
         }
     }
@@ -338,7 +347,13 @@ class MainActivity : Activity() {
         if (requestCode == DOWNLOAD_PERMISSION_REQUEST) {
             val download = pendingDownload
             pendingDownload = null
-            if (download != null && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) enqueueDownload(download)
+            if (download != null) {
+                if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+                    if (enqueueDownload(download)) Toast.makeText(this, getString(R.string.download_started), Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, getString(R.string.download_failed), Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
