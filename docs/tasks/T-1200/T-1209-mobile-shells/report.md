@@ -90,3 +90,4 @@
 - 解析检查：python 解析 `mobile/android` 下全部 XML 通过；PyYAML 解析 `project.yml` 通过，`info.path` 存在、无 `INFOPLIST_FILE`；`info.properties` 可序列化为 plist；全部 `.strings` 逐行格式检查通过；Contents.json 解析通过。
 - 泄漏 grep(内部域名、IP、邮箱、人名、私钥/密码字面量)：`mobile` 与本任务目录无命中。
 - 本机无 kotlinc/Gradle/Xcode，未本地编译，以 GitHub Actions 结果为准。
+- 附加构建修正(不在 r3 清单内)：首次通过的 CI 中 actool 警告「A 1024x1024 app store icon is required」，原因是 AppIcon 带 `"scale": "1x"` 被当作旧式多尺寸格式；去掉该键改为 Xcode 单尺寸格式。`mobile/ios/CryBot/Assets.xcassets/AppIcon.appiconset/Contents.json:3`-`:8`。
