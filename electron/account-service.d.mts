@@ -1,6 +1,6 @@
-// Types for companion-account-service.mjs as the headless server uses it
+// Types for account-service.mjs as the headless server uses it
 // (server/tunnel.ts). Keep in step with the implementation.
-import type { ControlPlaneClient } from "./control-plane-client.mjs";
+import type { ControlPlaneClient } from "./control-client.mjs";
 
 export declare const DEFAULT_COMPANION_CONTROL_PLANE_URL: string;
 export declare const COMPANION_CLIENT_INSTANCE_FIELD: string;

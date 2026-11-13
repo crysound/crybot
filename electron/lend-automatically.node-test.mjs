@@ -59,7 +59,7 @@ function cloudHome({ link = true, chrome = true } = {}) {
   return state;
 }
 
-/** The verified session as cloud-account.mjs answers it: My Cloud, Client A of the person's own, and a Team Cloud. */
+/** The verified session as account.mjs answers it: My Cloud, Client A of the person's own, and a Team Cloud. */
 function session() {
   let state = { status: "connected", account: { id: "acct_1" }, machine: { status: "ready", origin: HOME }, clouds: [
     { id: "c-home", origin: HOME, teamId: null, role: "owner", primary: true },

@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { readFileSync } from "node:fs";
 import { appPermissionAllowed, appPermissionHandlers, emailDraftUrl, externalLinkUrl, externalWebUrl, remoteClipboardWriteAllowed } from "./app-permissions.mjs";
-import { cloudPlanSnapshot, createCloudAccountClient } from "./cloud-account.mjs";
+import { cloudPlanSnapshot, createCloudAccountClient } from "./account.mjs";
 import { myCloudOrigin, rememberedCloudHome } from "./cloud-home.mjs";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:5199";

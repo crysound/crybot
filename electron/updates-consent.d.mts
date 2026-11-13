@@ -31,9 +31,9 @@ export interface UpdatesConsent extends UpdatesConsentBridge {
   /** Sends an answer the Admin has not recorded yet, or carries this computer's answer over to a signed-in account. */
   sync(): Promise<void>;
   /** Called with each Cloud account state: a newly signed-in account is synced at once. */
-  accountChanged(state: import("./cloud-account.mjs").CloudAccountState | null | undefined): void;
+  accountChanged(state: import("./account.mjs").CloudAccountState | null | undefined): void;
 }
-export type UpdatesConsentClient = Pick<import("./cloud-account.mjs").CloudAccountClient, "state" | "updatesConsent" | "recordUpdatesConsent" | "updatesConsentByEmail" | "withdrawUpdatesConsent">;
+export type UpdatesConsentClient = Pick<import("./account.mjs").CloudAccountClient, "state" | "updatesConsent" | "recordUpdatesConsent" | "updatesConsentByEmail" | "withdrawUpdatesConsent">;
 export declare function createUpdatesConsent(options: {
   prefs: { installId(): string; updatesConsent(): UpdatesConsentRecord | null; setUpdatesConsent(value: unknown): boolean };
   account(): UpdatesConsentClient | null;

@@ -14,8 +14,8 @@ export const STAGING_CLOUD_ORIGIN = "";
  * entry, Files' state, the Cloud's chosen name): staging never reads or writes production's. */
 export function cloudTarget(env = process.env) {
   return env?.CRYBOT_CLOUD_STAGING === "1"
-    ? { origin: STAGING_CLOUD_ORIGIN, staging: true, file: "cloud-account-staging.bin", saved: "cloud-accounts-staging.bin", places: "account-places-staging.json", environments: "environments-staging.json", sync: "cloud-sync-staging", look: "cloud-home-look-staging.json" }
-    : { origin: CLOUD_ORIGIN, staging: false, file: "cloud-account.bin", saved: "cloud-accounts.bin", places: "account-places.json", environments: "environments.json", sync: "cloud-sync", look: "cloud-home-look.json" };
+    ? { origin: STAGING_CLOUD_ORIGIN, staging: true, file: "account-staging.bin", saved: "accounts-staging.bin", places: "account-places-staging.json", environments: "environments-staging.json", sync: "cloud-sync-staging", look: "cloud-home-look-staging.json" }
+    : { origin: CLOUD_ORIGIN, staging: false, file: "account.bin", saved: "accounts.bin", places: "account-places.json", environments: "environments.json", sync: "cloud-sync", look: "cloud-home-look.json" };
 }
 const TOKEN = /^omc_[A-Za-z0-9_-]{43}$/;
 const CODE = /^[A-HJ-NP-Z2-9]{5}-[A-HJ-NP-Z2-9]{5}$/;

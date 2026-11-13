@@ -122,9 +122,9 @@ const __APP_VERSION__: string;
        * whose page carries that server's version. Absent in desktop builds before it. */
       app?: { version: string; ownPage: boolean };
       organization?: import("../../electron/managed-desktop.mjs").ManagedDesktopBridge;
-      cloudAccount?: import("../../electron/cloud-account.mjs").CloudAccountBridge;
-      accounts?: import("../../electron/cloud-account.mjs").AccountsBridge;
-      accountSheet?: import("../../electron/cloud-account.mjs").AccountSheetBridge;
+      cloudAccount?: import("../../electron/account.mjs").CloudAccountBridge;
+      accounts?: import("../../electron/account.mjs").AccountsBridge;
+      accountSheet?: import("../../electron/account.mjs").AccountSheetBridge;
       /** Either page in this app: the one-time move's line (on its way, what arrived, coming home). */
       cloudSendPage?: import("../../electron/cloud-send.mjs").CloudSendPageBridge;
       /** This computer's page only: bots in two places, and the one tap that brings them together on one (electron/two-places.mjs). */
@@ -135,7 +135,7 @@ const __APP_VERSION__: string;
         onChanged(callback: () => void): () => void;
       };
       /** Settings on the person's own Cloud: the plan, read only. */
-      cloudPlan?: import("../../electron/cloud-account.mjs").CloudPlanBridge;
+      cloudPlan?: import("../../electron/account.mjs").CloudPlanBridge;
       /** This computer's page, and My Cloud's own page once it is the person's home: the window onto My Cloud. */
       home?: import("../../electron/home-window.mjs").HomeBridge;
       desktopNotices?: import("../../electron/desktop-prefs.mjs").DesktopNoticesBridge;
@@ -176,7 +176,7 @@ const __APP_VERSION__: string;
         places?: () => Promise<import("../../electron/cloud-rail.mjs").RailState>;
         /** Opens a circle main listed, by its id, through main's own switch: only from the person's click. */
         /** Nothing for a place of the account in use; for another account's, how its switch went. */
-        open?: (id: string) => Promise<import("../../electron/cloud-account.mjs").RailOpenResult | undefined>;
+        open?: (id: string) => Promise<import("../../electron/account.mjs").RailOpenResult | undefined>;
         /** ＋'s fixed choices: buy a Cloud (this computer's own sheet), connect to a server (`link`: the sheet's link or
          * address, `code` the pairing code typed apart; without `link`, the clipboard's), or type its address. With `code`
          * (even empty) it resolves with the outcome; without, false when the person cancels Connect. */
@@ -193,7 +193,7 @@ const __APP_VERSION__: string;
         recolor?: (id: string, swatch: import("../../electron/cloud-list.mjs").CloudSwatch | null) => Promise<{ outcome: import("../../electron/place-look.mjs").PlaceColorOutcome; look: import("../../electron/place-look.mjs").PlaceLook | null }>;
         /** Remove from list: a Cloud the window's rail lists as `removable`, by its circle's id, once the person said yes on
          * the rail's own page (refused on any other page). Absent on an older app. */
-        remove?: (id: string) => Promise<{ outcome: import("../../electron/cloud-account.mjs").CloudRemoveOutcome }>;
+        remove?: (id: string) => Promise<{ outcome: import("../../electron/account.mjs").CloudRemoveOutcome }>;
         /** Make a server of the person's own, which the rail lists with `makeHome`, their bots' home: the move starts. */
         makeHome?: (id: string) => Promise<{ started: true }>;
         /** Main's word that the places or the sign-in changed: read them again. */
@@ -214,7 +214,7 @@ const __APP_VERSION__: string;
         state(): Promise<import("../../electron/cloud-rail.mjs").AddCloudView>;
         /** Opens that plan's checkout in the browser, for a Cloud of this name and swatch; only from the person's click. */
         /** `source`: where the checkout started, one of the app's checkout sources (main ignores any other). */
-        start(tier: string, name: string, color: import("../../electron/cloud-list.mjs").CloudSwatch | null, source?: string): Promise<{ outcome: "opened" | "unsupported" | "failed" } | { outcome: "blocked"; blocked: import("../../electron/cloud-account.mjs").CloudAddBlock }>;
+        start(tier: string, name: string, color: import("../../electron/cloud-list.mjs").CloudSwatch | null, source?: string): Promise<{ outcome: "opened" | "unsupported" | "failed" } | { outcome: "blocked"; blocked: import("../../electron/account.mjs").CloudAddBlock }>;
         reopen(): Promise<boolean>;
         copyLink(): Promise<boolean>;
         /** Opens the Cloud just bought, once it is ready. */

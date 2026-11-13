@@ -31,7 +31,7 @@ import {
   phoneDestinations,
   phonePairingSettingsAction,
 } from "@/lib/phone-pairing";
-import type { CloudAccountState } from "../../electron/cloud-account.mjs";
+import type { CloudAccountState } from "../../electron/account.mjs";
 import { PhoneAppDialog, type PhoneAppConnect } from "./PhoneAppDialog";
 import type { UpdaterState } from "@/lib/updater";
 import type { SidebarMenuItem } from "./SidebarPopoverMenu";

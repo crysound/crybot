@@ -144,8 +144,8 @@ function installed({ link = null, offered = true } = {}) {
 
 test("each sheet channel is behind main's guard, takes only text, and never answers with the checkout page or a token", async () => {
   const h = installed({ link: "https://checkout.dodopayments.com/session/cks_1" });
-  const call = (method, ...args) => h.handlers.get(`cloud-account:${method}`)({}, ...args);
-  assert.deepEqual([...h.handlers.keys()].sort(), ["copyCheckoutLink", "interest", "look", "readySeen", "reopenCheckout", "setLook", "sheet", "signInCancel", "signInStart", "signInVerify"].map(method => `cloud-account:${method}`).sort());
+  const call = (method, ...args) => h.handlers.get(`account:${method}`)({}, ...args);
+  assert.deepEqual([...h.handlers.keys()].sort(), ["copyCheckoutLink", "interest", "look", "readySeen", "reopenCheckout", "setLook", "sheet", "signInCancel", "signInStart", "signInVerify"].map(method => `account:${method}`).sort());
   await call("readySeen", "anything"); assert.deepEqual(h.calls.splice(-1), [["checkoutDone"]], "the sheet showed ready: the purchase is over");
   await call("signInStart", { email: "x" }); await call("signInStart", "person@example.test");
   await call("signInVerify", 48201937); await call("signInVerify", "48201937");
@@ -156,7 +156,7 @@ test("each sheet channel is behind main's guard, takes only text, and never answ
   await call("interest", "another_cloud", "extra"); await call("setLook", { name: "x" }, "teal"); await call("setLook", "Studio", "teal");
   assert.equal(h.buy.sheetOpen(), false); await call("sheet", "yes"); assert.equal(h.buy.sheetOpen(), false); await call("sheet", true); assert.equal(h.buy.sheetOpen(), true);
   const listeners = new Map(), page = { on: (name, listener) => listeners.set(name, [...(listeners.get(name) ?? []), listener]) };
-  const sheet = open => h.handlers.get("cloud-account:sheet")({ sender: page }, open);
+  const sheet = open => h.handlers.get("account:sheet")({ sender: page }, open);
   await sheet(true); await sheet(false); await sheet(true);
   assert.deepEqual([...listeners.keys()], ["did-navigate", "destroyed"]); assert.equal(listeners.get("did-navigate").length, 1, "watched once per page");
   listeners.get("did-navigate")[0](); assert.equal(h.buy.sheetOpen(), false, "the page went elsewhere: the sheet is closed");
@@ -165,12 +165,12 @@ test("each sheet channel is behind main's guard, takes only text, and never answ
     ["reopenCheckout"], ["interest", "another_cloud"], ["save", "", "teal"], ["save", "Studio", "teal"]], "a kept page is reopened as it is: the page's plan is never asked about");
   assert.equal(h.guarded.length, 17, "every call went through the guard");
   const none = installed();
-  const reopen = (...args) => none.handlers.get("cloud-account:reopenCheckout")({}, ...args);
+  const reopen = (...args) => none.handlers.get("account:reopenCheckout")({}, ...args);
   for (const [plan, source] of [["team", "app_menu"], ["pro", "site"], [{ tier: "pro" }, "app_menu"]]) await assert.rejects(reopen(plan, source), /Choose a plan/);
   await reopen("pro", "app_card");
   assert.deepEqual(none.calls.filter(row => row[0] === "reopenCheckout"), [["reopenCheckout", "pro", "app_card"]]);
-  assert.equal(await none.handlers.get("cloud-account:copyCheckoutLink")({}), false); assert.deepEqual(none.clipboard, []);
-  await assert.rejects(installed({ offered: false }).handlers.get("cloud-account:reopenCheckout")({}, "pro", "app_card"), /isn't offered/);
+  assert.equal(await none.handlers.get("account:copyCheckoutLink")({}), false); assert.deepEqual(none.clipboard, []);
+  await assert.rejects(installed({ offered: false }).handlers.get("account:reopenCheckout")({}, "pro", "app_card"), /isn't offered/);
 });
 
 test("the page's bridge sends the sheet's words as text only, and exists only on this computer's own page", async () => {
@@ -189,8 +189,8 @@ test("the page's bridge sends the sheet's words as text only, and exists only on
   await cloud.signInStart({ toString: () => "person@example.test" }); await cloud.signInVerify(48201937); await cloud.signInCancel({ token: "forged" });
   await cloud.reopenCheckout("pro", undefined); await cloud.copyCheckoutLink("https://evil.example.test"); await cloud.interest("x");
   await cloud.look({ origin }); await cloud.setLook("Studio", { color: "teal" }); await cloud.sheet("yes"); await cloud.sheet(true); await cloud.readySeen("x");
-  assert.deepEqual(f.invoked, [["cloud-account:signInStart", "person@example.test"], ["cloud-account:signInVerify", "48201937"], ["cloud-account:signInCancel"],
-    ["cloud-account:reopenCheckout", "pro", "undefined"], ["cloud-account:copyCheckoutLink"], ["cloud-account:interest"], ["cloud-account:look"],
-    ["cloud-account:setLook", "Studio", "[object Object]"], ["cloud-account:sheet", false], ["cloud-account:sheet", true], ["cloud-account:readySeen"]]);
+  assert.deepEqual(f.invoked, [["account:signInStart", "person@example.test"], ["account:signInVerify", "48201937"], ["account:signInCancel"],
+    ["account:reopenCheckout", "pro", "undefined"], ["account:copyCheckoutLink"], ["account:interest"], ["account:look"],
+    ["account:setLook", "Studio", "[object Object]"], ["account:sheet", false], ["account:sheet", true], ["account:readySeen"]]);
   assert.equal(load({ remote: true }).bridge.cloudAccount, undefined);
 });

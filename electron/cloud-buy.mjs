@@ -2,7 +2,7 @@
 // "{name} is ready". Every handler takes the page's words as plain text and checks them here; no token, checkout
 // address or account leaves main (Copy link writes the clipboard from here).
 import environments from "./environments.cjs";
-import { CHECKOUT_SOURCES } from "./cloud-account.mjs";
+import { CHECKOUT_SOURCES } from "./account.mjs";
 import { CLOUD_HOME_NAME } from "./cloud-home.mjs";
 import nativeText from "./native-text.cjs";
 import { dotIcons } from "./color-dot.mjs";
@@ -106,7 +106,7 @@ export function installCloudBuy({ ipcMain, guard, client, offersReady, clipboard
   let sheetOpen = false;
   // A page that navigates away (Open {name} loads the Cloud) never says it closed: that navigation closes it.
   const watched = new WeakSet();
-  const handle = (method, handler) => ipcMain.handle(`cloud-account:${method}`, guard(`cloud-account:${method}`, handler));
+  const handle = (method, handler) => ipcMain.handle(`account:${method}`, guard(`account:${method}`, handler));
   handle("signInStart", (_event, email) => client().emailStart(plain(email)));
   handle("signInVerify", (_event, code) => client().emailVerify(plain(code)));
   handle("signInCancel", () => { client().emailCancel(); });

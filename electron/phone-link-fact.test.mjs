@@ -5,7 +5,7 @@ import {
   COMPANION_ACCOUNT_USER_ID_FIELD,
   COMPANION_TUNNEL_RETIRED_FIELD,
   companionTunnelRetired,
-} from "./companion-account-service.mjs";
+} from "./account-service.mjs";
 import { createCompanionE2E } from "./companion-e2e.mjs";
 import { createPhoneLinkFact } from "./phone-link-fact.mjs";
 

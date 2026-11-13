@@ -3,7 +3,7 @@ import test from "node:test";
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { createCloudAccountClient } from "./cloud-account.mjs";
+import { createCloudAccountClient } from "./account.mjs";
 import { CLOUD_HOME_NAME, cloudHomeConnectUrl, cloudPlanDisk, cloudUnreachableText, isCloudHomeEntry, parseCloudCredit, parseCloudOffer, parseCloudPower, parseCloudPurchase, parseCloudSummary, parseCloudTeams, teamRoleLabel, CLOUD_TEAM_ROLES, parseCloudTrial, parsePairingGrant, parsePublicOffer, rememberedCloudHome, savedCloudHomeOrigin, withCloudHome, withoutTrial } from "./cloud-home.mjs";
 import environments from "./environments.cjs";
 import { handSaved } from "./own-home-main.mjs";

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { CloudAccountState, CloudPlanSnapshot } from "../../electron/cloud-account.mjs";
-import { CHECKOUT_SOURCES } from "../../electron/cloud-account.mjs";
+import type { CloudAccountState, CloudPlanSnapshot } from "../../electron/account.mjs";
+import { CHECKOUT_SOURCES } from "../../electron/account.mjs";
 import type { CloudCredit, CloudOffer, CloudOfferPlan, CloudTeam, CloudTrial } from "../../electron/cloud-home.mjs";
 import { buyOfferAllowed, cardRows, CLOUD_SOURCES, cloudAddView, cloudCreditLine, cloudIntroView, cloudNoticeKind, cloudPlanLine, cloudPlanView, cloudTrialNotice, cloudTrialView,
   dueToday, moneyBackLine, moneyBackShort, offerPlan, offerTrialDays, planCardRows, planCards, sameTerms, sharedTrialDays, trialTimeline, usd,

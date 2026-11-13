@@ -44,7 +44,7 @@ test("this computer is lent to the person's own Clouds only, My Cloud first: nev
     { id: "c-theirs", origin: memberOf.origin, teamId: null, role: "member" },
     { id: "s-mini", origin: server.origin, teamId: null, role: "owner", managed: false },
   ] };
-  // As the verified session (cloud-account.mjs) answers it.
+  // As the verified session (account.mjs) answers it.
   const isOwnCloud = (origin) => state.status === "connected" && (state.machine?.origin === origin || state.clouds.some((cloud) => ownCloud(cloud) && cloud.origin === origin));
   const target = createLendingTarget({ account: () => ({ state: () => state, isOwnCloud }), environments: () => [team, server, memberOf, gone, other, home] });
   assert.deepEqual(target.places().map((place) => place.name), ["My Cloud", "Client A"]);

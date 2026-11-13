@@ -75,16 +75,16 @@ import {
   startDesktopCompanionRelay,
   withDesktopCompanionAccess,
   withoutDesktopCompanionAccess,
-} from "./desktop-companion-client.mjs";
+} from "./desktop-remote-client.mjs";
 import { isKnownSkin, skinChrome } from "./skin-overlay.cjs";
 import { installCredentialStoreIpc, readSecureCredentials } from "./secure-credentials.mjs";
-import { createControlPlaneClient } from "./control-plane-client.mjs";
+import { createControlPlaneClient } from "./control-client.mjs";
 import {
   companionAccountCleanupPending, companionTunnelRetired,
   createCompanionAccountService,
   managedEndpointNeed,
   resolveCompanionControlPlaneURL,
-} from "./companion-account-service.mjs";
+} from "./account-service.mjs";
 import capabilitiesModule from "./capabilities.cjs";
 import environmentsModule from "./environments.cjs";
 import { pairingPageUrl } from "./server-address.mjs"; import { createServerConnect } from "./server-probe.mjs"; import { createTailnetShare, remotePolicyAllows } from "./tailnet-share.mjs"; import { checkTailscale } from "./tailscale-check.mjs"; import { onTailnet } from "./tailnet.mjs"; import { checkServer, createServerStatus, installServerStatus } from "./server-status.mjs";
@@ -95,7 +95,7 @@ import { createHostScreenLease } from "./host-screen-lease.mjs";
 import { acquireDataDirLease } from "./data-dir-lease.mjs";
 import { reviveAfterFailedSwitch, switchLocalEnvironment } from "./environment-switch.mjs";
 import { createManagedDesktopClient, createManagedDesktopRelay, createManagedDesktopStore } from "./managed-desktop.mjs";
-import { CHECKOUT_SOURCES, cloudMenuSublabel, cloudTarget, createCloudAccountClient as cloudAccountClient, createCloudAccountStore } from "./cloud-account.mjs";
+import { CHECKOUT_SOURCES, cloudMenuSublabel, cloudTarget, createCloudAccountClient as cloudAccountClient, createCloudAccountStore } from "./account.mjs";
 import { installCloudPlanIpc } from "./cloud-plan-ipc.mjs";
 import { cloudLinkOpensSheet, colorDotIcons, createCloudLook, createCloudReadyNotice, installCloudBuy, lookFile } from "./cloud-buy.mjs";
 import { createTrialNotices } from "./cloud-trial-notice.mjs";
@@ -811,7 +811,7 @@ function ensureCloudAccount() {
       refreshCloudMenus();
       announceCloudReady(state);
       if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents.mainFrame.url.startsWith(`${rendererOrigin()}/`) &&
-        !activeRemote(environmentsState) && !desktopRemoteAccess) mainWindow.webContents.send("cloud-account:state-changed", state);
+        !activeRemote(environmentsState) && !desktopRemoteAccess) mainWindow.webContents.send("account:state-changed", state);
     },
   });
   return cloudAccount;
@@ -2461,20 +2461,20 @@ ipcMain.handle("desktop-remote:disconnect", localOnly("desktop-remote:disconnect
 }));
 
 // Auth and connector credentials never cross this boundary.
-ipcMain.handle("companion-account:state", localOnly("companion-account:state", () => ensureCompanionAccountService().state()));
-ipcMain.handle("companion-account:request-code", localOnly("companion-account:request-code", (_event, email) =>
+ipcMain.handle("account:state", localOnly("account:state", () => ensureCompanionAccountService().state()));
+ipcMain.handle("account:request-code", localOnly("account:request-code", (_event, email) =>
   ensureCompanionAccountService().requestCode(email),
 ));
-ipcMain.handle("companion-account:verify-code", localOnly("companion-account:verify-code", (_event, email, code) =>
+ipcMain.handle("account:verify-code", localOnly("account:verify-code", (_event, email, code) =>
   ensureCompanionAccountService().verifyCode(email, code),
 ));
-ipcMain.handle("companion-account:retry", localOnly("companion-account:retry", () => ensureCompanionAccountService().retry()));
-ipcMain.handle("companion-account:prepare", localOnly("companion-account:prepare", () => {
+ipcMain.handle("account:retry", localOnly("account:retry", () => ensureCompanionAccountService().retry()));
+ipcMain.handle("account:prepare", localOnly("account:prepare", () => {
   const refusal = managedRemoteAccessRefusal();
   if (refusal) throw new Error(refusal);
   return rememberCompanionRoute("https", true).then(() => ensureCompanionAccountService().prepare());
 }));
-ipcMain.handle("companion-account:sign-out", localOnly("companion-account:sign-out", () => ensureCompanionAccountService().signOut()));
+ipcMain.handle("account:sign-out", localOnly("account:sign-out", () => ensureCompanionAccountService().signOut()));
 
 const workspaceOnly = (handler) => (event, ...args) => {
   if (!workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin())) throw new Error("These controls are only available in the main desktop window");
@@ -2483,9 +2483,9 @@ const workspaceOnly = (handler) => (event, ...args) => {
 const localWorkspaceOnly = (channel, handler) => localOnly(channel, workspaceOnly(handler));
 // No renderer-supplied address, token, paid flag or callback can choose an account or activate Pro.
 for (const method of ["state", "begin", "signInAgain", "reopen", "cancel", "refresh", "signOut", "openDashboard", "offer"]) {
-  ipcMain.handle(`cloud-account:${method}`, localWorkspaceOnly(`cloud-account:${method}`, () => (method === "signOut" ? accounts.signOutActive() : ensureCloudAccount()[method]())));
+  ipcMain.handle(`account:${method}`, localWorkspaceOnly(`account:${method}`, () => (method === "signOut" ? accounts.signOutActive() : ensureCloudAccount()[method]())));
 }
-ipcMain.handle("cloud-account:checkout", localWorkspaceOnly("cloud-account:checkout", async (_event, plan, source) => {
+ipcMain.handle("account:checkout", localWorkspaceOnly("account:checkout", async (_event, plan, source) => {
   if (!(await cloudOffersReady())) throw new Error("CryBot Cloud isn't offered in this app.");
   const client = ensureCloudAccount();
   if (typeof plan !== "string" || !CHECKOUT_SOURCES.includes(source)) throw new Error("Choose a plan to continue.");
@@ -2494,10 +2494,10 @@ ipcMain.handle("cloud-account:checkout", localWorkspaceOnly("cloud-account:check
   return client.checkout(plan, source);
 }));
 // The machine and its code come from the verified session in main, never from the renderer.
-ipcMain.handle("cloud-account:connectHome", localWorkspaceOnly("cloud-account:connectHome", () => connectCloudHome()));
-ipcMain.handle("cloud-account:connectHomeForPhone", localWorkspaceOnly("cloud-account:connectHomeForPhone", () => connectCloudHome("phone")));
+ipcMain.handle("account:connectHome", localWorkspaceOnly("account:connectHome", () => connectCloudHome()));
+ipcMain.handle("account:connectHomeForPhone", localWorkspaceOnly("account:connectHomeForPhone", () => connectCloudHome("phone")));
 // The page names a team only; the team and its Cloud come from the verified session, opened as the switcher opens it.
-ipcMain.handle("cloud-account:openTeam", localWorkspaceOnly("cloud-account:openTeam", async (_event, teamId) => {
+ipcMain.handle("account:openTeam", localWorkspaceOnly("account:openTeam", async (_event, teamId) => {
   const current = ensureCloudAccount().state();
   const team = current.status === "connected" ? current.teams?.find(entry => entry.id === teamId) ?? null : null;
   if (!team) throw new Error("You're not in that team.");
@@ -2505,8 +2505,8 @@ ipcMain.handle("cloud-account:openTeam", localWorkspaceOnly("cloud-account:openT
   await showHome({ place: { team: team.id, name: team.name } });
 }));
 // Cancel trial / Cancel plan and Keep my plan: the page sends the survey's words only; the Cloud is the verified session's own.
-ipcMain.handle("cloud-account:cancelPlan", localWorkspaceOnly("cloud-account:cancelPlan", (_event, survey) => ensureCloudAccount().cancelPlan(survey)));
-ipcMain.handle("cloud-account:keepPlan", localWorkspaceOnly("cloud-account:keepPlan", () => ensureCloudAccount().keepPlan()));
+ipcMain.handle("account:cancelPlan", localWorkspaceOnly("account:cancelPlan", (_event, survey) => ensureCloudAccount().cancelPlan(survey)));
+ipcMain.handle("account:keepPlan", localWorkspaceOnly("account:keepPlan", () => ensureCloudAccount().keepPlan()));
 ipcMain.handle("organization:settings-opened", localWorkspaceOnly("organization:settings-opened", () => organizationEntry.settingsOpened()));
 ipcMain.handle("organization:state", localWorkspaceOnly("organization:state", () => ensureManagedDesktop().state()));
 ipcMain.handle("organization:begin", localWorkspaceOnly("organization:begin", (_event, input) => ensureManagedDesktop().begin(input)));

@@ -1,4 +1,4 @@
-// Types for control-plane-client.mjs as the headless server uses it
+// Types for control-client.mjs as the headless server uses it
 // (server/tunnel.ts). Keep in step with the implementation.
 export declare class ControlPlaneError extends Error {
   readonly code: string;

@@ -2,7 +2,7 @@
 // ?view=settings|cloud&plan=trial|paid|team&cancelled=1&admin=old&skin=midnight|daylight&lang=de
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import type { CloudAccountBridge, CloudAccountState, CloudPlanBridge, CloudPlanSnapshot, CloudRenewalResult } from "../electron/cloud-account.mjs";
+import type { CloudAccountBridge, CloudAccountState, CloudPlanBridge, CloudPlanSnapshot, CloudRenewalResult } from "../electron/account.mjs";
 import type { CloudRenewal } from "../electron/cloud-list.mjs";
 import { CloudAccountSettings, CloudPlanOnCloud } from "@/components/CloudAccountSettings";
 import { loadLocale } from "@/lib/i18n";

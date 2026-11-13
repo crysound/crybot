@@ -73,7 +73,7 @@ export function pageLook(look) {
  * The page's own place's colour (`workspaces:look`) and its change (`workspaces:color`, a swatch or null for none),
  * each behind main's window guard. `place()`: the place on screen (This computer included), which the guard made sure
  * the asking page is; `session()`: the verified session's Clouds and My Cloud's address; `setColor(cloudId, swatch)`:
- * the Admin's change (cloud-account.mjs setCloudColor); `save(id, color)`: this app's own record of that place, at
+ * the Admin's change (account.mjs setCloudColor); `save(id, color)`: this app's own record of that place, at
  * once, so its circle and the top of its sidebar follow before the session is read again. `rail`: the window's own
  * rail, which changes the colour of any place it lists with a colour to show (`workspaces:recolor`, its circle's id and
  * a swatch): `owns(event)` its page asks, `places()` railPlaces' list now, `saved(id)` that place (This computer's too).

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import test from "node:test";
-import { createCloudAccountClient } from "./cloud-account.mjs";
-import { createCloudAccounts } from "./cloud-accounts.mjs";
+import { createCloudAccountClient } from "./account.mjs";
+import { createCloudAccounts } from "./accounts.mjs";
 
 const tokenOf = (letter) => `omc_${letter.repeat(43)}`;
 const ATTEMPT = "a".repeat(43), CODE = "48201937", DAY = 86400_000;

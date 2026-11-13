@@ -67,7 +67,7 @@ export function oneHomeCloud(state) {
  * again about the same Cloud. */
 export const GONE_ASK_MS = 10 * 60_000;
 
-/** One home's `gone(origin)`: `ask(origin)` is the Admin's word on this account's Cloud at `origin` (cloud-account.mjs
+/** One home's `gone(origin)`: `ask(origin)` is the Admin's word on this account's Cloud at `origin` (account.mjs
  * `movedTo`), kept per account (`account()`): a Cloud found gone stays gone; any other answer, or a failed ask, is asked
  * again only after GONE_ASK_MS. */
 export function createGoneCheck({ ask, account, now = Date.now }) {
@@ -128,7 +128,7 @@ async function answer(response) {
  * }} deps `accountsHere`: how many accounts are signed in on this device: with more than one, which Cloud this computer's bots
  * belong in is the person's to say, so no first move starts by itself. `localRequest`: this computer's server, as its owner (main adds the owner's header), and only its own copy while `clean`
  * (the clean workspace) runs. `account`: the CryBot
- * Cloud sign-in (cloud-account.mjs). `journal`: where the move's journal is kept, journalFile by default; `keep`: the
+ * Cloud sign-in (account.mjs). `journal`: where the move's journal is kept, journalFile by default; `keep`: the
  * person's choice to keep this computer's bots here, one-home-keep.json beside it by default. `openTeam`:
  * shows a team's page, where a bot moved into it from My Cloud now lives (team-move-main.mjs, whose journal is
  * `teamJournal`, team-moves.json beside this one by default). `reportTimers`: the waits of the move's report to the Admin

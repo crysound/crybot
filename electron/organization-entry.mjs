@@ -1,5 +1,5 @@
 import environments from "./environments.cjs";
-import { withoutDesktopCompanionAccess } from "./desktop-companion-client.mjs";
+import { withoutDesktopCompanionAccess } from "./desktop-remote-client.mjs";
 
 export const ORGANIZATION_DEEP_LINK = "crybot://organization";
 const RESTART_FIELD = "desktopOrganizationSettingsPending";

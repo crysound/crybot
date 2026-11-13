@@ -24,9 +24,9 @@ export declare function createCloudReadyNotice(options: {
 export declare function installCloudBuy(options: {
   ipcMain: { handle(channel: string, handler: (...args: any[]) => unknown): void };
   guard(channel: string, handler: (...args: any[]) => unknown): (...args: any[]) => unknown;
-  client(): import("./cloud-account.mjs").CloudAccountClient;
+  client(): import("./account.mjs").CloudAccountClient;
   offersReady(): Promise<boolean>;
   clipboard: { writeText(text: string): void };
   look: { current(): { name: string; color: CloudColor }; save(name: string, color: string): { name: string; color: CloudColor } };
 }): { sheetOpen(): boolean };
-export declare function cloudLinkOpensSheet(state: import("./cloud-account.mjs").CloudAccountState | null | undefined): boolean;
+export declare function cloudLinkOpensSheet(state: import("./account.mjs").CloudAccountState | null | undefined): boolean;

@@ -2,7 +2,7 @@
 // accounts that wait show on the rail (rail-accounts.mjs), whose page is the only one that learns their addresses. A Cloud's or a
 // server's page never reads any of it; it may only ask main, from the person's click, to open the sheet on the rail's page.
 import { accountPlaces, clearPlaceStorage, createPlaceStash, withoutPlaces, withPlacesBack } from "./account-places.mjs";
-import { createCloudAccounts } from "./cloud-accounts.mjs";
+import { createCloudAccounts } from "./accounts.mjs";
 import { accountRows } from "./rail-accounts.mjs";
 import nativeText from "./native-text.cjs";
 
@@ -72,7 +72,7 @@ export function createDesktopRing(deps) {
  *   placePage(event: unknown): boolean,
  *   account(): { state(): any } | null,
  *   client(): { state(): any, signOut(): Promise<any> },
- *   ring(): ReturnType<typeof import("./cloud-accounts.mjs").createCloudAccounts> | null,
+ *   ring(): ReturnType<typeof import("./accounts.mjs").createCloudAccounts> | null,
  *   holdSheet(open: boolean): void,
  *   tellSheet(): void,
  *   tell(): void,

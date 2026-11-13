@@ -77,7 +77,7 @@ export type AddCloudView =
     /** The Admin lists every Cloud of theirs (else it sells one Cloud per account). */
     supported: boolean;
     canAdd: boolean;
-    blocked?: import("./cloud-account.mjs").CloudAddBlock;
+    blocked?: import("./account.mjs").CloudAddBlock;
     offer: import("./cloud-home.mjs").CloudOffer | null;
     /** How many Clouds of their own they have: the next one is suggested as "Cloud {count + 1}". */
     count: number;

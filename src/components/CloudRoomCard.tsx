@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowUpRight, Loader2 } from "lucide-react";
 
-import type { CloudPlanBridge, CloudPlanSnapshot } from "../../electron/cloud-account.mjs";
+import type { CloudPlanBridge, CloudPlanSnapshot } from "../../electron/account.mjs";
 import { usageBridge, useUpgrade, NoteLine, type UpgradeUi } from "./CloudUsageMeter";
 import { useCloudPlanSnapshot } from "./CloudTrialNotice";
 import { cloudPlanLabel } from "@/lib/cloud-plan";

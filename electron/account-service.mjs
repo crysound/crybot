@@ -2,7 +2,7 @@ import {
   ControlPlaneError,
   normalizeAccountEmail,
   normalizeControlPlaneURL,
-} from "./control-plane-client.mjs";
+} from "./control-client.mjs";
 import {
   MANAGED_COMPANION_ENDPOINT_FIELD,
   MANAGED_COMPANION_RELEASE_AT_FIELD,
@@ -12,7 +12,7 @@ import {
   withoutManagedCompanionTunnelAccess,
 } from "./managed-companion-tunnel.mjs";
 import { MANAGED_ENDPOINT_PHONES_UNUSED } from "./companion-endpoint-need.mjs";
-import { FRIENDLY_MESSAGES, friendlyCompanionAccountError } from "./companion-account-messages.mjs";
+import { FRIENDLY_MESSAGES, friendlyCompanionAccountError } from "./account-messages.mjs";
 export { friendlyCompanionAccountError };
 
 export { managedEndpointNeed, PHONE_UNUSED_RELEASE_MS } from "./companion-endpoint-need.mjs";

@@ -267,12 +267,12 @@ const bridge = {
   },
   /** Secrets stay in the main process; the renderer sees only status and narrow actions. */
   companionAccount: {
-    state: () => ipcRenderer.invoke("companion-account:state"),
-    requestCode: (email) => ipcRenderer.invoke("companion-account:request-code", email),
-    verifyCode: (email, code) => ipcRenderer.invoke("companion-account:verify-code", email, code),
-    retry: () => ipcRenderer.invoke("companion-account:retry"),
-    prepare: () => ipcRenderer.invoke("companion-account:prepare"),
-    signOut: () => ipcRenderer.invoke("companion-account:sign-out"),
+    state: () => ipcRenderer.invoke("account:state"),
+    requestCode: (email) => ipcRenderer.invoke("account:request-code", email),
+    verifyCode: (email, code) => ipcRenderer.invoke("account:verify-code", email, code),
+    retry: () => ipcRenderer.invoke("account:retry"),
+    prepare: () => ipcRenderer.invoke("account:prepare"),
+    signOut: () => ipcRenderer.invoke("account:sign-out"),
   },
   /** Full/Custom never go through the loopback API, only the embedded server's private utilityProcess port. */
   approvals: {

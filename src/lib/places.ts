@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { CloudSwatch } from "../../electron/cloud-list.mjs";
 import type { RailPlace, RailState } from "../../electron/cloud-rail.mjs";
 import type { PlaceColorOutcome } from "../../electron/place-look.mjs";
-import type { CloudRemoveOutcome } from "../../electron/cloud-account.mjs";
+import type { CloudRemoveOutcome } from "../../electron/account.mjs";
 import { ipcErrorText } from "@/lib/cloud-send";
 import { t } from "@/lib/i18n";
 

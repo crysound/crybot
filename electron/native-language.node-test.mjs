@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import test from "node:test";
 import vm from "node:vm";
-import { createCloudAccountClient as cloudAccountClient } from "./cloud-account.mjs";
+import { createCloudAccountClient as cloudAccountClient } from "./account.mjs";
 import { createDesktopPrefs, createDesktopText, relabelDesktop } from "./desktop-prefs.mjs";
 import { createActivityWindow } from "./lending-activity-window.mjs";
 import { createLendingIndicator } from "./lending-indicator.mjs";

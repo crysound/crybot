@@ -13,14 +13,14 @@ import {
   resolveCompanionControlPlaneURL,
   type CompanionAccountService,
   type CredentialDocument,
-} from "../electron/companion-account-service.mjs";
+} from "../electron/account-service.mjs";
 import {
   cleanupCompanionOriginEndpoint,
   createCompanionOriginEndpoint,
   MANAGED_COMPANION_ORIGIN_PORT,
   type CompanionOriginEndpoint,
 } from "../electron/companion-origin-gateway.mjs";
-import { ControlPlaneError, createControlPlaneClient } from "../electron/control-plane-client.mjs";
+import { ControlPlaneError, createControlPlaneClient } from "../electron/control-client.mjs";
 import {
   createManagedCompanionTunnel,
   managedCompanionTunnelAccess,

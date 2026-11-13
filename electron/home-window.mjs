@@ -693,7 +693,7 @@ export function createHomeWindow(deps) {
       return show({ place: "cloud", open });
     },
     /** Remove from list, from this computer's screen (its own button, once the person said yes there): the Cloud the screen
-     * shows leaves their list on the Admin (cloud-account.mjs hideCloud), and the window goes where it would without it.
+     * shows leaves their list on the Admin (account.mjs hideCloud), and the window goes where it would without it.
      * Answers the outcome; nothing is asked of a Cloud the session doesn't say is `removable`. */
     async remove() {
       const own = opening?.kind === "own" ? opening : null, cloudId = own ? own.id : myListed()?.id ?? null;

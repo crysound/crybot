@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { CloudAccountState } from "../../electron/cloud-account.mjs";
+import type { CloudAccountState } from "../../electron/account.mjs";
 import type { CloudOffer } from "../../electron/cloud-home.mjs";
 import { api, useStore } from "@/state/store";
 import { appVersion } from "@/lib/app-links";

@@ -9,7 +9,7 @@ import nativeText from "./native-text.cjs";
 // rail stands beside it. A circle names a saved place by its id; main opens or removes only an id it listed itself, and
 // the Cloud it acts on is main's own word for that circle (`cloudId`, which the page never sees).
 import environments from "./environments.cjs";
-import { CHECKOUT_SOURCES } from "./cloud-account.mjs";
+import { CHECKOUT_SOURCES } from "./account.mjs";
 import { cleanCloudListName, CLOUD_SWATCHES, cloudSetupProgress, cloudState, olderRelease, otherOwnClouds, ownCloud, signedInServers, stepProgress, swatchColor } from "./cloud-list.mjs";
 import { machineSetup } from "./cloud-home.mjs";
 import { listedLook, placeLook, railPaint, SIGNED_IN } from "./place-look.mjs";
@@ -154,7 +154,7 @@ const CHOICES = Object.freeze(["cloud", "link", "address"]);
  * (the rail's, or this computer's own). Any other page learns only whether the rail stands beside it (`beside`).
  * `places()` is railPlaces' list now; `open(id)` main's own switch; `add` the ＋ sheet's fixed actions; `account()` the
  * CryBot Cloud sign-in; `targets()` the pages told when something changed; `makeHome(id)` starts the move to a server
- * of the person's own (own-home-main.mjs `start`). `switchAccount(id)`: that account becomes the one in use (cloud-accounts.mjs).
+ * of the person's own (own-home-main.mjs `start`). `switchAccount(id)`: that account becomes the one in use (accounts.mjs).
  * `openProfile(id)`: the window shows that workspace of this computer's own (local-profiles.mjs `open`). `local`: those
  * workspaces' ＋, names, colours and removal (local-profiles.mjs), and the end of a switch still waiting when another place opens.
  * `ask(id, run)`: a circle's click, listed at once, `run` told when a newer one came (place-switch.mjs); `switching()`: the place it opens, or null.

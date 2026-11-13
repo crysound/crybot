@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 import type { CloudColor } from "../../electron/cloud-buy.mjs";
-import type { CloudAccountState, CloudCheckoutOutcome } from "../../electron/cloud-account.mjs";
+import type { CloudAccountState, CloudCheckoutOutcome } from "../../electron/account.mjs";
 import type { CloudOffer } from "../../electron/cloud-home.mjs";
 
 import { cn } from "@/lib/cn";

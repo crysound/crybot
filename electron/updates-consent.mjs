@@ -58,7 +58,7 @@ export function parseAccountConsent(result) {
 }
 
 /**
- * `account()`: the Cloud account client (cloud-account.mjs), or null where there is none. `available()`: this app may
+ * `account()`: the Cloud account client (account.mjs), or null where there is none. `available()`: this app may
  * ask at all (the installed app, not a branded build). A failure to reach the Admin never loses an answer: it stays
  * `pending` and is sent again on the next launch, sign-in or look at Settings.
  */

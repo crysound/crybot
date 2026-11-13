@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { CLOUD_ORIGIN, STAGING_CLOUD_ORIGIN, checkoutDestination, cloudOrigin, cloudTarget, createCloudAccountClient } from "./cloud-account.mjs";
+import { CLOUD_ORIGIN, STAGING_CLOUD_ORIGIN, checkoutDestination, cloudOrigin, cloudTarget, createCloudAccountClient } from "./account.mjs";
 
 const accessToken = `omc_${"S".repeat(43)}`;
 
 test("CRYBOT_CLOUD_STAGING=1, and only that, points the app at the fixed staging Admin with its own token file", () => {
-  assert.deepEqual(cloudTarget({}), { origin: CLOUD_ORIGIN, staging: false, file: "cloud-account.bin", saved: "cloud-accounts.bin", places: "account-places.json", environments: "environments.json", sync: "cloud-sync", look: "cloud-home-look.json" });
-  assert.deepEqual(cloudTarget({ CRYBOT_CLOUD_STAGING: "1" }), { origin: "https://server.example.test", staging: true, file: "cloud-account-staging.bin", saved: "cloud-accounts-staging.bin", places: "account-places-staging.json",
+  assert.deepEqual(cloudTarget({}), { origin: CLOUD_ORIGIN, staging: false, file: "account.bin", saved: "accounts.bin", places: "account-places.json", environments: "environments.json", sync: "cloud-sync", look: "cloud-home-look.json" });
+  assert.deepEqual(cloudTarget({ CRYBOT_CLOUD_STAGING: "1" }), { origin: "https://server.example.test", staging: true, file: "account-staging.bin", saved: "accounts-staging.bin", places: "account-places-staging.json",
     environments: "environments-staging.json", sync: "cloud-sync-staging", look: "cloud-home-look-staging.json" });
   const production = Object.values(cloudTarget({})), staging = Object.values(cloudTarget({ CRYBOT_CLOUD_STAGING: "1" }));
   assert.ok(staging.filter(value => typeof value === "string").every(name => !production.includes(name)), "no file or address shared with production");
@@ -78,5 +78,5 @@ test("main keeps each Admin's sign-in, saved servers, Files state and Cloud name
   assert.match(main, /const cloudAccountStore = \(\) => \(activeSignIn \?\?= createCloudAccountStore\(\{ file: path\.join\(app\.getPath\("userData"\), cloudTarget\(process\.env\)\.file\)/);
   assert.match(main, /createCloudAccountStore\(\{ file: path\.join\(app\.getPath\("userData"\), cloudTarget\(process\.env\)\.saved\)/);
   assert.match(ensure, /origin: cloudTarget\(process\.env\)\.origin,/);
-  assert.equal(main.includes('"cloud-account.bin"'), false, "no second, fixed token file");
+  assert.equal(main.includes('"account.bin"'), false, "no second, fixed token file");
 });

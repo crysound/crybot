@@ -1,5 +1,5 @@
 import type { CloudTrial, CloudTrialState } from "./cloud-home.mjs";
-import type { CloudAccountState } from "./cloud-account.mjs";
+import type { CloudAccountState } from "./account.mjs";
 
 export declare const TRIAL_ENDING_SOON_MS: number;
 export declare const PROCESSING_NOTICE_AFTER_MS: number;

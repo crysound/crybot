@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import vm from "node:vm";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cloudTarget } from "./cloud-account.mjs";
+import { cloudTarget } from "./account.mjs";
 import { myCloudOrigin, rememberedCloudHome, savedCloudHomeOrigin } from "./cloud-home.mjs";
 import { cloudPageSenderAllowed } from "./cloud-home.mjs";
 import { otherOwnClouds, ownCloud } from "./cloud-list.mjs";

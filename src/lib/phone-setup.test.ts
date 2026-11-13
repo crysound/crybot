@@ -499,13 +499,13 @@ describe("phone setup flow", () => {
     const requestId = "c285fe8c-f6f4-41a3-a737-7a2d1faf405a";
     const message = normalizePhoneSetupActionError(
       new Error(
-        `Error invoking remote method 'companion-account:request-code': Error: The secure connection request was not allowed. Try signing in again. Reference: ${requestId}.`,
+        `Error invoking remote method 'account:request-code': Error: The secure connection request was not allowed. Try signing in again. Reference: ${requestId}.`,
       ),
       "We could not send the code. Try again.",
     );
     expect(message).toBe(`We could not send the code. Try again. Reference: ${requestId}.`);
     expect(message).not.toContain("remote method");
-    expect(message).not.toContain("companion-account");
+    expect(message).not.toContain("account");
   });
 
   it("keeps the provider-capacity explanation instead of generic setup copy", () => {
@@ -513,7 +513,7 @@ describe("phone setup flow", () => {
     expect(
       normalizePhoneSetupActionError(
         new Error(
-          `Error invoking remote method 'companion-account:verify-code': Error: Secure HTTPS links are temporarily full. Try again in 10 minutes, or pair on this Wi-Fi or with Tailscale. Reference: ${requestId}.`,
+          `Error invoking remote method 'account:verify-code': Error: Secure HTTPS links are temporarily full. Try again in 10 minutes, or pair on this Wi-Fi or with Tailscale. Reference: ${requestId}.`,
         ),
         "We could not finish setup. Try again.",
       ),
@@ -528,7 +528,7 @@ describe("phone setup flow", () => {
     expect(
       normalizePhoneSetupActionError(
         new Error(
-          `Error invoking remote method 'companion-account:verify-code': Error: ${busy} Reference: ${requestId}.`,
+          `Error invoking remote method 'account:verify-code': Error: ${busy} Reference: ${requestId}.`,
         ),
         "We could not finish setup. Try again.",
       ),
@@ -538,7 +538,7 @@ describe("phone setup flow", () => {
   it("replaces arbitrary IPC details with calm setup copy", () => {
     expect(
       normalizePhoneSetupActionError(
-        new Error("Error invoking remote method 'companion-account:request-code': Error: /private/keychain failed"),
+        new Error("Error invoking remote method 'account:request-code': Error: /private/keychain failed"),
         "We could not send the code. Try again.",
       ),
     ).toBe("We could not send the code. Try again.");

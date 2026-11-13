@@ -3,7 +3,7 @@ import { once } from "node:events";
 import { createServer } from "node:http";
 import test from "node:test";
 
-import { createControlPlaneClient } from "./control-plane-client.mjs";
+import { createControlPlaneClient } from "./control-client.mjs";
 import {
   COMPANION_ACCOUNT_EMAIL_FIELD,
   COMPANION_ACCOUNT_TOKEN_FIELD,
@@ -13,7 +13,7 @@ import {
   COMPANION_INSTALLATION_EXPIRY_FIELD,
   COMPANION_INSTALLATION_ID_FIELD,
   createCompanionAccountService,
-} from "./companion-account-service.mjs";
+} from "./account-service.mjs";
 import {
   MANAGED_COMPANION_ENDPOINT_FIELD,
   MANAGED_COMPANION_ORIGIN_VERSION,

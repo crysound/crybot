@@ -3,7 +3,7 @@ import { createElement, type ReactElement } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { CloudAccountBridge, CloudAccountState, CloudPlanBridge, CloudRenewalResult } from "../../electron/cloud-account.mjs";
+import type { CloudAccountBridge, CloudAccountState, CloudPlanBridge, CloudRenewalResult } from "../../electron/account.mjs";
 import type { CloudRenewal } from "../../electron/cloud-list.mjs";
 import { setLocale } from "@/lib/i18n";
 

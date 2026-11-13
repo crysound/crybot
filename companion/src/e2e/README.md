@@ -38,7 +38,7 @@ Everything a Node, Swift or Kotlin implementer needs. MUST and NEVER are binding
 | `T` | The computer's **transport key**, a long-lived P-256 key pair separate from the HPKE credential key | Private half: Electron secure credential document field `e2eTransportKey` (same pattern as `phoneSecretHpke`, `electron/phone-secret-identity.mjs`), handed to the sidecar in memory. Standalone sidecar: `$CRYBOT_COMPANION_DIR/e2e-key.json`, mode 0600 |
 | `keyId` | `SHA256(T.pub)[0:16]` (16 bytes) | Derived |
 | `hostId` | 16 random bytes, made by the control plane once per installation | D1 `installations.relay_host_id`; Electron credential document |
-| `cred` | A device token `cry_…` (`electron/desktop-companion-client.mjs:11`), or the pairing token `cry_pair_…` while a window is open | Phone keychain; desktop stores only `SHA256(cred)` hex (`companion/src/devices.ts:54`) |
+| `cred` | A device token `cry_…` (`electron/desktop-remote-client.mjs:11`), or the pairing token `cry_pair_…` while a window is open | Phone keychain; desktop stores only `SHA256(cred)` hex (`companion/src/devices.ts:54`) |
 | `psk` | `HMAC-SHA256(key = SHA256(cred), msg = "cry-e2e psk v1" ‖ keyId)` (32 bytes) | Derived on both sides; the desktop computes it from the stored hash |
 | `adm` | `HMAC-SHA256(key = SHA256(cred), msg = "cry-relay admission v1" ‖ hostId)` (32 bytes) | The phone sends it to the relay; the relay only ever holds `SHA256(adm)` |
 

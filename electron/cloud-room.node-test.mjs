@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createServer } from "node:http";
 
-import { cloudPlanSnapshot, createCloudAccountClient } from "./cloud-account.mjs";
+import { cloudPlanSnapshot, createCloudAccountClient } from "./account.mjs";
 
 // The room card's data and its two actions (the session's `cloud.room`, POST room and POST resize-now), against a fake Admin.
 const accessToken = `omc_${"T".repeat(43)}`;

@@ -1,4 +1,4 @@
-import { cloudPlanSnapshot, UPGRADE_SOURCES } from "./cloud-account.mjs";
+import { cloudPlanSnapshot, UPGRADE_SOURCES } from "./account.mjs";
 
 /** Another Cloud of the person's own, as its page may see its plan: its tier and whether it runs, from the session's list. */
 export function otherCloudSnapshot(cloud) {

@@ -427,7 +427,7 @@ export function normalizePhoneSetupActionError(cause: unknown, fallback: string)
   const reference = unwrapped.match(REQUEST_REFERENCE)?.[1] ?? "";
   const message = unwrapped.replace(REQUEST_REFERENCE, "").trim();
   const forbiddenCodeRequest =
-    /remote method ['"]companion-account:request-code['"]/i.test(raw)
+    /remote method ['"]account:request-code['"]/i.test(raw)
     && message.startsWith("The secure connection request was not allowed.");
   const publicMessage = !forbiddenCodeRequest
     && PUBLIC_ACCOUNT_MESSAGES.some((pattern) => pattern.test(message))

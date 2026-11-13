@@ -1,7 +1,7 @@
 import { useContext, useRef, useState, type ReactNode } from "react";
 import { ArrowUpRight, Gauge, Loader2, X } from "lucide-react";
 
-import type { CloudPlanBridge, CloudPlanSnapshot, CloudUpgradePreview, CloudUpgradeRefusal } from "../../electron/cloud-account.mjs";
+import type { CloudPlanBridge, CloudPlanSnapshot, CloudUpgradePreview, CloudUpgradeRefusal } from "../../electron/account.mjs";
 import type { CloudUsage, CloudUsageMeter } from "../../electron/cloud-home.mjs";
 import { cloudPlanChanged, useCloudPlanSnapshot } from "./CloudTrialNotice";
 import { ConfirmDialog } from "./ConfirmDialog";

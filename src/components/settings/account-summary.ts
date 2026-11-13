@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { CloudAccountState, CloudPlanSnapshot } from "../../../electron/cloud-account.mjs";
+import type { CloudAccountState, CloudPlanSnapshot } from "../../../electron/account.mjs";
 import { cloudPlanLabel, cloudPlanView } from "@/lib/cloud-plan";
 import { t } from "@/lib/i18n";
 import { profileForSession, readSessionState, type SessionState } from "@/lib/session";

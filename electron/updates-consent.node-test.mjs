@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import test from "node:test";
-import { createCloudAccountClient } from "./cloud-account.mjs";
+import { createCloudAccountClient } from "./account.mjs";
 import { createDesktopPrefs, registerDesktopPrefs } from "./desktop-prefs.mjs";
 import { createUpdatesConsent, parseUpdatesConsent, registerUpdatesConsent, UPDATES_CONSENT_VERSION } from "./updates-consent.mjs";
 

@@ -134,3 +134,30 @@ pnpm vitest run shared/package-format.test.ts --maxWorkers=2 --configLoader runn
 除前述账户/支付/控制平面实现外，续做还需处理旧测试基础设施：`scripts/docker-image.test.ts` 读取已经删除的镜像发布 workflow，旧 CI scope 测试也仍针对上游工作流；worker 集成 fixture 的问题见上一节。当前不能把新的 CI 定义视为整仓已绿。
 
 泄漏清理将明确的上游作者身份替换/删除；测试中的虚构示例身份及第三方归属未作为内部身份一律清除。全面的公开前泄漏扫描仍未完成。
+
+# T-1207 第 3 轮追加
+
+## 1. 本轮改动
+
+- 删除旧账户、支付和控制平面文件：`electron/cloud-account.mjs`、`electron/companion-account-service.mjs`、`electron/control-plane-client.mjs`、`electron/desktop-companion-client.mjs`，以及它们的声明文件、单测和 fixture；删除 `scripts/verify-cloud-account.mjs`。现有桌面运行时引用改为本地命名模块，避免重新引入原文件名；对应旧标识在仓库代码中已清除。
+- 删除依赖已移除 broker worker/harness 的测试：`server/testing/broker-fake.ts` 及其调用方测试，另删 `scripts/docker-image.test.ts`、`scripts/ci-scope.test.ts`。这些测试覆盖已删除的 hosted/cloud worker 或旧 CI 范围，不再以 skip 方式保留。
+- `electron-builder.yml` 删除 GitHub `publish` 配置；由 T-1208 再接入 generic 更新源。
+- `scripts/check-brand-residue.mjs` 排除 `docs/specs/` 与 `docs/tasks/`；对 `dist/`、`dist-server/` 仅在同一行存在 `openmailbox.org` 时放行 nodemailer 的 OpenMailBox 第三方别名，并添加原因注释。
+- 账户相关字符串、IPC 通道和类型引用统一迁移到本地中性命名，更新了 Electron 主进程/preload、server tunnel、前端类型和相关测试引用；未修改 `docs/specs/`、`docs/tasks/`、`third_party/`、`LICENSE`。
+
+## 2. 验证
+
+- `PATH=/opt/node24/bin:$PATH pnpm typecheck`：通过；`tsc -b` 与 `tsc -p tsconfig.server.json` 串行执行。
+- `pnpm lint`：通过（oxlint，退出码 0）。
+- `PATH=/opt/node24/bin:$PATH pnpm build:server`：通过，重新生成 `dist-server/`。
+- `node scripts/check-brand-residue.mjs`：通过，扫描 8368 个文件（含 `dist/`、`dist-server/`），0 forbidden references，退出码 0。
+- `git grep -nE 'cloud-account|control-plane-client|companion-account|desktop-companion-client' -- ':!docs/specs/**' ':!docs/tasks/**'`：无命中。
+- `PATH=/opt/node24/bin:$PATH pnpm vitest run server/routes/rebrand.test.ts server/optional-feeds.test.ts shared/bot-body.test.ts --maxWorkers=2 --configLoader runner`：3 个文件、8 个用例通过。
+- `git diff --check`：通过。
+
+## 3. 尚未完成与协调者处理项
+
+- 沙箱无法进行端口监听；需要协调者在沙箱外运行隔离 fixture 的启动验收（health/edition、默认无外连、SMTP relay），此前错误为 `no free port block` / `listen EPERM`。不能用 live app 或用户数据替代。
+- Windows `CRYBOT_BROWSER_ENGINE_URL` 与 ICNS 实机验证按决定保持现状。
+- server 中仍存在部分旧 hosted/workspace 数据路径与历史业务分支；本轮删除了 broker/旧 CI 测试基础设施，但没有把所有 hosted/cloud 业务模块全部重写为纯自托管实现。前端云组件源文件仍有历史实现，尚未全部删除；这部分不能宣称已完全达到规格 §5 的“代码和界面入口一起删”。
+- 本轮没有 git 提交；工作区保留全部改动供协调者复核。

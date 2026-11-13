@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { CloudAccountState, CloudPlanBridge, CloudPlanSnapshot } from "../../electron/cloud-account.mjs";
+import type { CloudAccountState, CloudPlanBridge, CloudPlanSnapshot } from "../../electron/account.mjs";
 import type { CloudCredit, CloudMachine, CloudTrial } from "../../electron/cloud-home.mjs";
 import { planTeam, teamPlan } from "../../electron/cloud-team-plan.mjs";
 import { cloudFilesBridge } from "@/lib/cloud-files";

@@ -1,4 +1,4 @@
-import type { CloudAccountState } from "../../electron/cloud-account.mjs";
+import type { CloudAccountState } from "../../electron/account.mjs";
 import { teamPlan } from "../../electron/cloud-team-plan.mjs";
 import type { LocaleKey } from "@/locales";
 import { cloudPlanView } from "./cloud-plan";

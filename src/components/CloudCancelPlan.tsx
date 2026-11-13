@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
-import type { CloudCancelAnswer, CloudCancelSurvey, CloudRenewalResult } from "../../electron/cloud-account.mjs";
+import type { CloudCancelAnswer, CloudCancelSurvey, CloudRenewalResult } from "../../electron/account.mjs";
 import type { CloudRenewal } from "../../electron/cloud-list.mjs";
 import { cn } from "@/lib/cn";
 import { activeLocale, t } from "@/lib/i18n";

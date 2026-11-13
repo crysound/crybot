@@ -3,7 +3,7 @@ import { ChevronDown, Cloud, Laptop } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import type { Action } from "@/state/store";
-import type { CloudPlanSnapshot } from "../../electron/cloud-account.mjs";
+import type { CloudPlanSnapshot } from "../../electron/account.mjs";
 import { cloudColor } from "@/lib/cloud-look";
 import { t } from "@/lib/i18n";
 import { railShown, usePlaces } from "@/lib/places";

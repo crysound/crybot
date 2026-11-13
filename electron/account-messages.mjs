@@ -1,5 +1,5 @@
 // What a person reads when the secure connection service refuses or fails: one line per control-plane code.
-import { ControlPlaneError } from "./control-plane-client.mjs";
+import { ControlPlaneError } from "./control-client.mjs";
 
 export const FRIENDLY_MESSAGES = Object.freeze({
   invalid_email: "Enter a valid email address.",

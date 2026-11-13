@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, LogOut, Plus, UserRound, X } from "lucide-react";
-import type { AccountsView, AccountSwitchResult, RailOpenResult } from "../../electron/cloud-account.mjs";
+import type { AccountsView, AccountSwitchResult, RailOpenResult } from "../../electron/account.mjs";
 import { cn } from "@/lib/cn";
 import type { CloudSignInPhase } from "@/lib/cloud-plan";
 import { t } from "@/lib/i18n";

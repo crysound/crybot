@@ -139,7 +139,7 @@ export interface CloudAccountBridge {
   refresh(): Promise<CloudAccountState>;
   signOut(): Promise<CloudAccountState>;
   openDashboard(): Promise<CloudAccountState>;
-  /** What this person may buy now (cloud-account.mjs offer), or null. */
+  /** What this person may buy now (account.mjs offer), or null. */
   offer?(): Promise<import("./cloud-home.mjs").CloudOffer | null>;
   /** Opens a checkout for a plan of the offer in the browser; `source` is one of CHECKOUT_SOURCES. */
   checkout?(plan: string, source: string): Promise<CloudCheckoutResult>;

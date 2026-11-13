@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 
-import { cloudPlanSnapshot } from "./cloud-account.mjs";
+import { cloudPlanSnapshot } from "./account.mjs";
 import { installCloudPlanIpc } from "./cloud-plan-ipc.mjs";
 import { cloudPageSenderAllowed, myCloudOrigin } from "./cloud-home.mjs";
 import { otherOwnClouds } from "./cloud-list.mjs";
