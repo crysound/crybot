@@ -16,7 +16,7 @@ final class APIClientTests: XCTestCase {
     func testListsBotsWithAuthenticatedRequest() async throws {
         FixtureProtocol.setHandler { request in
             XCTAssertEqual(request.url?.path, "/api/bots")
-            XCTAssertEqual(request.url?.query, "messages=20")
+            XCTAssertEqual(request.url?.query, "messages=5")
             XCTAssertEqual(request.httpMethod, "GET")
             XCTAssertEqual(request.timeoutInterval, 15)
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer cry_sess_fixture")
@@ -70,13 +70,45 @@ final class APIClientTests: XCTestCase {
     }
 
     func testRedirectAndUnauthorizedResponsesBecomeExpiredLogin() async {
-        for status in [302, 303, 401, 403] {
+        for status in [302, 303, 307, 401, 403] {
             FixtureProtocol.setHandler { _ in (status, "Access login") }
             do {
                 _ = try await client().bots(credentials: WatchFixtures.credentials)
                 XCTFail("Expected expired login")
             } catch {
                 XCTAssertEqual(error as? WatchAPIError, .loginExpired)
+            }
+        }
+    }
+
+    func testServerForbiddenShowsRequestFailureAndAllowsSubsequentRequests() async throws {
+        let api = client()
+        FixtureProtocol.setHandler { _ in (403, #"{"error":"Insufficient scope"}"#) }
+        do {
+            _ = try await api.send(botId: "bot-1", message: SendMessage(text: "Hi", threadId: "thread-1"),
+                                   credentials: WatchFixtures.credentials)
+            XCTFail("Expected request failure")
+        } catch {
+            XCTAssertEqual(error as? WatchAPIError, .rejected(403))
+            XCTAssertEqual((error as? WatchAPIError)?.localizationKey, "REQUEST_FAILED")
+        }
+        FixtureProtocol.setHandler { request in
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer cry_sess_fixture")
+            return (200, WatchFixtures.messages)
+        }
+        let messages = try await api.messages(threadId: "thread-1", credentials: WatchFixtures.credentials)
+        XCTAssertEqual(messages.last?.id, "m4")
+    }
+
+    func testEdgeForbiddenWithoutServerErrorBecomesExpiredLogin() async {
+        for body in ["<html>Cloudflare Access denied</html>", #"{"message":"Access denied"}"#] {
+            FixtureProtocol.setHandler { _ in (403, body) }
+            do {
+                _ = try await client().bots(credentials: WatchFixtures.credentials)
+                XCTFail("Expected expired login")
+            } catch {
+                XCTAssertEqual(error as? WatchAPIError, .loginExpired)
+                XCTAssertEqual((error as? WatchAPIError)?.localizationKey, "LOGIN_EXPIRED")
             }
         }
     }

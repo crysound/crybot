@@ -71,3 +71,61 @@ CI 在测试前从 `xcrun simctl list devices available --json` 结果中按 iPh
 - 推送后确认两个 App scheme 编译、18 个 XCTest 和内嵌产物检查通过，再在隔离账号及配对设备上验收 WatchConnectivity、听写/随手写、过期重登、排队/重发和前后台轮询停止；禁止使用用户生产会话做变更验证。
 - 未解决的验证限制是本机没有 Swift/Xcode/XcodeGen、缺少指定的验证说明，不能提供实际编译/测试/配对运行结果；如 runner 的 Xcode 版本触发 watchOS 打包兼容问题，以实际 CI 和 archive 验证结果为准，不应省略内嵌检查。
 - 本任务按约定不包含系统推送、后台长连接、历史消息分页或服务器修改；App 关闭后内存中的待重发消息不持久保存。
+
+## 第 2 轮：审核返工
+
+本轮基于 f38df59 继续修改，处理必改项和本轮要求的全部八条建议，没有回退第一轮实现，没有 git 提交或推送。以下构建命令和行为说明替代前轮记录中的对应旧命令/旧行为；前轮记录按要求保留。
+
+### 1. 文件与行为变更
+
+- `.github/workflows/mobile.yml`：CryBot、CryBotWatch 和 CryBotWatchTests 三条 xcodebuild 命令全部去掉 `-sdk`，只用各自的 `-destination` 选择平台；模拟器 runtime 使用整数版本元组降序排列，修复 `iOS-18-10` 排在 `iOS-18-5` 后的问题。
+- `mobile/ios/Shared/WatchContract.swift`：`WatchBot.threadId` 改为可选，BotList 逐项解码并跳过损坏、缺少/null/空 threadId 的 bot，保留其余可用条目；多个匹配 session cookie 按过期时间最晚选择，不使用公网端口优先规则；latestReply 优先选择时间最新的 bot 文本消息，没有文本时才回退到最新 bot 消息；HTTP 校验接收响应体，仅 401、302/303/307 和无 JSON `error` 的 403 返回登录过期，带 JSON `error` 的 403 返回请求失败。
+- `mobile/ios/CryBotWatch/APIClient.swift`：列表改为 `messages=5`，会话页仍单独请求 `limit=20`；把响应体传入错误分类，并提供共用实例。
+- `mobile/ios/CryBotWatch/CryBotWatchApp.swift`：列表使用共用 APIClient，进入会话前解包 threadId，避免视图重建时创建 URLSession。
+- `mobile/ios/CryBotWatch/ConversationModel.swift`：会话模型也使用共用 APIClient，由初始化参数接收已解包的非可选 threadId，保留 StateObject 生命周期和原有轮询机制。
+- `mobile/ios/CryBotWatch/Session.swift`：Keychain 保存和更新使用 `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`，首次解锁后可访问，该 Keychain 项不随备份迁移到其他设备；原有 `report` 仅对 `.loginExpired` 标记过期，业务 403 的 `.rejected(403)` 不清凭据、不置过期、不改变轮询身份。
+- `mobile/ios/CryBotWatch/en.lproj/Localizable.strings`：请求失败提示改为 `Request failed.`，不对权限拒绝一律提示重试。
+- `mobile/ios/CryBotWatch/zh-Hans.lproj/Localizable.strings`：对应提示改为“请求失败”，两种语言继续使用 `REQUEST_FAILED` 键。
+- `mobile/ios/CryBotWatchTests/WatchContractTests.swift`：改写 cookie 端口测试为最新过期时间测试，增加域/路径优先级不覆盖 session 到期时间、两类 403、其他重定向不误判过期、可选 threadId、混合坏条目的宽容列表解码、文本回复优先与回退测试。
+- `mobile/ios/CryBotWatchTests/APIClientTests.swift`：断言 `messages=5`，补齐 307；通过隔离 URLProtocol 覆盖 HTML/非 error JSON 边缘 403 和服务端 JSON error 403，后者请求失败后可使用相同 client/凭据继续读取消息。
+- `mobile/ios/README.md`：同步所有无 `-sdk` 的构建/测试命令、列表条数及跳过规则、cookie 选择、两类 403、Keychain 不跨设备迁移和模拟器排序说明。
+- `docs/tasks/T-1200/T-1211-watch/report.md`：追加本节，保留此前报告。
+
+已核对未修改的 `project.yml`：CryBot 的 `PRODUCT_NAME` 为 `Cry Bot`，CryBotWatch 的为 `CryBotWatch`，iOS 内嵌复制子目录为 `$(CONTENTS_FOLDER_PATH)/Watch`。因此保留检查路径 `DerivedData/iOS/Build/Products/Debug-iphonesimulator/Cry Bot.app/Watch/CryBotWatch.app`，是否实际生成该产物由 macOS CI 的 `test -d` 验证。没有修改任何 Contents.json 或图标。
+
+### 2. 本机验证与限制
+
+已执行：
+
+1. `git diff --check`：通过。
+2. `python3 /tmp/t1211-r2-static-check.py`：通过。此临时检查脚本使用已有 PyYAML 解析 workflow/project，检查所有 iOS job shell 的 `bash -n` 语法、三个 xcodebuild 命令均带 destination 且无 sdk 覆盖、PRODUCT_NAME、平台、最低版本和复制目录。
+3. 同一脚本直接提取并执行 workflow 中实际的 Python 选设备代码，在 `/tmp` 独立临时目录提供四组 JSON 清单：`18-10` 优于 `18-5`；`18-10-1` 优于 `18-10` 和 `9-9`；跳过更新 runtime 下不可用 iPhone/iPad 及非 iOS runtime 后选择可用 iPhone；无可用 iPhone 时非零退出且不写环境变量。全部通过，没有调用真实模拟器或服务器。
+4. 同一脚本检查 iOS 两种语言 7 个键、watchOS 两种语言 29 个键均匹配、无重复/空值，所有手表文案引用有定义；解析 XCTest 的 17 份原始 JSON 字面量成功；Swift 分隔符检查通过。分隔符检查与人工检查不等价于 Swift 编译。
+5. 人工复核可选 threadId 的全部使用点、逐条解码推进、共享 URLSession 生命周期、403 到 `Session.report` 和轮询循环的错误传播，以及本轮新增 API 的 iOS 16/watchOS 10 可用性。没有为业务 403 设置 expired 或清除凭据的代码路径；真实界面轮询尚未运行验证。
+6. `rg -n 'print|os_log|Logger|NSLog|debugPrint' mobile/ios` 和 `rg -ni 'maus|omb_' mobile/ .github/workflows/mobile.yml`：无匹配；未新增令牌日志或内部地址。
+7. 工具探测：`swift`、`swiftc`、`xcodegen`、`xcodebuild`、`plutil` 全部不可用，因此跳过 plutil，没有执行 Swift 编译、XCTest 或设备操作。当前共 26 个 XCTest（较前轮净增 8 个），均仍需 macOS Actions 执行。
+
+当前 worktree 和主仓库均缺少 AGENTS.md 引用的 `docs/verification/README.md`；本轮未声明服务端/真实会话链路验证通过，也未接触 live app 或用户数据。网络行为的 XCTest 继续使用全部请求由 URLProtocol 拦截的固定夹具，但本机没有执行这些 XCTest。
+
+### 3. 协调者后续验收
+
+请协调者推送后检查 Mobile builds 的 iOS job 全部步骤通过，尤其不能仅以第一条编译成功代替手表构建、内嵌检查和测试结果。等价命令为：
+
+```sh
+xcodegen generate
+xcodebuild -scheme CryBot -configuration Debug \
+  -destination 'generic/platform=iOS Simulator' -derivedDataPath DerivedData/iOS \
+  build CODE_SIGNING_ALLOWED=NO
+test -d 'DerivedData/iOS/Build/Products/Debug-iphonesimulator/Cry Bot.app/Watch/CryBotWatch.app'
+xcodebuild -scheme CryBotWatch -configuration Debug \
+  -destination 'generic/platform=watchOS Simulator' -derivedDataPath DerivedData/Watch \
+  build CODE_SIGNING_ALLOWED=NO
+xcodebuild -scheme CryBotWatchTests -configuration Debug \
+  -destination "platform=iOS Simulator,id=$CRYBOT_TEST_SIMULATOR" \
+  -derivedDataPath DerivedData/Tests -resultBundlePath DerivedData/WatchTests.xcresult \
+  -parallel-testing-enabled NO test CODE_SIGNING_ALLOWED=NO
+```
+
+`CRYBOT_TEST_SIMULATOR` 由 workflow 前一步选出的可用 iPhone UDID 提供。本轮没有远程 CI 结果，不能把 exit 65 已消除、26 个测试已通过或手表内嵌成功写成已验证事实。
+
+开发者后台的手表 App ID/描述文件、同一团队的两个 bundle 签名以及 TestFlight archive/export 仍由协调者处理，步骤见前轮和 README。合并顺序仍需保证服务端 `cry_` 令牌改名先就绪。WatchConnectivity、首次解锁及 Keychain 设备迁移限制、听写/随手写、前后台轮询及两种 403 的界面行为，还需隔离账号和配对设备验收；没有新增服务端修改或第三方依赖。

@@ -23,7 +23,7 @@ private enum CredentialStore {
     static func save(_ credentials: WatchCredentials) throws {
         let data = try JSONEncoder().encode(credentials)
         let values: [String: Any] = [kSecValueData as String: data,
-                                    kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock]
+                                    kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly]
         let status = SecItemUpdate(query as CFDictionary, values as CFDictionary)
         if status == errSecItemNotFound {
             let item = query.merging(values) { _, new in new }

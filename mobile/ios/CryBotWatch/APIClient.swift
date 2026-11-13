@@ -10,6 +10,8 @@ final class RedirectBlocker: NSObject, URLSessionTaskDelegate {
 }
 
 final class APIClient {
+    static let shared = APIClient()
+
     private let session: URLSession
 
     init(configuration: URLSessionConfiguration = .ephemeral) {
@@ -27,7 +29,7 @@ final class APIClient {
 
     func bots(credentials: WatchCredentials) async throws -> [WatchBot] {
         let result: BotList = try await request(credentials, path: ["api", "bots"],
-                                               query: [URLQueryItem(name: "messages", value: "20")])
+                                               query: [URLQueryItem(name: "messages", value: "5")])
         return result.bots
     }
 
@@ -60,7 +62,7 @@ final class APIClient {
             let (data, response) = try await session.data(for: request)
             try Task.checkCancellation()
             guard let http = response as? HTTPURLResponse else { throw WatchAPIError.invalidResponse }
-            try WatchRequest.validate(status: http.statusCode)
+            try WatchRequest.validate(status: http.statusCode, body: data)
             do { return try JSONDecoder().decode(Response.self, from: data) }
             catch { throw WatchAPIError.invalidResponse }
         } catch is CancellationError {

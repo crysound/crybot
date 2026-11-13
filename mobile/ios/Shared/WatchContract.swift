@@ -69,8 +69,9 @@ enum LoginCookies {
             return a.name < b.name
         }
         let sessions = matching.filter { $0.name.hasPrefix("cry_session_") && $0.value.hasPrefix("cry_sess_") }
-        let portPrefix = "cry_session_\(server.port ?? 443)_"
-        let session = sessions.first { $0.name.hasPrefix(portPrefix) } ?? sessions.first
+        let session = sessions.sorted {
+            ($0.expiresDate ?? .distantFuture) > ($1.expiresDate ?? .distantFuture)
+        }.first
         let access = matching.first { $0.name == "CF_Authorization" }
         return WatchCredentials(server: server.absoluteString, sessionToken: session?.value ?? "",
                                 cfAuthorization: access?.value ?? "", cfExpires: access?.expiresDate?.timeIntervalSince1970)
@@ -99,26 +100,48 @@ enum WatchRequest {
          "Cookie": "CF_Authorization=\(credentials.cfAuthorization)", "Accept": "application/json"]
     }
 
-    static func validate(status: Int) throws {
-        if (300...399).contains(status) || status == 401 || status == 403 { throw WatchAPIError.loginExpired }
+    static func validate(status: Int, body: Data = Data()) throws {
+        if [302, 303, 307, 401].contains(status) { throw WatchAPIError.loginExpired }
+        if status == 403 {
+            let object = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any]
+            guard object?["error"] != nil else { throw WatchAPIError.loginExpired }
+        }
         guard (200...299).contains(status) else { throw WatchAPIError.rejected(status) }
     }
 }
 
 struct BotList: Decodable {
     let bots: [WatchBot]
+
+    private enum CodingKeys: String, CodingKey { case bots }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        var entries = try container.nestedUnkeyedContainer(forKey: .bots)
+        var decoded: [WatchBot] = []
+        while !entries.isAtEnd {
+            let entry = try entries.superDecoder()
+            if let bot = try? WatchBot(from: entry),
+               let threadId = bot.threadId, !threadId.isEmpty {
+                decoded.append(bot)
+            }
+        }
+        bots = decoded
+    }
 }
 
 struct WatchBot: Decodable, Identifiable {
     let id: String
     let name: String
     let title: String?
-    let threadId: String
+    let threadId: String?
     let messages: [WatchMessage]?
 
     var displayName: String { name.isEmpty ? (title ?? id) : name }
     var latestReply: WatchMessage? {
-        messages?.filter { $0.role == "bot" }.max { $0.at < $1.at }
+        let replies = messages?.filter { $0.role == "bot" } ?? []
+        return replies.filter { $0.kind == "text" }.max { $0.at < $1.at }
+            ?? replies.max { $0.at < $1.at }
     }
 }
 

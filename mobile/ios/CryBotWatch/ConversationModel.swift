@@ -10,16 +10,16 @@ final class ConversationModel: ObservableObject {
     @Published private(set) var awaitingReply = false
     @Published private(set) var errorKey: String?
     @Published var draft = ""
-    private let api = APIClient()
+    private let api = APIClient.shared
     private let botId: String
     private var threadId: String
     private var repliesBeforeSend: [WatchMessage] = []
     private var sentMessageId: String?
     private var acceptedSendId: String?
 
-    init(bot: WatchBot) {
+    init(bot: WatchBot, threadId: String) {
         botId = bot.id
-        threadId = bot.threadId
+        self.threadId = threadId
         messages = Array((bot.messages ?? []).sorted { $0.at < $1.at }.suffix(20))
     }
 

@@ -10,7 +10,7 @@
 "NO_BOTS" = "No bots";
 "CANNOT_CONNECT" = "Cannot connect. Please retry.";
 "INVALID_RESPONSE" = "Could not read the server response.";
-"REQUEST_FAILED" = "Request failed. Please retry.";
+"REQUEST_FAILED" = "Request failed.";
 "MESSAGE_ATTACHMENT" = "[Attachment]";
 "MESSAGE_TOOL" = "[Tool call]";
 "MESSAGE_OTHER" = "[Message]";

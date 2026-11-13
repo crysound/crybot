@@ -43,7 +43,7 @@ struct BotListView: View {
     @State private var path: [String] = []
     @State private var loading = false
     @State private var errorKey: String?
-    private let api = APIClient()
+    private let api = APIClient.shared
 
     private var pollingKey: String { "\(scenePhase == .active)-\(path.isEmpty)-\(session.pollIdentity)" }
 
@@ -78,7 +78,9 @@ struct BotListView: View {
             }
             .navigationTitle("Cry Bot")
             .navigationDestination(for: String.self) { botId in
-                if let bot = bots.first(where: { $0.id == botId }) { ConversationView(bot: bot) }
+                if let bot = bots.first(where: { $0.id == botId }), let threadId = bot.threadId {
+                    ConversationView(bot: bot, threadId: threadId)
+                }
             }
             .task(id: pollingKey) {
                 guard scenePhase == .active, path.isEmpty else { return }
@@ -118,9 +120,9 @@ struct ConversationView: View {
     private let name: String
     private let quickReplies = ["QUICK_OK", "QUICK_CONTINUE", "QUICK_STOP", "QUICK_DETAILS"]
 
-    init(bot: WatchBot) {
+    init(bot: WatchBot, threadId: String) {
         name = bot.displayName
-        _model = StateObject(wrappedValue: ConversationModel(bot: bot))
+        _model = StateObject(wrappedValue: ConversationModel(bot: bot, threadId: threadId))
     }
 
     private var pollingKey: String { "\(scenePhase == .active)-\(session.pollIdentity)-\(model.awaitingReply)" }

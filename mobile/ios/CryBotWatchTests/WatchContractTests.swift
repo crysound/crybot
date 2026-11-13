@@ -60,13 +60,22 @@ final class WatchContractTests: XCTestCase {
         XCTAssertEqual(selected.cfAuthorization, "parent-access")
     }
 
-    func testPrefersCurrentPortWhenMultipleSessionsShareHost() {
+    func testSelectsLatestExpiryRegardlessOfPublicPort() {
         let selected = LoginCookies.select(from: [
-            cookie("cry_session_443_111111111111", "cry_sess_default"),
-            cookie("cry_session_8443_222222222222", "cry_sess_port"),
+            cookie("cry_session_3000_111111111111", "cry_sess_latest", expires: now.addingTimeInterval(7200)),
+            cookie("cry_session_8443_222222222222", "cry_sess_port", expires: now.addingTimeInterval(3600)),
+            cookie("cry_session_4000_333333333333", "cry_sess_older", expires: now.addingTimeInterval(1800)),
             cookie("CF_Authorization", "access")
         ], server: URL(string: "https://bot.example.com:8443")!, now: now)
-        XCTAssertEqual(selected.sessionToken, "cry_sess_port")
+        XCTAssertEqual(selected.sessionToken, "cry_sess_latest")
+    }
+
+    func testSessionExpiryTakesPriorityOverMatchingDomainAndPathSpecificity() {
+        let selected = LoginCookies.select(from: [
+            cookie("cry_session_3000_111111111111", "cry_sess_specific", expires: now.addingTimeInterval(3600), path: "/app"),
+            cookie("cry_session_4000_222222222222", "cry_sess_latest", domain: ".example.com", expires: now.addingTimeInterval(7200))
+        ], server: URL(string: "https://bot.example.com/app")!, now: now)
+        XCTAssertEqual(selected.sessionToken, "cry_sess_latest")
     }
 
     func testContextRoundTripOmitsAbsentExpiryAndRejectsInsecureServer() {
@@ -99,8 +108,29 @@ final class WatchContractTests: XCTestCase {
         }
         try WatchRequest.validate(status: 200)
         try WatchRequest.validate(status: 202)
-        XCTAssertThrowsError(try WatchRequest.validate(status: 500)) {
-            XCTAssertEqual($0 as? WatchAPIError, .rejected(500))
+        for status in [301, 304, 308, 500] {
+            XCTAssertThrowsError(try WatchRequest.validate(status: status)) {
+                XCTAssertEqual($0 as? WatchAPIError, .rejected(status))
+            }
+        }
+    }
+
+    func testForbiddenResponseRequiresServerJSONErrorToPreserveLogin() {
+        for body in [#"{"error":"Forbidden"}"#, #"{"error":{"message":"Forbidden"}}"#] {
+            XCTAssertThrowsError(try WatchRequest.validate(status: 403, body: Data(body.utf8))) {
+                XCTAssertEqual($0 as? WatchAPIError, .rejected(403))
+                XCTAssertEqual(($0 as? WatchAPIError)?.localizationKey, "REQUEST_FAILED")
+            }
+        }
+        for body in ["<html>Access denied</html>", #"{"message":"Access denied"}"#, "[]", ""] {
+            XCTAssertThrowsError(try WatchRequest.validate(status: 403, body: Data(body.utf8))) {
+                XCTAssertEqual($0 as? WatchAPIError, .loginExpired)
+            }
+        }
+        for status in [302, 303, 307, 401] {
+            XCTAssertThrowsError(try WatchRequest.validate(status: status, body: Data(#"{"error":"Unauthorized"}"#.utf8))) {
+                XCTAssertEqual($0 as? WatchAPIError, .loginExpired)
+            }
         }
     }
 
@@ -133,6 +163,59 @@ final class WatchContractTests: XCTestCase {
         let minimal = try JSONDecoder().decode(MessagePage.self, from: Data(#"{"messages":[]}"#.utf8))
         XCTAssertNil(minimal.hasMore)
         XCTAssertNil(minimal.activeLeafId)
+    }
+
+    func testBotThreadIdMayBeMissingOrNull() throws {
+        for json in [#"{"id":"missing","name":"Hidden"}"#, #"{"id":"null","name":"Hidden","threadId":null}"#] {
+            let bot = try JSONDecoder().decode(WatchBot.self, from: Data(json.utf8))
+            XCTAssertNil(bot.threadId)
+        }
+    }
+
+    func testBotListSkipsUnusableEntriesAndKeepsValidNeighbors() throws {
+        let json = #"""
+        {"bots":[
+          {"id":"first","name":"First","threadId":"thread-1"},
+          {"id":"missing","name":"Missing"},
+          {"id":"null","name":"Null","threadId":null},
+          {"id":"empty","name":"Empty","threadId":""},
+          {"id":"bad-thread","name":"Bad","threadId":42},
+          {"id":42,"name":"Bad","threadId":"thread-2"},
+          {"id":"bad-messages","name":"Bad","threadId":"thread-3","messages":[{"id":"broken"}]},
+          null, "invalid", [],
+          {"id":"last","name":"Last","threadId":"thread-4"}
+        ]}
+        """#
+        let list = try JSONDecoder().decode(BotList.self, from: Data(json.utf8))
+        XCTAssertEqual(list.bots.map(\.id), ["first", "last"])
+        XCTAssertEqual(list.bots.map(\.threadId), ["thread-1", "thread-4"])
+        let empty = try JSONDecoder().decode(BotList.self, from: Data(#"{"bots":[null,{}]}"#.utf8))
+        XCTAssertTrue(empty.bots.isEmpty)
+    }
+
+    func testLatestReplyPrefersNewestBotTextOverLaterActivity() throws {
+        let json = #"""
+        {"id":"bot","name":"Assistant","messages":[
+          {"id":"new-text","role":"bot","kind":"text","text":"Answer","at":2000},
+          {"id":"old-text","role":"bot","kind":"text","text":"Earlier","at":1000},
+          {"id":"tool","role":"bot","kind":"activity","at":3000},
+          {"id":"user","role":"user","kind":"text","text":"Question","at":4000}
+        ]}
+        """#
+        let bot = try JSONDecoder().decode(WatchBot.self, from: Data(json.utf8))
+        XCTAssertEqual(bot.latestReply?.id, "new-text")
+        XCTAssertEqual(bot.latestReply?.text, "Answer")
+    }
+
+    func testLatestReplyFallsBackToNewestBotMessageOrNil() throws {
+        let page = try JSONDecoder().decode(MessagePage.self, from: Data(WatchFixtures.messages.utf8))
+        let bot = WatchBot(id: "bot", name: "Assistant", title: nil, threadId: nil, messages: page.messages)
+        XCTAssertEqual(bot.latestReply?.id, "m4")
+        let userOnly = WatchBot(id: "bot", name: "Assistant", title: nil, threadId: nil,
+                                messages: page.messages.filter { $0.role == "user" })
+        XCTAssertNil(userOnly.latestReply)
+        let empty = WatchBot(id: "bot", name: "Assistant", title: nil, threadId: nil, messages: nil)
+        XCTAssertNil(empty.latestReply)
     }
 
     func testTextAttachmentWithoutCaptionUsesAttachmentPlaceholder() throws {

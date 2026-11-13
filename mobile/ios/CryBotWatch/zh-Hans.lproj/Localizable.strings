@@ -10,7 +10,7 @@
 "NO_BOTS" = "暂无机器人";
 "CANNOT_CONNECT" = "连不上，请重试";
 "INVALID_RESPONSE" = "无法读取服务器响应";
-"REQUEST_FAILED" = "请求失败，请重试";
+"REQUEST_FAILED" = "请求失败";
 "MESSAGE_ATTACHMENT" = "[附件]";
 "MESSAGE_TOOL" = "[工具调用]";
 "MESSAGE_OTHER" = "[消息]";
