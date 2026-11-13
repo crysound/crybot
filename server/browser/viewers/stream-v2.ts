@@ -6,6 +6,7 @@
 // 2026 T3 Tools Inc. (full text in third_party/t3-code/LICENSE); modified: written on ws without Effect, the viewer is
 // the browser service's (it follows the tab in front of the bot's one browser), the socket opens before the browser
 // has started, and CryBot's own messages are added.
+import { appendUpgradeCookies } from "../../routes/upgrades.ts";
 import type { IncomingMessage } from "node:http";
 import type { Socket } from "node:net";
 
@@ -246,6 +247,7 @@ export class StreamV2 {
 
   constructor({ service }: { service: BrowserService }) {
     this.#service = service;
+    this.#server.on("headers", appendUpgradeCookies);
   }
 
   /** Answers the handshake and streams. Frames are JPEGs already, so no deflate, which also keeps every pending write in the socket buffer bounded here. */

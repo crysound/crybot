@@ -1,3 +1,4 @@
+import { appendUpgradeCookies } from "./upgrades.ts";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
 
 import { STREAM_CLOSE } from "../browser/viewers/stream-v2.ts";
@@ -95,6 +96,7 @@ export function createPhoneScreenRoutes(deps: PhoneScreenRouteDeps): {
   const adbPath = deps.adbPath ?? (() => resolveAdbPath());
   const hub = createPhoneScreenHub({ adbPath, serverFile: deps.serverFile ?? (() => ensureScrcpyServer(deps.dataDir)) });
   const sockets = new WebSocketServer({ noServer: true, perMessageDeflate: false, maxPayload: MAX_MESSAGE_BYTES });
+  sockets.on("headers", appendUpgradeCookies);
   const streams = new Map<WebSocket, { auth: RequestAuth; close(code: number, reason: string): void }>();
   deps.upgrades.route((path) => deps.enabled() && STREAM.test(path));
 

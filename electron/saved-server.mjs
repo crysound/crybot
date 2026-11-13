@@ -10,7 +10,7 @@ export const SERVER_LOOK_MS = 3_000;
 export async function serverAnswers(origin, fetchImpl, timeoutMs = SERVER_LOOK_MS) {
   try {
     const response = await fetchImpl(`${origin}/.well-known/crybot/environment`, {
-      cache: "no-store", redirect: "manual", credentials: "omit", signal: AbortSignal.timeout(timeoutMs), headers: { accept: "application/json" },
+      cache: "no-store", redirect: "manual", credentials: "include", signal: AbortSignal.timeout(timeoutMs), headers: { accept: "application/json" },
     });
     return response.status < 500;
   } catch {

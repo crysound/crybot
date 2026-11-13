@@ -1,4 +1,5 @@
 // Only the RFB WebSocket crosses the container boundary: container-controlled JavaScript on the app's origin would reach the person's workspace.
+import { appendUpgradeCookies } from "./upgrades.ts";
 import { createHash } from "node:crypto";
 import { request, type IncomingMessage } from "node:http";
 import type { Socket } from "node:net";
@@ -154,7 +155,9 @@ export function createDesktopViewer(deps: {
       remote.once("close", upgrade.close);
       pending.release();
       res.detachSocket(socket);
-      socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
+      const headers = ["HTTP/1.1 101 Switching Protocols", "Upgrade: websocket", "Connection: Upgrade", `Sec-WebSocket-Accept: ${accept}`];
+      appendUpgradeCookies(headers, req);
+      socket.write(headers.join("\r\n") + "\r\n\r\n");
       if (remoteHead.length) socket.write(remoteHead);
       if (pending.head.length) remote.write(pending.head);
       pending.head = Buffer.alloc(0);

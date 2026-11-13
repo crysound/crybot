@@ -129,9 +129,6 @@ mac:
       - _crybot._tcp
     NSScreenCaptureUsageDescription: Cry Bot uses Screen Recording so bots can see this Mac before acting.
     NSDownloadsFolderUsageDescription: Cry Bot looks in Downloads for the file your Grok Bot saved when you move it here.
-  # Notarization runs manually after the build (notarytool + staple),
-  # mirroring the BlueyLite ship_release.sh flow.
-  notarize: false
 
 dmg:
   sign: true
@@ -172,15 +169,6 @@ win:
       to: cua-driver-background.exe
     - from: dist-native/cua-win32-x64/cua-sdk
       to: cua-sdk
-  # No signing config yet (would go under win.signtoolOptions or
-  # win.azureSignOptions — eb 26 nests it, there is no top-level
-  # win.certificateFile). The installer is unsigned, so SmartScreen shows
-  # "unknown publisher" on first run (README says so). verifyUpdateCodeSignature
-  # defaults true, but electron-updater skips the check when app-update.yml
-  # carries no publisherName — so auto-update still works today. Do NOT set
-  # publisherName without actually signing, or every update is rejected as
-  # untrusted; and once signed, keep the cert subject stable (or list both old
-  # and new in publisherName) or you strand already-installed users.
 
 nsis:
   oneClick: true

@@ -1,5 +1,6 @@
 // My Cloud's end of each lent computer's device link: while that computer is online and lends its internet
 // connection, the bots' browsers here reach the web through it, so sites see the person's own connection.
+import { appendUpgradeCookies } from "./routes/upgrades.ts";
 import { isIP, type Socket } from "node:net";
 import type { IncomingMessage } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
@@ -41,6 +42,7 @@ export class DeviceLinks {
 
   constructor(options: { pingMs?: number } = {}) {
     this.#pingMs = options.pingMs ?? PING_MS;
+    this.#server.on("headers", appendUpgradeCookies);
   }
 
   /** Answers the handshake for a computer the route has authorized. A Cloud going to sleep closes it as asleep, so the

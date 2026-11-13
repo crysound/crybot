@@ -1,5 +1,6 @@
 // macOS auto-update requires a signed app, so this runs only when packaged. electron-updater is vendored
 // because the packaged app ships no node_modules.
+import { readDesktopBuildConfig } from "./desktop-build-config.mjs";
 import { app, clipboard, ipcMain } from "electron";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -46,7 +47,7 @@ function quietRecord() {
 }
 
 function launched() {
-  launch ??= app.isPackaged && QUIET_PLATFORMS.has(process.platform)
+  launch ??= app.isPackaged && readDesktopBuildConfig(process.resourcesPath).updateFeedUrl && QUIET_PLATFORMS.has(process.platform)
     ? launchAfter(quietRecord(), { version: app.getVersion() })
     : { hidden: false, updated: null };
   return launch;
@@ -182,7 +183,8 @@ export function attachUpdaterWindow(mainWindow) {
 
 /** `signals` (quietSignals): what tells a quiet moment; without them a downloaded update installs only on Restart or quit. */
 export function startUpdater(signals = null) {
-  if (!app.isPackaged) {
+  const feed = app.isPackaged ? readDesktopBuildConfig(process.resourcesPath).updateFeedUrl : null;
+  if (!feed) {
     updaterCoordinator = null;
     setState({ status: "idle" });
     return;
@@ -195,6 +197,7 @@ export function startUpdater(signals = null) {
     return;
   }
   // The coordinator starts each download itself, so it owns macOS staging and quiet failures.
+  autoUpdater.setFeedURL({ provider: "generic", url: feed, useMultipleRangeRequest: false });
   autoUpdater.autoDownload = false;
   autoUpdater.logger = updaterLogger();
 
