@@ -86,7 +86,6 @@ export function noRouteLines(port: number, prefix: string): string[] {
     `  ${prefix} serve --domain bot.example.com  we get the certificate (ports 80, 443)`,
     `  ${prefix} serve --tailscale                your tailnet (needs Tailscale)`,
     `  ${prefix} serve --lan                      this network only, not encrypted`,
-    `  ${prefix} serve --tunnel                   a free CryBot web address; sign in first: ${prefix} login`,
     `Sign in from a browser on this machine with the link from: ${prefix} pair`,
   ];
 }

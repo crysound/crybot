@@ -50,14 +50,14 @@ it("makes CryBot a new install's first bot, never deleted, hidden by its switch,
     expect(refused.body.error).toBe(`${bot.name} can't be deleted or archived. To take it off the sidebar, choose Hide in its menu, or turn off "Show ${bot.name} in the sidebar" in Settings → General.`);
     expect((await api("PATCH", `/api/bots/${bot.id}`, { hidden: true })).status).toBe(400);
     expect((await api("PATCH", `/api/bots/${bot.id}`, { sidebarHidden: true })).status).toBe(200);
-    expect((await bots()).find((bot) => bot.id === bot.id)?.sidebarHidden).toBe(true);
+    expect((await bots()).find((candidate) => candidate.id === bot.id)?.sidebarHidden).toBe(true);
     expect((await api("PATCH", `/api/bots/${bot.id}`, { sidebarHidden: false })).status).toBe(200);
-    expect((await bots()).find((bot) => bot.id === bot.id)?.sidebarHidden).toBe(false);
+    expect((await bots()).find((candidate) => candidate.id === bot.id)?.sidebarHidden).toBe(false);
     // A hidden CryBot comes back when it is renamed or moved to a department, unless the change itself says hidden.
     const hiddenAfter = async (patch: Record<string, unknown>) => {
       expect((await api("PATCH", `/api/bots/${bot.id}`, { sidebarHidden: true })).status).toBe(200);
       expect((await api("PATCH", `/api/bots/${bot.id}`, patch)).status).toBe(200);
-      return (await bots()).find((bot) => bot.id === bot.id)?.sidebarHidden;
+      return (await bots()).find((candidate) => candidate.id === bot.id)?.sidebarHidden;
     };
     expect(await hiddenAfter({ color: "blue" })).toBe(true);
     expect(await hiddenAfter({ name: "Nova" })).toBe(false);
@@ -69,7 +69,7 @@ it("makes CryBot a new install's first bot, never deleted, hidden by its switch,
     const { bot: clive } = await control(["new-bot", "--name", "Clive"]);
     expect((await api("PATCH", `/api/bots/${clive.id}`, { sidebarHidden: true })).status).toBe(400);
     expect((await api("PATCH", `/api/bots/${clive.id}`, { chiefOfStaff: true })).status).toBe(200);
-    expect((await bots()).find((bot) => bot.id === bot.id)?.chiefOfStaff).toBeFalsy();
+    expect((await bots()).find((candidate) => candidate.id === bot.id)?.chiefOfStaff).toBeFalsy();
 
     await control(["send", "--bot", bot.id, "--text", "Stay active."]);
     await expect.poll(() => existsSync(fixture.fixtureDumpPath), { timeout: 30_000 }).toBe(true);
@@ -77,7 +77,7 @@ it("makes CryBot a new install's first bot, never deleted, hidden by its switch,
     rmSync(fixture.fixtureDumpPath, { force: true });
     const agents = launched.mcpConfig.mcpServers.agents!;
     expect(agents.env.CRYBOT_CHIEF_OF_STAFF).toBe("1");
-    expect(launched.systemPrompt).toContain("You are also this person's CryBot");
+    expect(launched.systemPrompt).toContain("You are also this person's Cry Bot");
     expect(launched.systemPrompt).toContain("but you are not the Chief");
     const created = await callTool(agents, "create_bot", { name: "Scout", role: "Researcher", instructions: "Find what the person asks for." });
     expect(created.error).toBeUndefined();

@@ -1,0 +1,31 @@
+# T-1207 修测试：server 路
+
+分支基于 T-1207-rebrand(4a11408)。本路范围：server/** 下的测试和源码。
+
+## 背景
+
+任务 T-1207 把 OpenMausBot v0.1.155 整体改名为 Cry Bot，并删掉了上游的托管云、账号、付费、PostHog 统计等功能。规格见 `docs/specs/2026-11-13-crybot.md`(必读第 1–5 节)。改名分支已跑过 GitHub CI：原版(e8fe11b)本身就有 66 个测试文件在 CI 环境失败(缺浏览器引擎等，清单 `/tmp/t1207-fix/baseline-upstream-failures.list`,**这些不用管**);改名后又多出 179 个失败文件，这是本轮要修的。三路并行，各修一部分，**只改分给你的那部分**。
+
+## 本路要修的文件
+
+清单：`/tmp/t1207-fix/server.list`;CI 上每个文件的失败片段：`/tmp/t1207-fix/server-failures.txt`。
+
+## 修法规则(按顺序判断)
+
+1. **测试期望的是旧品牌写法或错误的新写法** → 改测试。产品显示名是 `Cry Bot`(带空格),不是 `CryBot`;前缀、环境变量、cookie 名等按规格第 2 节的映射表。
+2. **测试覆盖的是已删除的功能**(托管云 / Cloud 入口与设置页 / 账号登录与付费 / PostHog 统计事件 / 推广 / 上游公告等，见规格「Remove completely」段) → 删掉对应用例或断言；整个文件都只测已删功能才删文件。统计事件断言(如期望 `track(...)` 被调用 `api_key_saved`、`bot_created`)直接删断言，不要恢复统计代码。每删一处在报告里写一句理由。
+3. **改名批量替换误伤了测试数据或源码**(例如人名被替换成公司全称导致问候语断言失败、示例 URL 被改成非 https、读取已删除的源文件) → 按测试原意修回合理的值。人名用中性英文名，不要用任何真实人名、内部域名、IP、邮箱。
+4. **改名把产品行为改坏了**(源码 bug,如变量未定义、引用已删除模块) → 修源码。只改你这一路范围内的源码；必须改范围外的源码时，不要改，在报告里列出文件、原因和建议改法。
+5. 不许为了通过而放宽安全相关断言(权限、鉴权、外链、fail-closed、中继主机校验)。拿不准的，保留断言并在报告里说明。
+
+## 运行测试(必须照做，防止内存超限)
+
+- 用 Node 24:`/opt/node24/bin/node`(宿主默认 Node 22 不行)。
+- vitest:`systemd-run --scope -q -p MemoryMax=2G -E PATH=/opt/node24/bin:/usr/bin:/bin -E CRYBOT_VITEST_WORKERS=2 -- /opt/node24/bin/node node_modules/vitest/vitest.mjs run <文件...> --maxWorkers=2 > /tmp/t1207-fix/server-run.log 2>&1`,一次只跑一组，每组不超过 20 个文件；只看 tail 和 grep 结果。
+- 本路全部改完后，把清单里所有文件分批再跑一遍，全部通过(或在报告里逐个说明为何仍失败、是否属于 CI 环境问题)。
+- 改完跑 `systemd-run --scope -q -p MemoryMax=3G -E PATH=/opt/node24/bin:/usr/bin:/bin -- /opt/node24/bin/node node_modules/oxlint/bin/oxlint --deny-warnings <改过的文件>`(找不到就用 `pnpm lint` 的等价命令),以及 `node scripts/check-brand-residue.mjs`(用 Node 24)。不要跑全量 tsc -b(内存太大),改了源码的话对改动文件确认类型无误即可。
+
+## 交付
+
+- 不要 git 提交；不要碰 `.github/`、`docs/specs/`、NOTICE、LICENSE 类文件。
+- 报告追加到 `docs/tasks/T-1200/<分支名>/report.md`:按文件列出改法归类(1–5)、删除的用例及理由、修过的源码、仍失败的文件及原因、需要别的路改的源码。

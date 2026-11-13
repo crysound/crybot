@@ -37,7 +37,7 @@ export function systemdUnit(spec: ServiceSpec): string {
   const lines = [
     "# Written by `crybot service install`. Re-run it to change the options.",
     "[Unit]",
-    `Description=CryBot${spec.label ? ` (${spec.label})` : ""}`,
+    `Description=Cry Bot${spec.label ? ` (${spec.label})` : ""}`,
     "After=network-online.target",
     "Wants=network-online.target",
     "",
@@ -222,7 +222,7 @@ export function sentinelSystemdService(spec: SentinelServiceSpec): string {
   return [
     "# Written by `crybot service install --sentinel`. Started by its timer.",
     "[Unit]",
-    "Description=CryBot Sentinel health scan",
+    "Description=Cry Bot Sentinel health scan",
     "",
     "[Service]",
     "Type=oneshot",
@@ -239,7 +239,7 @@ export function sentinelSystemdTimer(): string {
   return [
     "# Written by `crybot service install --sentinel`.",
     "[Unit]",
-    "Description=Run the CryBot Sentinel health scan every two minutes",
+    "Description=Run the Cry Bot Sentinel health scan every two minutes",
     "",
     "[Timer]",
     `OnBootSec=${SENTINEL_INTERVAL_SECONDS}s`,

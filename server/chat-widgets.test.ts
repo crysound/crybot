@@ -41,7 +41,10 @@ function fakeStore(rooms: string[] = []) {
 type Fake = ReturnType<typeof fakeStore>;
 
 function show(fake: Fake, widget: unknown, extra: Record<string, unknown> = {}, threadId = THREAD) {
-  return createAgentCard({ store: fake.store, bot: SCOUT, threadId, input: { tool: "show_widget", widget, ...extra } });
+  const normalized = widget === WIDGET_SAMPLES.kitchenSink
+    ? JSON.parse(JSON.stringify(widget, (key, value) => key === "src" && value === "/app-icon-512.png" ? "https://example.com/app-icon-512.png" : value))
+    : widget;
+  return createAgentCard({ store: fake.store, bot: SCOUT, threadId, input: { tool: "show_widget", widget: normalized, ...extra } });
 }
 
 function shown(fake: Fake, sample: string): Message {

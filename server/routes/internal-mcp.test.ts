@@ -977,7 +977,7 @@ describe("internal mcp_server route, below Full access", () => {
     for (const full of [true, false]) {
       const { post, signIns, lines, decided } = fixture({ full, servers: { linear } });
       expect(await post({ action: "sign_in", name: "linear" })).toEqual({ status: 202, body: {
-        text: "A Sign in card for linear is now visible to the person. End this turn and wait; CryBot resumes you when they finish.",
+        text: "A Sign in card for linear is now visible to the person. End this turn and wait; Cry Bot resumes you when they finish.",
       } });
       expect(signIns).toEqual([{ name: "linear", url: linear.url }]);
       expect(lines).toEqual(["Asked to sign in to MCP server linear"]);
@@ -1065,8 +1065,8 @@ describe("a card answered after CryBot restarts", () => {
     await respond("allow");
     expect(stored("notes")).toMatchObject({ args: ["-y", "notes-mcp"], env: { NOTES_TOKEN: "saved-token" } });
     expect(probe).not.toHaveBeenCalled();
-    expect(card()).toMatchObject({ expired: true, held: "CryBot restarted, so this request expired.", mcpRequest: { result: { state: "expired" } } });
-    expect(answers[0]).toContain("CryBot restarted, so this request expired. Ask again if you still need it.");
+    expect(card()).toMatchObject({ expired: true, held: "Cry Bot restarted, so this request expired.", mcpRequest: { result: { state: "expired" } } });
+    expect(answers[0]).toContain("Cry Bot restarted, so this request expired. Ask again if you still need it.");
     for (const sent of [fresh, "sk-live-9", "fresh-token", "saved-token"]) expect(JSON.stringify(chat), sent).not.toContain(sent);
   });
 

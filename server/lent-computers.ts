@@ -118,10 +118,10 @@ export class LentComputers {
   }
 }
 
-/** What makes a lent computer lend its apps and screen: CryBot on it lends them by itself once computer control works there. */
+/** What makes a lent computer lend its apps and screen: Cry Bot on it lends them by itself once computer control works there. */
 export const lendScreenSteps = (device: "PC" | "Mac" | "computer") => device === "Mac"
-  ? "CryBot on that Mac lends them by itself once macOS allows it Accessibility and Screen Recording: tell the person in one sentence to allow both for CryBot in System Settings → Privacy & Security on that Mac, and to update CryBot there if it is an older version."
-  : `CryBot on that ${device} lends them by itself once its computer control works: tell the person in one sentence to check computer control in CryBot on that ${device}, and to update CryBot there if it is an older version.`;
+  ? "Cry Bot on that Mac lends them by itself once macOS allows it Accessibility and Screen Recording: tell the person in one sentence to allow both for Cry Bot in System Settings → Privacy & Security on that Mac, and to update Cry Bot there if it is an older version."
+  : `Cry Bot on that ${device} lends them by itself once its computer control works: tell the person in one sentence to check computer control in Cry Bot on that ${device}, and to update Cry Bot there if it is an older version.`;
 
 const dateText = (at: number) => new Date(at).toISOString().slice(0, 16).replace("T", " ") + " UTC";
 
@@ -151,7 +151,7 @@ export function awayNotice(known: LentComputer[], online: ReadonlySet<string>, a
   const device = deviceWord(latest.platform);
   const ask = askTool ? ` If the request needs it, call ${askTool}: it asks them with a one-tap Turn on, and you carry on once it's on. Don't explain the fix in chat.` : null;
   const say = latest.stoppedAt === null
-    ? `Their ${device} ${latest.name} is shared with the Cloud but offline (last online ${dateText(latest.lastSeenAt)}): CryBot on it is closed, or the ${device} is asleep or off.${ask ?? ` Ask them to open CryBot on that ${device}; it reconnects by itself.`}`
-    : `Their ${device} ${latest.name} no longer shares itself with the Cloud: CryBot on it is paused, or signed out of CryBot Cloud.${ask ?? ` Ask them to choose Resume from CryBot's icon in the ${device === "Mac" ? "menu bar" : "taskbar"} on that ${device}, or sign in there again.`}`;
+    ? `Their ${device} ${latest.name} is shared with the Cloud but offline (last online ${dateText(latest.lastSeenAt)}): Cry Bot on it is closed, or the ${device} is asleep or off.${ask ?? ` Ask them to open Cry Bot on that ${device}; it reconnects by itself.`}`
+    : `Their ${device} ${latest.name} no longer shares itself with the Cloud: Cry Bot on it is paused, or signed out of Cry Bot.${ask ?? ` Ask them to choose Resume from Cry Bot's icon in the ${device === "Mac" ? "menu bar" : "taskbar"} on that ${device}, or sign in there again.`}`;
   return { offline, say };
 }

@@ -6,7 +6,7 @@ import { DRIVER_NOTICE } from "./drivers/driver-notices.ts";
 /** The client translates by key and falls back to this English, which the row keeps for phones, exports and older clients. */
 export const CHAT_NOTICE = {
   ...DRIVER_NOTICE,
-  "chat.notice.restartInterrupted": "turn interrupted — CryBot restarted",
+  "chat.notice.restartInterrupted": "turn interrupted — Cry Bot restarted",
   "chat.notice.resumingAfterRestart": "Resuming after a restart",
   "chat.notice.cutOffByRestart": "{name} was cut off by a restart; resuming",
   "chat.notice.stalled": "no activity for {minutes} minutes — the turn was stopped",
@@ -132,10 +132,10 @@ export const CHAT_NOTICE = {
   "chat.notice.waitBotGone": "Stopped waiting for {label}: {botName} no longer exists.",
   "chat.notice.waitExpiredOne": "Stopped waiting for {label} after {hours} hour.",
   "chat.notice.waitExpiredMany": "Stopped waiting for {label} after {hours} hours.",
-  "chat.notice.computerDesktopOnly": "Only the CryBot app on this computer can let a bot use it. Open the app here, or let the bot work in its own browser or on a cloud desktop instead.",
-  "chat.notice.computerPermissionsThenRestart": "CryBot can't use this computer yet — make sure CryBot has the permissions it asks for, then restart it",
-  "chat.notice.computerNotReadyDetail": "CryBot can't use this computer yet — {reason}",
-  "chat.notice.computerNotReadyMacPermission": "CryBot can't use this computer yet — {reason}. Relaunch CryBot after granting the missing macOS permission.",
+  "chat.notice.computerDesktopOnly": "Only the Cry Bot app on this computer can let a bot use it. Open the app here, or let the bot work in its own browser or on a cloud desktop instead.",
+  "chat.notice.computerPermissionsThenRestart": "Cry Bot can't use this computer yet — make sure Cry Bot has the permissions it asks for, then restart it",
+  "chat.notice.computerNotReadyDetail": "Cry Bot can't use this computer yet — {reason}",
+  "chat.notice.computerNotReadyMacPermission": "Cry Bot can't use this computer yet — {reason}. Relaunch Cry Bot after granting the missing macOS permission.",
   "chat.notice.computerSystemUnsupported": "bots can't use this computer on this system — choose another place for this bot to work",
   "chat.notice.computerAiUnsupported": "this bot's AI can't use this computer — pick another AI for this bot, or choose another place for it to work",
   "chat.notice.memoryReclaimedBrowser": "Ran out of room, so I closed the browser to keep everything else running.",

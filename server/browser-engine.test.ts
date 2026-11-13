@@ -4,7 +4,7 @@ import { EventEmitter } from "node:events";
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { credentialStoreFlags } from "./browser/egress/gate.ts";
 import { browserRoot } from "./browser/chrome/profile.ts";
@@ -54,6 +54,7 @@ afterEach(async () => {
   vi.mocked(spawn).mockReset();
   for (const dir of scratch.splice(0)) await removeTempDir(dir);
 });
+beforeEach(() => vi.stubEnv("CRYBOT_BROWSER_ENGINE_URL", "https://mirror.example.test/agent-browser-win32-x64.exe"));
 
 function lifecycleChild(args: readonly string[] = [], options: { code?: number; onClose?: () => void; sessions?: string[]; inventory?: string } = {}): ReturnType<typeof spawn> {
   const child = Object.assign(new EventEmitter(), { stdout: new EventEmitter(), kill: () => true });
@@ -624,12 +625,12 @@ describe("finding the browser engine", () => {
     expect(asset).toEqual({
       target: "win32-x64", version: "0.36.0-cry.1",
       asset: "agent-browser-win32-x64-0.36.0-cry.1.exe",
-      url: "https://github.com/example/project/releases/download/browser-engine-v0.36.0-cry.1/agent-browser-win32-x64-0.36.0-cry.1.exe",
+      url: undefined,
       bytes: 13806080, sha256: "33bee834f6a6072ec8688b0914726e0262874d758f69f27e8baf7eaac6b5ed15",
     });
     expect(agentBrowserReleaseVersion(asset)).toBe("0.36.0-cry.1");
     expect(browserBundleSpec("win32-x64").engine).toEqual({
-      version: asset.version, asset: asset.asset, url: asset.url,
+      version: asset.version, asset: asset.asset, url: agentBrowserReleaseUrl(asset),
       bytes: asset.bytes, sha256: asset.sha256, executable: "agent-browser.exe",
     });
     for (const [platform, arch] of [["darwin", "arm64"], ["darwin", "x64"], ["linux", "arm64"], ["linux", "x64"]] as const) {
@@ -832,6 +833,7 @@ describe("finding the browser engine", () => {
       expect(asset, `${platform}-${arch}`).not.toBeNull();
       expect(asset?.sha256).toMatch(/^[0-9a-f]{64}$/u);
       if (asset?.url) expect(agentBrowserReleaseUrl(asset)).toBe(asset.url);
+      else if (asset?.target === "win32-x64") expect(agentBrowserReleaseUrl(asset!)).toBe(process.env.CRYBOT_BROWSER_ENGINE_URL);
       else expect(agentBrowserReleaseUrl(asset!)).toContain(`/v${AGENT_BROWSER_VERSION}/`);
     }
     expect(resolveAgentBrowserReleaseAsset("linux", "x64", true)?.target).toBe("linux-musl-x64");

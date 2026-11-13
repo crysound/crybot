@@ -1,5 +1,4 @@
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { BOX_ENV_NAMES, BOX_ENV_NEVER, BOX_ENV_CRYBOT_NAMES, BOX_ENV_CRYBOT_PREFIXES, boxEnvironment, boxEnvironmentAllows, instanceEnvNames } from "./env.ts";
@@ -55,14 +54,27 @@ const SERVER_ONLY_OMB: ReadonlySet<string> = new Set([
   "CRYBOT_TTS_KEY", "CRYBOT_TUNNEL_ORIGIN_PORT", "CRYBOT_TUNNEL_SOCKET", "CRYBOT_TURN_STALL_MS", "CRYBOT_UPDATE_CHANNEL", "CRYBOT_UPDATE_INSTALL",
   "CRYBOT_USER_DATA", "CRYBOT_WARM_SUMMARY", "CRYBOT_WARM_SUMMARY_TIME_SCALE", "CRYBOT_WEBHOOK_PORT", "CRYBOT_WEBHOOK_PUBLIC_URL", "CRYBOT_WEBHOOK_SOCKET",
   "CRYBOT_WORKERS_AI_TOKEN", "CRYBOT_XAI_TTS_API",
+  "CRYBOT_ANNOUNCEMENTS_URL", "CRYBOT_BROWSER_ENGINE_URL", "CRYBOT_CODEX_", "CRYBOT_COMPANY_API_KEY",
+  "CRYBOT_COMPUTER_CALL_WAIT_MS", "CRYBOT_COMPUTER_WAIT_MAX_MS", "CRYBOT_CONTROL_PORT", "CRYBOT_CUA_EMBEDDED",
+  "CRYBOT_CUA_SDK_LIBRARY", "CRYBOT_INTERNAL_DATA_DIR_LEASE", "CRYBOT_LOCAL_", "CRYBOT_MODEL_MANIFEST_URL",
+  "CRYBOT_PERSONA", "CRYBOT_PHONE_RELAY_TOKEN", "CRYBOT_PROBE_LOCAL_INJECT", "CRYBOT_QWEN_",
+  "CRYBOT_TOKEN", "CRYBOT_TOOL_DEFINITIONS", "CRYBOT_TOOL_NAMES", "CRYBOT_TRIAL_CREDIT_KEY",
+  "CRYBOT_UPDATE_URL", "CRYBOT_URL",
 ]);
 
 const ROOT = new URL("../../", import.meta.url);
 
 /** The `CRYBOT_` names in the code the server runs, and in what starts it (the desktop app). */
 function knownCryNames(): string[] {
-  const files = execFileSync("git", ["ls-files", "server", "shared", "electron"], { cwd: ROOT, encoding: "utf8" })
-    .split("\n").filter((file) => /\.(?:ts|mts|mjs|cjs|js)$/.test(file) && !/\.test\.|\/testing\/|node-test/.test(file));
+  const files: string[] = [];
+  const visit = (directory: string) => {
+    for (const entry of readdirSync(new URL(directory, ROOT), { withFileTypes: true })) {
+      const file = `${directory}/${entry.name}`;
+      if (entry.isDirectory()) visit(file);
+      else if (/\.(?:ts|mts|mjs|cjs|js)$/.test(file) && !/\.test\.|\/testing\/|node-test/.test(file)) files.push(file);
+    }
+  };
+  for (const directory of ["server", "shared", "electron"]) visit(directory);
   const names = new Set<string>();
   for (const file of files) for (const match of readFileSync(new URL(file, ROOT), "utf8").matchAll(/\bCRYBOT_[A-Z0-9_]+\b/g)) names.add(match[0]);
   return [...names].sort();
@@ -80,8 +92,8 @@ describe("the box's environment allow-list", () => {
       SOME_RANDOM_NAME: "x", EMPTY: undefined,
     });
     expect(Object.keys(kept).sort()).toEqual([
-      "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "ELECTRON_RUN_AS_NODE", "HOME", "HTTPS_PROXY", "LANG", "LC_ALL",
-      "NO_PROXY", "NPM_CONFIG_LOGLEVEL", "CRYBOT_COMMS_TOKEN", "CRYBOT_HOOK_URL", "OPENAI_API_KEY", "PATH", "TERM", "TZ",
+      "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "CRYBOT_COMMS_TOKEN", "CRYBOT_HOOK_URL", "ELECTRON_RUN_AS_NODE",
+      "HOME", "HTTPS_PROXY", "LANG", "LC_ALL", "NO_PROXY", "NPM_CONFIG_LOGLEVEL", "OPENAI_API_KEY", "PATH", "TERM", "TZ",
     ]);
   });
 

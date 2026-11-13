@@ -24,7 +24,7 @@ describe("service units", () => {
 
   it("renders a systemd unit that restarts, runs as the user, and grants low ports only for --domain", () => {
     const unit = systemdUnit(spec);
-    expect(unit).toContain("Description=CryBot (agentada)");
+    expect(unit).toContain("Description=Cry Bot (agentada)");
     expect(unit).toContain("User=bot");
     expect(unit).toContain("Environment=CRYBOT_DATA_DIR=/home/bot/.crybot");
     expect(unit).toContain("ExecStart=/usr/bin/node /usr/lib/node_modules/crybot/cli.js serve --port 8799 --data-dir /home/bot/.crybot --domain bot.example.com --no-pair");
@@ -96,17 +96,17 @@ describe("service units", () => {
 
   it("finds the CLI the installed desktop app ships, and runs it as Node", () => {
     const app = "/Applications/CryBot.app/Contents";
-    const present = new Set([`${app}/MacOS/CryBot`, `${app}/Resources/server/crybot.js`]);
-    expect(shippedSentinelCli("darwin", "/Users/bot", (path) => present.has(path))).toEqual({ node: `${app}/MacOS/CryBot`, script: `${app}/Resources/server/crybot.js` });
+    const present = new Set([`${app}/MacOS/Cry Bot`, `${app}/Resources/server/crybot.js`]);
+    expect(shippedSentinelCli("darwin", "/Users/bot", (path) => present.has(path))).toEqual({ node: `${app}/MacOS/Cry Bot`, script: `${app}/Resources/server/crybot.js` });
     const user = "/Users/bot/Applications/CryBot.app/Contents";
     expect(shippedSentinelCli("darwin", "/Users/bot", (path) => path.startsWith(user))?.script).toBe(`${user}/Resources/server/crybot.js`);
     expect(shippedSentinelCli("linux", "/home/bot", (path) => path.startsWith("/opt/CryBot/"))).toEqual({ node: "/opt/CryBot/crybot", script: "/opt/CryBot/resources/server/crybot.js" });
     // an app with its script missing, or one released before Sentinel, is no CLI for it
-    expect(shippedSentinelCli("darwin", "/Users/bot", (path) => path.endsWith("MacOS/CryBot"))).toBeNull();
+    expect(shippedSentinelCli("darwin", "/Users/bot", (path) => path.endsWith("MacOS/Cry Bot"))).toBeNull();
     expect(shippedSentinelCli("darwin", "/Users/bot", (path) => present.has(path), () => false)).toBeNull();
     expect(shippedSentinelCli("win32", "C:\\Users\\bot", () => true)).toBeNull();
 
-    const spec = { node: `${app}/MacOS/CryBot`, script: `${app}/Resources/server/crybot.js`, dataDir: "/Users/bot/.crybot", home: "/Users/bot", out: "/tmp/s", electronRunAsNode: true };
+    const spec = { node: `${app}/MacOS/Cry Bot`, script: `${app}/Resources/server/crybot.js`, dataDir: "/Users/bot/.crybot", home: "/Users/bot", out: "/tmp/s", electronRunAsNode: true };
     expect(sentinelLaunchdPlist(spec)).toContain("<key>ELECTRON_RUN_AS_NODE</key>\n\t\t<string>1</string>");
     expect(sentinelSystemdService(spec)).toContain("Environment=ELECTRON_RUN_AS_NODE=1");
     expect(sentinelLaunchdPlist({ ...spec, electronRunAsNode: false })).not.toContain("ELECTRON_RUN_AS_NODE");

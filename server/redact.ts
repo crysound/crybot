@@ -4,7 +4,7 @@ const SECRET_KEY_PARTS = ["token", "secret", "password", "passwd", "apikey", "ap
 
 export function isSecretName(name: string): boolean {
   const lower = name.toLowerCase();
-  if (lower === "cry_gate_upstream" || lower === "cry_remote_mcp_server" || lower.startsWith("cry_remote_mcp_config_")) return true;
+  if (lower === "crybot_gate_upstream" || lower === "crybot_remote_mcp_server" || lower.startsWith("crybot_remote_mcp_config_")) return true;
   if (SECRET_KEY_PARTS.some((part) => lower.includes(part))) return true;
   return /(^|[_.-])keys?$/.test(lower);
 }

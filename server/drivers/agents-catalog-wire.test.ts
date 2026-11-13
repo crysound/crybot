@@ -70,7 +70,7 @@ function profiles(): Record<string, Profile> {
 }
 
 const PROFILES = profiles();
-const CHIEF_ONLY_TOOLS = ["create_bot", "list_team_setup", "list_team_library", "propose_team_setup", "propose_bot_deletion", "manage_room", "retry_thread"];
+const CHIEF_ONLY_TOOLS = ["create_bot", "list_team_setup", "propose_team_setup", "propose_bot_deletion", "manage_room", "retry_thread"];
 const CHIEF_TARGET_TOOLS = ["propose_profile", "propose_model"];
 const CHIEF_PROFILE_TARGET = " A Chief of Staff may pass for_bot_id (from list_bots) for a requested change to another bot in its section.";
 const TEAMWORK_TOOLS = ["list_room_targets", "coordinate_bots", "assignment_status", "list_bots", "list_rooms", "list_threads", "close_thread", "start_thread", "post_to_room"];
@@ -122,7 +122,7 @@ const RPC_PREFIX = '{"jsonrpc":"2.0","id":1,"result":';
 /** One tools/list `result` from a fresh proxy, sliced out of the raw stdout line, never re-serialized. */
 async function toolsListWire(entry: string, env: Record<string, string>): Promise<string> {
   // A developer shell or an CryBot turn can carry CRYBOT_* switches; the profile must be the only source.
-  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("CRYBOT_")));
+  const inherited = { PATH: process.env.PATH ?? "/usr/bin:/bin", HOME: process.env.HOME ?? "/tmp" };
   const child = spawn(process.execPath, [entry], {
     env: { ...inherited, CRYBOT_HARNESS_URL: "http://127.0.0.1:9", CRYBOT_BOT_ID: "bot-golden", CRYBOT_THREAD_ID: "thread-golden", CRYBOT_COMMS_TOKEN: "unused", CRYBOT_TURN_DEPTH: "0", ...env },
     stdio: ["pipe", "pipe", "inherit"],
@@ -150,7 +150,8 @@ async function toolsListWire(entry: string, env: Record<string, string>): Promis
 
 async function wireForEveryProfile(entry: string): Promise<Record<string, string>> {
   const names = Object.keys(PROFILES);
-  const wires = await Promise.all(names.map((name) => toolsListWire(entry, PROFILES[name]!.env)));
+  const wires: string[] = [];
+  for (const name of names) wires.push(await toolsListWire(entry, PROFILES[name]!.env));
   return Object.fromEntries(names.map((name, index) => [name, wires[index]!]));
 }
 

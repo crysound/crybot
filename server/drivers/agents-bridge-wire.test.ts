@@ -123,7 +123,7 @@ type RpcAnswer = { id: number; result?: { tools?: unknown[]; content?: Array<{ t
 async function proxyLines(entry: string, env: Record<string, string>, requests: Array<{ method: string; params?: unknown }>): Promise<string[]> {
   // A developer shell (or an CryBot turn running this suite) can carry
   // CRYBOT_* switches of its own; the profile must be the only source.
-  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("CRYBOT_")));
+  const inherited = { PATH: process.env.PATH ?? "/usr/bin:/bin", HOME: process.env.HOME ?? "/tmp" };
   const child = spawn(process.execPath, [entry], {
     env: { ...inherited, CRYBOT_HARNESS_URL: "http://127.0.0.1:9", CRYBOT_BOT_ID: "bot-golden", CRYBOT_THREAD_ID: "thread-golden", CRYBOT_COMMS_TOKEN: "unused", CRYBOT_TURN_DEPTH: "0", ...env },
     stdio: ["pipe", "pipe", "inherit"],
@@ -166,7 +166,8 @@ async function toolsListWire(entry: string, env: Record<string, string>): Promis
 
 async function bridgedWireForEveryProfile(entry: string): Promise<Record<string, string>> {
   const names = Object.keys(PROFILES);
-  const all = await Promise.all(names.map((name) => toolsListWire(entry, { ...PROFILES[name]!, ...BRIDGE_ON })));
+  const all: string[] = [];
+  for (const name of names) all.push(await toolsListWire(entry, { ...PROFILES[name]!, ...BRIDGE_ON }));
   return Object.fromEntries(names.map((name, index) => [name, all[index]!]));
 }
 
