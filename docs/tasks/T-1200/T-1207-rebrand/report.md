@@ -457,3 +457,18 @@ pnpm vitest run shared/package-format.test.ts --maxWorkers=2 --configLoader runn
 - `pnpm vitest run electron/companion-e2e.test.mjs --maxWorkers=2 --configLoader runner`：9/9 通过。
 - `pnpm typecheck`、`pnpm lint`、`node scripts/check-brand-residue.mjs`（8299 个文件，0 残留）和 `git diff --check`：通过。
 - 未访问用户 live app 或数据；未提交 git commit。
+
+## 第 11 轮
+
+### 改动
+
+- `.github/workflows/ci.yml` 的 `check` 保留安装、两条 TypeScript 检查、lint、i18n 和品牌检查，移出 vitest。
+- 新增 `vitest` job，使用 `shard: [1, 2, 3, 4]` 和 `fail-fast: false`，每片执行 `pnpm vitest run --maxWorkers=2 --shard=${{ matrix.shard }}/4`。
+- 两个 job 均设置 `timeout-minutes: 45`；沿用 HEAD 的三组完整 action SHA、Node 24、pnpm 缓存及 `--frozen-lockfile` 安装。`on:`、`permissions:` 未变，未新增第三方 action。
+
+### 验证
+
+- 使用 Node 和仓库已有的 `yaml` 依赖解析配置，YAML 有效；断言两个 job、四个分片、超时和执行命令符合要求，并与 HEAD 比较确认原检查步骤、action、安装、触发条件和权限保持一致。
+- 首次验证中 Node 启动 git 子进程遇到沙箱 `EPERM`；改为 shell 导出 HEAD 配置后由 Node 读取，验证通过。
+- `git diff --check`：通过。未运行全量 vitest 或实际 GitHub Actions，分片实际耗时待 CI 验证。
+- 除本报告外仅修改 `.github/workflows/ci.yml`；未提交 git commit。
