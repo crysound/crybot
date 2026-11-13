@@ -8,7 +8,7 @@ import { InitialsAvatar } from "@/components/Avatar";
 import { ConfirmDialogCard } from "@/components/ConfirmDialog";
 import { CloudUsageCardView, CloudUsageSettingsView } from "@/components/CloudUsageMeter";
 import { Card } from "@/components/SettingsPrimitives";
-import { cloudPlanLabel } from "@/lib/cloud-plan";
+import { cloudPlanLabel } from "@/lib/cloud-status";
 import { loadLocale, t } from "@/lib/i18n";
 import { SKIN_IDS, type SkinId } from "@/lib/skins";
 import { upgradeConfirmBody, usageCardView } from "@/lib/usage-meter";

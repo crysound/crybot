@@ -3,7 +3,7 @@ import { Check, ExternalLink, Loader2 } from "lucide-react";
 
 import { api, useStore, type ConfigStatus } from "@/state/store";
 import { activeLocale, t } from "@/lib/i18n";
-import { xResearchAction } from "@/lib/cloud-plan";
+import { xResearchAction } from "@/lib/cloud-status";
 import { keyTestResult } from "@/lib/key-result";
 import { isXConnectorStatus, type XConnectorStatus, type XIncludedUsage } from "../../shared/x-connector";
 import { looksLikeKey, saveCredential, tregVerdict } from "./keys/key-save";

@@ -568,7 +568,7 @@ export interface AppState {
   appSettingsCloudLink: number;
   appSettingsPhonePairing: number;
   shortcutsOpen: boolean;
-  cloudAdd: { source: import("@/lib/cloud-plan").CloudSource; signIn?: true } | null;
+  cloudAdd: { source: import("@/lib/cloud-status").CloudSource; signIn?: true } | null;
   cloudHowTo: boolean;
   welcomeOpen: boolean;
   tourOpen: boolean;
@@ -774,7 +774,7 @@ export type Action =
   | { type: "unreadDividerDone"; threadId: string }
   | { type: "toggleAppSettings"; open?: boolean; section?: AppSettingsSection; cloudLink?: boolean; phonePairing?: boolean }
   | { type: "toggleShortcuts"; open?: boolean }
-  | { type: "openCloudAdd"; source: import("@/lib/cloud-plan").CloudSource; signIn?: true }
+  | { type: "openCloudAdd"; source: import("@/lib/cloud-status").CloudSource; signIn?: true }
   | { type: "closeCloudAdd" }
   | { type: "cloudHowTo"; open: boolean }
   | { type: "toggleWelcome"; open?: boolean }

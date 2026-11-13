@@ -7,7 +7,7 @@ import type { CloudRoom, CloudUsage } from "../electron/cloud-home.mjs";
 import { InitialsAvatar } from "@/components/Avatar";
 import { ConfirmDialogCard } from "@/components/ConfirmDialog";
 import { CloudRoomCardView } from "@/components/CloudRoomCard";
-import { cloudPlanLabel } from "@/lib/cloud-plan";
+import { cloudPlanLabel } from "@/lib/cloud-status";
 import { loadLocale, t } from "@/lib/i18n";
 import { roomCardView } from "@/lib/room-card";
 import { SKIN_IDS, type SkinId } from "@/lib/skins";

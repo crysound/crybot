@@ -26,7 +26,7 @@ import {
   Zap,
 } from "lucide-react";
 
-import { accountMenuItems, AccountsSheet, useAccounts } from "./AccountMenu";
+import { accountMenuItems, useAccounts } from "./AccountMenu";
 import { accountLine, useAccountSummary } from "./settings/account-summary";
 import { usePhonePlaceState, type PhonePlaceState } from "./settings/phone-status";
 import { useSettingsPlace } from "./settings/settings-place";
@@ -34,7 +34,7 @@ import { AccountMoveStatus, useAccountMove, type AccountMoveKind } from "./Accou
 import { InitialsAvatar } from "./Avatar";
 import { SignOutConfirm } from "./settings/SignOutConfirm";
 import { AboutDialog } from "./AboutDialog";
-import { CloudTile } from "./cloud-buy/parts";
+import { CloudTile } from "./cloud-parts";
 import { usageBridge } from "./CloudUsageMeter";
 import { useCloudPlanSnapshot } from "./CloudTrialNotice";
 import type { WorkspacePlace } from "./DesktopWorkspaceSwitcher";
@@ -45,17 +45,17 @@ import { useCloudFilesReady } from "@/lib/cloud-files";
 import { SidebarPopoverMenu, type SidebarMenuItem } from "./SidebarPopoverMenu";
 import { api, useStore, type Action, type AppSettingsSection } from "@/state/store";
 import { serverCheckPhase, serverUpdateRow, type ServerUpdateCheck, type ServerUpdatePhase } from "@/lib/server-update";
-import type { CloudAccountBridge, CloudAccountState } from "../../electron/account.mjs";
+import type { CloudAccountBridge, CloudAccountState } from "../../electron/cloud-account-types.mjs";
 import { updaterMessage, useUpdaterState, type UpdaterState } from "@/lib/updater";
 import { productName } from "../lib/brand";
 import { cloudColor } from "@/lib/cloud-look";
 import { cn } from "@/lib/cn";
 import { meterPercent, resetLine } from "@/lib/usage-meter";
-import type { CloudPlanSnapshot } from "../../electron/account.mjs";
+import type { CloudPlanSnapshot } from "../../electron/cloud-account-types.mjs";
 import { activeLocale, t } from "@/lib/i18n";
 import { FEEDBACK_URL, HELP_CENTER_URL, RELEASES_URL, appVersion, openExternalLink } from "@/lib/app-links";
 import { pageIsThisComputer } from "@/lib/companion-bridge";
-import { cloudPlanLabel } from "@/lib/cloud-plan";
+import { cloudPlanLabel } from "@/lib/cloud-status";
 import { shortcutLabel } from "./ShortcutHint";
 import { useOtherServerName } from "@/lib/other-server";
 import { isOwnerOrAdmin, profileForSession, readSessionState, type SessionState } from "@/lib/session";
@@ -691,7 +691,6 @@ export function SidebarProfileMenu({ iconOnly = false, rail = false, circle = fa
         onConfirm={() => signingOut === "browser"
           ? api("/api/auth/logout", { method: "POST" }).finally(() => location.reload())
           : window.cry?.cloudAccount?.signOut()} />}
-      {accounts.sheet && <AccountsSheet adding={accounts.sheet.email} note={accounts.sheet.note} onClose={accounts.closeSheet} />}
     </>
   );
 }

@@ -6,7 +6,7 @@ import { useEffect, useSyncExternalStore } from "react";
 
 import { hintSeen, type OnboardingStatus } from "@/lib/onboarding";
 import { localDay } from "@/lib/notices";
-import type { CloudPlanView } from "@/lib/cloud-plan";
+import type { CloudPlanView } from "@/lib/cloud-status";
 import type { ManagedPolicySummary } from "@/state/config-status";
 import { api, type AppState } from "@/state/store";
 import {

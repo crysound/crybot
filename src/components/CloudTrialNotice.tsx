@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, CalendarClock, CloudOff, CreditCard } from "lucide-react";
-import type { CloudPlanBridge, CloudPlanSnapshot } from "../../electron/account.mjs";
+import type { CloudPlanBridge, CloudPlanSnapshot } from "../../electron/cloud-account-types.mjs";
 import type { CloudTrialState } from "../../electron/cloud-home.mjs";
-import type { CloudTrialView } from "@/lib/cloud-plan";
+import type { CloudTrialView } from "@/lib/cloud-status";
 import { t } from "@/lib/i18n";
 import { NoticeCard, NotNowButton, PRIMARY_BUTTON } from "./NoticeCard";
 

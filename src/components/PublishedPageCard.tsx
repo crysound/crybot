@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowUpRight, Check, Copy, Globe, Loader2, X } from "lucide-react";
 import type { PublishedPageCard as Card } from "../../shared/published-page";
-import { cloudPlanLabel } from "@/lib/cloud-plan";
+import { cloudPlanLabel } from "@/lib/cloud-status";
 import { cn } from "@/lib/cn";
 import { useCopyFeedback } from "@/lib/copy-text";
 import { usePageOpener } from "@/lib/page-open";

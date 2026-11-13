@@ -1,7 +1,7 @@
 // Where this computer's one-time move to My Cloud stands (one-home.mjs), as the Admin keeps it per sign-in: POST
 // /api/cloud/desktop/move-status, sent when it changes and every 15 minutes otherwise, so an operator can see why a move
 // hasn't finished, or never started. Ids and codes only: never a name, a path or anything the person wrote.
-import { teamPlan } from "./cloud-team-plan.mjs";
+import { teamPlan } from "./cloud-home.mjs";
 import { FAILURE_CODES, FAILURE_PHASES, safeSentence } from "./move-failure.mjs";
 import { awayIn } from "./one-home.mjs";
 

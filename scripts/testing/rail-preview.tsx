@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import type { CloudSwatch } from "../../electron/cloud-list.mjs";
-import type { AddCloudView, RailPlace, RailState } from "../../electron/cloud-rail.mjs";
+import type { RailPlace, RailState } from "../../electron/rail.mjs";
 import type { PlaceLook } from "../../electron/place-look.mjs";
 import App from "../../src/App";
 import { ChromeRail } from "../../src/components/ChromeRail";
@@ -90,18 +90,10 @@ const onScreen = computer ? "local" : onTeam ? "acme" : "home";
 const painted = (entry: RailPlace): RailPlace => (entry.opens || entry.server ? { ...entry, paint: { swatch: entry.color ? SWATCH[entry.color] ?? null : null,
   ...(member && entry.id === "acme" ? { locked: "member" as const } : {}) } } : entry);
 const rail: RailState = { places: listed.map(({ active: _active, ...entry }) => painted(entry.id === onScreen ? { ...entry, color, active: true as const } : entry)),
-  add: { cloud: true, link: true, address: computer } };
+  add: { cloud: false, link: true, address: computer } };
 let look: PlaceLook = { name: computer ? "This computer" : onTeam ? teamName : "My Cloud", color, swatch: color ? SWATCH[color] ?? null : null,
   change: computer ? "local" : member ? null : "admin", ...(member ? { reason: "member" as const } : {}) };
 let openSettings: ((section?: string) => void) | null = null;
-const offer = { recommended: "pro", refundDays: 14, plans: [
-  { tier: "starter", label: "Starter", amount: 1500, allowances: { cpus: 2, cpuKind: "shared" as const, memoryMb: 2048, diskGb: 10, maxDiskGb: 20, computers: 15, computerHours: 100, voiceCharacters: 30_000, sleeps: true as const } },
-  { tier: "pro", label: "Pro", amount: 4900, allowances: { cpus: 4, cpuKind: "shared" as const, memoryMb: 4096, diskGb: 10, maxDiskGb: 100, computers: 15, computerHours: 300, voiceCharacters: 60_000 } },
-  { tier: "max", label: "Max", amount: 9900, allowances: { cpus: 8, cpuKind: "shared" as const, memoryMb: 8192, diskGb: 10, maxDiskGb: 100, computers: 15, computerHours: 800, voiceCharacters: 180_000 } },
-] };
-const adding = params.get("adding") === "setting_up"
-  ? { adding: { name: "Client C", color: "rose" as const, tier: "pro", startedAt: Date.now(), status: "setting_up" as const, progress: 0.55, link: true as const } } : {};
-const addView: AddCloudView = { signedIn: true, hasCloud: true, supported: true, canAdd: true, offer, count: 3, home: { name: "My Cloud", color: "blue" }, ...adding };
 const ok = async () => {};
 const windows = params.get("platform") === "win32";
 const chrome = params.has("chrome");
@@ -122,7 +114,6 @@ const recolor = async (id: string, swatch: CloudSwatch) => {
   rail.places = rail.places.map((entry) => (entry.id === id ? { ...entry, color: COLOR[swatch], paint: { swatch: COLOR[swatch] ? swatch : null } } : entry));
   return { outcome: "saved", look: null };
 };
-const cloudAdd = { state: async () => addView, start: async () => ({ outcome: "opened" }), reopen: async () => true, copyLink: async () => true, open: ok, interest: ok, sheet: ok };
 
 if (params.has("railpage")) {
   // The window's own rail page: see-through but for the rail, as main.tsx draws it.
@@ -130,7 +121,7 @@ if (params.has("railpage")) {
   Object.assign(window, { cry: {
     platform: windows ? "win32" : "darwin", getCapabilities: capabilities, onCapabilitiesChanged: () => () => {}, applySkin: ok,
     workspaces: { places: async () => rail, open: ok, add: ok, recolor, onChanged: () => () => {} },
-    cloudAdd, rail: { expand: ok, onSkin: () => () => {} },
+    rail: { expand: ok, onSkin: () => () => {} },
   } });
   createRoot(document.getElementById("root")!).render(<ChromeRail />);
 } else {
@@ -165,7 +156,6 @@ if (params.has("railpage")) {
       recolor,
       color: async (swatch: CloudSwatch) => { look = { ...look, swatch: COLOR[swatch] ? swatch : null, color: COLOR[swatch] }; return { outcome: "saved", look }; },
     },
-    cloudAdd,
     windowFrame: {
       state: async () => ({ on: frameOn, restart: windows && framePending }),
       set: async (on: boolean) => { frameOn = on; for (const heard of capabilitiesHeard) heard(await capabilities()); return { on, restart: windows }; },

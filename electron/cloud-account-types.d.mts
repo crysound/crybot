@@ -89,10 +89,9 @@ export type CloudSignInVerify =
   | { outcome: "wrong-code"; triesLeft: number }
   | { outcome: Exclude<import("./cloud-signin.mjs").CloudSignInVerifyFailure, "wrong-code"> };
 /** How the Cloud is shown in this app's switcher and Settings → Servers. */
-export interface CloudHomeLook { name: string; color: import("./cloud-buy.mjs").CloudColor }
+export interface CloudHomeLook { name: string; color: import("./cloud-list.mjs").CloudColor }
 /** Why the Admin opens no other Cloud's checkout now (contract v1 `addBlocked`). */
 export type CloudAddBlock = "cap" | "checkout_open" | "rate" | "signups_closed";
-export declare const ADD_BLOCKS: readonly CloudAddBlock[];
 /** What buying another Cloud did: `opened` its checkout in the browser; `unsupported` (this Admin sells one Cloud per
  * account); `blocked` with the Admin's reason; or `failed` (nothing was opened). */
 export type CloudAddResult =
@@ -139,7 +138,7 @@ export interface CloudAccountBridge {
   refresh(): Promise<CloudAccountState>;
   signOut(): Promise<CloudAccountState>;
   openDashboard(): Promise<CloudAccountState>;
-  /** What this person may buy now (account.mjs offer), or null. */
+  /** What this person may buy now (cloud-account-types.mjs offer), or null. */
   offer?(): Promise<import("./cloud-home.mjs").CloudOffer | null>;
   /** Opens a checkout for a plan of the offer in the browser; `source` is one of CHECKOUT_SOURCES. */
   checkout?(plan: string, source: string): Promise<CloudCheckoutResult>;
@@ -245,34 +244,10 @@ export interface CloudPlanBridge {
   roomNotNow?(id: string): Promise<boolean>;
   restartNow?(): Promise<"restarting" | "current" | "failed">;
 }
-
-export declare const CLOUD_ORIGIN: string;
-export declare const STAGING_CLOUD_ORIGIN: string;
-export declare function cloudTarget(env?: Record<string, string | undefined>): {
-  origin: string; staging: boolean;
-  /** Under userData: the sign-in, saved servers, Files' folder, the Cloud's chosen name. */
-  file: string; saved: string; places: string; environments: string; sync: string; look: string;
-};
-export declare const CHECKOUT_SOURCES: readonly string[];
-export declare const UPGRADE_SOURCES: readonly string[];
-export declare const CLOUD_CANCEL_ANSWERS: readonly CloudCancelAnswer[];
-/** The survey as main sends it (trimmed; words without a reason as `other`), or null when it says nothing or isn't one. */
-export declare function cancelSurvey(input: unknown): { answer: CloudCancelAnswer; expected?: string; improve?: string } | null;
-export declare function checkoutDestination(value: unknown, options?: { fixture?: boolean; staging?: boolean }): string | null;
-export declare function cloudOrigin(value?: string, fixture?: boolean): string;
 export interface CloudAccountStore {
   read(): Promise<unknown>;
   write(value: unknown): Promise<void>;
 }
-export declare function createCloudAccountStore(options: {
-  file: string;
-  encryption: {
-    available(): boolean | Promise<boolean>;
-    encrypt(value: string): Buffer | Promise<Buffer>;
-    /** A string, or Electron 43's { shouldReEncrypt, result } (safeStorage.decryptStringAsync). */
-    decrypt(value: Buffer): string | { result: string } | Promise<string | { result: string }>;
-  };
-}): CloudAccountStore;
 export interface CloudAccountClient {
   state(): CloudAccountState;
   start(): Promise<CloudAccountState>;
@@ -370,24 +345,3 @@ export interface CloudAccountClient {
   revokeSaved(record: unknown): Promise<void>;
   close(): void;
 }
-export declare function createCloudAccountClient(options: {
-  store: CloudAccountStore;
-  openBrowser(url: string): Promise<unknown>;
-  platform: string;
-  deviceName: string;
-  appVersion?: string;
-  origin?: string;
-  /** Enables HTTP loopback only for isolated fixtures. Production main never sets it. */
-  fixture?: boolean;
-  fetch?: typeof fetch;
-  now?: () => number;
-  onState?: (state: CloudAccountState) => void;
-  /** Told once per plan name this app predates. Defaults to console.warn. */
-  warn?: (message: string) => void;
-  /** Files or lending waits for a sleeping Cloud to wake: the session is read every 15 s. */
-  awaitingWake?: () => boolean;
-  t?: (key: string, params?: Record<string, string | number>) => string;
-}): CloudAccountClient;
-export declare function cloudPlanSnapshot(state: CloudAccountState | null | undefined, extra?: { notice?: import("./cloud-home.mjs").CloudTrialState | null }): CloudPlanSnapshot;
-/** My Cloud's line under its name in the server menus, or null for none. */
-export declare function cloudMenuSublabel(state: CloudAccountState | null | undefined, date: (value: number) => string, t?: (key: string, params?: Record<string, string | number>) => string): string | null;

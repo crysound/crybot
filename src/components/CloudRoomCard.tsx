@@ -1,10 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowUpRight, Loader2 } from "lucide-react";
 
-import type { CloudPlanBridge, CloudPlanSnapshot } from "../../electron/account.mjs";
+import type { CloudPlanBridge, CloudPlanSnapshot } from "../../electron/cloud-account-types.mjs";
 import { usageBridge, useUpgrade, NoteLine, type UpgradeUi } from "./CloudUsageMeter";
 import { useCloudPlanSnapshot } from "./CloudTrialNotice";
-import { cloudPlanLabel } from "@/lib/cloud-plan";
+import { cloudPlanLabel } from "@/lib/cloud-status";
 import { t } from "@/lib/i18n";
 import { readRoomCardHidden, rememberRoomCardHidden, roomCardBusy, roomCardView, type RoomCardView } from "@/lib/room-card";
 import { readUsageCardDismissed, upgradePath, usageCardView } from "@/lib/usage-meter";

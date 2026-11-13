@@ -1,6 +1,6 @@
 // Display only: the usage meter never grants or limits anything; the Cloud's own relays do.
 import type { CloudUsage, CloudUsageKind, CloudUsageMeter } from "../../electron/cloud-home.mjs";
-import { cloudPlanLabel, usd } from "@/lib/cloud-plan";
+import { cloudPlanLabel, usd } from "@/lib/cloud-status";
 import { activeLocale, t } from "@/lib/i18n";
 import type { LocaleKey } from "@/locales";
 

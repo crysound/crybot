@@ -102,7 +102,7 @@ function ProgressRing({ value = 0, waiting = false }: { value?: number; waiting?
 }
 
 /** What a place's mark draws: its kind, its name's letters and its colour, faded while it is offline or has ended. */
-type MarkedPlace = Pick<RailPlace, "kind" | "name" | "offline" | "ended"> & Partial<Pick<RailPlace, "named">> & { color: unknown };
+type MarkedPlace = Pick<RailPlace, "kind" | "name"> & Partial<Pick<RailPlace, "offline" | "ended" | "named">> & { color: unknown };
 
 export function PlaceMark({ place, size = TILE }: { place: MarkedPlace; size?: number }) {
   const color = cloudColor(place.color);

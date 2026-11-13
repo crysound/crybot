@@ -22,7 +22,7 @@ import { ToolSelectionCard } from "./ToolSelectionCard";
 import { BotApiCard } from "./BotApiCard";
 import { ToolBudgetLine } from "./ToolBudgetLine";
 import { useCloudPlan } from "../ProIntroduction";
-import { xResearchAction } from "@/lib/cloud-plan";
+import { xResearchAction } from "@/lib/cloud-status";
 import { useBotApps } from "./useBotApps";
 import {
   classifyConnectorTool,

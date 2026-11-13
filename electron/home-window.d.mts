@@ -23,7 +23,7 @@ export interface HomeBridge {
   /** This computer's screen only: look again now. */
   retry(): Promise<HomeView>;
   /** This computer's screen only, once the person said yes there: the Cloud it shows leaves their list (absent: an older app). */
-  remove?(): Promise<import("./account.mjs").CloudRemoveOutcome>;
+  remove?(): Promise<import("./cloud-account-types.mjs").CloudRemoveOutcome>;
   /** This device's CryBot Cloud sign-in, again; on My Cloud's page only from the person's click. */
   signIn(): Promise<void>;
   /** My Cloud's own page only: its session ended, so the app signs it in again by itself. */
@@ -84,7 +84,7 @@ export interface HomeWindow {
   stay(): void;
   openCloud(open?: "phone" | null): Promise<unknown>;
   /** Remove from list from this computer's screen: the Cloud it shows leaves the person's list. */
-  remove(): Promise<import("./account.mjs").CloudRemoveOutcome>;
+  remove(): Promise<import("./cloud-account-types.mjs").CloudRemoveOutcome>;
   asking(): boolean;
   refresh(): Promise<Home>;
   view(): HomeView;
@@ -114,7 +114,7 @@ export function createHomeWindow(deps: {
   frozen(): Promise<{ frozen: boolean; cloud?: string; place?: string } | null>;
   account(): { state(): any; power(): any; wakeHome(): Promise<unknown>; setWaking(on: boolean): void; pairHome(cloudId?: string | null): Promise<{ origin: string; code: string; expiresAt: number }>;
     pairTeam?(teamId: string): Promise<{ origin: string; code: string; expiresAt: number }>; signInAgain(): Promise<unknown>; begin(): Promise<unknown>; signOut?(): Promise<unknown>; reopen?(): Promise<unknown>;
-    hideCloud?(cloudId: string): Promise<{ outcome: import("./account.mjs").CloudRemoveOutcome }> } | null;
+    hideCloud?(cloudId: string): Promise<{ outcome: import("./cloud-account-types.mjs").CloudRemoveOutcome }> } | null;
   restored?(): Promise<unknown>;
   window(): WindowLike | null;
   ensureWindow(): void;

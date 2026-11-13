@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { ArrowUpRight, X } from "lucide-react";
 import { CLOUD_PLAN_URL } from "@/lib/app-links";
 import { botRoom, closeBotLimit, planRefusal, showBotLimit, useBotLimitReason, useCreatedPausedBot, type BotLimitReason } from "@/lib/bot-limit";
-import { cloudPlanLabel } from "@/lib/cloud-plan";
+import { cloudPlanLabel } from "@/lib/cloud-status";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { useStore } from "@/state/store";

@@ -193,7 +193,7 @@ export function PairPage({ initialCode, initialEmail = null, reason }: { initial
         ) : mode === "email" ? (
           <form onSubmit={submitEmail}>
             <label className={fieldLabel} htmlFor="signin-email">
-              {t("cloudBuy.signIn.email")}
+              {t("cloudPlan.signIn.email")}
             </label>
             <input
               id="signin-email"
@@ -232,7 +232,7 @@ export function PairPage({ initialCode, initialEmail = null, reason }: { initial
             ) : null}
             {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
             <button type="submit" disabled={busy || !email.includes("@") || (sent && otp.replace(/\D/g, "").length < 8)} className={button}>
-              {t(busy ? (sent ? "pair.signingIn" : "pair.sending") : sent ? "pair.signIn" : "cloudBuy.signIn.send")}
+              {t(busy ? (sent ? "pair.signingIn" : "pair.sending") : sent ? "pair.signIn" : "cloudPlan.signIn.send")}
             </button>
             {sent ? (
               <button type="button" onClick={() => setSent(false)} className="mt-3 w-full text-[13px] text-ink-secondary underline">

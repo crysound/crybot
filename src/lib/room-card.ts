@@ -1,7 +1,7 @@
 // Display only: the room card never changes a plan or a limit. The Admin decides when a Cloud is short on room and which
 // plan fixes it (the session's `cloud.room`); its Upgrade goes through the usual preview and confirmation.
 import type { CloudRoom, CloudUsage } from "../../electron/cloud-home.mjs";
-import { cloudPlanLabel, usd } from "@/lib/cloud-plan";
+import { cloudPlanLabel, usd } from "@/lib/cloud-status";
 import { activeLocale, t } from "@/lib/i18n";
 import { TEAM_TIERS, trialChargeIsNear } from "@/lib/usage-meter";
 

@@ -7,6 +7,7 @@ import localOrigin from "./local-origin.cjs";
 import environments from "./environments.cjs";
 import { randomUUID } from "node:crypto";
 import { createCompanyBackupSchedule } from "./company-backup-schedule.mjs";
+import { hostedDisabledState } from "./cloud-disabled.mjs";
 
 // Production main functions without importing Electron main (which would start the app); all IO is synthetic.
 // Windows checkouts can have CRLF line endings; the source checks below match "\n".
@@ -49,6 +50,7 @@ function fixture() {
     disconnect: async () => { f.generation++; f.connection = null; f.state = { status: "signed-out" }; f.onState(f.state); return f.state; } };
   localOrigin.setLocalOrigin(ORIGIN);
   const context = vm.createContext({
+    hostedAvailable: true, hostedDisabledState,
     AbortController, AbortSignal, Date, Headers, setTimeout, clearTimeout, path, randomUUID, Buffer,
     app: { isPackaged: true, getPath: () => "/unused-synthetic-backup-fixture", getVersion: () => "fixture" },
     os: { hostname: () => "Fixture computer" }, process: { platform: "fixture" },
@@ -61,7 +63,6 @@ function fixture() {
     tailnetShare: { recheck: () => { f.tailnetRechecks = (f.tailnetRechecks ?? 0) + 1; } },
     createOrgLibrary: options => { f.libraryOptions = options; return f.library; },
     managedDesktopRelay: { sendLibrary: async (proc, library) => { f.librarySent.push({ proc, library }); } },
-    installCloudPlanIpc: () => {},
     createCompanyBackupSchedule: options => {
       f.scheduleOptions = options;
       return createCompanyBackupSchedule({ ...options, now: () => f.now,
@@ -333,9 +334,12 @@ test("backup IPC requires the local main window's exact main frame", async () =>
   const anotherWindow = { sender: { mainFrame: f.event.senderFrame }, senderFrame: f.event.senderFrame };
   const external = { sender: f.event.sender, senderFrame: { url: "https://untrusted.example.test/" } };
   const missingFrame = { sender: f.event.sender };
-  for (const sender of [subframe, anotherWindow, external, missingFrame]) {
-    for (const channel of ["state", "list", "create", "preview", "cancel", "delete", "restore", "configure-schedule"]) {
-      assert.throws(() => f.invoke(channel, { id: STAGE, confirmation: "REPLACE" }, sender), /only available/);
+  for (const available of [false, true]) {
+    f.context.hostedAvailable = available;
+    for (const sender of [subframe, anotherWindow, external, missingFrame]) {
+      for (const channel of ["state", "list", "create", "preview", "cancel", "delete", "restore", "configure-schedule"]) {
+        assert.throws(() => f.invoke(channel, { id: STAGE, confirmation: "REPLACE" }, sender), /only available/);
+      }
     }
   }
   assert.equal(f.requests.length, 0);
@@ -347,6 +351,9 @@ test("even a selected remote workspace main frame cannot use local backup IPC", 
   const f = fixture();
   f.context.environmentsState = { activeId: "remote", environments: [{ id: "remote", origin: "https://workspace.example.test", name: "Remote" }] };
   f.event.senderFrame.url = "https://workspace.example.test/";
-  assert.throws(() => f.invoke("state"), /only available while using the local server/);
+  for (const available of [false, true]) {
+    f.context.hostedAvailable = available;
+    assert.throws(() => f.invoke("state"), /only available while using the local server/);
+  }
   assert.equal(f.requests.length, 0);
 });

@@ -4,7 +4,7 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import type { CloudSendNotice } from "../electron/cloud-send.mjs";
-import type { RailState } from "../electron/cloud-rail.mjs";
+import type { RailState } from "../electron/rail.mjs";
 import { PlacesRail } from "@/components/PlacesRail";
 import { SidebarFooter } from "@/components/SidebarFooter";
 import { TwoPlacesCard } from "@/components/TwoPlacesCard";

@@ -1,7 +1,7 @@
 /** The colour of the place a page shows, as that page sees it: never the Cloud's id. */
 export interface PlaceLook {
   name: string;
-  color: import("./cloud-buy.mjs").CloudColor | null;
+  color: import("./cloud-types.mjs").CloudColor | null;
   /** The swatch it is offered as; null for none (or a colour no swatch has). */
   swatch: import("./cloud-list.mjs").CloudSwatch | null;
   /** Where a change goes: the Admin (every app of theirs follows), this app, or nowhere from here. */
@@ -23,6 +23,6 @@ export declare function installPlaceLook(deps: {
   place: () => any;
   session: () => { clouds?: import("./cloud-list.mjs").CloudListEntry[] | null; homeOrigin?: string | null };
   setColor: (cloudId: string, swatch: import("./cloud-list.mjs").CloudSwatch | null) => Promise<{ outcome: PlaceColorOutcome }>;
-  save: (id: string, color: import("./cloud-buy.mjs").CloudColor | null) => void;
+  save: (id: string, color: import("./cloud-types.mjs").CloudColor | null) => void;
   rail?: { owns(event: unknown): boolean; places(): Array<{ id: string; paint?: unknown }>; saved(id: string): any };
 }): { look(): (PlaceLook & { cloudId?: string }) | null };

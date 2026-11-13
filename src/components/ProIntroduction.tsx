@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Cloud, Crown } from "lucide-react";
-import type { CloudAccountState } from "../../electron/account.mjs";
+import type { CloudAccountState } from "../../electron/cloud-account-types.mjs";
 import { useStore } from "@/state/store";
-import { buyOfferAllowed, cloudPlanLine, cloudPlanView, moneyBackLine, offerTrialDays, usd, type CloudPlanView } from "@/lib/cloud-plan";
+import { buyOfferAllowed, cloudPlanLine, cloudPlanView, moneyBackLine, offerTrialDays, usd, type CloudPlanView } from "@/lib/cloud-status";
 import { useCloudOffer } from "@/lib/use-cloud-offer";
 import { t } from "@/lib/i18n";
 import { SettingRow, SettingsLinkRow } from "./SettingsPrimitives";

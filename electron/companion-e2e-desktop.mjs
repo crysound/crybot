@@ -7,7 +7,7 @@ import { createControlPlaneClient } from "./control-client.mjs";
 const signedOut = () => Promise.reject(Object.assign(new Error("signed out"), { code: "signed_out" }));
 
 /** The desktop app's end-to-end connection, wired to its sidecar, its account and the power monitor. Dark in a
- * development build unless CRYBOT_CONTROL_PLANE_URL names a control plane. */
+ * development build; the hosted account service is disabled in Cry Bot. */
 export function createDesktopCompanionE2E({ isPackaged, appVersion, readCredentials, updateCredentials, powerMonitor, log, onState }) {
   let client = null;
   try {

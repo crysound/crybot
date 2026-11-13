@@ -111,7 +111,6 @@ beforeAll(async () => {
       CRYBOT_PUBLIC_URL: `https://${HOST}`,
       CRYBOT_ENVIRONMENT_LABEL: "acme",
       CRYBOT_BROWSER_CONNECTION: join(home, "browser-test-connection.json"),
-      CRYBOT_CONTROL_PLANE_URL: stub.url,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });

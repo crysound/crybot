@@ -214,3 +214,75 @@ pnpm vitest run shared/package-format.test.ts --maxWorkers=2 --configLoader runn
 - 仓库引用的 `docs/verification/README.md` 当前不存在；验证均使用测试自行创建的临时目录、mock 或隔离 fixture，没有对用户 live app/数据执行验证，没有成功完成真实服务启动验收。
 
 补充名字替换回归结果：`server/peer-roster.test.ts`、`server/peer-provenance.test.ts`、`server/runtime/envelope.test.ts`、`src/lib/group-call.test.ts`、`src/lib/group-routing.test.ts`、`src/components/ChatMarkdown.test.ts`、`server/message-file.test.ts` 最终为 4 文件通过、3 文件失败，391 用例通过、4 失败（`/tmp/r4-neutral-tests-final.log`）。已将攻击字符串的名字统一为 Owner，与断言一致。剩余失败是 message-file 的 `mkfifo` 子进程报 EPERM；ChatMarkdown 的两个发布页面链接点击用例；envelope 对旧 Unicode 仿冒 marker 的一个用例。后两类不是端口限制，没有在本轮改动其产品实现，仍需处理。最终品牌扫描仍为 8343 文件、0 命中，diff whitespace 检查通过。
+
+
+# T-1207 第 5 轮追加
+
+本节合并被 OOM 中断的第 5 轮与本次续做。起点为 149 个已跟踪文件改动、3426 行新增和 16864 行删除；保留此前改动，没有 git 提交。**实现继续收敛，正式验收仍未完成：指定的 systemd scope 被沙箱拒绝，六项正式检查均未启动，不能宣称测试回绿或构建通过。**
+
+## 逐项实现
+
+1. **已改：删除托管购买及账户叶子。** `electron/main.mjs:94` 接入显式禁用状态，移除账户构造、账户存储、支付/试用通知、购买接线及 `account:*` handler。删除 `electron/account.mjs`、`cloud-buy.mjs`、`cloud-plan-ipc.mjs`、`cloud-trial-notice*`、`cloud-rail.mjs`、`cloud-team-plan.mjs` 及原有对应声明/测试；前端删除 `src/components/cloud-buy/`、`CloudAddDialog.tsx`、`CloudAccountSettings.tsx`、`src/lib/cloud-plan.ts` 及原有相关测试。删除 `src/cancel-plan-preview.tsx`。
+
+   `electron/rail.mjs:72`、`:103` 保留本地工作区、手填服务器及共用的列表/导航行为，已删除购买状态转换、购买中工作区、购买完成通知和全部 `cloud-add:*` IPC。`src/lib/cloud-extra.ts:7` 仅保留本地工作区也使用的名称长度与颜色选择；`src/lib/cloud-look.ts:5` 保留颜色转换。`src/lib/cloud-status.ts:1` 保留现有状态/额度/通知组件使用的显示逻辑，已移除购买步骤、套餐卡片、结算等待与购买状态机。`src/components/cloud-parts.tsx:1` 仅留下仍有调用的界面部件。`electron/cloud-home.mjs:363` 保留迁移状态、手机目的地判定需要的 Team 套餐分类；没有保留新建的 `cloud-team-status` 复制模块。
+
+   共用数据结构拆到 `electron/cloud-account-types.d.mts:1`、`electron/cloud-types.d.mts:1`、`electron/rail-types.d.mts:1`，并移除类型文件里对已删账户实现的函数/常量声明。`src/types/cry.d.ts:176` 改用 rail 类型，删除购买 bridge 声明。原有共用组件仍依赖的可选状态 bridge 类型暂留；对应账户/购买 preload 实现不存在。
+
+2. **已改：关闭指定界面入口。** `src/components/AccountMenu.tsx:22` 不再提供账户列表或登录 sheet；`src/components/PlaceAddSheet.tsx:247` 只提供本地工作区和手填服务器；`src/components/settings/pages/PlacePages.tsx:1`、`src/components/lazy-screens.tsx:1` 移除云账户设置页的引用。`src/pair/PairPage.tsx:1` 保留当前服务器自己的配对登录，不提供购买与 Team Cloud 入口。`electron/accounts-main.mjs:14` 的账户 sheet 不再被提供，保留的请求返回 unavailable。
+
+3. **已改：移除托管地址开关。** `electron/account-service.mjs:78` 的地址解析恒为空；删除默认地址常量和环境变量读取。`:289` 的健康探测、`:612`/`:630` 的 OTP、`:687` 的 retry、`:929` 的 sign-out、`:950` 的 restore 在没有 client 时直接返回不可用状态，不发请求。OTP 与 sign-out 的禁用路径不会因缺少 client 而抛错。`electron/companion-e2e-desktop.mjs:9` 同步说明托管服务已禁用；`electron/account-service.d.mts:1` 移除失效默认常量和旧 tunnel 注释。
+
+4. **已改：主进程停止托管启动。** `electron/cloud-disabled.mjs:1` 是固定关闭状态和明确的方法集合，没有通用 Proxy 或账户存储。`electron/main.mjs:148` 不构造 Team join；`:741` 返回禁用状态，不初始化云账户；`:759` 不构造 organization 客户端；`:2467` 不构造 cloud sync；`:2838`、`:2863`、`:2867` 阻止 organization、cloud sync 和组织恢复启动。账户恢复不再注册等待定时器。`:2328` 保留的 organization/company-backups IPC 在授权检查后返回禁用状态，不执行原 handler。`:543`/`:629` 阻止旧托管凭据启动隧道；`:1631` 的旧云深链不能打开购买或登录页面。
+
+   `electron/cloud-disabled.mjs:24`、`electron/main.mjs:1378` 将已保存、明确标记为托管的工作区从运行时列表排除，使菜单、选择器和工作区轮询都看不到它们；写入其他工作区变更时仍保存这些停用记录，不删除用户的旧配置。本地工作区和手填服务器继续走原共用模块。
+
+5. **已改：清理专用 locale。** `src/locales/en.json:1` 及其他语言删除原购买/账户 UI 专用键；本次续做额外移除 73 个无剩余源码引用的键。使用仓库 `node scripts/generate-locale.mjs --record-hashes` 重新生成 `src/locales/source-hashes.json:1`，没有手工编辑哈希。最终 `--check` 通过，16 种语言、10559 条英文源文案。日志 `/tmp/r6-locale-hashes.log`、`/tmp/r6-locale-hashes-final.log`、`/tmp/r6-locale-check.log`。
+
+6. **已改代码与回归覆盖，尚未运行测试确认：第 4 轮两个新增失败。** `electron/preload.cjs:78` 将共用迁移 bridge `cloudSendPage` 恢复到远端页面白名单，保留主进程 sender 检查及用户手势限制；对应原测试仍在 `electron/cloud-send.node-test.mjs:247`，没有放宽断言。原 `home-window.node-test.mjs` 随上一阶段清理删除后，将指定的 401/配对回归完整提取到 `electron/home-navigation.node-test.mjs:5`，URL 断言使用 fixture 的实际 TEAM 域名和精确 pairing code，保留第二次配对次数等断言。
+
+   新增 `electron/hosted-disabled.node-test.mjs:25`，以隔离的内存 store、IPC map、VM 和 fake account 依赖覆盖不可用账户、禁用客户端初始化、organization/backup IPC、保留本地/服务器 rail、无购买 IPC、旧托管工作区隐藏但保留磁盘记录。`electron/cloud-entry.node-test.mjs:142` 检查禁用深链没有窗口或客户端依赖。以上用例尚未执行，不能将其记为通过。
+
+7. **已改并静态检查：指定残留为零。** `git grep -n 'CONTROL_PLANE_URL\|cloud-buy\|cloudBuy\|ensureCloudAccount' -- . ':!docs'` 无命中（grep 退出 1 表示零匹配），`/tmp/r6-hosted-residue.log` 为空。对被删除模块的导入和已删除类型/购买函数名补查无命中，见 `/tmp/r6-deleted-references.log`。
+
+## 正式验收与环境阻塞
+
+本轮所有正式重命令都严格串行，统一使用 `systemd-run --scope -q -p MemoryMax=3G -- …`；没有并行跑 build、typecheck 或测试，也没有在 scope 失败后绕开它运行重命令。使用 `/opt/node24/bin`，Electron 指定 `--test-concurrency=2`，Vitest 指定 `--maxWorkers=2`。已执行尝试如下：
+
+| 检查 | 结果 | 日志 |
+| --- | --- | --- |
+| `pnpm typecheck` | scope 启动失败，未执行编译 | `/tmp/r6-typecheck.log` |
+| `pnpm lint` | scope 启动失败，未执行 lint | `/tmp/r6-lint.log` |
+| `node scripts/check-brand-residue.mjs` | scope 启动失败，未执行品牌扫描 | `/tmp/r6-brand.log` |
+| `node --test --test-concurrency=2 electron/*.node-test.mjs` | scope 启动失败，未执行任何测试文件 | `/tmp/r6-electron.log` |
+| `pnpm vitest run <25 个受影响文件> --maxWorkers=2 --configLoader runner` | scope 启动失败，未执行任何测试文件 | `/tmp/r6-vitest.log` |
+| `pnpm build` | scope 启动失败，未执行构建 | `/tmp/r6-build.log` |
+
+六项均退出 1，原因完全相同：`Failed to connect to system scope bus via local transport: Operation not permitted`。最小 `systemd-run … true` 同样失败（`/tmp/r6-scope.log`）。可复跑的完整命令按顺序记录在 `/tmp/r6-checks.sh`，25 个 Vitest 路径在 `/tmp/r6-vitest-paths.txt`，汇总在 `/tmp/r6-check-status.log`。这些错误发生在测试进程启动之前，因此**本轮没有可逐文件归因的 listen/mkfifo 失败，也没有单文件通过证据**；不得用上一轮日志冒充本轮全套结果。协调者需要在允许 system scope 的环境执行上述命令。
+
+已完成的轻量静态检查：`git diff --check`；`node --check` 检查 main/preload/rail/disabled adapter 语法；修改文件的 TypeScript AST 语法、导入存在性、明显未绑定引用检查；locale generator 的 `--check`。静态审计日志 `/tmp/r6-static-audit-final.log` 为空。这些都不替代 typecheck、lint 或运行时测试。
+
+`docs/verification/README.md` 仍不存在。本轮未启动真实应用或服务器，没有对用户 live app/数据验证变更。新测试使用隔离 fake/内存 fixture；完整 Electron 启动、本地及自填服务器运行时验收、默认无外连验收均待执行。此前已询问是否允许替代内存限制，未收到许可，未绕过指定 scope。
+
+## 保留模块清单，供后续台账
+
+- Electron 的混合本地/托管基础设施：`cloud-sync-*`、`cloud-sync.mjs`、`one-home*`、`own-home-main`、`home-window*`、`home-places`、`start-place`、`team-*`、`organization-*`、`org-library`、`cloud-send*`、`cloud-list`、`cloud-power`、`cloud-connections`、`cloud-logins`、`cloud-signin`、`cloud-space`、`rail-accounts`、`lending*`、`cloud-lending`、`lent-folders`、`server-lending`、`computer-sharing`、`two-places*`、`bot-move*`、`move-status`、`move-session`。
+- 账户与组织外围：`account-service`、`account-messages`、`accounts-main`（禁用适配）、`accounts`、`cloud-accounts`、`account-places`、`control-client`、`managed-desktop`、`managed-companion*`、`company-backup*`、`updates-consent`、`included-x`、`included-pages`、`companion-e2e*`。主进程关闭托管初始化；这些源文件的历史业务分支没有在本轮全部删除。
+- 新提取的共用结构/适配：`electron/rail.mjs`、`rail-types.d.mts`、`cloud-account-types.d.mts`、`cloud-types.d.mts`、`cloud-disabled.mjs`；购买 IPC、账户客户端实现和购买状态机没有搬入这些模块。
+- 前端仍保留的共用状态/历史界面：`CloudRoomCard`、`CloudUsageMeter`、`CloudCancelPlan`、`CloudTrialNotice`、`CloudTrialIntro`、`CloudNotice`、`ProIntroduction`、`cloud-welcome/`、`settings/plan-parts`、`src/lib/cloud-status.ts`、`cloud-extra.ts`、`cloud-look.ts`、`use-cloud-offer.ts`、手机配对/额度/迁移相关代码，以及 store 内未消费的旧购买 action。当前 preload 不提供云账户/套餐 bridge，已删除入口不会呈现这些托管购买流程；这些遗留源代码及可选类型需后续台账进一步收敛。
+- 本地和自填远端的 `desktop-remote-client`、本机工作区、Tailscale/自填服务器连接实现保留。server 中已有的 hosted/workspace 分支未扩展删除，本轮没有宣称整个仓库已完成全部去云化。
+
+## 尚未完成
+
+正式 typecheck、lint、品牌扫描、完整 Electron、受影响 Vitest、build 全部待环境允许后复跑。第 4 轮两个新增失败已按原日志定位并补改，但未验证回绿；其他历史失败也尚未重新分类/修复到全绿。不能将本轮认定为已满足 r5.md 全部验收标准。工作区完整保留供续做，未提交。
+
+# T-1207 第 7 轮
+
+- 已改：删除 `src/components/HomeScreen.tsx` 的 `cloudAdd` 购买/checkout/payment 分支及对应入口；保留本地重试、登录、移除工作区。同步更新 HomeScreen 单元和 DOM 测试，理由是托管购买接线已删除。
+- 已改：删除 `electron/main.mjs` 中未使用的 `updatesConsent` 与 `withEnvironmentLook`。它们是删托管功能后的残留。
+- 已改：本地确认 IPC 不再被托管禁用判断影响；确认框继续要求本地主窗口精确主框架、默认 Cancel、仅显式 OK 成功、非法消息和关闭窗口 fail closed。
+- 已改：备份 main fixture 补齐禁用状态依赖；安全边界测试继续覆盖子框架、其他窗口、远程主框架和缺失 frame。组织 reopen 测试改为断言托管 disabled，preload 不暴露已删除入口。
+- 已改：托管 Cloud link 测试断言不会创建窗口或启动 client；该用例覆盖已删除接线。
+
+本轮删/改用例及理由：Cloud 购买入口相关 HomeScreen checkout/payment/buy 测试改断言没有动作；organization:reopen 的托管客户端转发断言改为 disabled；hosted Cloud link 的旧启动断言改为 disabled。以上均为已删除托管接线。备份 IPC、确认框及本地主窗口边界用例均保留并修复 fixture/产品代码。
+
+验证：相关 Electron 6 文件 6 个测试文件通过；`pnpm -s typecheck` 通过；`pnpm -s lint` 通过；`node scripts/check-brand-residue.mjs` 8082 files checked, 0 forbidden references。`pnpm -s build` 首次被共享只读 node_modules 的 Vite 缓存目录拒绝，随后改用 /tmp 可写依赖覆盖运行，构建进入 Vite 但在沙箱中长时间无输出，未能取得退出数字。Electron 全量仍在运行，结果写入 `/tmp/r7-electron-full.log`，完成后由协调者复核；基线新增名单中其余已有失败未处理。

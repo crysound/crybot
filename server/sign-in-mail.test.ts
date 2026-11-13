@@ -77,7 +77,6 @@ describe("sign-in codes through the server's own mail server", () => {
     const box = mailbox();
     const signIn = createEmailSignIn({
       allow: { admins: ["her@example.test"], members: ["@team.test"] },
-      env: { CRYBOT_SIGNIN_SMTP_URL: URL_, CRYBOT_CONTROL_PLANE_URL: "https://control-plane.invalid" },
       mailTransport: box.transport,
     });
     expect(await signIn.start("nobody@example.test")).toMatchObject({ ok: false, status: 403 });

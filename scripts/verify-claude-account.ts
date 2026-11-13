@@ -14,7 +14,7 @@ try {
   const authenticated = join(configDir, "authenticated");
   const failLogoutMarker = join(home, "logout-failure");
   const commandLog = join(home, "claude-commands.jsonl");
-  const wrapper = join(home, "offline-claude-account.mjs");
+  const wrapper = join(home, "offline-claude-cloud-account-types.mjs");
   mkdirSync(configDir);
   writeFileSync(authenticated, "Offline fixture, not a credential.\n", { mode: 0o600 });
   writeFileSync(failLogoutMarker, "Remove only this marker to test retry.\n", { mode: 0o600 });

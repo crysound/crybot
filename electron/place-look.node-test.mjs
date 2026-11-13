@@ -6,7 +6,7 @@ import nativeText from "./native-text.cjs";
 
 import { listedColors, parseCloudList } from "./cloud-list.mjs";
 import environments from "./environments.cjs";
-import { railPlaces } from "./cloud-rail.mjs";
+import { railPlaces } from "./rail.mjs";
 import { createHomePlaces } from "./home-places.mjs";
 import { installPlaceLook, pageLook, placeLook, swatchOf } from "./place-look.mjs";
 
@@ -98,7 +98,7 @@ test("main's own wiring: This computer's page reads and changes its own colour, 
   const context = vm.createContext({ installPlaceLook, nativeT: nativeText.englishText.t, savedPlace: environments.savedPlace, withPlaceColor: environments.withPlaceColor,
     ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) }, workspaceOnly: handler => handler,
     environmentsState: { environments: [typed], activeId: "local" }, desktopRemoteAccess: null, cloudAccount: null, myCloud: () => null,
-    ensureCloudAccount: () => { throw new Error("This computer's colour never asks the Admin"); },
+    getCloudAccount: () => { throw new Error("This computer's colour never asks the Admin"); },
     persistEnvironments: next => { persisted.push(next); context.environmentsState = next; },
     chromeRail: { owns: () => false }, railList: () => [] });
   vm.runInContext(source.slice(start, end), context);

@@ -17,7 +17,7 @@ import { createMoveStatusReport, moveStatus } from "./move-status.mjs";
 import { createHomeAgain } from "./one-home-again.mjs";
 import { awayIn, createOneHome, parseJournal, underWay } from "./one-home.mjs";
 import { myCloudOf } from "./cloud-list.mjs";
-import { teamPlan } from "./cloud-team-plan.mjs";
+import { teamPlan } from "./cloud-home.mjs";
 import { installTeamMove } from "./team-move-main.mjs";
 import nativeText from "./native-text.cjs";
 

@@ -12,7 +12,7 @@ try {
   const api = fixtureApi(fixture.info.url);
   const fixtureHome = fixture.info.dataDir;
   const codexDir = join(fixtureHome, ".codex");
-  const wrapper = join(fixtureHome, "offline-codex-account.mjs");
+  const wrapper = join(fixtureHome, "offline-codex-cloud-account-types.mjs");
   const commandLog = join(fixtureHome, "offline-codex-commands.jsonl");
   const failLogoutMarker = join(fixtureHome, ".cry-fake-codex-logout-fail");
   writeFileSync(failLogoutMarker, "Disposable forced-error fixture. Remove to test retry.\n", { mode: 0o600 });

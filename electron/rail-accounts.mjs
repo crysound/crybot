@@ -1,8 +1,8 @@
 // The rail with several accounts signed in on this device: it lists places, each place knows its account, and a click on a
-// place of another account switches first (cloud-rail.mjs `workspaces:open`). An account that waits makes no request and has no
+// place of another account switches first (rail.mjs `workspaces:open`). An account that waits makes no request and has no
 // timer, so its places show as they looked when it was last the one in use, with no counts or live state.
 //
-// Security: these rows go only to the rail's own page (cloud-rail.mjs), the one page allowed to know other accounts' addresses.
+// Security: these rows go only to the rail's own page (rail.mjs), the one page allowed to know other accounts' addresses.
 // With one account nothing here changes the rail at all.
 
 /** A place of no Cloud: an account with nothing on the rail still has one way to reach it. */

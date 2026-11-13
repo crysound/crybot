@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import vm from "node:vm";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cloudTarget } from "./account.mjs";
+import { cloudTarget } from "./cloud-disabled.mjs";
 import { myCloudOrigin, rememberedCloudHome, savedCloudHomeOrigin } from "./cloud-home.mjs";
 import { cloudPageSenderAllowed } from "./cloud-home.mjs";
 import { otherOwnClouds, ownCloud } from "./cloud-list.mjs";
@@ -39,7 +39,7 @@ function mainRule() {
   expect(start).toBeGreaterThanOrEqual(0);
   expect(end).toBeGreaterThan(start);
   expect(source.includes("registerUpdaterIpc({ pageAllowed: updaterPageAllowed, serverPage: event => activePageOrigin(event), confirmRestart: "), "main.mjs wires the updater to updaterPageAllowed").toBe(true);
-  const signInStart = source.indexOf("function ensureCloudAccount() {"), signInEnd = source.indexOf("\n}\n", signInStart) + 3;
+  const signInStart = source.indexOf("function getCloudAccount() {"), signInEnd = source.indexOf("\n}\n", signInStart) + 3;
   expect(signInStart).toBeGreaterThanOrEqual(0);
   const window = { isDestroyed: () => false, webContents: null };
   const listeners = new Map();
@@ -52,7 +52,7 @@ function mainRule() {
     environmentsState: { environments: [], activeId: environments.LOCAL_ID },
     cloudAccount: { homeTarget: () => ({ origin: CLOUD }), state: () => ({ status: "connected", account: { id: "a1" } }), isOwnCloud: () => false },
     rememberedHome: null, savedCloudHomeOrigin, cloudSignInRestored: true,
-    // ensureCloudAccount's world: a packaged app, and a sign-in client whose state the test sets.
+    // getCloudAccount's world: a packaged app, and a sign-in client whose state the test sets.
     app: { isPackaged: true, getPath: () => "/unused", getVersion: () => "1.0.0" }, process: { platform: "darwin", env: {} }, cloudTarget,
     path: { join: (...parts) => parts.join("/") }, os: { hostname: () => "mac" }, shell: {}, safeStorage: {},
     createCloudAccountStore: () => ({}), cloudEncryption: {}, cloudAccountStore: () => ({}), cloudSync: { accountChanged: () => {} }, accounts: { tell: () => {} }, rememberCloudHome: () => {}, rememberedCloudHome, computerSharing: null, updatesConsent: null,
@@ -84,7 +84,7 @@ function mainRule() {
   const launching = () => {
     context.cloudAccount = null;
     context.cloudSignInRestored = false;
-    vm.runInContext("ensureCloudAccount()", context);
+    vm.runInContext("getCloudAccount()", context);
   };
   const signedIn = (state) => {
     signIn.state = state;

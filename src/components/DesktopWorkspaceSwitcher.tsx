@@ -3,11 +3,11 @@ import { ChevronDown, Cloud, Laptop } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import type { Action } from "@/state/store";
-import type { CloudPlanSnapshot } from "../../electron/account.mjs";
+import type { CloudPlanSnapshot } from "../../electron/cloud-account-types.mjs";
 import { cloudColor } from "@/lib/cloud-look";
 import { t } from "@/lib/i18n";
 import { railShown, usePlaces } from "@/lib/places";
-import { CloudTile } from "./cloud-buy/parts";
+import { CloudTile } from "./cloud-parts";
 import { SIMPLE_RAIL_BUTTON } from "./SidebarSimpleTop";
 
 export function openServerMenu(bridge: { menu: (options?: { from?: "howto" }) => Promise<void> }, { howTo = false, onClosed }: { howTo?: boolean; onClosed?: () => void } = {}): Promise<void> {

@@ -359,3 +359,8 @@ export function cloudPageSenderAllowed(event, { contents, homeOrigin, activeOrig
   if (event?.sender !== contents || !event.senderFrame || event.senderFrame !== contents.mainFrame) return false;
   try { return new URL(event.senderFrame.url).origin === homeOrigin; } catch { return false; }
 }
+
+export function teamPlan(state) {
+  return state?.status === "connected" && !state.machine && state.entitlement?.plan === "pro" &&
+    ["team", "business"].includes(state.entitlement.tier);
+}

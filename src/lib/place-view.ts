@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import type { CloudAccountState } from "../../electron/account.mjs";
+import type { CloudAccountState } from "../../electron/cloud-account-types.mjs";
 import { activeLocale, t } from "@/lib/i18n";
-import { cloudPlanView } from "@/lib/cloud-plan";
+import { cloudPlanView } from "@/lib/cloud-status";
 import { engineSignedOut } from "@/lib/failed-turn";
 import { browserAvailable, builtInBrowserEnabled, type FeatureFlagConfig } from "@/lib/feature-flags";
 import { writeComputerPanelView } from "@/lib/computer-panel-view";

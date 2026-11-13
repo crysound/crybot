@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { CloudAccountState } from "../../electron/account.mjs";
+import type { CloudAccountState } from "../../electron/cloud-account-types.mjs";
 import type { CloudOffer } from "../../electron/cloud-home.mjs";
 import { api, useStore } from "@/state/store";
 import { appVersion } from "@/lib/app-links";
@@ -9,7 +9,7 @@ import { announcementConditions, announcementPlan, announcementPlatform, announc
 
 
 import { brandStatus } from "@/lib/brand";
-import { buyOfferAllowed, cloudNoticeKind, cloudPlanView, cloudTrialNotice, cloudTrialView, offerTrialDays } from "@/lib/cloud-plan";
+import { buyOfferAllowed, cloudNoticeKind, cloudPlanView, cloudTrialNotice, cloudTrialView, offerTrialDays } from "@/lib/cloud-status";
 import { jobRoutine, useCloudIntent } from "@/lib/cloud-intent";
 import { CLOUD_INTENT_GIVEN, cloudSetupStage } from "@/lib/cloud-setup";
 import { cornerPopupWaits, firstChatQuiet, firstReplyPending } from "@/lib/corner-popup";

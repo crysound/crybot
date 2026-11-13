@@ -1,7 +1,6 @@
 import {
   ControlPlaneError,
   normalizeAccountEmail,
-  normalizeControlPlaneURL,
 } from "./control-client.mjs";
 import {
   MANAGED_COMPANION_ENDPOINT_FIELD,
@@ -16,8 +15,6 @@ import { FRIENDLY_MESSAGES, friendlyCompanionAccountError } from "./account-mess
 export { friendlyCompanionAccountError };
 
 export { managedEndpointNeed, PHONE_UNUSED_RELEASE_MS } from "./companion-endpoint-need.mjs";
-
-export const DEFAULT_COMPANION_CONTROL_PLANE_URL = "";
 
 export const COMPANION_CLIENT_INSTANCE_FIELD = "companionClientInstanceId";
 export const COMPANION_ACCOUNT_TOKEN_FIELD = "companionAccountToken";
@@ -78,15 +75,8 @@ const defaultSetTimer = (callback, milliseconds) => {
 const ownString = (document, field) =>
   typeof document?.[field] === "string" ? document[field] : "";
 
-/** Development must name an exact origin so an OTP or bearer never reaches an accidental host; an invalid override disables the feature. */
-export function resolveCompanionControlPlaneURL({
-  isPackaged,
-  environment = process.env,
-} = {}) {
-  if (Object.hasOwn(environment, "CRYBOT_CONTROL_PLANE_URL")) {
-    return normalizeControlPlaneURL(environment.CRYBOT_CONTROL_PLANE_URL);
-  }
-  return isPackaged ? DEFAULT_COMPANION_CONTROL_PLANE_URL : "";
+export function resolveCompanionControlPlaneURL() {
+  return "";
 }
 
 export function companionAccountCleanupPending(credentials) {
@@ -619,7 +609,7 @@ export function createCompanionAccountService({
   };
 
   const requestCode = (rawEmail) => serialize(async () => {
-    if (!configured) throw new Error(FRIENDLY_MESSAGES.control_plane_unavailable);
+    if (!configured) return settledState();
     const email = normalizeAccountEmail(rawEmail);
     let requested;
     try {
@@ -637,7 +627,7 @@ export function createCompanionAccountService({
   });
 
   const verifyCode = (rawEmail, rawCode) => serialize(async () => {
-    if (!configured) throw new Error(FRIENDLY_MESSAGES.control_plane_unavailable);
+    if (!configured) return settledState();
     requestedAt = now();
     const email = normalizeAccountEmail(rawEmail);
     phase = { status: "connecting", email };
@@ -936,6 +926,7 @@ export function createCompanionAccountService({
   };
 
   const signOut = () => serialize(async () => {
+    if (!configured) return settledState();
     resetAutoRetry();
     if (!storedAccount(credentials())) {
       await clearAfterCleanup();

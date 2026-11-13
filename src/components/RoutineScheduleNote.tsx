@@ -1,5 +1,5 @@
 import { brandStatus } from "@/lib/brand";
-import { buyOfferAllowed, type CloudPlanView } from "@/lib/cloud-plan";
+import { buyOfferAllowed, type CloudPlanView } from "@/lib/cloud-status";
 import { t } from "@/lib/i18n";
 import { useStore } from "@/state/store";
 import { localDesktopPage } from "./onboarding/WelcomeGate";

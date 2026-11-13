@@ -10,7 +10,7 @@
 // route on this harness's own server, so main's team path (home-places.mjs, the session's teams as saved places) runs
 // as it does in the app. With `profiles`, This Mac is there too: main's real profile swap (clean-workspace.mjs) restarts
 // this computer's server on the profile's folder at the same address, the window's rail is its own page in a second tab
-// with main's rail handlers (cloud-rail.mjs), and this computer is really lent to My Cloud (computer-sharing.mjs over
+// with main's rail handlers (rail.mjs), and this computer is really lent to My Cloud (computer-sharing.mjs over
 // lending-target.mjs) on the window's own session.
 import { spawn, type ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
@@ -26,7 +26,7 @@ import { chatLinkFrom } from "../../electron/chat-link.mjs";
 import { createCleanWorkspace } from "../../electron/clean-workspace.mjs";
 import { createLocalProfiles, createProfileRegistry } from "../../electron/local-profiles.mjs";
 import { parsePairingGrant, withCloudHome } from "../../electron/cloud-home.mjs";
-import { installCloudRail, railPlaces } from "../../electron/cloud-rail.mjs";
+import { installRail, railPlaces } from "../../electron/rail.mjs";
 import { createComputerSharing } from "../../electron/computer-sharing.mjs";
 import { createLendingTarget } from "../../electron/lending-target.mjs";
 import { createCloudPowerGate } from "../../electron/cloud-power.mjs";
@@ -327,7 +327,7 @@ export async function launchHomeWorld(fx: CloudSendFixture, { chrome, ports, ver
   };
   const cleanup: Array<() => Promise<unknown> | unknown> = [];
   let windowRef: TabWindow | null = null, homeRef: ReturnType<typeof createHomeWindow> | null = null, responded: ((details: any) => void) | null = null;
-  let railRef: TabWindow | null = null, railHandlers: ReturnType<typeof installCloudRail> | null = null;
+  let railRef: TabWindow | null = null, railHandlers: ReturnType<typeof installRail> | null = null;
   let railCovers = false;
   const size = { width: 1280, height: 800 };
 
@@ -646,7 +646,7 @@ export async function launchHomeWorld(fx: CloudSendFixture, { chrome, ports, ver
     railRef = await TabWindow.open(cdp, preloadStandIn(ipcBase, localOrigin, "rail"));
     await cdp.request("Emulation.setDeviceMetricsOverride", { width: 36, height: 800, deviceScaleFactor: 2, mobile: false }, railRef.sessionId);
     await cdp.request("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } }, railRef.sessionId);
-    railHandlers = installCloudRail({
+    railHandlers = installRail({
       ipcMain, guard: (handler: any) => handler, trusted: () => true, lists: (event: any) => event.sender === railRef!.webContents, beside: () => true,
       places: railList, account: () => null, clipboard: { writeText: () => {} }, openCloud: async () => {},
       add: { choices: () => ({ cloud: false, link: true, address: false }), run: () => {} },

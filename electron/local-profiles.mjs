@@ -185,7 +185,7 @@ export function createLocalProfiles({ registry, clean, dataDir, home, window: sh
   }
 
   return {
-    /** The rail's rows (cloud-rail.mjs railPlaces `profiles`); `activeLocal`: this computer's page is the window's place. */
+    /** The rail's rows (rail.mjs railPlaces `profiles`); `activeLocal`: this computer's page is the window's place. */
     places({ activeLocal }) {
       const mode = home();
       if (!allowed() || !mode) return [];
@@ -210,7 +210,7 @@ export function createLocalProfiles({ registry, clean, dataDir, home, window: sh
     },
     /** Another place was chosen: a switch still waiting ends. */
     cancel() { turn++; if (settling) { settling = null; tell(); } },
-    /** A new workspace's entry; the rail opens it next (cloud-rail.mjs), so a switch that waits shows on its circle. */
+    /** A new workspace's entry; the rail opens it next (rail.mjs), so a switch that waits shows on its circle. */
     create({ name, color }) {
       if (!allowed() || home() === null) return { outcome: "failed" };
       const made = registry.create({ name, color, reserved: reserved() });

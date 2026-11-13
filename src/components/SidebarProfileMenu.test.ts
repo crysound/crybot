@@ -31,7 +31,7 @@ import {
   phoneDestinations,
   phonePairingSettingsAction,
 } from "@/lib/phone-pairing";
-import type { CloudAccountState } from "../../electron/account.mjs";
+import type { CloudAccountState } from "../../electron/cloud-account-types.mjs";
 import { PhoneAppDialog, type PhoneAppConnect } from "./PhoneAppDialog";
 import type { UpdaterState } from "@/lib/updater";
 import type { SidebarMenuItem } from "./SidebarPopoverMenu";
@@ -43,7 +43,7 @@ const state = (patch: Partial<UpdaterState>): UpdaterState => ({ status: "idle",
 
 describe("profileInitials", () => {
   it("takes the first letter of the first two words", () => {
-    expect(profileInitials({ name: "Hangzhou Crysound Electronics Co., Ltd." })).toBe("MS");
+    expect(profileInitials({ name: "Hangzhou Crysound Electronics Co., Ltd." })).toBe("HC");
     expect(profileInitials({ name: "Ada Byron Lovelace" })).toBe("AB");
   });
 
@@ -109,7 +109,7 @@ describe("updatePhase", () => {
 describe("updateLabel", () => {
   it("names the version it is ready to install", () => {
     expect(updateLabel("downloaded", state({ status: "downloaded", version: "0.2.0" }))).toBe(
-      "Restart to update to CryBot 0.2.0",
+      "Restart to update to Cry Bot 0.2.0",
     );
   });
 
@@ -123,7 +123,7 @@ describe("updateLabel", () => {
     expect(updateLabel("installing", state({ status: "installing", message: "Restart is taking longer than expected." })))
       .toBe("Restart is taking longer than expected.");
     expect(updateLabel("downloaded", state({ status: "downloaded", version: "0.2.0", installMode: "handoff" })))
-      .toBe("Install CryBot 0.2.0");
+      .toBe("Install Cry Bot 0.2.0");
     expect(updateLabel("installing", state({ status: "installing", installMode: "handoff" })))
       .toBe("Opening a terminal…");
   });
@@ -197,11 +197,11 @@ describe("updateNoteworthy", () => {
 describe("outward links", () => {
   it("sends Help Center to the docs the website also links to", () => {
     expect(HELP_CENTER_URL).toBe(DOCS_URL);
-    expect(DOCS_URL).toBe("https://github.com/example/project/tree/main/docs");
+    expect(DOCS_URL).toBe("https://github.com/crysound/crybot#readme");
   });
 
   it("sends Send Feedback to the Discord community", () => {
-    expect(FEEDBACK_URL).toBe("https://discord.gg/9Wb8MEpXRs");
+    expect(FEEDBACK_URL).toBe("https://github.com/crysound/crybot/issues");
   });
 });
 
