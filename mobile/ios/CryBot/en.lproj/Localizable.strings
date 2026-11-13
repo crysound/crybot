@@ -1,0 +1,7 @@
+"SERVER_ADDRESS_TITLE" = "Server address";
+"SERVER_ADDRESS_HINT" = "https://bot.example.com";
+"SERVER_ADDRESS_SAVE" = "Continue";
+"SERVER_ADDRESS_INVALID" = "Enter a valid http or https server address.";
+"LOAD_ERROR" = "The server could not be loaded.";
+"RETRY" = "Retry";
+"CHANGE_SERVER" = "Change server";

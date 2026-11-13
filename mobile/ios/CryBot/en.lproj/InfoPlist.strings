@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "Cry Bot needs microphone access for voice features.";
+"NSCameraUsageDescription" = "Cry Bot needs camera access for video features.";
+"NSPhotoLibraryUsageDescription" = "Cry Bot needs photo library access to choose files.";

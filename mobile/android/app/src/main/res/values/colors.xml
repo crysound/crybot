@@ -1,0 +1,5 @@
+<resources>
+    <color name="icon_gradient_start">#5733E6</color>
+    <color name="icon_gradient_middle">#260A88</color>
+    <color name="icon_gradient_end">#170057</color>
+</resources>
