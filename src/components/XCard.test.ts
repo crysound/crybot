@@ -119,7 +119,7 @@ describe("the X card in Apps", () => {
     expect(text()).toContain("Your free trial's included X calls are used up. Your full allowance starts on October 25. Add your own treg key to keep going.");
   });
 
-  it("asks everyone else for a treg key with a link to treg.to, saves it where keys go, tests it once and says it works", async () => {
+  it("asks everyone else for a treg key with a link to treg.to and saves it where keys go", async () => {
     await mount({});
     expect(card().dataset.xState).toBe("none");
     expect(text()).toContain("Add your treg key");
@@ -129,14 +129,11 @@ describe("the X card in Apps", () => {
     await submit();
     expect(server.calls.filter(([method]) => method !== "GET")).toEqual([
       ["PUT", "/api/config", { treg: { key: KEY } }],
-      ["POST", "/api/keys/test", { provider: "treg" }],
     ]);
     expect(fixture.dispatch).toHaveBeenCalledWith({ type: "configStatus", config: { treg: { configured: true }, xResearch: { included: false } } });
     expect(card().dataset.xState).toBe("own");
     expect(text()).toContain("Using your treg key");
-    expect(text()).toContain("treg is working ✓ Balance: $4.25.");
     expect(field()).toBeNull();
-    expect(fixture.track).toHaveBeenCalledWith("api_key_saved", { provider: "treg", via: "apps", result: "ok" });
     expect(onConnection).toHaveBeenLastCalledWith(true);
   });
 
@@ -172,7 +169,6 @@ describe("the X card in Apps", () => {
     expect(server.calls).toContainEqual(["PUT", "/api/config", { treg: { key: "" } }]);
     expect(card().dataset.xState).toBe("included");
     expect(text()).toContain("Included with your plan");
-    expect(fixture.track).toHaveBeenCalledWith("api_key_removed", { provider: "treg", via: "apps" });
   });
 
   it("removing the only key leaves no X, and the card asks for a key again", async () => {

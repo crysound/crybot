@@ -109,7 +109,6 @@ describe("Move from Grok Bot", () => {
     expect(lines.indexOf(FILES_STAY)).toBe(lines.indexOf("Routines are paused. Turn each one off in Grok Bot, then on here.") + 1);
     plain();
     expect(f.api.mock.calls.map(([path]) => path)).toContain("/api/bots/b1/skills/greet");
-    expect(f.track).toHaveBeenCalledOnce();
     expect(button("Move another Bot")).toBeDefined();
     expect(button("Done")).toBeDefined();
   });

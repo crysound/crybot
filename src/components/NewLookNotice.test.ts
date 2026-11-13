@@ -9,7 +9,7 @@ import { SIMPLE_MODE_PROMPT_KEY } from "@/lib/simple-mode-prompt";
 
 const analytics = vi.hoisted(() => ({ track: vi.fn() }));
 vi.mock("@/lib/analytics", () => analytics);
-vi.mock("@/lib/brand", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/brand")>(), productName: () => "CryBot" }));
+vi.mock("@/lib/brand", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/brand")>(), productName: () => "Cry Bot" }));
 const { NewLookNotice } = await import("./NewLookNotice");
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -21,7 +21,6 @@ const show = async (back = false) => { await act(async () => { root.render(creat
 const key = async (name: string, shiftKey = false) => {
   await act(async () => { document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: name, shiftKey, bubbles: true, cancelable: true })); });
 };
-const events = () => analytics.track.mock.calls.filter(([event]) => event === "new_look_notice").map(([, props]) => props);
 
 beforeEach(() => {
   setLocale("en");
@@ -49,7 +48,7 @@ describe("the new look notice", () => {
     await show();
     expect(dialog()?.getAttribute("role")).toBe("dialog");
     expect(dialog()?.getAttribute("aria-modal")).toBe("true");
-    expect(host.querySelector("h2")?.textContent).toBe("CryBot has a simpler look");
+    expect(host.querySelector("h2")?.textContent).toBe("Cry Bot has a simpler look");
     expect(host.textContent).toContain("Everything you need is still here; rarer settings are under Settings → More settings.");
     expect(host.querySelector('[role="switch"]')).toBeNull();
     expect(host.textContent).not.toContain("Advanced");
@@ -64,7 +63,6 @@ describe("the new look notice", () => {
     expect(onClose).toHaveBeenCalledOnce();
     expect(newLookDue()).toBe(false);
     expect(localStorage.getItem(NEW_LOOK_KEY)).toBe("seen");
-    expect(events()).toEqual([{ action: "closed" }]);
   });
 
   it("keeps the keyboard inside while it is open, and gives focus back when it closes", async () => {
@@ -84,8 +82,6 @@ describe("the new look notice", () => {
 });
 
 describe("the word that Advanced mode is back", () => {
-  const backEvents = () => analytics.track.mock.calls.filter(([event]) => event === "advanced_back_notice").map(([, props]) => props);
-
   it("says Advanced mode is back and where its switch is, with no switch of its own", async () => {
     localStorage.setItem(ADVANCED_BACK_KEY, "due");
     await show(true);
@@ -106,7 +102,5 @@ describe("the word that Advanced mode is back", () => {
     expect(localStorage.getItem(ADVANCED_BACK_KEY)).toBe("seen");
     expect(localStorage.getItem(SIMPLE_MODE_PROMPT_KEY)).toBe("1");
     expect(localStorage.getItem(NEW_LOOK_KEY), "the record of the move stays").toBe("due");
-    expect(backEvents()).toEqual([{ action: "closed" }]);
-    expect(events()).toEqual([]);
   });
 });

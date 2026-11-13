@@ -88,8 +88,8 @@ describe("the pairing code", () => {
     for (const over of [{}, { state: e2e }]) {
       const html = render(over);
       expect(qrCodes(html)).toBe(1);
-      expect(html).toContain("Install CryBot on your phone from the App Store or Google Play, then scan this code in the app.");
-      expect(html).toContain("Scan it from inside the CryBot app, not the camera.");
+      expect(html).toContain("Install Cry Bot on your phone from the App Store or Google Play, then scan this code in the app.");
+      expect(html).toContain("Scan it from inside the Cry Bot app, not the camera.");
     }
   });
 

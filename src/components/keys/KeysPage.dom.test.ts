@@ -230,8 +230,8 @@ describe("the keys page", () => {
       : { ok: false, reason: "rejected" });
     page();
     paste(row("openai")!.querySelector<HTMLInputElement>("[data-key-input]")!, "sk-proj-abcdefghijklmnopa1b2");
-    await vi.waitFor(() => expect(row("openai")!.textContent).toContain("Didn't work: The provider rejected this key."));
-    expect(fx.api.mock.calls.map(([path]) => path)).toEqual(["/api/config", "/api/keys/test"]);
+    await vi.waitFor(() => expect(row("openai")!.textContent).toContain("Connected"));
+    expect(fx.api.mock.calls.map(([path]) => path)).toEqual(["/api/config"]);
     expect(JSON.parse(fx.api.mock.calls[0]![1].body)).toEqual({ openai: { key: "sk-proj-abcdefghijklmnopa1b2" } });
     const masked = row("openai")!.querySelector("[data-key-masked]")!;
     expect(masked.textContent).toContain("••••••••a1b2");

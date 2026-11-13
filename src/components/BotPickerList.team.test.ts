@@ -14,14 +14,14 @@ const team = { people: [olive, { email: "ada@acme.test", name: "Ada", role: "mem
 
 afterEach(() => setTeamPeople(null));
 
-it("names each teammate's CryBot for its person in a picker, and the viewer's own as it is", () => {
+it("names each teammate's Cry Bot for its person in a picker, and the viewer's own as it is", () => {
   setTeamPeople(team);
   const html = renderToStaticMarkup(createElement(BotPickerList, { bots, picked: new Set<string>(), onToggle: () => {}, emptyHint: "" }));
-  expect(html.match(/role="checkbox" aria-label="[^"]*"/g)?.map((match) => match.slice(match.indexOf("aria-label")))).toEqual(['aria-label="Cry Bot"', 'aria-label="CryBot · Ada"', 'aria-label="CryBot · Ben"']);
+  expect(html.match(/role="checkbox" aria-label="[^"]*"/g)?.map((match) => match.slice(match.indexOf("aria-label")))).toEqual(['aria-label="Cry Bot"', 'aria-label="Cry Bot · Ada"', 'aria-label="Cry Bot · Ben"']);
 });
 
-it("names a CryBot whose person is not in the list by their address", () => {
-  expect(teamBotName(helper("x", "dan.smith@acme.test"), team)).toBe("CryBot · Dan Smith");
+it("names a Cry Bot whose person is not in the list by their address", () => {
+  expect(teamBotName(helper("x", "dan.smith@acme.test"), team)).toBe("Cry Bot · Dan Smith");
   expect(teamBotName({ name: "Scout" }, team)).toBe("Scout");
 });
 

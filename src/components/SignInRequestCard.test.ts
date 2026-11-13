@@ -76,7 +76,7 @@ describe("SignInRequestCard while it waits", () => {
     expect(html).toContain("— Pepper");
     expect(html).toContain("Pepper’s built-in browser");
     for (const label of ["Open", "Done", "Cancel"]) expect(html).toContain(label);
-    expect(html).toContain("CryBot never sees it.");
+    expect(html).toContain("Cry Bot never sees it.");
     expect(html).not.toContain("<input");
   });
 
@@ -90,7 +90,7 @@ describe("SignInRequestCard while it waits", () => {
 
   it("says the host computer, not this one, where this computer is somewhere else", () => {
     here.value = false;
-    expect(view({ place: "local" })).toContain("the computer CryBot runs on");
+    expect(view({ place: "local" })).toContain("the computer Cry Bot runs on");
   });
 
   it("Open goes to the place the bot works", () => {

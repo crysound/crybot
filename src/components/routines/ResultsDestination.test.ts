@@ -63,7 +63,7 @@ describe("routine result destination", () => {
       expect(resultsOfPlace(place({ activeView: "routines" }, { ...quotes, threadId: "main" }), "quotes"), "the Automations page is no chat").toBe("just-me");
       expect(resultsOfPlace(place({ selectedId: "bot" }, { ...quotes, threadId: "main" }), "quotes"), "another bot's chat on screen").toBe("just-me");
       expect(resultsOfPlace(place({}), undefined), "no bot chosen yet").toBe("just-me");
-      expect(resultsOfPlace(place({}), "bot"), "their own CryBot is theirs already").toBeNull();
+      expect(resultsOfPlace(place({}, bot), "bot"), "their own Cry Bot is theirs already").toBeNull();
       expect(resultsOfPlace(place({ config: {} }), "quotes"), "off a team").toBeUndefined();
     });
 

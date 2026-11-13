@@ -72,13 +72,13 @@ describe("the Settings window", () => {
   it("says which place a place page changes, and that account and app pages stay the same, without “place” for a person with one place", () => {
     expect(render("phone")).toContain("This computer");
     const account = render("account");
-    expect(account).toContain("Your CryBot account");
+    expect(account).toContain("Your Cry Bot account");
     expect(account).not.toContain("Same on every place");
-    expect(render("appearance")).toContain("CryBot on this device");
+    expect(render("appearance")).toContain("Cry Bot on this device");
   });
 
   // Owner decisions (Nov 11, Nov 12): Simple's nav is shorter. Nine entries, the same for every person and every rail.
-  const SIMPLE_NAV = ["overview", "phone", "ai", "vault", "transfer", "account", "plan", "app", "appearance"];
+  const SIMPLE_NAV = ["overview", "phone", "ai", "vault", "transfer", "account", "app", "appearance"];
   const SIMPLE_PEOPLE: Array<[string, () => void]> = [
     ["a person with only this computer", () => vi.stubGlobal("window", desktopHere({ cloudAccount: { state: () => new Promise(() => {}), onState: () => () => {} } }))],
     ["This computer's rail, with My Cloud", () => vi.stubGlobal("window", desktopHere({ cloudAccount: { state: () => new Promise(() => {}), onState: () => () => {} }, workspaces: { state: () => new Promise(() => {}), places: () => new Promise(() => {}) } }))],

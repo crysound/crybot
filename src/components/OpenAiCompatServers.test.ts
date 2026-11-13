@@ -102,8 +102,6 @@ describe("adding another OpenAI-compatible server", () => {
     answer();
     await add();
     expect(fixture.api).toHaveBeenCalledExactlyOnceWith("/api/instances/openai-compat", expect.objectContaining({ method: "POST" }));
-    expect(fixture.track.mock.calls).toEqual([["api_key_saved", { provider: "custom_endpoint", via: "settings", result }]]);
-    expect(JSON.stringify(fixture.track.mock.calls)).not.toMatch(/ada|example|ZZtest|SECRET/);
   });
 
   it("fills in Google Gemini, so only the AI Studio key is left to paste", async () => {

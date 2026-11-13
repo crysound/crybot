@@ -225,7 +225,7 @@ describe("apps on the hosting the Cloud plan includes", () => {
   it("says plainly where each app is hosted", async () => {
     apps = [INCLUDED, SITE, PAGE];
     await show();
-    expect([INCLUDED, SITE, PAGE].map((app) => card(app.id).querySelector("[data-app-source]")?.textContent)).toEqual(["Included hosting", "Your Netlify", "CryBot page"]);
+    expect([INCLUDED, SITE, PAGE].map((app) => card(app.id).querySelector("[data-app-source]")?.textContent)).toEqual(["Included hosting", "Your Netlify", "Cry Bot page"]);
     expect(card(INCLUDED.id).getAttribute("data-source")).toBe("included");
     expect(card(INCLUDED.id).querySelector("[data-app-access]")?.textContent).toBe("Public");
   });
@@ -244,7 +244,7 @@ describe("apps on the hosting the Cloud plan includes", () => {
     expect(host.querySelector(`[data-published-app="${INCLUDED.id}"]`)).toBeNull();
   });
 
-  it("shows an app CryBot took down as taken down, with nothing to open, preview or copy", async () => {
+  it("shows an app Cry Bot took down as taken down, with nothing to open, preview or copy", async () => {
     apps = [TAKEN_DOWN, NOT_LIVE, FOLDERLESS];
     await show();
     expect(card(TAKEN_DOWN.id).querySelector("[data-app-status]")?.textContent).toBe("Taken down");

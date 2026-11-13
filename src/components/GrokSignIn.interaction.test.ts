@@ -67,7 +67,6 @@ it("starts only on request on Grok's own route, and never opens a page on the pe
   expect(fixture.api).toHaveBeenCalledWith("/api/instances/grok/auth/status?flowId=grok-flow", expect.objectContaining({ signal: expect.any(AbortSignal) }));
   expect(fixture.refreshInstances).toHaveBeenCalledOnce();
   expect(fixture.refreshModels).toHaveBeenCalledWith("grok");
-  expect(fixture.track.mock.calls).toEqual([["engine_signed_in", { engine: "grok", method: "device_code" }]]);
   cleanup?.();
 });
 

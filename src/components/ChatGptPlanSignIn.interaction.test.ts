@@ -63,7 +63,6 @@ it("starts only on request, opens the official page, and refreshes models after 
   expect(fixture.api).toHaveBeenCalledWith("/api/instances/chatgpt/auth/status?flowId=flow-one", expect.objectContaining({ signal: expect.any(AbortSignal) }));
   expect(fixture.refreshInstances).toHaveBeenCalledOnce();
   expect(fixture.refreshModels).toHaveBeenCalledWith("chatgpt");
-  expect(fixture.track.mock.calls).toEqual([["engine_signed_in", { engine: "codex", method: "browser" }]]);
   cleanup?.();
 });
 

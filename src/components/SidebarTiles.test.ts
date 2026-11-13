@@ -46,7 +46,7 @@ describe("the sidebar tiles", () => {
     const html = renderToStaticMarkup(createElement(SidebarBotTile, { ...props(bot({ chiefOfStaff: primary })), primary }));
     expect(html).toMatch(new RegExp(`data-sidebar-tile="${primary ? "primary" : "pinned"}"[^>]*class="[^"]*\\bh-\\[92px\\] w-\\[78px\\][^"]*\\brounded-\\[8px\\]`));
     expect(html).toContain('width="56px" height="56px"');
-    expect(html).toMatch(/truncate text-center text-\[13px\] font-medium leading-4 text-ink"[^>]*>CryBot</);
+    expect(html).toMatch(/truncate text-center text-\[13px\] font-medium leading-4 text-ink"[^>]*>Cry Bot</);
     expect(html).not.toContain("data-provider-mark");
   });
 
@@ -54,7 +54,7 @@ describe("the sidebar tiles", () => {
     const tileHtml = (extra: Partial<Bot>, primary: boolean) => renderToStaticMarkup(createElement(SidebarBotTile, { ...props(bot(extra)), primary }));
     const main = tileHtml({ chiefOfStaff: true }, true);
     expect(main).toContain('data-testid="chief-badge"');
-    expect(main).toContain('title="CryBot · Chief of Staff"');
+    expect(main).toContain('title="Cry Bot · Chief of Staff"');
     expect(tileHtml({ chiefOfStaff: true }, false)).not.toContain('data-testid="chief-badge"');
     expect(tileHtml({}, true)).not.toContain('data-testid="chief-badge"');
   });
@@ -67,7 +67,7 @@ describe("the sidebar tiles", () => {
     expect(renderToStaticMarkup(createElement(SidebarBotTile, props(bot({ activity: "waiting-on-you" }))))).toContain('data-testid="waiting-dot"');
     const unread = renderToStaticMarkup(createElement(SidebarBotTile, props(bot({ unread: true }))));
     expect(unread).toContain('data-testid="unread-dot"');
-    expect(unread).toContain('aria-label="CryBot · Unread"');
+    expect(unread).toContain('aria-label="Cry Bot · Unread"');
   });
 
   it("opens the bot on Enter and its menu from the ContextMenu key", () => {

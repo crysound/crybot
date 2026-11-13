@@ -8,7 +8,7 @@ import { DiagnosticsRow } from "./DiagnosticsRow";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let host: HTMLDivElement;
 let root: Root;
-const FOLDER = "C:\\Users\\Ash\\AppData\\Roaming\\CryBot\\logs";
+const FOLDER = "C:\\Users\\Ash\\AppData\\Roaming\\Cry Bot\\logs";
 
 beforeEach(() => {
   setLocale("en");
@@ -50,5 +50,5 @@ it("on My Cloud's page (no desktop bridge) offers no buttons that do nothing, an
   (window as { cry?: unknown }).cry = { platform: "win32" };
   await render();
   expect(host.querySelectorAll("button")).toHaveLength(0);
-  expect(host.querySelector("[data-logs-help]")!.textContent).toContain("CryBot Cloud support can read the Cloud's.");
+  expect(host.querySelector("[data-logs-help]")!.textContent).toContain("Cry Bot Cloud support can read the Cloud's.");
 });

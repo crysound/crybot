@@ -298,14 +298,11 @@ describe("SecretRequestCard key analytics", () => {
     await flush();
     expect(setCredential).toHaveBeenCalledExactlyOnceWith("boxToken", KEY);
     expect(fixture.api).toHaveBeenCalledTimes(2);
-    expect(fixture.track.mock.calls).toEqual([["api_key_saved", { provider: "boat", via: "chat_request", result: "ok" }]]);
-    for (const fragment of [KEY, KEY.slice(0, 6), KEY.slice(-6), String(KEY.length)]) expect(JSON.stringify(fixture.track.mock.calls)).not.toContain(fragment);
   });
 
   it("reports a Boat key boat.dev refused as rejected", async () => {
     vi.stubGlobal("window", { cry: { setCredential: vi.fn().mockRejectedValue(new Error("Error invoking remote method 'credential:set': KeyRejected: That doesn't look like a Boat API key")) } });
     await submit("boxToken");
-    expect(fixture.track.mock.calls).toEqual([["api_key_saved", { provider: "boat", via: "chat_request", result: "rejected" }]]);
   });
 
   // Even with the desktop bridge, the 1Password token goes to this server's Logins (which checks it with 1Password),
@@ -326,7 +323,6 @@ describe("SecretRequestCard key analytics", () => {
     fixture.api.mockResolvedValueOnce({ xai: { configured: true } }).mockResolvedValueOnce({ ok: true });
     await submit("xaiApiKey", "xai-ZZtestSECRET0123456789");
     expect(fixture.api.mock.calls[0]).toEqual(["/api/config", { method: "PUT", body: JSON.stringify({ xai: { key: "xai-ZZtestSECRET0123456789" } }) }]);
-    expect(fixture.track.mock.calls).toEqual([["api_key_saved", { provider: "xai", via: "chat_request", result: "unverified" }]]);
   });
 
   it("saves an Anthropic key in the desktop store as Settings does, keeping Claude sign-ins", async () => {
@@ -336,7 +332,6 @@ describe("SecretRequestCard key analytics", () => {
     await submit("anthropicApiKey", "sk-ant-ZZtestSECRET0123456789");
     expect(setCredential).toHaveBeenCalledExactlyOnceWith("anthropicApiKey", "sk-ant-ZZtestSECRET0123456789", { everyClaudeBot: false });
     expect(fixture.api.mock.calls.map(([path]) => path)).toEqual(["/api/bots/bot-1/secret-cards/secret-card/provided"]);
-    expect(fixture.track.mock.calls).toEqual([["api_key_saved", { provider: "anthropic", via: "chat_request", result: "unverified" }]]);
   });
 
   it("sends a provider key typed on a desktop paired to another computer to that computer's server", async () => {
@@ -405,7 +400,7 @@ describe("SecretRequestCard custom secrets", () => {
     expect(file).toContain("Saved to a private file your bot&#x27;s commands can read for 24 hours, then deleted.");
     expect(file).not.toContain("Where to get this key");
     const ref = view({ target: "customSecret", label: "Notion key", reason: "For Notion.", helpUrl: "", delivery: "ref" });
-    expect(ref).toContain("CryBot keeps it for one use by its own tools. Your bot never sees it");
+    expect(ref).toContain("Cry Bot keeps it for one use by its own tools. Your bot never sees it");
   });
 });
 

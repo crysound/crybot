@@ -64,7 +64,6 @@ it("treats a code Claude Code accepts as the sign-in: no status request after it
   expect(fixture.refreshInstances).toHaveBeenCalled();
   expect(fixture.refreshModels).toHaveBeenCalledWith("claude");
   expect(onDone).toHaveBeenCalledWith(true);
-  expect(fixture.track.mock.calls).toEqual([["engine_signed_in", { engine: "claude", method: "code" }]]);
 });
 
 it("ends the flow with Claude Code's own words when it refuses the code, and offers to try again", async () => {

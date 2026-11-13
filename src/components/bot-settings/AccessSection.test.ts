@@ -81,7 +81,7 @@ function makeDerived(overrides: Partial<ReturnType<typeof useBotSettingsDerived>
     browserAllowed: true,
     browserEnabled: false,
     browserSelectable: false,
-    browserDisabledReason: "The built-in browser needs the CryBot desktop app",
+    browserDisabledReason: "The built-in browser needs the Cry Bot desktop app",
     sectionName: "General",
     currentChief: undefined,
     botRoutines: [],
@@ -333,7 +333,7 @@ describe("Research (treg) card", () => {
 
   it("is on by default with a Cloud plan, and turns off for one bot with one patch", () => {
     fixture.config = { xResearch: { included: true } } as Partial<ConfigStatus>;
-    expect(render(makeBot())).toContain("Included with your CryBot Cloud plan");
+    expect(render(makeBot())).toContain("Included with your Cry Bot Cloud plan");
     const { card, derived } = capture(makeBot());
     const toggle = card.find((node) => node.props["aria-label"] === "Let this bot use research")!;
     (toggle.props.onClick as () => void)();

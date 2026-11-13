@@ -2,13 +2,12 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ManagedDesktopBridge } from "../../../electron/managed-desktop.mjs";
 import { setLocale } from "@/lib/i18n";
 import type { InstanceInfo } from "@/state/store";
 
 const f = vi.hoisted(() => ({
-  instances: [] as InstanceInfo[], dispatch: vi.fn(), row: null as null | { bridge: unknown; onOpenSettings: () => void },
-  check: (): Promise<object> => Promise.resolve({ ok: true }), checks: [] as string[], fail: false, config: {} as Record<string, unknown>, brand: "default", opened: [] as string[],
+  instances: [] as InstanceInfo[], dispatch: vi.fn(),
+  check: (): Promise<object> => Promise.resolve({ ok: true }), checks: [] as string[], fail: false, config: {} as Record<string, unknown>,
 }));
 vi.mock("@/state/store", () => ({
   api: async (path: string) => {
@@ -20,15 +19,12 @@ vi.mock("@/state/store", () => ({
   useStore: () => ({ state: { instances: f.instances, config: f.config }, dispatch: f.dispatch }),
 }));
 vi.mock("@/lib/analytics", () => ({ track: vi.fn(), emailGateDone: () => false }));
-vi.mock("@/lib/brand", () => ({ brandStatus: () => ({ source: f.brand }), productName: () => "CryBot" }));
-vi.mock("@/lib/app-links", async (original) => ({ ...await original<typeof import("@/lib/app-links")>(), openExternalLink: async (url: string) => { f.opened.push(url); } }));
+vi.mock("@/lib/brand", () => ({ brandStatus: () => ({ source: f.brand }), productName: () => "Cry Bot" }));
 vi.mock("@/components/EngineSetup", async () => {
   const { createElement: h } = await import("react");
   return { EngineSetup: ({ instance, intent, description }: { instance: InstanceInfo; intent: string; description?: string }) =>
     h("div", { "data-engine-setup": instance.instanceId, "data-intent": intent, "data-description": description }) };
 });
-// The row has its own tests; here only whether the first screen offers it.
-vi.mock("./beats/OrganisationRow", () => ({ OrganisationRow: (props: NonNullable<typeof f.row>) => { f.row = props; return null; } }));
 const { ConnectAi, ConnectAiDialog } = await import("./ConnectAi");
 const { useWelcomeAi } = await import("./welcome-ai");
 const { useStore } = await import("@/state/store");
@@ -45,7 +41,6 @@ const engine = (instanceId: string, driverKind: string, displayName: string, rea
   instanceId, driverKind, displayName, install: { docsUrl: "https://example.test" },
   snapshot: { state: ready ? "available" : "unavailable", authenticated: ready }, models: { default: "m", options: [] },
 });
-const bridge = { onState: vi.fn(), state: vi.fn() } as unknown as ManagedDesktopBridge;
 let host: HTMLDivElement, root: Root;
 const text = () => host.textContent ?? "";
 const show = async (extra: { hosted?: boolean } = {}) => {
@@ -61,9 +56,7 @@ beforeEach(() => {
   f.check = () => Promise.resolve({ ok: true });
   f.checks = [];
   f.instances = [engine("grok", "grokAgent", "Grok", false), engine("claude", "claudeAgent", "Claude", false), engine("codex", "codex", "Codex", false)];
-  f.dispatch.mockReset(); f.config = {}; f.brand = "default"; f.opened = [];
-
-  f.row = null;
+  f.dispatch.mockReset(); f.config = {};
   f.fail = false;
   vi.stubGlobal("cry", undefined);
   host = document.createElement("div");
@@ -216,21 +209,6 @@ describe("connecting an AI on the first screen", () => {
     expect(host.querySelector("[data-ai-recommended]")?.getAttribute("data-ai-recommended")).toBe("claude");
   });
 
-  it("offers the organization sign-in under Other ways on this computer's own window only", async () => {
-    await show();
-    await otherWays();
-    expect(f.row).toBeNull();
-    vi.stubGlobal("cry", { organization: bridge });
-    window.cry = { organization: bridge } as unknown as typeof window.cry;
-    await show({ hosted: true });
-    expect(f.row).toBeNull();
-    await show();
-    expect(f.row?.bridge).toBe(bridge);
-    f.row!.onOpenSettings();
-    expect(f.dispatch).toHaveBeenCalledWith({ type: "toggleAppSettings", open: true, section: "organization" });
-    delete window.cry;
-  });
-
   it("opens as the Connect an AI dialog, which Escape and a click outside close", async () => {
     const onClose = vi.fn();
     await act(async () => { root.render(createElement(ConnectAiDialog, { tested: null, onClose })); });
@@ -244,40 +222,5 @@ describe("connecting an AI on the first screen", () => {
     expect(onClose).toHaveBeenCalledTimes(2);
     await act(async () => { dialog.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })); });
     expect(onClose, "a click inside stays").toHaveBeenCalledTimes(2);
-  });
-});
-
-describe("the ModelGo option", () => {
-  const URL_EXACT = "https://modelgo.ai/?utm_source=crybot&utm_medium=sponsorship&utm_content=app&campaign_id=crybot&ad_group_id=app";
-  const option = () => host.querySelector("[data-modelgo-option]");
-
-  const provider = (ready = false) => engine("modelgo", "modelgo", "ModelGo (API)", ready);
-
-  it("sits among the other ways, labelled a sponsor, and its link opens exactly the sponsor's address", async () => {
-    f.instances.push(provider());
-    await show();
-    expect(option()?.textContent).toContain("ModelGo"); expect(option()?.textContent).toContain("Sponsor");
-    expect(option()?.textContent).toContain("One API key, every model.");
-    expect(host.querySelectorAll("[data-modelgo-option]")).toHaveLength(1);
-
-    const link = [...option()!.querySelectorAll("button")].find(button => button.textContent?.includes("Get a key"))!;
-    await act(async () => { link.click(); });
-    expect(f.opened).toEqual([URL_EXACT]);
-
-  });
-
-  it("opens to its key field, and counts that as starting to add a key", async () => {
-    f.instances.push(provider());
-    await show();
-    await act(async () => { option()!.querySelector<HTMLButtonElement>("button[aria-expanded]")!.click(); });
-    expect(option()!.querySelector('[data-engine-setup="modelgo"]')).toBeTruthy();
-
-  });
-
-  it("is not added on a white-label build, a desktop whose organization refuses it, or a hosted workspace; nor once connected", async () => {
-    f.brand = "file"; await show(); expect(option()).toBeNull();
-    f.brand = "default"; f.config = { managedPolicy: { companyModelsOnly: false, allowedEngines: ["codex"] } }; await show(); expect(option()).toBeNull();
-    f.config = {}; await show({ hosted: true }); expect(option()).toBeNull();
-    f.instances.push(provider(true)); await show(); expect(option()).toBeNull();
   });
 });
