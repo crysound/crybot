@@ -4,27 +4,24 @@ import android.Manifest
 import android.app.Activity
 import android.app.DownloadManager
 import android.content.ActivityNotFoundException
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
-import android.os.Bundle
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
-import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
-import android.webkit.JsResult
+import android.webkit.MimeTypeMap
 import android.webkit.PermissionRequest
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
@@ -37,48 +34,75 @@ import java.util.Locale
 class MainActivity : Activity() {
     private lateinit var container: ViewGroup
     private lateinit var webView: WebView
+    private var webViewVisible = false
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private var pendingPermissionRequest: PermissionRequest? = null
     private var pendingPermissionResources: Array<String> = emptyArray()
     private var pendingDownload: DownloadManager.Request? = null
     private var currentServer: String = ""
     private val preferences by lazy { getSharedPreferences("crybot", MODE_PRIVATE) }
+    private val configuredServer get() = BuildConfig.CRYBOT_SERVER_URL.trim().trimEnd('/')
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.WHITE)
+            setOnApplyWindowInsetsListener { view, insets ->
+                val left: Int
+                val top: Int
+                val right: Int
+                val bottom: Int
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val values = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.ime())
+                    left = values.left
+                    top = values.top
+                    right = values.right
+                    bottom = values.bottom
+                } else {
+                    @Suppress("DEPRECATION")
+                    left = insets.systemWindowInsetLeft
+                    @Suppress("DEPRECATION")
+                    top = insets.systemWindowInsetTop
+                    @Suppress("DEPRECATION")
+                    right = insets.systemWindowInsetRight
+                    @Suppress("DEPRECATION")
+                    bottom = insets.systemWindowInsetBottom
+                }
+                view.setPadding(left, top, right, bottom)
+                insets
+            }
         }
         setContentView(container)
-        currentServer = BuildConfig.CRYBOT_SERVER_URL.ifBlank { preferences.getString("server", "") ?: "" }
+        container.requestApplyInsets()
+        currentServer = configuredServer.ifBlank { preferences.getString("server", "") ?: "" }
         if (validServer(currentServer)) showWebView() else showServerForm()
     }
 
     private fun showServerForm() {
+        webViewVisible = false
         container.removeAllViews()
         val form = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(48, 96, 48, 48)
         }
         val title = TextView(this).apply {
-            text = getString(com.crysound.crybot.R.string.server_address_title)
+            text = getString(R.string.server_address_title)
             textSize = 24f
             setTextColor(Color.rgb(23, 0, 87))
         }
         val input = EditText(this).apply {
-            hint = getString(com.crysound.crybot.R.string.server_address_hint)
+            hint = getString(R.string.server_address_hint)
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
             setSingleLine(true)
             setText(currentServer)
         }
         val message = TextView(this).apply { setTextColor(Color.RED) }
-        val save = Button(this).apply { text = getString(com.crysound.crybot.R.string.server_address_save) }
+        val save = Button(this).apply { text = getString(R.string.server_address_save) }
         save.setOnClickListener {
             val value = input.text.toString().trim().trimEnd('/')
             if (!validServer(value)) {
-                message.text = getString(com.crysound.crybot.R.string.server_address_invalid)
+                message.text = getString(R.string.server_address_invalid)
             } else {
                 currentServer = value
                 preferences.edit().putString("server", value).apply()
@@ -93,6 +117,7 @@ class MainActivity : Activity() {
     }
 
     private fun showError() {
+        webViewVisible = false
         container.removeAllViews()
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -104,18 +129,26 @@ class MainActivity : Activity() {
         }
         val retry = Button(this).apply { text = getString(R.string.retry) }
         retry.setOnClickListener { showWebView() }
-        val change = Button(this).apply { text = getString(R.string.change_server) }
-        change.setOnClickListener { showServerForm() }
         layout.addView(text, LinearLayout.LayoutParams(-1, -2))
         layout.addView(retry, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 24 })
-        layout.addView(change, LinearLayout.LayoutParams(-1, -2))
+        if (BuildConfig.CRYBOT_SERVER_URL.isBlank()) {
+            val change = Button(this).apply { text = getString(R.string.change_server) }
+            change.setOnClickListener { showServerForm() }
+            layout.addView(change, LinearLayout.LayoutParams(-1, -2))
+        }
         container.addView(layout, LinearLayout.LayoutParams(-1, -1))
     }
 
     private fun showWebView() {
+        if (!::webView.isInitialized) createWebView()
+        webViewVisible = true
         container.removeAllViews()
-        webView = WebView(this)
         container.addView(webView, LinearLayout.LayoutParams(-1, -1))
+        webView.loadUrl(currentServer)
+    }
+
+    private fun createWebView() {
+        webView = WebView(this)
         val settings = webView.settings
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
@@ -137,42 +170,82 @@ class MainActivity : Activity() {
             override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
                 fileCallback?.onReceiveValue(null)
                 fileCallback = callback
+                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                    val mimeTypes = params.acceptTypes.flatMap { accept ->
+                        accept.split(',').map { it.trim().lowercase(Locale.US) }.filter { it.isNotEmpty() }.mapNotNull { type ->
+                            if (type.startsWith(".")) MimeTypeMap.getSingleton().getMimeTypeFromExtension(type.removePrefix(".")) else type.takeIf { it.contains('/') }
+                        }
+                    }.distinct()
+                    if (mimeTypes.isNotEmpty()) putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
+                    if (params.mode == FileChooserParams.MODE_OPEN_MULTIPLE) putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
                 return try {
-                    startActivityForResult(params.createIntent(), FILE_CHOOSER_REQUEST)
+                    startActivityForResult(intent, FILE_CHOOSER_REQUEST)
                     true
-                } catch (_: ActivityNotFoundException) {
+                } catch (e: ActivityNotFoundException) {
+                    fileCallback?.onReceiveValue(null)
                     fileCallback = null
                     false
                 }
             }
 
             override fun onPermissionRequest(request: PermissionRequest) {
-                val permissions = mutableListOf<String>()
-                if (request.resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) permissions += Manifest.permission.RECORD_AUDIO
-                if (request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) permissions += Manifest.permission.CAMERA
-                val missing = permissions.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
-                if (missing.isEmpty()) request.grant(request.resources)
+                pendingPermissionRequest?.deny()
+                pendingPermissionRequest = null
+                pendingPermissionResources = emptyArray()
+                if (!allowedHost(request.origin.host)) {
+                    request.deny()
+                    return
+                }
+                val resources = request.resources.filter {
+                    it == PermissionRequest.RESOURCE_AUDIO_CAPTURE || it == PermissionRequest.RESOURCE_VIDEO_CAPTURE
+                }.toTypedArray()
+                if (resources.isEmpty()) {
+                    request.deny()
+                    return
+                }
+                val permissions = resources.map {
+                    if (it == PermissionRequest.RESOURCE_AUDIO_CAPTURE) Manifest.permission.RECORD_AUDIO else Manifest.permission.CAMERA
+                }
+                val missing = permissions.distinct().filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+                if (missing.isEmpty()) request.grant(resources)
                 else {
                     pendingPermissionRequest = request
-                    pendingPermissionResources = request.resources
+                    pendingPermissionResources = resources
                     requestPermissions(missing.toTypedArray(), MEDIA_PERMISSION_REQUEST)
                 }
             }
         }
         webView.setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
-            val request = DownloadManager.Request(Uri.parse(url)).apply {
-                setMimeType(mimeType)
-                setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType))
-                setDescription(url)
-                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType))
-                addRequestHeader("Cookie", CookieManager.getInstance().getCookie(url) ?: "")
-                addRequestHeader("User-Agent", userAgent)
+            val scheme = Uri.parse(url).scheme?.lowercase(Locale.US)
+            if (scheme != "http" && scheme != "https") {
+                Toast.makeText(this, getString(R.string.download_unsupported), Toast.LENGTH_SHORT).show()
+                return@DownloadListener
             }
-            enqueueDownload(request)
+            val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
+            try {
+                val request = DownloadManager.Request(Uri.parse(url))
+                request.setMimeType(mimeType)
+                request.setTitle(filename)
+                request.setDescription(url)
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                try {
+                    request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
+                } catch (e: RuntimeException) {
+                    Toast.makeText(this@MainActivity, getString(R.string.download_failed), Toast.LENGTH_SHORT).show()
+                    return@DownloadListener
+                }
+                request.addRequestHeader("Cookie", CookieManager.getInstance().getCookie(url) ?: "")
+                request.addRequestHeader("User-Agent", userAgent)
+                enqueueDownload(request)
+            } catch (e: RuntimeException) {
+                Toast.makeText(this, getString(R.string.download_failed), Toast.LENGTH_SHORT).show()
+                return@DownloadListener
+            }
             Toast.makeText(this, getString(R.string.download_started), Toast.LENGTH_SHORT).show()
         })
-        webView.loadUrl(currentServer)
     }
 
     private fun navigate(uri: Uri): Boolean {
@@ -188,9 +261,16 @@ class MainActivity : Activity() {
 
     private fun openExternal(uri: Uri) {
         try {
-            val intent = if (uri.scheme == "intent") Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME) else Intent(Intent.ACTION_VIEW, uri)
+            val intent = if (uri.scheme.equals("intent", true)) {
+                Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME).apply {
+                    addCategory(Intent.CATEGORY_BROWSABLE)
+                    component = null
+                    selector = null
+                }
+            } else Intent(Intent.ACTION_VIEW, uri)
             startActivity(intent)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            // System handlers may not support an identity-source app link.
         }
     }
 
@@ -203,7 +283,7 @@ class MainActivity : Activity() {
 
     private fun validServer(value: String): Boolean {
         val uri = runCatching { Uri.parse(value) }.getOrNull() ?: return false
-        return (uri.scheme == "http" || uri.scheme == "https") && !uri.host.isNullOrBlank()
+        return uri.scheme.equals("https", true) && !uri.host.isNullOrBlank()
     }
 
     private fun enqueueDownload(request: DownloadManager.Request) {
@@ -211,7 +291,11 @@ class MainActivity : Activity() {
             pendingDownload = request
             requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), DOWNLOAD_PERMISSION_REQUEST)
         } else {
-            (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
+            try {
+                (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
+            } catch (e: RuntimeException) {
+                Toast.makeText(this, getString(R.string.download_failed), Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -221,23 +305,35 @@ class MainActivity : Activity() {
     }
 
     override fun onBackPressed() {
-        if (::webView.isInitialized && webView.canGoBack()) webView.goBack() else super.onBackPressed()
+        if (webViewVisible && ::webView.isInitialized && webView.canGoBack()) webView.goBack() else super.onBackPressed()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == FILE_CHOOSER_REQUEST) {
-            fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
-            fileCallback = null
+        if (requestCode != FILE_CHOOSER_REQUEST) return
+        val callback = fileCallback ?: return
+        fileCallback = null
+        if (resultCode != RESULT_OK || data == null) {
+            callback.onReceiveValue(null)
+            return
         }
+        val uris = mutableListOf<Uri>()
+        data.data?.let(uris::add)
+        data.clipData?.let { clip ->
+            for (index in 0 until clip.itemCount) clip.getItemAt(index).uri?.let(uris::add)
+        }
+        callback.onReceiveValue(uris.distinct().toTypedArray().takeIf { it.isNotEmpty() })
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == MEDIA_PERMISSION_REQUEST) {
-            val request = pendingPermissionRequest ?: return
-            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) request.grant(pendingPermissionResources) else request.deny()
+            val request = pendingPermissionRequest
             pendingPermissionRequest = null
+            if (request != null) {
+                if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) request.grant(pendingPermissionResources) else request.deny()
+            }
+            pendingPermissionResources = emptyArray()
         }
         if (requestCode == DOWNLOAD_PERMISSION_REQUEST) {
             val download = pendingDownload

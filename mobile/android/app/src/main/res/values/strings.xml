@@ -3,11 +3,11 @@
     <string name="server_address_title">Server address</string>
     <string name="server_address_hint">https://bot.example.com</string>
     <string name="server_address_save">Continue</string>
-    <string name="server_address_invalid">Enter a valid http or https server address.</string>
+    <string name="server_address_invalid">Enter a valid https server address.</string>
     <string name="load_error">The server could not be loaded.</string>
     <string name="retry">Retry</string>
     <string name="change_server">Change server</string>
-    <string name="microphone_permission">Cry Bot needs microphone access for voice features.</string>
-    <string name="camera_permission">Cry Bot needs camera access for video features.</string>
     <string name="download_started">Download started.</string>
+    <string name="download_unsupported">This download type is not supported.</string>
+    <string name="download_failed">The download could not be started.</string>
 </resources>

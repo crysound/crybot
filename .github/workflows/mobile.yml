@@ -1,5 +1,8 @@
 name: Mobile builds
 
+permissions:
+  contents: read
+
 on:
   push:
     paths:
@@ -42,4 +45,4 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
       - run: xcodegen generate
-      - run: xcodebuild -scheme CryBot -sdk iphonesimulator -configuration Debug build CODE_SIGNING_ALLOWED=NO
+      - run: xcodebuild -scheme CryBot -sdk iphonesimulator -configuration Debug -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO

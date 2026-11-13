@@ -6,7 +6,9 @@
 gradle assembleDebug lintDebug
 ```
 
-服务地址和登录相关主机在构建时传入：
+CI 通过 `gradle/actions/setup-gradle` 指定 Gradle 8.11.1，然后直接运行 `gradle`，不需要 wrapper。
+
+服务地址（仅支持 `https`）和登录相关主机在构建时传入：
 
 ```sh
 CRYBOT_SERVER_URL=https://bot.example.com \

@@ -8,12 +8,14 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
     private var serverURL = ""
     private var loginHosts = Set<String>()
     private var downloadLocations = [ObjectIdentifier: URL]()
+    private var serverWasInjected = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         let configured = (Bundle.main.object(forInfoDictionaryKey: "CRYBOT_SERVER_URL") as? String ?? "").trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        serverURL = validServer(configured) ? configured : (preferences.string(forKey: "server") ?? "")
+        serverWasInjected = validServer(configured)
+        serverURL = serverWasInjected ? configured : (preferences.string(forKey: "server") ?? "")
         loginHosts = Set((Bundle.main.object(forInfoDictionaryKey: "CRYBOT_LOGIN_HOSTS") as? String ?? "").split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }.filter { !$0.isEmpty })
         if validServer(serverURL) { showWebView() } else { showServerForm() }
     }
@@ -65,12 +67,14 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         let retry = UIButton(type: .system)
         retry.setTitle(NSLocalizedString("RETRY", comment: ""), for: .normal)
         retry.addAction(UIAction { [weak self] _ in self?.showWebView() }, for: .touchUpInside)
-        let change = UIButton(type: .system)
-        change.setTitle(NSLocalizedString("CHANGE_SERVER", comment: ""), for: .normal)
-        change.addAction(UIAction { [weak self] _ in self?.showServerForm() }, for: .touchUpInside)
         stack.addArrangedSubview(label)
         stack.addArrangedSubview(retry)
-        stack.addArrangedSubview(change)
+        if !serverWasInjected {
+            let change = UIButton(type: .system)
+            change.setTitle(NSLocalizedString("CHANGE_SERVER", comment: ""), for: .normal)
+            change.addAction(UIAction { [weak self] _ in self?.showServerForm() }, for: .touchUpInside)
+            stack.addArrangedSubview(change)
+        }
     }
 
     private func showWebView() {
@@ -78,7 +82,8 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
         configuration.allowsInlineMediaPlayback = true
-        configuration.applicationNameForUserAgent = "CryBotApp/\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0") iOS"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0"
+        configuration.applicationNameForUserAgent = "CryBot/\(version)"
         webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = self
         webView.uiDelegate = self
@@ -119,7 +124,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
     }
 
     private func validServer(_ value: String) -> Bool {
-        guard let url = URL(string: value), let scheme = url.scheme?.lowercased(), ["http", "https"].contains(scheme), url.host != nil else { return false }
+        guard let url = URL(string: value), url.scheme?.lowercased() == "https", url.host != nil else { return false }
         return true
     }
 
@@ -130,11 +135,22 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        guard navigationAction.targetFrame?.isMainFrame ?? true, let url = navigationAction.request.url else {
+        guard let targetFrame = navigationAction.targetFrame else {
             decisionHandler(.allow)
             return
         }
-        if ["http", "https"].contains(url.scheme?.lowercased()) {
+        guard targetFrame.isMainFrame, let url = navigationAction.request.url else {
+            decisionHandler(.allow)
+            return
+        }
+        if navigationAction.shouldPerformDownload {
+            decisionHandler(.download)
+            return
+        }
+        let scheme = url.scheme?.lowercased()
+        if ["blob", "data", "about"].contains(scheme) {
+            decisionHandler(.allow)
+        } else if ["http", "https"].contains(scheme) {
             if allowed(url) { decisionHandler(.allow) } else {
                 UIApplication.shared.open(url)
                 decisionHandler(.cancel)
@@ -145,14 +161,26 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         }
     }
 
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        guard let url = navigationAction.request.url else { return nil }
+        if ["http", "https"].contains(url.scheme?.lowercased()) && allowed(url) {
+            webView.load(URLRequest(url: url))
+        } else if ["http", "https"].contains(url.scheme?.lowercased()) {
+            UIApplication.shared.open(url)
+        } else if !["blob", "data", "about"].contains(url.scheme?.lowercased()) {
+            UIApplication.shared.open(url)
+        }
+        return nil
+    }
+
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         webView.scrollView.refreshControl?.endRefreshing()
-        if (error as NSError).code != NSURLErrorCancelled { showError() }
+        if isNetworkFailure(error) { showError() }
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         webView.scrollView.refreshControl?.endRefreshing()
-        if (error as NSError).code != NSURLErrorCancelled { showError() }
+        if isNetworkFailure(error) { showError() }
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -163,8 +191,13 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         decisionHandler(.prompt)
     }
 
-    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, decidePolicyFor decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
-        let disposition = (navigationResponse.response as? HTTPURLResponse)?.allHeaderFields["Content-Disposition"] as? String
+    private func isNetworkFailure(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        return nsError.domain == NSURLErrorDomain && nsError.code != NSURLErrorCancelled
+    }
+
+    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        let disposition = (navigationResponse.response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Disposition")
         if !navigationResponse.canShowMIMEType || disposition?.localizedCaseInsensitiveContains("attachment") == true {
             decisionHandler(.download)
         } else {
@@ -181,7 +214,14 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
     }
 
     func download(_ download: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
-        let destination = FileManager.default.temporaryDirectory.appendingPathComponent(suggestedFilename)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        } catch {
+            completionHandler(nil)
+            return
+        }
+        let destination = directory.appendingPathComponent(suggestedFilename)
         downloadLocations[ObjectIdentifier(download)] = destination
         completionHandler(destination)
     }

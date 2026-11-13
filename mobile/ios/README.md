@@ -18,4 +18,4 @@ xcodebuild -scheme CryBot -sdk iphonesimulator -configuration Debug build \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-未提供 `CRYBOT_SERVER_URL` 时，首次启动显示填写服务器地址界面。签名由部署环境处理；可通过 `DEVELOPMENT_TEAM` 和其他 Xcode 签名设置在私有构建中注入，本仓库不包含团队 ID。
+服务器地址只接受 `https`。未提供 `CRYBOT_SERVER_URL` 时，首次启动显示填写服务器地址界面。签名由部署环境处理；可通过 `DEVELOPMENT_TEAM` 和其他 Xcode 签名设置在私有构建中注入，本仓库不包含团队 ID。
