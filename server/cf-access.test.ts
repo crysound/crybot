@@ -22,14 +22,14 @@ beforeAll(async () => {
 });
 const cleanups: Array<() => Promise<void> | void> = [];
 afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup(); });
-async function jwt({ email = "OWNER@EXAMPLE.COM", aud = "second", iss = "https://example.cloudflareaccess.com", exp = "5m", wrong = false }: { email?: string | null; aud?: string; iss?: string; exp?: string; wrong?: boolean } = {}) {
-  return new SignJWT(email === null ? {} : { email }).setProtectedHeader({ alg: "RS256", kid: "test" }).setIssuer(iss).setAudience(aud).setExpirationTime(exp).sign(wrong ? wrongKeys.privateKey : keys.privateKey);
+async function jwt({ email = "OWNER@EXAMPLE.COM", aud = "second", iss = "https://example.cloudflareaccess.com", exp = "5m", wrong = false, sub = "owner-sub" }: { email?: string | null; aud?: string; iss?: string; exp?: string; wrong?: boolean; sub?: string | null } = {}) {
+  return new SignJWT({ ...(email === null ? {} : { email }), ...(sub === null ? {} : { sub }) }).setProtectedHeader({ alg: "RS256", kid: "test" }).setIssuer(iss).setAudience(aud).setExpirationTime(exp).sign(wrong ? wrongKeys.privateKey : keys.privateKey);
 }
 async function fixture(config: NodeJS.ProcessEnv = env) {
   const dir = mkdtempSync(join(tmpdir(), "cry-access-"));
   cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
   const sessions = new SessionRegistry({ file: join(dir, "sessions.json") });
-  const issue = vi.spyOn(sessions, "issue");
+  const issue = vi.spyOn(sessions, "issueAccess");
   const fetchKeys = vi.fn(async () => new Response(JSON.stringify(jwks)));
   const keySet = createRemoteJWKSet(new URL("https://example.cloudflareaccess.com/cdn-cgi/access/certs"), { [customFetch]: fetchKeys });
   const access = createCfAccess(config, keySet);
@@ -85,6 +85,51 @@ describe("Cloudflare Access", () => {
     expect((await f.get({ "cf-access-jwt-assertion": token })).status).toBe(200);
     expect(f.fetchKeys).toHaveBeenCalledTimes(1);
   });
+  it("reuses one session and cookie for five cookie-free requests with the same sub", async () => {
+    const f = await fixture({ ...env, CRYBOT_CF_ACCESS_ALLOW: "*" });
+    const cookies = new Set<string>();
+    for (let i = 0; i < 5; i++) {
+      const response = await f.get({ "cf-access-jwt-assertion": await jwt({ email: `owner${i}@example.com` }) });
+      expect(response.status).toBe(200);
+      cookies.add(String(response.headers["set-cookie"]).split(";")[0]);
+    }
+    expect(cookies.size).toBe(1);
+    expect(f.sessions.list()).toHaveLength(1);
+    const token = [...cookies][0]!.split("=")[1];
+    expect(f.sessions.authenticate(token)?.accessIdentity).toBe("owner-sub");
+  });
+  it("revokes a mismatched cookie session and reuses the JWT identity's session", async () => {
+    const f = await fixture();
+    const first = await f.get({ "cf-access-jwt-assertion": await jwt({ sub: "first" }) });
+    const second = await f.get({ "cf-access-jwt-assertion": await jwt({ sub: "second" }) });
+    const oldCookie = String(first.headers["set-cookie"]).split(";")[0]!;
+    const oldSession = f.sessions.authenticate(oldCookie.split("=")[1])!;
+    const ticket = f.sessions.issueStreamTicket(oldSession.id).ticket;
+    const changed = await f.get({ cookie: oldCookie, "cf-access-jwt-assertion": await jwt({ sub: "second" }) });
+    expect(changed.status).toBe(200);
+    expect(String(changed.headers["set-cookie"]).split(";")[0]).toBe(String(second.headers["set-cookie"]).split(";")[0]);
+    expect(f.sessions.authenticate(oldCookie.split("=")[1])).toBeNull();
+    expect(f.sessions.ticketOwner(ticket)).toBeNull();
+    expect((await f.get({ cookie: oldCookie })).status).toBe(401);
+    expect(f.sessions.list()).toHaveLength(1);
+  });
+  it("issues a replacement when the JWT identity has no session", async () => {
+    const f = await fixture();
+    const first = await f.get({ "cf-access-jwt-assertion": await jwt() });
+    const cookie = String(first.headers["set-cookie"]).split(";")[0]!;
+    const changed = await f.get({ cookie, "cf-access-jwt-assertion": await jwt({ sub: "other" }) });
+    expect(changed.status).toBe(200);
+    expect(f.sessions.authenticate(cookie.split("=")[1])).toBeNull();
+    expect(f.sessions.list()).toHaveLength(1);
+  });
+  it("falls back to normalized email only without a sub and rejects unidentified JWTs", async () => {
+    const f = await fixture({ ...env, CRYBOT_CF_ACCESS_ALLOW: "*" });
+    for (const email of ["OWNER@EXAMPLE.COM", "owner@example.com"]) {
+      expect((await f.get({ "cf-access-jwt-assertion": await jwt({ sub: null, email }) })).status).toBe(200);
+    }
+    expect(f.sessions.list()).toHaveLength(1);
+    expect((await f.get({ "cf-access-jwt-assertion": await jwt({ sub: null, email: null }) })).status).toBe(401);
+  });
   it.each([{ wrong: true }, { aud: "wrong" }, { iss: "https://other.example.com" }, { exp: "-1s" }])("rejects invalid JWT %j before loopback trust", async options => {
     const f = await fixture();
     const response = await f.direct({ "cf-access-jwt-assertion": await jwt(options) });
@@ -117,6 +162,18 @@ describe("Cloudflare Access", () => {
     expect(f.issue).not.toHaveBeenCalled();
     const sse = await f.get({ "cf-access-jwt-assertion": await jwt() }, "/api/events?ticket=expired");
     expect(sse.status).toBe(200); expect(String(sse.headers["set-cookie"])).toContain("cry_sess_");
+  });
+  it("replaces expired bearer and ticket credentials even with a matching live Access cookie", async () => {
+    const f = await fixture();
+    const assertion = await jwt();
+    const first = await f.get({ "cf-access-jwt-assertion": assertion });
+    const cookie = String(first.headers["set-cookie"]).split(";")[0]!;
+    for (const [authorization, path] of [["Bearer cry_sess_expired", "/api/bots"], ["", "/api/events?ticket=expired"]]) {
+      const response = await f.get({ cookie, authorization: authorization!, "cf-access-jwt-assertion": assertion }, path);
+      expect(response.status).toBe(200);
+      expect(String(response.headers["set-cookie"]).split(";")[0]).toBe(cookie);
+    }
+    expect(f.sessions.list()).toHaveLength(1);
   });
   it("authenticates WebSocket upgrades and includes the session cookie in the handshake", async () => {
     const f = await fixture();

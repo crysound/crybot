@@ -61,3 +61,20 @@ it("keeps server and exact login hosts inside the window without extending IPC a
 it("rejects malformed build URLs and login hosts", () => {
   for (const input of [{ CRYBOT_DEFAULT_SERVER_URL: "https://example.com/path" }, { CRYBOT_DEFAULT_SERVER_URL: "file:///tmp/example" }, { CRYBOT_UPDATE_FEED_URL: "https://user:password@example.com" }, { CRYBOT_LOGIN_HOSTS: "*.example.com" }]) expect(() => build.desktopBuildConfig(input)).toThrow();
 });
+
+it.each(["CRYBOT_DEFAULT_SERVER_URL", "CRYBOT_UPDATE_FEED_URL"])("requires HTTPS except loopback for %s, at build and resource loading", name => {
+  const key = name === "CRYBOT_DEFAULT_SERVER_URL" ? "defaultServerUrl" : "updateFeedUrl";
+  const dir = temporary();
+  for (const url of ["https://example.com", "http://localhost:8080", "http://127.0.0.1:8080", "http://[::1]:8080"]) {
+    const config = build.desktopBuildConfig({ [name]: url });
+    build.writeDesktopBuildConfig(join(dir, "desktop-config.json"), config);
+    expect(readDesktopBuildConfig(dir)[key]).toBe(config[key]);
+  }
+  for (const url of ["http://example.com", "http://192.0.2.1", "http://localhost.example.com", "http://[::2]", "ftp://example.com", "https://user:pass@example.com", "not a URL"]) {
+    expect(() => build.desktopBuildConfig({ [name]: url })).toThrow();
+    build.writeDesktopBuildConfig(join(dir, "desktop-config.json"), { [key]: url });
+    expect(readDesktopBuildConfig(dir)[key]).toBeNull();
+    vi.stubEnv(name, url);
+    expect(() => builderConfig()).toThrow();
+  }
+});

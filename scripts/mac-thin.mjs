@@ -1,4 +1,4 @@
-// Each macOS app is built for one CPU (electron-builder.yml `mac.target`),
+// Each macOS app is built for one CPU (electron-builder.base.yml `mac.target`),
 // but several vendored Mach-O files arrive universal. The app can only ever
 // run its own slice, so packaging keeps that slice and drops the other.
 import { execFile } from "node:child_process";

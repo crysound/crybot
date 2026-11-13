@@ -2,13 +2,22 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import environments from "./environments.cjs";
 
+function secureBuildUrl(value) {
+  if (typeof value !== "string") return null;
+  try {
+    const url = new URL(value);
+    if (!(url.protocol === "https:" || (url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname))) || url.username || url.password || url.hash || url.search) return null;
+    return value;
+  } catch { return null; }
+}
+
 export function readDesktopBuildConfig(resourcesPath) {
   try {
     const config = JSON.parse(readFileSync(join(resourcesPath, "desktop-config.json"), "utf8"));
     return {
-      defaultServerUrl: environments.normalizeOrigin(config.defaultServerUrl),
+      defaultServerUrl: environments.normalizeOrigin(secureBuildUrl(config.defaultServerUrl)),
       loginHosts: Array.isArray(config.loginHosts) ? config.loginHosts.filter(host => typeof host === "string") : [],
-      updateFeedUrl: typeof config.updateFeedUrl === "string" && /^https?:\/\//.test(config.updateFeedUrl) ? config.updateFeedUrl : null,
+      updateFeedUrl: secureBuildUrl(config.updateFeedUrl),
     };
   } catch {
     return { defaultServerUrl: null, loginHosts: [], updateFeedUrl: null };
@@ -22,11 +31,11 @@ export function defaultServerEnvironment(state, config, hasSavedFile, makeId) {
   return remote ? environments.withActive(next, remote.id) : state;
 }
 
-export function loginNavigationAllowed(target, remote, loginHosts) {
+export function loginNavigationAllowed(target, remote, loginHosts, { popup = false } = {}) {
   if (!remote) return false;
   try {
     const url = new URL(target);
     if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) return false;
-    return url.hostname === new URL(remote.origin).hostname || loginHosts.includes(url.hostname);
+    return (!popup && url.hostname === new URL(remote.origin).hostname) || loginHosts.includes(url.hostname);
   } catch { return false; }
 }

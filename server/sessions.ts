@@ -55,6 +55,7 @@ function unnamedSource(source: string): boolean {
 /** A consumed code re-presented with the same client-made attempt id gets the same answer; sharing an address is not enough. */
 export const EXCHANGE_REPLAY_MS = 60_000;
 export const MAX_STREAM_TICKETS_PER_SESSION = 5;
+const MAX_ACCESS_SESSIONS_PER_IDENTITY = 5;
 const LAST_SEEN_WRITE_INTERVAL_MS = 60_000;
 
 const scopeSchema = z.enum(["admin", "client"]);
@@ -67,6 +68,7 @@ const sessionSchema = z.object({
   createdAt: z.number(),
   lastSeenAt: z.number(),
   expiresAt: z.number(),
+  accessIdentity: z.string().min(1).optional(),
   userId: z.string().max(256).optional(),
   email: z.string().max(320).optional(),
   /** `portal`: set only by the internal verified-portal issuance path. `team`: the Admin's signed member claim on a
@@ -232,6 +234,7 @@ export interface SessionStoreOptions {
 export class SessionRegistry {
   private sessions: SessionRecord[] = [];
   private pairings: PairingCode[] = [];
+  private accessTokens = new Map<string, string>();
   private tickets = new Map<string, { sessionId: string; expiresAt: number }>();
   private failures: Failures = new Map();
   private codeFailures: Failures = new Map();
@@ -341,6 +344,7 @@ export class SessionRegistry {
   }
 
   private forget(sessionId: string): void {
+    this.accessTokens.delete(sessionId);
     this.lastSeenWrites.delete(sessionId);
     for (const [hash, ticket] of this.tickets) if (ticket.sessionId === sessionId) this.tickets.delete(hash);
     for (const listener of this.onRevoked) listener(sessionId);
@@ -543,6 +547,20 @@ export class SessionRegistry {
     return this.issueAccount(input);
   }
 
+  issueAccess(identity: string, label: string): { token: string; session: PublicSession } {
+    this.prune();
+    const matching = this.sessions.filter(session => session.accessIdentity === identity).sort((a, b) => a.createdAt - b.createdAt);
+    for (const session of matching) {
+      const token = this.accessTokens.get(session.id);
+      if (token && this.authenticate(token)) return { token, session: publicSession(session) };
+    }
+    for (const session of matching.slice(0, Math.max(0, matching.length - (MAX_ACCESS_SESSIONS_PER_IDENTITY - 1)))) this.revoke(session.id);
+    const issued = this.issueAccount({ label, scopes: ["admin", "client"], accessIdentity: identity });
+    // Only hashes reach disk; after a restart, new Access tokens remain bounded per identity.
+    this.accessTokens.set(issued.session.id, issued.token);
+    return issued;
+  }
+
   /** The one sign-in that moves `bot` in for this team member, as long-lived as their own team session. Only the caller's
    * own team session may ask for it (server/team-move-in.ts). */
   issueMoveIn(input: { label: string; email: string; teamRole: TeamRole; bot: string }): { token: string; session: PublicSession } {
@@ -577,7 +595,7 @@ export class SessionRegistry {
     return this.issueAccount({ label: "Hosted workspace", email: input.email, userId: `portal:${input.grant}`, scopes: input.scopes }, "portal");
   }
 
-  private issueAccount(input: { label: string; scopes: Scope[]; userId?: string; email?: string }, membershipAuthority?: "portal"): { token: string; session: PublicSession } {
+  private issueAccount(input: { label: string; scopes: Scope[]; userId?: string; email?: string; accessIdentity?: string }, membershipAuthority?: "portal"): { token: string; session: PublicSession } {
     this.refusePersonal(input.scopes);
     this.prune();
     const now = this.now();
@@ -591,6 +609,7 @@ export class SessionRegistry {
       lastSeenAt: now,
       expiresAt: now + Math.min(SESSION_TTL_MS, SESSION_MAX_AGE_MS),
     };
+    if (input.accessIdentity) record.accessIdentity = input.accessIdentity;
     if (input.userId) record.userId = input.userId;
     if (input.email) record.email = input.email;
     if (membershipAuthority) record.membershipAuthority = membershipAuthority;

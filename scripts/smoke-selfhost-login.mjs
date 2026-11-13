@@ -54,7 +54,7 @@ globalThis.fetch = (input, init) => {
     await new Promise(resolve => setTimeout(resolve, 200));
   }
   assert(ready, output);
-  const token = await new SignJWT({}).setProtectedHeader({ alg: "RS256", kid: "fixture" }).setIssuer("https://example.cloudflareaccess.com").setAudience("fixture").setExpirationTime("5m").sign(privateKey);
+  const token = await new SignJWT({ sub: "fixture-owner" }).setProtectedHeader({ alg: "RS256", kid: "fixture" }).setIssuer("https://example.cloudflareaccess.com").setAudience("fixture").setExpirationTime("5m").sign(privateKey);
   async function curl(path, args, expected) {
     const headers = join(root, "headers"), body = join(root, "body");
     const options = ["--silent", "--show-error", "--path-as-is", "--max-time", "10", "-D", headers, "-o", body, "-w", "%{http_code}", ...args, origin + path];

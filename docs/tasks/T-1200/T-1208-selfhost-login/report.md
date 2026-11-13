@@ -136,3 +136,79 @@ Error: listen EPERM: operation not permitted 127.0.0.1
 3. 部署仓库需提供真实 Access team/AUD/ALLOW，配置 `/desktop-updates/*` Access Bypass，设置构建时服务器/登录主机/更新源及 macOS 签名、公证 secrets。
 4. 仍需在真实 macOS/Windows 安装包中验证 Access/身份提供方的窗口内跳转、安装包签名公证及实际差分更新；本次只验证构建配置、运行逻辑及离线 fixture，未进行真实打包。
 5. Access 默认不要求邮箱；邮箱名单只影响新的 Access 会话签发。现有会话沿用正常会话寿命和撤销机制，Access 本身应始终保护业务路由。
+
+## 第 2 轮
+
+### 修改记录
+
+1. **已改：Access 按身份复用及撤销不匹配 cookie。**
+   - `server/cf-access.ts:23`：保留有效 bearer/ticket 的认证顺序；Access cookie 请求校验有效 JWT 的身份，以 `sub` 优先、缺失时用规范化 email；身份变化撤销旧会话，再复用或签发目标身份的会话。过期 bearer/ticket 仍会清理，避免遮蔽可用 cookie。
+   - `server/sessions.ts:58`、`server/sessions.ts:71`、`server/sessions.ts:550`：记录 `accessIdentity`，缓存可复用 token，每身份最多 5 个 Access 会话，签发前淘汰最旧记录；撤销时清理 token 缓存和关联 stream ticket（`server/sessions.ts:346`）。
+   - `server/cf-access.test.ts:88`：同一 sub、不同 email 的连续 5 个无 cookie 请求只保留 1 个会话且返回同一 cookie；覆盖身份切换时撤销旧会话、复用已有目标身份或新签发、email 回退、缺失身份拒绝，以及过期 bearer/ticket 的恢复。
+   - `server/sessions.test.ts:832`：覆盖重启后身份持久化、每身份上限、淘汰顺序、其他身份和普通会话不受影响、撤销/过期后不复用，以及明文 token 不落盘。
+   - `scripts/smoke-selfhost-login.mjs:57`：隔离 fixture JWT 补入 `sub`。
+
+   **复用边界：**现有存储的安全约束是只持久化 token 哈希，因此相同 token 的无 cookie 复用限于当前 SessionRegistry 生命周期。重启后无法从哈希恢复旧 cookie，会签发新 token；旧 cookie 仍有效，持久化记录按身份最多 5 个。JWT 同时缺失 sub 和非空 email 时返回 401，避免把无身份请求归为同一 owner 会话。
+
+2. **已改：服务器弹窗交给系统浏览器，拦截外链两秒去抖。**
+   - `electron/desktop-build-config.mjs:34`：弹窗只认可登录主机名单；顶层导航仍认可服务器主机和登录主机。
+   - `electron/main.mjs:2014`：服务器 `window.open` / `target=_blank` 恢复外部打开；弹窗和被拦截导航共用按 URL 的 2 秒去重，其他 URL 独立处理。
+   - `electron/main-navigation.node-test.mjs:25`：实际执行导航 handler，覆盖服务器弹窗、登录弹窗、顶层放行、重复 will-navigate/will-redirect、1999/2000ms 边界、不同 URL 和非法协议。
+   - `electron/app-permissions.node-test.mjs:99`：外链策略断言适配去抖函数内先校验后打开的调用方式。
+
+3. **已改：更新源和默认服务器强制 HTTPS，仅指定回环主机允许 HTTP。**
+   - `scripts/desktop-build-config.cjs:4`：构建时拒绝公网 HTTP；仅 localhost、127.0.0.1、[::1] 允许 HTTP，保留原有凭据/query/fragment 和服务器 origin 限制。
+   - `electron/desktop-build-config.mjs:5`：资源读取时执行相同协议和回环主机检查，不接受不安全地址。
+   - `electron/desktop-build-config.test.mjs:65`：两项变量分别验证 HTTPS、三类回环 HTTP、非回环 HTTP、伪装 localhost、非法协议/凭据/地址；验证 builder 抛错及运行时读取拒绝。
+
+4. **已改：Windows CI 路径与旧配置文件名。**
+   - `scripts/ci-scope.mjs:222`、`scripts/ci-scope.mjs:268`：desktop 分类与 Windows 路径均加入 `electron-builder.base.yml`、`electron-builder.config.cjs`、`scripts/desktop-build-config.cjs`。
+   - `scripts/ci-scope.node-test.mjs:5`：三种文件分别单独变更时均选择 desktop 分类和 Windows 检查。
+   - `scripts/mac-thin.mjs:1`、`scripts/prepare-duckdb.mjs:113`、`build/dmg/README.md:1`：旧 YAML 文件名更新为 `electron-builder.base.yml`。
+
+### 验证命令和结果
+
+均使用现成 Node 24，未安装依赖；tsc / vitest 未并行执行。
+
+```sh
+export PATH=/opt/node24/bin:$PATH
+systemd-run --scope -q -p MemoryMax=4G -- pnpm vitest run server/cf-access.test.ts server/sessions.test.ts server/request-auth.test.ts electron/desktop-build-config.test.mjs electron/updater.test.mjs scripts/prepare-duckdb.test.mjs --maxWorkers=2
+```
+
+**受阻，退出码 1，测试未启动：** `Failed to connect to system scope bus via local transport: Operation not permitted`。当前沙箱不能连接 systemd 总线，不能声称已满足指定 scope 的验收条件。
+
+改用以下命令完成测试；Node 堆限制不等同于 systemd 的整个 scope 内存限制：
+
+```sh
+NODE_OPTIONS=--max-old-space-size=4096 pnpm vitest run server/cf-access.test.ts server/sessions.test.ts server/request-auth.test.ts electron/desktop-build-config.test.mjs electron/updater.test.mjs scripts/prepare-duckdb.test.mjs --maxWorkers=2
+```
+
+**通过：6 个文件，176 项通过、4 项原有跳过。** Access fixture 使用临时会话目录、本地生成密钥、假 JWKS fetch、内存 HTTP socket；未访问用户真实服务或数据。
+
+```sh
+node --test electron/main-navigation.node-test.mjs scripts/ci-scope.node-test.mjs
+node --test --test-name-pattern='both external-link entry points' electron/app-permissions.node-test.mjs
+pnpm exec tsc -b
+pnpm exec tsc -p tsconfig.server.json
+pnpm lint
+node scripts/check-brand-residue.mjs
+git diff --check
+```
+
+**全部通过，退出码 0。** 导航与 CI 范围测试共 5 项，外链策略定向测试通过；品牌残留检查 0 forbidden references。
+
+另外运行了完整 `electron/app-permissions.node-test.mjs`：33 项通过，1 项原有 Cloud 初始化源码断言失败（`electron/app-permissions.node-test.mjs:273`，要求 `cloudAccountRestoring = true` 及旧初始化链）。已将同一断言应用到 `git show HEAD:electron/main.mjs` 的内容，确认修改前也失败；按本轮范围限制保留该断言和相应业务代码。
+
+```sh
+node scripts/smoke-selfhost-login.mjs
+```
+
+**受阻，退出码 1：**隔离假 JWKS 启动时收到 `listen EPERM: operation not permitted 127.0.0.1`，未进入真实服务端 curl 阶段。`docs/verification/README.md` 仍缺失；没有以用户真实服务代替隔离 fixture。
+
+### 待协调事项
+
+- 在允许 systemd scope 的环境补跑上述指定 Vitest 命令。
+- 在允许本机监听的隔离环境重新构建服务端并运行 curl 冒烟脚本；当前结果不构成真实端口验收。
+- 原有 Cloud 初始化测试失败与缺失的验证文档留待所属任务处理。
+
+本轮未 git 提交；保留原有 `r2.md`，未修改其内容。

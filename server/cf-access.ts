@@ -20,20 +20,27 @@ export function createCfAccess(env: NodeJS.ProcessEnv = process.env, keySet?: JW
     const cookie = parseCookies(req.headers.cookie).get(cookieName);
     const ticket = url.pathname === "/api/events" ? url.searchParams.get("ticket") : null;
     const ticketOwner = ticket ? sessions.ticketOwner(ticket) : null;
-    const existing = bearer?.startsWith("cry_sess_") ? sessions.authenticate(bearer)
-      : ticket ? ticketOwner && sessions.isLive(ticketOwner) : sessions.authenticate(cookie);
-    if (existing) return null;
+    if (bearer?.startsWith("cry_sess_") && sessions.authenticate(bearer)) return null;
+    if (ticketOwner && sessions.isLive(ticketOwner)) return null;
+    const existing = sessions.authenticate(cookie);
+    const usingCookie = !bearer?.startsWith("cry_sess_") && !ticket;
+    if (existing && !existing.accessIdentity && usingCookie) return null;
     let email: unknown;
+    let identity: string | undefined;
     try {
-      if (typeof assertion !== "string") return 401;
+      if (typeof assertion !== "string") return existing && usingCookie ? null : 401;
       const { payload } = await jwtVerify(assertion, keys, { issuer, audience, requiredClaims: ["exp"] });
       email = payload.email;
+      identity = payload.sub || (typeof email === "string" ? email.trim().toLowerCase() : undefined);
     } catch {
-      return 401;
+      return existing && usingCookie ? null : 401;
     }
+    if (!identity) return 401;
+    if (existing && existing.accessIdentity !== identity) sessions.revoke(existing.id);
+    if (existing?.accessIdentity === identity && usingCookie) return null;
     if (!allow.includes("*") && (typeof email !== "string" || !allow.includes(email.trim().toLowerCase()))) return 403;
     // Access authorizes the local owner; email membership belongs to the separate email sign-in authority.
-    const issued = sessions.issue({ label: labelFromUserAgent(req.headers["user-agent"]), scopes: ["admin", "client"] });
+    const issued = sessions.issueAccess(identity, labelFromUserAgent(req.headers["user-agent"]));
     res.appendHeader("set-cookie", serializeSessionCookie(cookieName, issued.token, {
       secure: requestOrigin(req)?.startsWith("https://") === true,
       maxAgeSeconds: cookieMaxAgeSeconds(issued.session),

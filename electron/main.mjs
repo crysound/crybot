@@ -1861,15 +1861,23 @@ function createWindow({ deferNavigation = false } = {}) {
     if (mainWindow === win) mainWindow = null;
   });
 
-  const loginAllowed = url => loginNavigationAllowed(url, activeRemote(environmentsState), desktopBuild.loginHosts);
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (loginAllowed(url)) { void win.loadURL(url).catch(() => {}); return { action: "deny" }; }
+  const loginAllowed = (url, options) => loginNavigationAllowed(url, activeRemote(environmentsState), desktopBuild.loginHosts, options);
+  const externalOpenedAt = new Map();
+  const openNavigationExternal = url => {
     try {
-      void shell.openExternal(externalLinkUrl(url)).catch(() => {
+      const external = externalLinkUrl(url);
+      const now = Date.now();
+      for (const [target, at] of externalOpenedAt) if (now - at >= 2_000) externalOpenedAt.delete(target);
+      if (externalOpenedAt.has(external)) return;
+      externalOpenedAt.set(external, now);
+      void shell.openExternal(external).catch(() => {
         console.warn("The external web link could not be opened");
       });
-    } catch {
-    }
+    } catch {}
+  };
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (loginAllowed(url, { popup: true })) { void win.loadURL(url).catch(() => {}); return { action: "deny" }; }
+    openNavigationExternal(url);
     return { action: "deny" };
   });
   const guardNavigation = (event, url) => {
@@ -1880,7 +1888,7 @@ function createWindow({ deferNavigation = false } = {}) {
     if (workspaceNavigationAllowed(url, environmentsState, rendererOrigin()) || loginAllowed(url)) return;
     event.preventDefault();
     slog(`blocked navigation to ${origin ?? "an invalid address"}`);
-    try { void shell.openExternal(externalLinkUrl(url)).catch(() => {}); } catch {}
+    openNavigationExternal(url);
   };
   win.webContents.on("will-navigate", guardNavigation);
   win.webContents.on("will-redirect", guardNavigation);

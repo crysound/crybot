@@ -110,7 +110,7 @@ export async function packedPackage(name, version, cache, scope = SCOPE) {
 }
 
 /** The trees to stage on this host: both mac arches on macOS (each app is
- *  single-arch), x64 elsewhere, matching electron-builder.yml. On Linux the
+ *  single-arch), x64 elsewhere, matching electron-builder.base.yml. On Linux the
  *  Docker build names the image's CPU in CRYBOT_DUCKDB_ARCH: it stages on the
  *  build host's CPU for either image. */
 export function targetsFor(platform = process.platform, env = process.env) {
