@@ -58,7 +58,7 @@ export interface TeamRouteDeps {
     | { ok: false; error: string; available: string[] };
   /** On a Team Cloud: false for someone else's private chat, which a team backup never carries. */
   threadShown?(auth: RequestAuth): (threadId: string) => boolean;
-  /** On a Team Cloud: false for someone else's own CryBot, which no export carries. */
+  /** On a Team Cloud: false for someone else's own Cry Bot, which no export carries. */
   botShown?(auth: RequestAuth): (botId: string) => boolean;
   /** On a Team Cloud: false for a routine that lives in someone else's private chat, which no export carries. */
   routineShown?(auth: RequestAuth): (routine: Routine) => boolean;
@@ -165,7 +165,7 @@ export function createTeamRoutes(deps: TeamRouteDeps): RouteHandler {
           ? body.name.trim()
           : profileName
             ? `${profileName}'s Team`
-            : "My CryBot Team";
+            : "My Cry Bot Team";
       const memberIds = exportable.filter((bot) => !bot.hidden).map((bot) => bot.id);
       if ((body.format === "backup" ? exportable.length : memberIds.length) === 0) return json(res, 400, { error: "Create a bot before exporting your team" });
       try {

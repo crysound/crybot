@@ -254,7 +254,7 @@ describe("tool history in a rebuilt session", () => {
 
       it("takes a plain-text input as the target only when it is one short line", () => {
         // Codex's web search: the driver previews the query itself (server/testing/fake-codex-app-server.ts)
-        expect(line("web_search", "Cry Bot")).toBe("[ran: web_search: CryBot — ok]");
+        expect(line("web_search", "Cry Bot")).toBe("[ran: web_search: Cry Bot — ok]");
         expect(preview("Cry Bot")).toBe("Cry Bot");
         const key = `sk-ant-${"a".repeat(32)}`;
         expect(toolReplayLine({ name: "web_search", ok: true, input: `docs for ${key}` }))

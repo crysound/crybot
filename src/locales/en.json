@@ -9983,8 +9983,6 @@
   "native.cloud.mailRefused": "My Cloud did not take your mailboxes.",
   "native.html.nothingToOpen": "Nothing to open",
   "native.html.tooLarge": "This page is too large to open (2 MB)",
-  "native.accounts.moving": "This computer's bots are moving to the Cloud. Try again once that's done.",
-  "native.accounts.myComputer": "My computer",
   "native.teamLink.otherTitle": "This team isn’t on the account signed in here",
   "native.teamLink.otherDetail": "Cry Bot is signed in as {email}. If you joined the team with another address, sign in with that one. {email} stays signed in too.",
   "native.teamLink.signIn": "Sign in with another address",

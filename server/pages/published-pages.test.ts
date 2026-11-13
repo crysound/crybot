@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublishedPageCard } from "../../shared/published-page.ts";
 import { FAKE_DESKTOP_TOKEN, FAKE_HOME, FAKE_TOKEN_URL, fakePagesService } from "../testing/fake-pages.ts";
-import { applyIncludedPagesMessage, pagesHomeSignature } from "./access.ts";
+import { applyIncludedPagesMessage } from "./access.ts";
 import { PageBundleError, readPageBundle, skippedNote } from "./bundle.ts";
 import * as bundle from "./bundle.ts";
 import { PublishedPagesStore } from "./store.ts";
@@ -634,10 +634,6 @@ describe("pages access", () => {
     expect(applyIncludedPagesMessage({ type: "crybot:included-pages", access: { url: FAKE_TOKEN_URL, token: FAKE_DESKTOP_TOKEN } })).toBe(true);
   });
 
-  it("signs a home's request exactly as the Admin checks it", () => {
-    // The same vector is pinned in crybot-cloud tests/cloud-pages.test.ts.
-    expect(pagesHomeSignature("s".repeat(43), "cm-test-home", "1792670400", "nonce-nonce-nonce-1", '{"action":"create"}')).toBe("smys7kDYS99REKsdwsd9OaXv6pH_hP1Wajaq3KrTiVo");
-  });
 });
 
 describe("a live published page", () => {

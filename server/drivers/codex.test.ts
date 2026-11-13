@@ -435,7 +435,7 @@ describe("CodexDriver turns (fake app-server)", () => {
 
   it("keeps a person's shell filters and adds the gate pattern as an exclude filter", async () => {
     const dump = join(scratch, "shell-filters.json"); process.env.FAKE_CODEX_DUMP = dump;
-    const policy = { inherit: "all", filters: { "USER_SECRET_*": "exclude", "KEEP_*": "include", "cry_gate_config_*": "include" } };
+    const policy = { inherit: "all", filters: { "USER_SECRET_*": "exclude", "KEEP_*": "include", "crybot_gate_config_*": "include" } };
     await create({ mode: "resume", environment: { HOME: scratch, CODEX_HOME: join(scratch, ".codex"),
       FAKE_CODEX_MCP_OVERRIDES: "1", FAKE_CODEX_SHELL_ENVIRONMENT_POLICY: JSON.stringify(policy) } });
     for (const resumeCursor of [undefined, "old-session"]) {
@@ -1569,7 +1569,7 @@ process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,result})+'\\n');});`)
     expect(seen.argv).toContain("features.shell_snapshot=false");
     expect(seen.calls.find((call: { method: string }) => call.method === "thread/start").params.config["shell_environment_policy.exclude"]).toEqual([
       "USER_SECRET_*", "CRYBOT_REMOTE_MCP_CONFIG_*",
-      "ELECTRON_RUN_AS_NODE", "GITHUB_PERSONAL_ACCESS_TOKEN", "CRYBOT_COMMS_TOKEN", "CRYBOT_CONNECTORS_TOKEN", "CRYBOT_PHONE_TOKEN", "OVERRIDDEN",
+      "CRYBOT_COMMS_TOKEN", "CRYBOT_CONNECTORS_TOKEN", "CRYBOT_PHONE_TOKEN", "ELECTRON_RUN_AS_NODE", "GITHUB_PERSONAL_ACCESS_TOKEN", "OVERRIDDEN",
     ]);
   });
 

@@ -3,10 +3,10 @@ import { macCuaPermissionMessage, missingMacCuaPermissions } from "./mac-cua-per
 
 describe("macOS CUA permission recovery", () => {
   it("names only the grants the host reported missing", () => {
-    expect(missingMacCuaPermissions("embedded host failed: Screen Recording required; restart CryBot")).toEqual(["screen"]);
+    expect(missingMacCuaPermissions("embedded host failed: Screen Recording required; restart Cry Bot")).toEqual(["screen"]);
     expect(missingMacCuaPermissions("Accessibility and Screen Recording required")).toEqual(["screen", "accessibility"]);
-    expect(macCuaPermissionMessage(["accessibility"])).toContain("Accessibility is required for CryBot");
-    expect(macCuaPermissionMessage(["screen"])).toContain("relaunch CryBot");
+    expect(macCuaPermissionMessage(["accessibility"])).toContain("Accessibility is required for Cry Bot");
+    expect(macCuaPermissionMessage(["screen"])).toContain("relaunch Cry Bot");
   });
 
   it("does not diagnose missing or malformed status as a grant failure", () => {

@@ -167,9 +167,9 @@ describe("bundled phone-connection skill", () => {
   });
 
   it("tells the cause only from the live Phone link line, gives the fix, and rules out what can't help", () => {
-    expect(guide).toContain("Same Wi-Fi"); expect(guide).toContain("Anywhere, through CryBot");
+    expect(guide).toContain("Same Wi-Fi"); expect(guide).toContain("Anywhere, through Cry Bot");
     expect(guide).toContain('starts "Phone link:"');
-    expect(guide).toContain("update the CryBot app on that phone");
+    expect(guide).toContain("update the Cry Bot app on that phone");
     expect(guide).toMatch(/open it once\s+on the same Wi-Fi as this computer/);
     expect(guide.indexOf("open it once"), "the easy way first").toBeLessThan(guide.indexOf("pair it again"));
     expect(guide).toContain("never say the link ended or that their app is too old");

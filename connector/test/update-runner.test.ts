@@ -49,8 +49,8 @@ esac
 describe.skipIf(!posix)("crybot-update-runner.sh", () => {
   it("is plain POSIX sh and accepts the image the connector accepts", () => {
     expect(spawnSync("sh", ["-n", SCRIPT]).status).toBe(0);
-    expect(readFileSync(SCRIPT, "utf8")).toContain("'ghcr\\.io/example/crybot@sha256:[0-9a-f]{64}'");
-    expect(CUSTOMER_HOME_IMAGE.source).toBe("^ghcr\\.io\\/example\\/crybot@sha256:[0-9a-f]{64}$");
+    expect(readFileSync(SCRIPT, "utf8")).toContain("'ghcr\\.io/crysound/crybot@sha256:[0-9a-f]{64}'");
+    expect(CUSTOMER_HOME_IMAGE.source).toBe("^ghcr\\.io\\/crysound\\/crybot@sha256:[0-9a-f]{64}$");
   });
 
   it("hands a request to the install's own update.sh with the image, and writes down how it ended", () => {

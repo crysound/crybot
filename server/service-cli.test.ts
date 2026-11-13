@@ -113,7 +113,7 @@ describe("crybot service", () => {
     const checkout = { action: "install" as const, dataDir: join(dir, "data"), port: 8799, sentinel: true, sentinelOut, script: "/src/CryBot/server/crybot.ts", node: "/home/bot/.nvm/versions/node/v24.0.0/bin/node", platform: "darwin" as const, home: "/Users/bot" };
     expect(runServiceCommand({ ...checkout, exists: (path) => path.startsWith(app), hasSentinel: () => true }, io)).toBe(0);
     const plist = readFileSync(join(sentinelOut, "com.crybot.sentinel.plist"), "utf8");
-    expect(plist).toContain(`<string>${app}/MacOS/CryBot</string>`);
+    expect(plist).toContain(`<string>${app}/MacOS/Cry Bot</string>`);
     expect(plist).toContain(`<string>${app}/Resources/server/crybot.js</string>`);
     expect(plist).toContain("<key>ELECTRON_RUN_AS_NODE</key>");
     expect(plist).not.toContain("crybot.ts");

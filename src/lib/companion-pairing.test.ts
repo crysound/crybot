@@ -32,15 +32,15 @@ describe("companionPairingRoute", () => {
     }, "automatic");
 
     expect(route).toEqual({
-      address: "device.crybot.com",
+      address: "server.example.test",
       port: 443,
-      hosts: ["device.crybot.com"],
+      hosts: ["server.example.test"],
       endpoints: [endpoints[0]],
     });
     const link = phonePairingLink({ ...route!, code: "004209", token });
     const url = new URL(link!);
-    expect(url.searchParams.get("address")).toBe("device.crybot.com:443");
-    expect(url.searchParams.get("hosts")).toBe("device.crybot.com");
+    expect(url.searchParams.get("address")).toBe("server.example.test:443");
+    expect(url.searchParams.get("hosts")).toBe("server.example.test");
     expect(url.searchParams.get("hosts")).not.toContain("192.168.1.42");
     expect(url.searchParams.get("hosts")).not.toContain("tail1234.ts.net");
     expect(decodedEndpoints(link!)).toEqual([endpoints[0]]);
@@ -86,9 +86,9 @@ describe("companionPairingRoute", () => {
       priority: 0,
     });
     expect(pin?.route).toMatchObject({
-      address: "device.crybot.com",
+      address: "server.example.test",
       port: 443,
-      hosts: ["device.crybot.com"],
+      hosts: ["server.example.test"],
     });
 
     const withdrawn = {
@@ -125,9 +125,9 @@ describe("companionPairingRoute", () => {
         { url: "https://server.example.test", kind: "hosted", priority: 100 },
       ],
     }, "automatic")?.route).toEqual({
-      address: "device.crybot.com",
+      address: "server.example.test",
       port: 443,
-      hosts: ["device.crybot.com"],
+      hosts: ["server.example.test"],
       endpoints: [
         { url: "https://server.example.test", kind: "hosted", priority: 100 },
       ],

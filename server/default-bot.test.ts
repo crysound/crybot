@@ -108,7 +108,7 @@ describe("CryBot, every person's helper", () => {
     const bot = boot(store)!;
     expect(store.bot(bot.id)?.chiefOfStaff).toBe(true);
     expect(briefChief(store)?.id).toBe(bot.id);
-    expect(intros(store, bot)[0]?.text).toContain("Hey! I'm CryBot. I'm new here. I'm here to be your Chief of Staff. I can manage your other bots.");
+    expect(intros(store, bot)[0]?.text).toContain("Hey! I'm Cry Bot. I'm new here. I'm here to be your Chief of Staff. I can manage your other bots.");
   });
 
   it("makes an adopted CryBot the Chief when its place has none left", () => {
@@ -219,10 +219,10 @@ describe("CryBot, every person's helper", () => {
     const store = new Store(selection);
     const bot = boot(store)!;
     const other = store.createBot({ name: "Writer" });
-    expect(() => store.deleteBot(bot.id)).toThrow(/CryBot can't be deleted or archived/);
+    expect(() => store.deleteBot(bot.id)).toThrow(/Cry Bot can't be deleted or archived/);
     expect(store.bot(bot.id)).toBeTruthy();
-    expect(defaultBotPatchRefusal(bot, { hidden: true })).toMatch(/Show CryBot in the sidebar/);
-    expect(defaultBotPatchRefusal(other, { sidebarHidden: true })).toMatch(/Only CryBot/);
+    expect(defaultBotPatchRefusal(bot, { hidden: true })).toMatch(/Show Cry Bot in the sidebar/);
+    expect(defaultBotPatchRefusal(other, { sidebarHidden: true })).toMatch(/Only Cry Bot/);
     expect(defaultBotPatchRefusal(bot, { sidebarHidden: "yes" })).toBe("sidebarHidden must be true or false");
     expect(defaultBotPatchRefusal(bot, { sidebarHidden: true })).toBeNull();
     store.patchBot(bot.id, { sidebarHidden: true });
@@ -282,7 +282,7 @@ describe("CryBot, every person's helper", () => {
   });
 
   describe("moves", () => {
-    const OWNER = { person: "p_owner0000000000000000", name: "Amit" };
+    const OWNER = { person: "p_owner0000000000000000", name: "Alex" };
     const deps = (store: Store): MoveKindsDeps => ({ dataDir: DATA_DIR, store, routines: () => null, calls: () => null, webhooks: () => null, appEvents: () => null,
       claudeCodeSkills: () => [], instanceExists: () => true, owner: () => OWNER, ownRoutine: () => {} } as unknown as MoveKindsDeps);
     async function arrive(store: Store, id: string, record: Record<string, unknown>, computer?: string, extra: Record<string, unknown> = {}) {
@@ -332,33 +332,33 @@ describe("CryBot, every person's helper", () => {
       const theirs = boot(cloud)!;
       cloud.appendMessage(theirs.threadId, { role: "user", kind: "text", text: "Hi" });
       const arriving = cloud.createBot({ name: "Cry Bot" }, { id: "desk-bot-000002", seedMessages: false });
-      expect(await arrive(cloud, arriving.id, fields({ defaultBot: {}, sidebarHidden: true }), "Amit's MacBook")).toBe(200);
+      expect(await arrive(cloud, arriving.id, fields({ defaultBot: {}, sidebarHidden: true }), "Alex's MacBook")).toBe(200);
       expect(placeCryBots(cloud).map((bot) => bot.id)).toEqual([theirs.id]);
       expect(cloud.bot(theirs.id)).toMatchObject({ name: "Cry Bot", chiefOfStaff: true });
       expect(cloud.bot(theirs.id)?.hidden).toBeFalsy();
       const moved = cloud.bot(arriving.id)!;
-      expect(moved).toMatchObject({ name: "CryBot (from Amit's MacBook)" });
+      expect(moved).toMatchObject({ name: "Cry Bot (from Alex's MacBook)" });
       expect([moved.defaultBot, moved.sidebarHidden, moved.hidden]).toEqual([undefined, undefined, undefined]);
       expect(defaultBotPatchRefusal(moved, { hidden: true })).toBeNull();
       expect(defaultBotPatchRefusal(cloud.bot(theirs.id), { hidden: true })).toContain("can't be deleted or archived");
       expect(boot(cloud)?.id).toBe(theirs.id);
       // A Mac CryBot that was the Chief there doesn't take the crown from the one kept here.
       const chief = cloud.createBot({ name: "Cry Bot" }, { id: "desk-bot-000006", seedMessages: false });
-      expect(await arrive(cloud, chief.id, fields({ defaultBot: {}, chiefOfStaff: true }), "Amit's MacBook")).toBe(200);
+      expect(await arrive(cloud, chief.id, fields({ defaultBot: {}, chiefOfStaff: true }), "Alex's MacBook")).toBe(200);
       expect(cloud.bots.filter((bot) => bot.chiefOfStaff).map((bot) => bot.id)).toEqual([theirs.id]);
       // Nor on a later pass that sends only its Chief fields: the computer it comes from says it is the CryBot there.
-      expect(await arrive(cloud, chief.id, { chiefOfStaff: true, managedSections: ["General"] }, "Amit's MacBook", { sourceDefault: true })).toBe(200);
+      expect(await arrive(cloud, chief.id, { chiefOfStaff: true, managedSections: ["General"] }, "Alex's MacBook", { sourceDefault: true })).toBe(200);
       expect(cloud.bots.filter((bot) => bot.chiefOfStaff).map((bot) => bot.id)).toEqual([theirs.id]);
       expect(placeCryBots(cloud).map((bot) => bot.id)).toEqual([theirs.id]);
       // Nor from a Chief here that is not the CryBot.
       const lee = cloud.createBot({ name: "Lee" }, { id: "cloud-lee-000008", seedMessages: false });
       cloud.setChiefOfStaff(lee.id);
       const third = cloud.createBot({ name: "Cry Bot" }, { id: "desk-bot-000009", seedMessages: false });
-      expect(await arrive(cloud, third.id, fields({ defaultBot: {}, chiefOfStaff: true, managedSections: ["General"] }), "Amit's MacBook")).toBe(200);
+      expect(await arrive(cloud, third.id, fields({ defaultBot: {}, chiefOfStaff: true, managedSections: ["General"] }), "Alex's MacBook")).toBe(200);
       expect(cloud.bots.filter((bot) => bot.chiefOfStaff).map((bot) => bot.id)).toEqual([lee.id]);
       // A Chief that is not a CryBot takes the crown.
       const ada = cloud.createBot({ name: "Ada" }, { id: "desk-ada-000007", seedMessages: false });
-      expect(await arrive(cloud, ada.id, { chiefOfStaff: true }, "Amit's MacBook")).toBe(200);
+      expect(await arrive(cloud, ada.id, { chiefOfStaff: true }, "Alex's MacBook")).toBe(200);
       expect(cloud.bots.filter((bot) => bot.chiefOfStaff).map((bot) => bot.id)).toEqual([ada.id]);
     });
 
@@ -367,12 +367,12 @@ describe("CryBot, every person's helper", () => {
       const theirs = boot(cloud)!;
       cloud.patchBot(theirs.id, { soul: "Answer in French." });
       const jarvis = cloud.createBot({ name: "Jarvis" }, { id: "desk-bot-000004", seedMessages: false });
-      expect(await arrive(cloud, jarvis.id, fields({ defaultBot: {} }), "Amit's MacBook")).toBe(200);
+      expect(await arrive(cloud, jarvis.id, fields({ defaultBot: {} }), "Alex's MacBook")).toBe(200);
       expect(cloud.bot(jarvis.id)).toMatchObject({ name: "Jarvis" });
       expect(cloud.bot(jarvis.id)?.defaultBot).toBeUndefined();
       const unnamed = cloud.createBot({ name: "Cry Bot" }, { id: "desk-bot-000005", seedMessages: false });
       expect(await arrive(cloud, unnamed.id, fields({ defaultBot: {} }))).toBe(200);
-      expect(cloud.bot(unnamed.id)).toMatchObject({ name: "CryBot (from another computer)" });
+      expect(cloud.bot(unnamed.id)).toMatchObject({ name: "Cry Bot (from another computer)" });
       expect(placeCryBots(cloud).map((bot) => bot.id)).toEqual([theirs.id]);
     });
 

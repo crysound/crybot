@@ -210,7 +210,7 @@ describe("what never leaves the bot's folder", () => {
     folderLink(workspace("otto"), join(workspace("mira"), "bakery", "linked-folder"));
     const answer = await publisher().publisher.publish({ botId: "mira", roots: roots("mira"), path: "bakery", title: "Bakery order page" });
     expect(answer.body).toMatchObject({ ok: true, live: true, files: 3 });
-    expect((answer.body.skipped as string[]).sort()).toEqual([".env", ".git", ".crybot-secrets", "Thumbs.db", "credentials.json", "id_rsa", "linked-folder", ...(FILE_LINKS ? ["linked.txt"] : []),
+    expect((answer.body.skipped as string[]).sort()).toEqual([".crybot-secrets", ".env", ".git", "Thumbs.db", "credentials.json", "id_rsa", "linked-folder", ...(FILE_LINKS ? ["linked.txt"] : []),
       "node_modules", "prod.env", "server.pem", ...(ODD_NAMES ? ["what?.html"] : [])]);
     expect(Object.keys([...fake.apps.values()][0]!.files).sort()).toEqual([".well-known/security.txt", "index.html", "style.css"]);
     expect(fake.uploads.sort()).toEqual([".well-known/security.txt", "index.html", "style.css"]);
@@ -403,7 +403,7 @@ describe("deleting, a takedown and a server with no included hosting", () => {
     await made.publish({ botId: "mira", roots: roots("mira"), path: "bakery", title: "Bakery order page" });
     fake.takeDown(String(record("mira", "bakery").appKey));
     const status = await made.status({ botId: "mira", roots: roots("mira"), path: "bakery" });
-    expect(status.body).toMatchObject({ ok: true, state: "taken_down", live: false, message: "This app was taken down by CryBot. Its link no longer works." });
+    expect(status.body).toMatchObject({ ok: true, state: "taken_down", live: false, message: "This app was taken down by Cry Bot. Its link no longer works." });
     expect(record("mira", "bakery").deployState).toBe("taken_down");
     const again = await made.publish({ botId: "mira", roots: roots("mira"), path: "bakery", title: "Bakery order page" });
     expect(again).toMatchObject({ status: 409, body: { code: "taken_down" } });

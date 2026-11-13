@@ -15,8 +15,8 @@ describe("the server's bundle of the language packs", () => {
   it("carries every language's server lines and none of the app's screens", async () => {
     const bundled = await build({ entryPoints: [SERVER_LINES], bundle: true, write: false, platform: "node", format: "esm", plugins: [serverLocalePlugin], logLevel: "silent" });
     const code = bundled.outputFiles[0]!.text;
-    expect(code).toContain("An das CryBot-Team gesendet");
-    expect(code).toContain("Sent to the CryBot team");
+    expect(code).toContain("Ein anderes Teammitglied hat eben dasselbe gefragt, daher bekommt dies dieselbe Antwort statt einer zweiten.");
+    expect(code).toContain("Another teammate asked the same a moment ago, so this gets that answer instead of a second one.");
     expect(code).not.toContain("notice.openFailed");
     expect(code.length).toBeLessThan(1_000_000);
   });

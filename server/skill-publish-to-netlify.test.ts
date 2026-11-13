@@ -158,7 +158,7 @@ describe("publish-to-netlify helper: what may be uploaded", () => {
 
       const { files, skipped } = helper.collectFiles(site);
       expect(files.map((file) => file.path)).toEqual(["assets/a b.css", "assets/copy.css", "index.html"]);
-      expect(skipped.sort()).toEqual([".env", ".crybot-secrets", ...(fileLinks ? ["linked.txt"] : []), "up"]);
+      expect(skipped.sort()).toEqual([".crybot-secrets", ".env", ...(fileLinks ? ["linked.txt"] : []), "up"]);
       const { digest, bySha } = helper.buildDigest(files);
       expect(digest).toEqual({ "/assets/a b.css": sha1("body{}"), "/assets/copy.css": sha1("body{}"), "/index.html": sha1("<h1>hi</h1>") });
       expect(bySha.get(sha1("body{}"))?.path).toBe("assets/a b.css");

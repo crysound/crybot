@@ -46,14 +46,16 @@ const RELEASES = new Map<string, AgentBrowserReleaseAsset>([
       // Retain the native-verified revision until its replacement is tested.
       target: "win32-x64", version: "0.36.0-cry.1",
       asset: "agent-browser-win32-x64-0.36.0-cry.1.exe",
-      url: process.env.CRYBOT_BROWSER_ENGINE_URL?.trim(),
+      url: undefined,
       sha256: "33bee834f6a6072ec8688b0914726e0262874d758f69f27e8baf7eaac6b5ed15", bytes: 13806080,
     },
   ],
 ]);
 
 export function agentBrowserReleaseUrl(asset: AgentBrowserReleaseAsset): string {
-  if (asset.target === "win32-x64" && !asset.url) throw new Error("Set CRYBOT_BROWSER_ENGINE_URL to a mirror of the reviewed Windows browser build.");
+  const configured = asset.target === "win32-x64" ? process.env.CRYBOT_BROWSER_ENGINE_URL?.trim() : undefined;
+  if (asset.target === "win32-x64" && !asset.url && !configured) throw new Error("Set CRYBOT_BROWSER_ENGINE_URL to a mirror of the reviewed Windows browser build.");
+  if (configured) return configured;
   return asset.url ?? `https://github.com/vercel-labs/agent-browser/releases/download/v${AGENT_BROWSER_VERSION}/${asset.asset}`;
 }
 

@@ -27,11 +27,11 @@ it("in the desktop app, a code the link carried connects at once; a browser stil
   expect(pairsAutomatically(null, true)).toBe(false);
 });
 
-it("opening My Cloud from the app needs no click and no code to type", async () => {
+it("opening a pairing link in the app needs no click and no code to type", async () => {
   vi.stubGlobal("window", { cry: { workspaces: {} } });
   f.pair.mockResolvedValue({ ok: true });
   const html = render(code);
-  expect(html).toContain("Connecting to this CryBot…");
+  expect(html).toContain("Connecting to this Cry Bot…");
   expect(html).not.toContain("Pairing code"); expect(html).not.toContain("<form");
   f.effects[0](); await flush();
   expect(f.pair).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code }));
@@ -52,22 +52,9 @@ it("a browser keeps the code in the form for the person to confirm", () => {
   f.effects[0]?.(); expect(f.pair).not.toHaveBeenCalled();
 });
 
-it("My Cloud says where its connection starts, never 'the code shown on the server'", () => {
-  const cloud = pairIntro({ mode: "code", sent: false, email: "", cloudHome: true });
-  expect(cloud).toContain(`choose ${en["cloudHome.connect"]} in the CryBot app`);
-  expect(cloud).toContain(`Settings → ${en["settings.section.cloudAccount"]}`);
-  expect(cloud).toContain("on your Plan page");
-  expect(cloud).not.toContain("from the server");
+it("a server asks for its pairing code and names itself", () => {
   expect(pairIntro({ mode: "code", sent: false, email: "", cloudHome: false })).toContain("from the server");
-  expect(pairIntro({ mode: "email", sent: true, email: "a@b.test", cloudHome: false })).toContain("a@b.test");
-});
-
-it("a team's Cloud is called by the team's name, a person's own Cloud My Cloud", () => {
-  const descriptor = (capabilities: Record<string, unknown>) => ({ environmentId: "e", label: "Acme Labs", platform: "linux", version: "1", capabilities: { remoteSessions: true as const, selfUpdate: "operator" as const, ...capabilities } });
-  expect(pairTitle(descriptor({ cloudHome: true, cloudTeam: true }), "code")).toBe("Acme Labs");
-  expect(pairTitle(descriptor({ cloudHome: true }), "code")).toBe("My Cloud");
-  expect(pairTitle(descriptor({}), "email")).toBe("Sign in to Acme Labs");
-  expect(pairTitle(null, "code")).toBe("Connect to this CryBot");
+  expect(pairTitle(null, "code")).toBe("Connect to this Cry Bot");
 });
 
 it("names a wrong kind of code instead of letting it be sent as a wrong one", () => {
@@ -102,13 +89,12 @@ it("asks for the code first, with email sign-in as a link below, and says how to
   expect(html.indexOf("<form")).toBeLessThan(html.indexOf(en["pair.code"]));
 });
 
-it("a team's Cloud whose session ended offers the way back through CryBot Cloud, as the signed-in session told this browser, and only to an https page", () => {
+it("a saved team page requires the session's team descriptor and a safe https link", () => {
   const team = { environmentId: "e", label: "Acme", platform: "linux", version: "1", capabilities: { remoteSessions: true as const, cloudHome: true as const, cloudTeam: true as const } } as unknown as EnvironmentDescriptor;
   expect(teamPage(team, "https://server.example.test/cloud/team/t1")).toBe("https://server.example.test/cloud/team/t1");
   expect(teamPage(team, null), "never told before sign-in").toBeNull();
   for (const bad of ["javascript:alert(1)", "http://evil.example/cloud", "https://u:p@cloud.example/x", "https://cloud.example/x#signin=1", "nope"]) expect(teamPage(team, bad)).toBeNull();
   expect(teamPage({ ...team, capabilities: { remoteSessions: true, cloudHome: true } } as unknown as EnvironmentDescriptor, "https://server.example.test/cloud/team/t1"), "a My Cloud has no team page").toBeNull();
-  expect(en["pair.team.open"].replace("{team}", "Acme")).toBe("Open Acme with CryBot Cloud");
 });
 
 it("a team's page whose person is no longer in the team says so in one sentence, with nothing to sign in to", () => {

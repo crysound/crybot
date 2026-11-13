@@ -91,12 +91,12 @@ describe("failed turn text", () => {
 });
 
 describe("a failed turn the server words as a notice", () => {
-  const restarted = { name: "error: turn interrupted — CryBot restarted", ok: false as const, nameCode: "chat.notice.restartInterrupted" };
+  const restarted = { name: "error: turn interrupted — Cry Bot restarted", ok: false as const, nameCode: "chat.notice.restartInterrupted" };
   it("previews in the person's language with its code, and in English without one", () => {
     setLocale("pt-br");
     try {
-      expect(activityPreview(restarted, undefined)).toBe("Sessão interrompida: o CryBot reiniciou.");
-      expect(activityPreview({ name: restarted.name, ok: false }, undefined)).toBe("turn interrupted — CryBot restarted");
+      expect(activityPreview(restarted, undefined)).toBe("Sessão interrompida: o Cry Bot reiniciou.");
+      expect(activityPreview({ name: restarted.name, ok: false }, undefined)).toBe("turn interrupted — Cry Bot restarted");
     } finally {
       setLocale("en");
     }

@@ -602,8 +602,8 @@ describe("Store", () => {
     const greeting = (name: string) => store.messagesFor(store.createBot({ name }).threadId)[0]?.text;
 
     expect(greeting("Ivy")).toBe("Hi, I'm Ivy. What would you like me to do?");
-    person = "Hangzhou Crysound Electronics Co., Ltd.";
-    expect(greeting("Scout")).toBe("Hi Owner, I'm Scout. What would you like me to do?");
+    person = "Alex Morgan";
+    expect(greeting("Scout")).toBe("Hi Alex, I'm Scout. What would you like me to do?");
   });
 
   it("clears provider-owned voice ids as one durable mutation", () => {
@@ -1592,7 +1592,7 @@ describe("Store", () => {
     const chief = store.bots[0]!;
     expect(chief).toMatchObject({ name: "Cry Bot", color: "chrome", chiefOfStaff: true, defaultBot: {} });
     expect(store.messagesFor(chief.threadId).map((message) => [message.kind, message.helperIntro, message.card?.options.length])).toEqual([["options", true, 4]]);
-    expect(store.messagesFor(chief.threadId)[0]!.text).toContain("Hey! I'm CryBot. I'm new here. I'm here to be your Chief of Staff.");
+    expect(store.messagesFor(chief.threadId)[0]!.text).toContain("Hey! I'm Cry Bot. I'm new here. I'm here to be your Chief of Staff.");
     const later = Array.from({ length: 25 }, () => store.createBot());
     expect(later.map((bot) => bot.color)).not.toContain("silver");
     expect(later.map((bot) => bot.color)).not.toContain("chrome");

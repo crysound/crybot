@@ -9919,8 +9919,6 @@
   "native.cloud.mailRefused": "O Cloud não recebeu suas caixas de e-mail.",
   "native.html.nothingToOpen": "Não há nada para abrir",
   "native.html.tooLarge": "Esta página é grande demais para abrir (2 MB)",
-  "native.accounts.moving": "Os bots deste computador estão sendo movidos para o Cloud. Tente novamente quando a mudança terminar.",
-  "native.accounts.myComputer": "Meu computador",
   "server.outside.routineFromBefore": "Esta rotina foi criada antes desta atualização. Abra e salve a rotina uma vez para executá-la com acesso total.",
   "server.outside.routineFromOutside": "Uma execução de webhook criou ou alterou esta rotina, então ela roda sem acesso total. Abra e salve a rotina uma vez para executá-la com acesso total.",
   "server.outside.conversationFromBefore": "Esta conversa é de antes de o Cloud ser só seu, então este bot trabalha nela sem acesso ao terminal. Inicie uma nova conversa para usar todos os recursos do bot.",

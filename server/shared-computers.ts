@@ -440,7 +440,7 @@ export class SharedComputers {
     if (!known) return OFFLINE;
     const device = deviceWord(known.platform);
     return known.stoppedAt === null
-      ? `${known.name} is offline: CryBot on that ${device} is closed, or the ${device} is asleep or off. Ask them to open it; it reconnects by itself. Do not substitute files on the server.`
+      ? `${known.name} is offline: Cry Bot on that ${device} is closed, or the ${device} is asleep or off. Ask them to open it; it reconnects by itself. Do not substitute files on the server.`
       : `${known.name} is no longer lent: lending was turned off on that ${device}. Do not substitute files on the server.`;
   }
   close() {

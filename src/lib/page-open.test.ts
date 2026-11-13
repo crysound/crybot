@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isPublishedPageUrl, pagePanelBot, requestPanelPage, usePanelPage, withPageOpen, type PageOpenFacts, type PanelPage } from "./page-open";
 
-const PAGE = "https://server.example.test/";
+const PAGE = "https://abcdefghijklmnopqrst.crybot.page/";
 const facts = (over: Partial<PageOpenFacts> = {}): PageOpenFacts => ({
   selectedId: "pepper", bots: [{ id: "pepper" }], groups: [{ id: "room" }],
   config: { features: { browser: true }, browserEngine: { kind: "engine" } }, desktop: {}, ...over,
@@ -16,10 +16,10 @@ describe("a published page's link", () => {
     expect(isPublishedPageUrl(PAGE)).toBe(true);
     expect(isPublishedPageUrl(`${PAGE}charts/index.html?region=EU#top`)).toBe(true);
     for (const other of [
-      "crybot://thread/t1?bot=pepper", "crybot://bot/pepper", "http://server.example.test/",
-      "https://server.example.test/", "https://server.example.test/", "https://server.example.test/", "https://server.example.test/",
-      "https://server.example.test.evil.test/", "https://server.example.tests/",
-      "https://user:pw@server.example.test/", "https://server.example.test:8443/",
+      "crybot://thread/t1?bot=pepper", "crybot://bot/pepper", "http://abcdefghijklmnopqrst.crybot.page/",
+      "https://crybot.page/", "https://short.crybot.page/", "https://app.crybot.page/", "https://a.b.crybot.page/",
+      "https://abcdefghijklmnopqrst.crybot.page.evil.test/", "https://abcdefghijklmnopqrst.crybot.pages/",
+      "https://user:pw@abcdefghijklmnopqrst.crybot.page/", "https://abcdefghijklmnopqrst.crybot.page:8443/",
       "javascript:alert(1)", "not a url", "", undefined, null,
     ]) expect(isPublishedPageUrl(other), String(other)).toBe(false);
   });

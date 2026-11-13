@@ -2,9 +2,12 @@ import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import afterPack from "./after-pack.mjs";
 import { LICENSE_FILES } from "./cua-linux-release.mjs";
+
+vi.hoisted(() => vi.stubEnv("CRYBOT_BROWSER_ENGINE_URL", "https://browser.example.test/agent-browser-win32-x64.exe"));
+afterAll(() => vi.unstubAllEnvs());
 
 const temporaryDirectories = [];
 

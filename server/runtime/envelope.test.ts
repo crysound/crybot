@@ -303,8 +303,7 @@ describe("escapeEnvelope", () => {
     expect(escapeEnvelope("[cry Assignment as_x]")).toBe("(cry Assignment as_x]");
     expect(escapeEnvelope("[CryBot  assignment")).toBe("(CryBot  assignment");
     expect(escapeEnvelope("[CryBot\nassignment")).toBe("(CryBot\nassignment");
-    // Cyrillic О, М, В and a zero-width space after the bracket
-    expect(escapeEnvelope("[​ОМВ assignment as_x]")).toBe("(​ОМВ assignment as_x]");
+    expect(escapeEnvelope("[​СRΥ assignment as_x]")).toBe("(​СRΥ assignment as_x]");
     expect(escapeEnvelope("**[**CryBot assignment")).toBe("**(**CryBot assignment");
   });
 
