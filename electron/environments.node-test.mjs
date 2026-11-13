@@ -114,12 +114,12 @@ test("native workspace choices use saved IDs and connect opens settings without 
 });
 
 test("Add a Cloud… sits just under the saved servers only where main offers it, and My Cloud's line can say Always on", () => {
-  const state = { environments: [{ id: "cloud", name: "My Cloud", origin: "https://cry-u-1.fly.dev" }, { id: "office", name: "Office", origin: "https://office.example" }], activeId: "local" };
+  const state = { environments: [{ id: "cloud", name: "My Cloud", origin: "https://cry-u-1.example.test" }, { id: "office", name: "Office", origin: "https://office.example" }], activeId: "local" };
   const calls = [];
   const base = { onSwitch: (id) => calls.push(["switch", id]), onConnect: () => calls.push(["settings"]), onForget: () => {} };
   const plain = env.workspaceMenuTemplate(state, base);
   assert.equal(plain.some(item => item.id === "workspace-add-cloud"), false);
-  assert.deepEqual(plain.filter(item => item.sublabel).map(item => item.sublabel), ["cry-u-1.fly.dev", "office.example"]);
+  assert.deepEqual(plain.filter(item => item.sublabel).map(item => item.sublabel), ["cry-u-1.example.test", "office.example"]);
   const items = env.workspaceMenuTemplate(state, { ...base, onAddCloud: () => calls.push(["add-cloud"]), sublabels: { cloud: "Free trial until 15 Oct" } });
   assert.deepEqual(items.map(item => item.id ?? item.type), ["workspace-local", "workspace-cloud", "workspace-office", "workspace-add-cloud", "separator", "workspace-connect"]);
   const add = items.find(item => item.id === "workspace-add-cloud");
@@ -131,7 +131,7 @@ test("Add a Cloud… sits just under the saved servers only where main offers it
 });
 
 test("with My Cloud, the switcher says first which side has which bots, and under My Cloud what is not on it yet, with Send", async () => {
-  const state = { environments: [{ id: "cloud", name: "My Cloud", origin: "https://cry-u-1.fly.dev" }], activeId: "cloud" };
+  const state = { environments: [{ id: "cloud", name: "My Cloud", origin: "https://cry-u-1.example.test" }], activeId: "cloud" };
   const clicked = [];
   const send = { waiting: { bots: 2, total: 2 }, onSend: () => clicked.push("send"), onOpen: () => clicked.push("open") };
   const options = await env.placesMenuOptions({ cloud: state.environments[0], home: true, platform: "win32", send,
@@ -366,7 +366,7 @@ test("parseEnvironments dedups local dirs on the same normalized key", () => {
 });
 
 test("once My Cloud is home the switcher lists whole places only: My Cloud first, then each saved server, never this computer", () => {
-  const home = "https://cry-t-1.fly.dev";
+  const home = "https://cry-t-1.example.test";
   const state = { environments: [{ id: "o", kind: "remote", name: "Office", origin: "https://office.example.test" }, { id: "c", kind: "remote", name: "My Cloud", origin: home },
     { id: "l", kind: "local", name: "Lab", dataDir: "/lab" }], activeId: "c" };
   const switched = [], forgot = [];
@@ -385,15 +385,15 @@ test("once My Cloud is home the switcher lists whole places only: My Cloud first
   assert.equal(env.workspaceWindowTitle({ ...state, activeId: "o" }, null, home), "CryBot — Hosted: Office (office.example.test)");
 });
 
-const TEAM = "https://cry-u-acme.fly.dev";
+const TEAM = "https://cry-u-acme.example.test";
 const acme = (extra = {}) => ({ id: "team-acme", name: "Acme", role: "admin", machine: { status: "ready", origin: TEAM }, ...extra });
 
 test("the switcher lists My Cloud first, then each team from the session with this person's role, then saved servers; a team has no Forget", () => {
-  const home = "https://cry-t-1.fly.dev";
+  const home = "https://cry-t-1.example.test";
   const state = { environments: [{ id: "o", kind: "remote", name: "Office", origin: "https://office.example.test" }, { id: "t", kind: "remote", name: "Acme", origin: TEAM, team: { id: "team-acme", role: "owner" } },
     { id: "c", kind: "remote", name: "My Cloud", origin: home, home: true }], activeId: "t" };
   const items = env.workspaceMenuTemplate(state, { onSwitch() {}, onConnect() {}, onForget() {}, homeOrigin: home });
-  assert.deepEqual(items.map((item) => [item.label, item.sublabel, item.checked]), [["My Cloud", "cry-t-1.fly.dev", false], ["Acme", "Super admin", true], ["Office", "office.example.test", false]]);
+  assert.deepEqual(items.map((item) => [item.label, item.sublabel, item.checked]), [["My Cloud", "cry-t-1.example.test", false], ["Acme", "Super admin", true], ["Office", "office.example.test", false]]);
   assert.deepEqual(env.workspaceMenuTemplate(state, { onSwitch() {}, onConnect() {}, onForget() {}, homeOrigin: home, foldSublabels: true }).map((item) => item.label), ["My Cloud", "Acme · Super admin", "Office"]);
   for (const [role, label] of [["owner", "Super admin"], ["admin", "Admin"], ["member", "User"], ["other", "User"]]) assert.equal(env.teamRoleLabel(role), label, role);
   const pt = createNativeText({ saved: "pt-br" });
@@ -405,7 +405,7 @@ test("the switcher lists My Cloud first, then each team from the session with th
   assert.deepEqual(env.workspaceSummary(state), { local: false, name: "Acme", origin: TEAM, role: "Super admin" });
   // Before the move (or a Team Owner, whose home is this computer): This computer, then each team with its role (no Forget), then servers as saved.
   const before = env.workspaceMenuTemplate(state, { onSwitch() {}, onConnect() {}, onForget() {} });
-  assert.deepEqual(before.filter((item) => item.type === "radio").map((item) => [item.label, item.sublabel]), [["This computer", undefined], ["Acme", "Super admin"], ["Office", "office.example.test"], ["My Cloud", "cry-t-1.fly.dev"]]);
+  assert.deepEqual(before.filter((item) => item.type === "radio").map((item) => [item.label, item.sublabel]), [["This computer", undefined], ["Acme", "Super admin"], ["Office", "office.example.test"], ["My Cloud", "cry-t-1.example.test"]]);
   assert.equal(before.some((item) => item.id === "workspace-forget"), false, "a team is the Admin's to remove");
   assert.equal(env.otherPlaces(state, home), 2);
   const serialized = env.parseEnvironments(env.serializeEnvironments(state));
@@ -415,7 +415,7 @@ test("the switcher lists My Cloud first, then each team from the session with th
 });
 
 test("the session's teams become saved places, named and roled as the Admin says; one it no longer lists is gone, with its name, and the window falls back to My Cloud", () => {
-  const home = "https://cry-t-1.fly.dev";
+  const home = "https://cry-t-1.example.test";
   let ids = 0;
   const makeId = () => `id-${++ids}`;
   const base = { environments: [{ id: "c", kind: "remote", name: "My Cloud", origin: home, home: true }, { id: "o", kind: "remote", name: "Office", origin: "https://office.example.test" }], activeId: "c" };
@@ -469,8 +469,8 @@ test("the Server menu lists the workspaces of this computer's own and offers a n
   items.find((item) => item.id === "workspace-local-work").click();
   items.find((item) => item.id === "workspace-new-local").click();
   assert.equal(items.find((item) => item.id === "workspace-new-local").label, "New workspace on this computer…");
-  const home = { environments: [{ id: "home", name: "My Cloud", origin: "https://cry-u-1.fly.dev", home: true }], activeId: "local" };
-  const homeItems = env.workspaceMenuTemplate(home, { ...options, homeOrigin: "https://cry-u-1.fly.dev", locals: [{ id: "default", label: "This Mac" }, { id: "work", label: "Work" }] });
+  const home = { environments: [{ id: "home", name: "My Cloud", origin: "https://cry-u-1.example.test", home: true }], activeId: "local" };
+  const homeItems = env.workspaceMenuTemplate(home, { ...options, homeOrigin: "https://cry-u-1.example.test", locals: [{ id: "default", label: "This Mac" }, { id: "work", label: "Work" }] });
   assert.deepEqual(homeItems.filter((item) => item.type === "radio").map((item) => item.label), ["This Mac", "Work", "My Cloud"]);
   homeItems.find((item) => item.id === "workspace-local-default").click();
   assert.deepEqual(calls, [["local", "work"], ["new"], ["local", "default"]]);

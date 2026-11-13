@@ -16,18 +16,14 @@ import { generateKeyPair, keyPairFromPrivate, TRANSPORT_RELAY, type KeyPair } fr
 import { createE2EOrigin, e2eContextOf, type E2EOriginDeadlines } from "../companion/src/e2e/origin.ts";
 import { E2ERegistry, type E2EContext, type E2EDevices, type Peer } from "../companion/src/e2e/registry.ts";
 import { RelayClient, type RelayStatus } from "../companion/src/e2e/relay-client.ts";
-import { MANAGED_COMPANION_ENDPOINT_FIELD } from "../electron/managed-companion-tunnel.mjs";
 import { createRelayTokenService, validRelayGrant, type RelayGrant } from "../electron/relay-token.mjs";
 import { isLoopbackHost } from "../electron/server-address.mjs";
 import { writeFileAtomic } from "./atomic.ts";
 import { bearerToken, PROXY_HEADERS } from "./request-auth.ts";
 import { isPairingCredential, type SessionRegistry } from "./sessions.ts";
-import { describeTunnelAccount, FLEET_CREDENTIAL_ENV, fleetCredential, openTunnelCredentials } from "./tunnel.ts";
 import type { E2ESession } from "../companion/src/e2e/session.ts";
 
 export const PHONE_RELAY_ENV = "CRYBOT_PHONE_RELAY";
-/** `serve --tunnel` sets it. CRYBOT_TUNNEL_SOCKET alone is no tunnel: Docker's Caddy reaches the server over that socket. */
-export const SERVES_TUNNEL_ENV = "CRYBOT_SERVES_TUNNEL";
 export const PHONE_RELAY_KEY_FILE = "phone-relay-key.json";
 export const PHONE_RELAY_PHONES_FILE = "phone-relay-phones.json";
 /** The relay admits 32 per host; 20 phones, 2 pairing windows and the live pairing sessions stay under it. */
@@ -44,7 +40,7 @@ const STREAM_DEADLINES: E2EOriginDeadlines = { headersMs: 30_000, requestMs: 300
 const PAIRING_SESSION_ROUTES = new Set(["POST /api/pair", "GET /api/health"]);
 
 /** `tunnel`: this machine holds or needs a tunnel address, so it never asks for a relay token (`reason` says why). */
-export type PhoneRelayGrantState = "waiting" | "ok" | "signed-out" | "unavailable" | "failed" | "tunnel";
+export type PhoneRelayGrantState = "waiting" | "ok" | "signed-out" | "unavailable" | "failed";
 
 export interface PhoneRelayStatus {
   relay: RelayStatus;
@@ -141,32 +137,7 @@ function reply(res: ServerResponse, status: number, body: unknown): void {
   res.end(text);
 }
 
-/** Why this machine must not take a relay token, or null. Security: the control plane does not yet tell a server from a
- * desktop, and gives back the tunnel of any installation that recently took a relay token, then refuses it another. So
- * a machine that serves a tunnel, runs on a fleet credential, or holds a tunnel address from `login` never asks. */
-export function tunnelHolder(env: NodeJS.ProcessEnv, dataDir: string): string | null {
-  if (env[SERVES_TUNNEL_ENV] === "1") return "this server runs with --tunnel";
-  if (fleetCredential(env)) return `${FLEET_CREDENTIAL_ENV} is set, and a fleet installation keeps its tunnel`;
-  const account = openTunnelCredentials(dataDir);
-  if (account.status === "unavailable") return `${account.file} could not be read, so this machine may hold a tunnel address`;
-  const document = account.read();
-  if (describeTunnelAccount(document).address || document[MANAGED_COMPANION_ENDPOINT_FIELD]) return "this machine holds a tunnel address from `crybot login`";
-  return null;
-}
-
-function offForTunnel(reason: string): PhoneRelay {
-  return {
-    status: () => ({ relay: "off", node: null, grant: "tunnel", reason, phones: 0, maxPhones: MAX_RELAY_PHONES }),
-    invite: () => null,
-    pairedOver: () => ({}),
-    pairingRefusal: () => null,
-    stop: () => {},
-  };
-}
-
-const TUNNEL_HELD = "tunnel_held";
-
-/** Null unless CRYBOT_PHONE_RELAY=1, and when it cannot run here: the server works on without it either way. */
+/** Null unless CRYBOT_PHONE_RELAY_URL configures a valid relay, and when it cannot run here: the server works on without it either way. */
 export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
   const configured = configuredPhoneRelay(options.env);
   if (!configured || options.env[PHONE_RELAY_ENV] === "0") return null;
@@ -176,11 +147,6 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
     return null;
   }
   const { sessions, dataDir } = options;
-  const holder = tunnelHolder(options.env, dataDir);
-  if (holder) {
-    log(`phone relay: off: ${holder}. Use the relay on a machine signed in with \`crybot login --relay\`, which holds no tunnel address.`);
-    return offForTunnel(holder);
-  }
   let key: KeyPair;
   try {
     key = phoneRelayKey(dataDir);
@@ -208,7 +174,6 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
   const pairing = new AsyncLocalStorage<E2EContext>();
   let relay: RelayClient | null = null;
   let grantState: PhoneRelayGrantState = "waiting";
-  let tunnelReason: string | null = null;
   const baseUrl = () => configured.socketOrigin;
   const descriptor = () => e2e.descriptor(null);
 
@@ -218,8 +183,6 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
     return { e2e: Math.min(e2eCount, 100), legacy: Math.min(Math.max(sessions.list().length - e2eCount, 0), 100) };
   };
   const fetchGrant = options.fetchGrant ?? (async (devicesNow: { e2e: number; legacy: number }) => {
-    tunnelReason = tunnelHolder(options.env, dataDir);
-    if (tunnelReason) throw Object.assign(new Error(tunnelReason), { code: TUNNEL_HELD });
     return configured.grant(devicesNow);
   });
 
@@ -232,10 +195,8 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
         return grant;
       } catch (error) {
         const failure = error as { code?: unknown; status?: unknown };
-        if (failure.code === TUNNEL_HELD) applyGrant(null);
         const current = tokens.grant;
-        grantState = failure.code === TUNNEL_HELD ? "tunnel"
-          : failure.code === "relay_unavailable" ? "unavailable"
+        grantState = failure.code === "relay_unavailable" ? "unavailable"
           : failure.code === "signed_out" || failure.status === 401 ? "signed-out"
           : current && current.expiresAt > Date.now() && relay ? "ok" : "failed";
         throw error;
@@ -354,7 +315,7 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
   tokens.start();
 
   return {
-    status: () => ({ relay: relay?.status ?? "off", node: relay?.node ?? null, grant: grantState, ...(grantState === "tunnel" && tunnelReason ? { reason: tunnelReason } : {}), phones: devices.records().length, maxPhones: MAX_RELAY_PHONES }),
+    status: () => ({ relay: relay?.status ?? "off", node: relay?.node ?? null, grant: grantState, phones: devices.records().length, maxPhones: MAX_RELAY_PHONES }),
     invite(credential, name, publicOrigin) {
       const current = descriptor();
       if (!current?.h || !current.r) return null;

@@ -24,7 +24,7 @@ describe("openTaskWorking", () => {
 describe("roomRespondersForComposer", () => {
   const members = [
     { id: "atlas", name: "Atlas" },
-    { id: "milind", name: "Owner" },
+    { id: "ada", name: "Owner" },
   ];
 
   it("routes an unmentioned message to the configured lead", () => {
@@ -45,8 +45,8 @@ describe("roomRespondersForComposer", () => {
     expect(roomRespondersForComposer("(@Owner)", members, mentionsOnly)).toEqual([members[1]]);
     expect(roomRespondersForComposer("【@Owner】", members, mentionsOnly)).toEqual([members[1]]);
     expect(roomRespondersForComposer("user@Owner /@Owner", members, mentionsOnly)).toEqual([]);
-    expect(roomRespondersForComposer("@Milindo", members, mentionsOnly)).toEqual([]);
-    expect(roomRespondersForComposer("@Milind𐐀", members, mentionsOnly)).toEqual([]);
+    expect(roomRespondersForComposer("@adao", members, mentionsOnly)).toEqual([]);
+    expect(roomRespondersForComposer("@ada𐐀", members, mentionsOnly)).toEqual([]);
     expect(roomRespondersForComposer("İ @Owner", members, mentionsOnly)).toEqual([members[1]]);
   });
 

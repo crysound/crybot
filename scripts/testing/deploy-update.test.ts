@@ -5,8 +5,9 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 const SCRIPT = join(import.meta.dirname, "..", "..", "deploy", "update.sh");
+const FEED_CURL = join(import.meta.dirname, "fake-update-curl.mjs");
 const FAKE = join(import.meta.dirname, "fake-compose-docker.mjs");
-const REPO = "ghcr.io/example/crybot";
+const REPO = "ghcr.io/crysound/crybot";
 const posix = process.platform !== "win32";
 
 const id = (letter: string) => `sha256:${letter.repeat(64)}`;
@@ -36,7 +37,7 @@ function tree(dir: string, prefix = ""): Record<string, string> {
 /** A stable.json as promote-stable.yml writes it: the newest entry first, then every version stable before it. */
 function stableRecord(version: string, image: string, earlier: string[] = []) {
   const history = [version, ...earlier].map((entry, at) => ({ version: entry, promotedAt: `2026-11-${String(10 - at).padStart(2, "0")}T00:00:00.000Z` }));
-  return JSON.stringify({ channel: "stable", version, image, cloudHomeImage: `${REPO}-cloud-home@${id("9")}`, platforms: ["linux/amd64", "linux/arm64"], promotedAt: history[0]!.promotedAt, history }, null, 2);
+  return JSON.stringify({ channel: "stable", version, image, platforms: ["linux/amd64", "linux/arm64"], promotedAt: history[0]!.promotedAt, history }, null, 2);
 }
 
 /** A Compose install on version 0.1.150 with some data, and a stable channel that names `target`. */
@@ -56,6 +57,8 @@ function install(target: Record<string, unknown> = {}, extra: Record<string, unk
   writeFileSync(join(deploy, ".env"), ENV);
   writeFileSync(join(root, "bin", "docker"), `#!/bin/sh\nexec "${process.execPath}" "${FAKE}" "$@"\n`);
   chmodSync(join(root, "bin", "docker"), 0o755);
+  writeFileSync(join(root, "bin", "curl"), `#!/bin/sh\nexec "${process.execPath}" "${FEED_CURL}" "$@"\n`);
+  chmodSync(join(root, "bin", "curl"), 0o755);
   const next = { ...NEW, ...target };
   // A version that never answers is waited for; two seconds of that is enough here.
   const wait = next.behaviour === "silent" ? { CRYBOT_UPDATE_WAIT_S: "2" } : {};
@@ -74,7 +77,7 @@ function install(target: Record<string, unknown> = {}, extra: Record<string, unk
       env: {
         // sbin: sha256sum is /sbin/sha256sum on macOS.
         PATH: `${join(root, "bin")}:/usr/bin:/bin:/usr/sbin:/sbin`, HOME: root, FAKE_DOCKER_DIR: fake,
-        CRYBOT_STABLE_URL: `file://${join(root, "stable.json")}`, CRYBOT_NEWEST_URL: `file://${join(root, "newest.json")}`,
+        CRYBOT_UPDATE_URL: "https://feed.example.test/stable.json", FAKE_UPDATE_FEED_DIR: root,
         CRYBOT_UPDATE_POLL_S: "0", CRYBOT_UPDATE_WAIT_S: "120", CRYBOT_UPDATE_ENGINE_WAIT_S: "1", ...wait, ...options.env,
       },
     });
@@ -604,21 +607,21 @@ services:
     expect(box.copies()[0]).not.toBe(first);
   });
 
-  it("takes the newest release until a first version is made stable, and stops on a channel it cannot reach", () => {
+  it("requests the configured feed once on 404 and never falls back", () => {
     const box = install();
     rmSync(join(box.root, "stable.json"));
-    writeFileSync(join(box.root, "newest.json"), JSON.stringify({ tag_name: "v0.1.151", html_url: "https://example.test/release", assets: [{ name: "x", version: "9.9.9" }] }));
-    const done = box.run();
-    expect(done.status, done.stdout).toBe(0);
-    expect(done.said[0]).toBe("No version has been made stable yet, so this takes the newest release, 0.1.151.");
-    expect(box.calls()).toContain(`pull -q ${REPO}:v0.1.151`);
-    expect(box.env()).toBe(`${ENV}CRYBOT_IMAGE=${NEW.refs[0]}\n`);
-
-    const unreachable = install();
-    const refused = unreachable.run([], { env: { CRYBOT_STABLE_URL: "http://127.0.0.1:9/stable.json" } });
-    expect(refused.status).toBe(4);
+    const refused = box.run();
+    expect(refused.status, refused.stdout + refused.stderr).toBe(4);
     expect(refused.stdout).toContain("Could not read the stable channel");
-    expect(unreachable.calls().some((call) => call.startsWith("pull"))).toBe(false);
+    expect(readFileSync(join(box.root, "feed-requests.jsonl"), "utf8").trim().split("\n")).toHaveLength(1);
+    expect(box.calls().some(call => call.startsWith("pull"))).toBe(false);
+  });
+
+  it.each(["http://feed.example.test/feed", "file:///tmp/feed.json"])("rejects insecure feed %s before downloading", url => {
+    const box = install();
+    const refused = box.run([], { env: { CRYBOT_UPDATE_URL: url } });
+    expect(refused.status).toBe(4);
+    expect(box.calls().some(call => call.startsWith("pull"))).toBe(false);
   });
 
   it.skipIf(process.getuid?.() === 0)("says plainly that the install folder cannot be written, and changes nothing", () => {

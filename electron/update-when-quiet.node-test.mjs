@@ -7,7 +7,7 @@ import { createUpdaterCoordinator } from "./updater-coordinator.mjs";
 import { AWAY_MS, awayNow, createQuietInstall, installFailed, launchAfter, OUT_OF_SIGHT_MS, QUIET_TRIES, REOPEN_MS, updateSeen } from "./update-when-quiet.mjs";
 import { quietSignals } from "./update-when-quiet-main.mjs";
 
-const CLOUD = "https://cry-t-1.fly.dev";
+const CLOUD = "https://cry-t-1.example.test";
 
 /** A file the record lives in, kept across "relaunches". */
 function file(initial = null) {

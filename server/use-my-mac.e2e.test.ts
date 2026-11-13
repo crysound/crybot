@@ -22,7 +22,7 @@ import { hostTimeout } from "./testing/host-timeout.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
-const HOST = "cry-t-0123456789ab.fly.dev";
+const HOST = "cry-t-0123456789ab.example.test";
 /** The Mac's public address as My Cloud sees it, through the edge. */
 const MAC_PUBLIC = "203.0.113.9";
 const edge = { host: HOST, "x-forwarded-for": MAC_PUBLIC, "x-forwarded-proto": "https", origin: `https://${HOST}` };

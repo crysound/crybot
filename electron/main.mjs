@@ -2461,20 +2461,20 @@ ipcMain.handle("desktop-remote:disconnect", localOnly("desktop-remote:disconnect
 }));
 
 // Auth and connector credentials never cross this boundary.
-ipcMain.handle("account:state", localOnly("account:state", () => ensureCompanionAccountService().state()));
-ipcMain.handle("account:request-code", localOnly("account:request-code", (_event, email) =>
+ipcMain.handle("companion-account:state", localOnly("companion-account:state", () => ensureCompanionAccountService().state()));
+ipcMain.handle("companion-account:request-code", localOnly("companion-account:request-code", (_event, email) =>
   ensureCompanionAccountService().requestCode(email),
 ));
-ipcMain.handle("account:verify-code", localOnly("account:verify-code", (_event, email, code) =>
+ipcMain.handle("companion-account:verify-code", localOnly("companion-account:verify-code", (_event, email, code) =>
   ensureCompanionAccountService().verifyCode(email, code),
 ));
-ipcMain.handle("account:retry", localOnly("account:retry", () => ensureCompanionAccountService().retry()));
-ipcMain.handle("account:prepare", localOnly("account:prepare", () => {
+ipcMain.handle("companion-account:retry", localOnly("companion-account:retry", () => ensureCompanionAccountService().retry()));
+ipcMain.handle("companion-account:prepare", localOnly("companion-account:prepare", () => {
   const refusal = managedRemoteAccessRefusal();
   if (refusal) throw new Error(refusal);
   return rememberCompanionRoute("https", true).then(() => ensureCompanionAccountService().prepare());
 }));
-ipcMain.handle("account:sign-out", localOnly("account:sign-out", () => ensureCompanionAccountService().signOut()));
+ipcMain.handle("companion-account:sign-out", localOnly("companion-account:sign-out", () => ensureCompanionAccountService().signOut()));
 
 const workspaceOnly = (handler) => (event, ...args) => {
   if (!workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin())) throw new Error("These controls are only available in the main desktop window");

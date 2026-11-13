@@ -34,7 +34,7 @@ test("home is My Cloud only once the move switched and the same account is signe
 test("a frozen copy with its journal lost counts as moved, to the Cloud it names or the account's own", () => {
   assert.deepEqual(homeOf({ frozenCloud: CLOUD, state: connected() }), { kind: "cloud", origin: CLOUD });
   assert.deepEqual(homeOf({ frozenCloud: true, state: connected() }), { kind: "cloud", origin: CLOUD });
-  assert.deepEqual(homeOf({ frozenCloud: "https://cry-t-2.fly.dev", state: connected() }), { kind: "signin", other: true });
+  assert.deepEqual(homeOf({ frozenCloud: "https://cry-t-2.example.test", state: connected() }), { kind: "signin", other: true });
   assert.deepEqual(homeOf({ frozenCloud: true, state: { status: "unavailable", account: ACCOUNT } }), { kind: "signin" }, "no Cloud to name: the sign-in screen, never the frozen copy");
   assert.deepEqual(homeOf({ frozenCloud: CLOUD, state: null }), { kind: "signin" });
   assert.deepEqual(homeOf({ journal: { ...done(), phase: "freeze" }, frozenCloud: CLOUD, state: connected() }), { kind: "computer" }, "a move under way is not a move done");
@@ -531,7 +531,7 @@ function pageIpc(overrides = {}) {
 }
 
 test("no page gets a control over lending this computer: not My Cloud's, another Cloud's or this computer's own, and main handles none", async () => {
-  for (const origin of [CLOUD, "https://cry-c-a.fly.dev", LOCAL]) {
+  for (const origin of [CLOUD, "https://cry-c-a.example.test", LOCAL]) {
     const page = preload(origin, { activation: true });
     assert.equal(page.bridge.cloudLending, undefined, origin);
     assert.equal(page.bridge.cloudAccount?.lending, undefined, origin);
@@ -593,7 +593,7 @@ test("the place asked for: My Cloud unless a team is asked or remembered; a team
   assert.deepEqual(placeOf({ state }), { kind: "cloud" });
   assert.deepEqual(placeOf({ ask: "cloud", remembered: { team: "team-acme" }, state }), { kind: "cloud" }, "asked for My Cloud: My Cloud");
   assert.deepEqual(placeOf({ ask: { team: "team-acme" }, state }), { kind: "team", id: "team-acme", name: "Acme", role: "member", origin: TEAM, machine: ACME.machine });
-  assert.deepEqual(placeOf({ remembered: { team: "team-acme", name: "Old name", origin: "https://old.fly.dev" }, state }).origin, TEAM, "the session's address wins over the saved one");
+  assert.deepEqual(placeOf({ remembered: { team: "team-acme", name: "Old name", origin: "https://old.example.test" }, state }).origin, TEAM, "the session's address wins over the saved one");
   assert.deepEqual(placeOf({ ask: { team: "team-acme" }, state: { ...state, teams: [{ ...ACME, machine: null }] } }), { kind: "team", id: "team-acme", name: "Acme", role: "member", origin: null, machine: null });
   assert.deepEqual(placeOf({ remembered: { team: "team-acme", name: "Acme", origin: TEAM }, state: connected() }), { kind: "cloud", left: "Acme" }, "connected, not listed: gone, by name");
   assert.deepEqual(placeOf({ ask: { team: "team-acme", name: "Acme" }, state: connected() }), { kind: "cloud", left: "Acme" });
@@ -956,7 +956,7 @@ test("an account leaving: nothing under way for it goes on, and the next show ta
   assert.deepEqual(here.local, [false], "already on this computer's page: nothing moves");
 });
 
-const B_CLOUD = "https://cry-b.fly.dev";
+const B_CLOUD = "https://cry-b.example.test";
 const accountB = (machine) => ({ status: "connected", account: { id: "acct-2", email: "b@example.test" }, ...(machine ? { machine } : {}) });
 
 test("moved to A's Cloud, B signed in with a Cloud of its own: B's Cloud opens, and A's frozen copy is never shown", () => {

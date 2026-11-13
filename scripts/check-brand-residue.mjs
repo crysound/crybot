@@ -7,7 +7,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 process.chdir(root);
 const allowed = new Set(["LICENSE", "NOTICE", "CHANGES.md", "LICENSING.md"]);
 const excluded = (path) => allowed.has(path) || path.startsWith("third_party/") || path.startsWith("docs/specs/") || path.startsWith("docs/tasks/") || path.split("/").includes("node_modules");
-const pattern = /\u006daus|open\u006daus|\b\u006fmb[_-]|\b\u006fmb\b|open\u006dausbot\.com|\u006dausbot\.si|post\u0068og|milind\u002dsoni/i;
+const pattern = /\u006daus|open\u006daus|\b\u006fmb[_-]|\b\u006fmb\b|open\u006dausbot\.com|\u006dausbot\.si|post\u0068og|mi\u006cind/i;
 const files = new Set((await promisify(execFile)("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 })).stdout.split("\0").filter(Boolean));
 function collect(dir) {
   if (!existsSync(dir)) return;

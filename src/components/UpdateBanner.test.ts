@@ -19,7 +19,7 @@ function render(state: UpdaterState, window: object = { cry: { updater: {} } }, 
 }
 
 const LOCAL = "http://127.0.0.1:8799";
-const CLOUD = "https://home-7f3k2.fly.dev";
+const CLOUD = "https://home-7f3k2.example.test";
 const OTHER = "https://bots.example.test";
 function serverPageBridge(origin: string, answered: boolean) {
   let bridge: unknown;

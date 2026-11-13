@@ -13,7 +13,7 @@ import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
-const HOST = "cry-t-0123456789ab.fly.dev";
+const HOST = "cry-t-0123456789ab.example.test";
 const secret = randomBytes(32).toString("base64url");
 const TEAM = { id: "team-7f3a", name: "Acme" };
 let home = "", dataDir = "", base = "", log = "";

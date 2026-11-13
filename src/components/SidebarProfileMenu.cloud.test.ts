@@ -12,7 +12,7 @@ vi.mock("react", async (original) => ({
 }));
 import { useCloudPhoneDestination } from "./SidebarProfileMenu";
 
-const readyCloud: CloudAccountState = { status: "connected", entitlement: { plan: "pro", tier: "max", status: "active", expiresAt: null, version: 1 }, machine: { status: "ready", origin: "https://home-7f3k2.fly.dev" } };
+const readyCloud: CloudAccountState = { status: "connected", entitlement: { plan: "pro", tier: "max", status: "active", expiresAt: null, version: 1 }, machine: { status: "ready", origin: "https://home-7f3k2.example.test" } };
 let bridge: CloudAccountBridge, push: (state: CloudAccountState) => void;
 let result: ReturnType<typeof useCloudPhoneDestination>;
 function render(enabled: boolean) {
@@ -34,7 +34,7 @@ it("on this computer, follows the snapshot: a paid, Ready Cloud is offered, and 
   f.effects[0]!(); await flush();
   render(true);
   expect(result).toEqual({ cloud: "ready", bridge });
-  push({ ...readyCloud, machine: { status: "stopped", origin: "https://home-7f3k2.fly.dev" } });
+  push({ ...readyCloud, machine: { status: "stopped", origin: "https://home-7f3k2.example.test" } });
   render(true);
   expect(result.cloud).toBe("not-ready");
   push({ status: "signed-out" });

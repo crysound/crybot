@@ -16,7 +16,7 @@ import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
-const HOST = "cry-t-0123456789ab.fly.dev";
+const HOST = "cry-t-0123456789ab.example.test";
 const secret = randomBytes(32).toString("base64url");
 const brokerToken = randomBytes(32).toString("hex");
 const CATALOG = ["outlook", "linkedin", "calendly", "gmail", "slack"];

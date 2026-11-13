@@ -1,5 +1,5 @@
 import { computerPersonAwayText } from "../computer-wait.ts";
-import { CONTROL_BUSY, CONTROL_HANDED_BACK, CONTROL_REFUSAL_PLAIN, CONTROL_TURN_ENDED, CONTROL_UNCONFIRMED, CONTROL_WAITED } from "../control-client.ts";
+import { CONTROL_BUSY, CONTROL_HANDED_BACK, CONTROL_REFUSAL_PLAIN, CONTROL_TURN_ENDED, CONTROL_UNCONFIRMED, CONTROL_WAITED } from "../computer-control-client.ts";
 import { ChatMcpClient } from "../drivers/chat-mcp-tools.ts";
 import type { CallOutcome, ComputerCaller } from "./resolve.ts";
 

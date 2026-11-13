@@ -12,9 +12,9 @@ import environments from "./environments.cjs";
 import localOriginModule from "./local-origin.cjs";
 
 const LOCAL = "http://127.0.0.1:8799";
-const CLOUD = "https://home-7f3k2.fly.dev";
+const CLOUD = "https://home-7f3k2.example.test";
 const OTHER = "https://bots.example.test";
-const OWN = "https://cry-c-a.fly.dev";
+const OWN = "https://cry-c-a.example.test";
 
 const fixture = vi.hoisted(() => ({ autoUpdater: null, handlers: new Map(), home: "" }));
 

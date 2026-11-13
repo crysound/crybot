@@ -5,7 +5,7 @@ import { createInterface } from "node:readline";
 import { delimiter, join } from "node:path";
 import { homedir } from "node:os";
 
-import { CONTROL_ACT_WITHIN_MS, CONTROL_WAIT_MS } from "../control-client.ts";
+import { CONTROL_ACT_WITHIN_MS, CONTROL_WAIT_MS } from "../computer-control-client.ts";
 
 type Json = Record<string, unknown>;
 type Device = { serial: string; state: string; model: string; connection: "usb" | "network" | "emulator" };

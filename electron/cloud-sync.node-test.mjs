@@ -7,7 +7,7 @@ import { createCloudFilesService } from "./cloud-sync.mjs";
 import { fakeCloud } from "./fixtures/cloud-sync-fake-cloud.mjs";
 
 const AT = new Date(2026, 9, 15, 12).getTime();
-function setup(t, { origin = "https://cry-u-aaaaaaaaaaaa.fly.dev" } = {}) {
+function setup(t, { origin = "https://cry-u-aaaaaaaaaaaa.example.test" } = {}) {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), "cry-files-service-")));
   const home = join(dir, "home");
   const project = join(home, "Clients");
@@ -168,7 +168,7 @@ test("My Cloud's copy gone: the folder is shared again, and another My Cloud get
   assert.notEqual(second, first);
   assert.equal(s.cloud.get(second, "brief.md"), "the brief");
   s.holder.cloud = fakeCloud();
-  s.current.origin = "https://cry-u-bbbbbbbbbbbb.fly.dev";
+  s.current.origin = "https://cry-u-bbbbbbbbbbbb.example.test";
   await s.service.pass();
   const [again] = [...s.holder.cloud.folders.values()].map((entry) => entry.folder);
   assert.equal(again.pcPath, s.project);

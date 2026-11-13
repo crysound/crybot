@@ -2,10 +2,10 @@
 // home-window.node-test.mjs and home-window-states.node-test.mjs.
 import { createHomeWindow } from "../home-window.mjs";
 
-export const CLOUD = "https://cry-t-1.fly.dev";
-export const TEAM = "https://cry-u-acme.fly.dev";
+export const CLOUD = "https://cry-t-1.example.test";
+export const TEAM = "https://cry-u-acme.example.test";
 export const ACME = { id: "team-acme", name: "Acme", role: "member", machine: { status: "ready", origin: TEAM } };
-export const CLIENT = "https://cry-c-a.fly.dev";
+export const CLIENT = "https://cry-c-a.example.test";
 export const CLIENT_A = { id: "c-a", name: "Client A", color: "green", role: "owner", tier: "pro", runsOn: "cloud", status: "ready", origin: CLIENT, teamId: null, primary: false };
 export const LOCAL = "http://127.0.0.1:8799";
 export const ACCOUNT = { id: "acct-1", email: "person@example.test" };

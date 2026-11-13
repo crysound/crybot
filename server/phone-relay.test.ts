@@ -14,7 +14,7 @@ import { SessionClosed, type E2ESession } from "../companion/src/e2e/session.ts"
 import { startFakeRelay, type FakeRelay } from "../companion/test/e2e/fake-relay.ts";
 import { http, json, waitFor } from "../companion/test/e2e/rig.ts";
 import { removeTempDir } from "./testing/cleanup.ts";
-import { MAX_RELAY_PHONES, MAX_SESSIONS_PER_PHONE, PHONE_RELAY_KEY_FILE, PHONE_RELAY_PHONES_FILE, startPhoneRelay, tunnelHolder, type PhoneRelay, type PhoneRelayOptions } from "./phone-relay.ts";
+import { MAX_RELAY_PHONES, MAX_SESSIONS_PER_PHONE, PHONE_RELAY_KEY_FILE, PHONE_RELAY_PHONES_FILE, startPhoneRelay, type PhoneRelay, type PhoneRelayOptions } from "./phone-relay.ts";
 import { requestSource, resolveRequestAuth } from "./request-auth.ts";
 import { SessionRegistry } from "./sessions.ts";
 
@@ -88,7 +88,7 @@ async function startServer(input: Partial<PhoneRelayOptions> & { dir?: string; r
   const logs: string[] = [];
   let phoneRelay: PhoneRelay | null = null;
   phoneRelay = startPhoneRelay({
-    env: { CRYBOT_PHONE_RELAY: "1", CRYBOT_PHONE_RELAY_URL: relay.url },
+    env: { CRYBOT_PHONE_RELAY_URL: relay.url },
     dataDir: dir,
     sessions,
     handle: serverHandler(sessions, () => phoneRelay),
@@ -147,8 +147,8 @@ describe("phones through CryBot Relay on a server", () => {
     const base = { dataDir: dir, sessions, handle: () => {}, serverName: () => "VPS", publicOrigin: () => null, version: "0.1.152", log: (line: string) => logs.push(line) };
     expect(startPhoneRelay({ ...base, env: {}, refusal: null })).toBeNull();
     expect(startPhoneRelay({ ...base, env: { CRYBOT_PHONE_RELAY: "true" }, refusal: null })).toBeNull();
-    expect(startPhoneRelay({ ...base, env: { CRYBOT_PHONE_RELAY: "1" }, refusal: "a CryBot Cloud home" })).toBeNull();
-    expect(logs).toEqual(["phone relay: off on a CryBot Cloud home"]);
+    expect(startPhoneRelay({ ...base, env: { CRYBOT_PHONE_RELAY_URL: "http://localhost:9999" }, refusal: "the desktop companion" })).toBeNull();
+    expect(logs).toEqual(["phone relay: off on the desktop companion"]);
     expect(() => statSync(join(dir, PHONE_RELAY_KEY_FILE))).toThrow();
   });
 
@@ -259,7 +259,7 @@ describe("phones through CryBot Relay on a server", () => {
     const logs: string[] = [];
     const sessions = new SessionRegistry({ file: join(dir, "sessions.json") });
     cleanup.push(() => sessions.close());
-    expect(startPhoneRelay({ env: { CRYBOT_PHONE_RELAY: "1" }, dataDir: dir, sessions, handle: () => {}, serverName: () => "VPS", publicOrigin: () => null, version: "0.1.152", refusal: null, log: (line) => logs.push(line) })).toBeNull();
+    expect(startPhoneRelay({ env: { CRYBOT_PHONE_RELAY_URL: "http://localhost:9999" }, dataDir: dir, sessions, handle: () => {}, serverName: () => "VPS", publicOrigin: () => null, version: "0.1.152", refusal: null, log: (line) => logs.push(line) })).toBeNull();
     expect(logs[0]).toMatch(/^phone relay: off: .*is not a connection key/);
     expect(readFileSync(join(dir, PHONE_RELAY_KEY_FILE), "utf8")).toBe("{\"v\":1}\n");
   });
@@ -289,40 +289,6 @@ describe("phones through CryBot Relay on a server", () => {
     expect(link.searchParams.get("address")).toBe("bot.example.com:443");
     expect(JSON.parse(fromB64u(link.searchParams.get("endpoints")!)!.toString("utf8"))).toEqual([{ url: "https://bot.example.com", kind: "hosted", priority: 0 }]);
     expect(new URL(server.phoneRelay.invite(server.sessions.openPairing().credential, "VPS", "http://localhost:8080")!).searchParams.get("address")).toBe("relay-only.invalid:443");
-  });
-
-  it("never asks for a relay token on a machine that holds or needs a tunnel", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "cry-phone-relay-tunnel-"));
-    cleanup.push(() => removeTempDir(dir));
-    const account = join(dir, "tunnel-account.json");
-    expect(tunnelHolder({}, dir)).toBeNull();
-    writeFileSync(account, JSON.stringify({ companionInstallationCredential: "cry_install_x" }));
-    expect(tunnelHolder({}, dir)).toBeNull();
-    expect(tunnelHolder({ CRYBOT_SERVES_TUNNEL: "1", CRYBOT_TUNNEL_SOCKET: join(dir, "t.sock") }, dir)).toBe("this server runs with --tunnel");
-    // Docker's Caddy reaches the server over a socket too: that is no tunnel.
-    expect(tunnelHolder({ CRYBOT_TUNNEL_SOCKET: "/run/crybot/http.sock" }, dir)).toBeNull();
-    expect(tunnelHolder({ CRYBOT_INSTALLATION_CREDENTIAL: "cry_install_y" }, dir)).toMatch(/^CRYBOT_INSTALLATION_CREDENTIAL is set/);
-    writeFileSync(account, JSON.stringify({ companionInstallationCredential: "cry_install_x", managedCompanionEndpointUrl: "https://server.example.test" }));
-    expect(tunnelHolder({}, dir)).toMatch(/holds a tunnel address/);
-    writeFileSync(account, "not json");
-    expect(tunnelHolder({}, dir)).toMatch(/could not be read/);
-
-    // `serve --tunnel` with CRYBOT_PHONE_RELAY=1 in the environment, and a fleet container: off, and saying why.
-    writeFileSync(account, JSON.stringify({ companionInstallationCredential: "cry_install_x" }));
-    for (const env of [{ CRYBOT_PHONE_RELAY: "1", CRYBOT_SERVES_TUNNEL: "1", CRYBOT_TUNNEL_SOCKET: join(dir, "t.sock") }, { CRYBOT_PHONE_RELAY: "1", CRYBOT_INSTALLATION_CREDENTIAL: "cry_install_y" }]) {
-      let asked = 0;
-      const logs: string[] = [];
-      const sessions = new SessionRegistry({ file: join(dir, "sessions.json") });
-      cleanup.push(() => sessions.close());
-      const relay = startPhoneRelay({ env, dataDir: dir, sessions, handle: () => {}, serverName: () => "VPS", publicOrigin: () => null, version: "0.1.152", refusal: null, fetchGrant: async () => (asked += 1, {}), log: (line) => logs.push(line) })!;
-      expect(relay.status()).toMatchObject({ relay: "off", grant: "tunnel", reason: expect.any(String) });
-      expect(relay.invite(sessions.openPairing().credential, "VPS", null)).toBeNull();
-      expect(logs[0]).toMatch(/^phone relay: off: .*login --relay/);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      expect(asked).toBe(0);
-      expect(() => statSync(join(dir, PHONE_RELAY_KEY_FILE))).toThrow();
-      sessions.close();
-    }
   });
 
   it("pairs only with the QR's credential: a typed code and the browser's pairing route are refused", async () => {

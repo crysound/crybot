@@ -8,7 +8,7 @@ import { CLOUD_COLORS, CLOUD_COLOR_HEX, cleanCloudColor, cleanCloudName, cloudLi
 import { colorDotPng } from "./color-dot.mjs";
 import environments from "./environments.cjs";
 
-const origin = "https://cry-u-1a2b3c4d5e6f.fly.dev";
+const origin = "https://cry-u-1a2b3c4d5e6f.example.test";
 
 test("a Cloud's name is up to 28 characters of plain text, and its colour one of six names", () => {
   assert.equal(cleanCloudName("  Studio   cloud "), "Studio cloud");

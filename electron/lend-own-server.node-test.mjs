@@ -214,7 +214,7 @@ function mainLending({ response = 1, own = true, flag = false, offer } = {}) {
   const lending = installServerLending({ ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) }, guard: (_channel, handler) => handler, sharing: () => controller,
     dialogs: { chooseFolder: async () => null, confirmServerAccess: async () => true }, validate: async folders => folders ?? [], dialog, window: () => win,
     saved: id => { if (id !== garage.id) throw new Error("unknown"); return garage; }, candidate: env => !env.cloud && !env.team && !env.home, flag: async () => flag,
-    environments: () => [garage, { id: "acme", name: "Acme", origin: "https://cry-t-acme.fly.dev", team: { id: "t" } }], active: () => garage });
+    environments: () => [garage, { id: "acme", name: "Acme", origin: "https://cry-t-acme.example.test", team: { id: "t" } }], active: () => garage });
   return { handlers, calls, lending, win, info };
 }
 

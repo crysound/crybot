@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, it } from "vitest";
 
 import { launchVerificationServer, runControlCry, verificationServerArgs, verificationServerEnvironment } from "../scripts/control-cry.ts";
-import { createControlClient } from "./control-client.ts";
+import { createControlClient } from "./computer-control-client.ts";
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { freePortBlock } from "./testing/ports.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";

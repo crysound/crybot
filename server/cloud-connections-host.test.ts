@@ -22,7 +22,7 @@ function host(cloudHome: boolean) {
   const dir = temp();
   const config = { mcpServers: { linear: { type: "http", url: LINEAR, headers: {}, enabled: true }, dodo: { command: "npx", args: ["dodo"], env: {}, enabled: true } } } as unknown as AppConfig;
   const mcpOAuth = new McpOAuthManager({ file: join(dir, "mcp-oauth.json") });
-  const connections = createCloudConnectionsHost({ cloudHome: cloudHome ? { publicOrigin: "https://cry-u-1.fly.dev" } : null, config: () => config,
+  const connections = createCloudConnectionsHost({ cloudHome: cloudHome ? { publicOrigin: "https://cry-u-1.example.test" } : null, config: () => config,
     environmentId: "env-desktop-1", mcpOAuth, engines: async () => ["claude", "openrouter"] });
   async function call(method: string, path: string, body?: unknown, type = "application/json") {
     let status = 0, answered: unknown = null;
@@ -86,7 +86,7 @@ describe("a move's routes and private port", () => {
     const desktop = host(false), cloud = host(true);
     cloud.mcpOAuth.markNeedsSignIn("linear", LINEAR);
     desktop.mcpOAuth.markNeedsSignIn("linear", LINEAR);
-    expect(cloud.connections.prompt({})).toContain("linear (sign in here: https://cry-u-1.fly.dev/?connect=mcp%3Alinear)");
+    expect(cloud.connections.prompt({})).toContain("linear (sign in here: https://cry-u-1.example.test/?connect=mcp%3Alinear)");
     expect(desktop.connections.prompt({})).toBe("");
   });
 });

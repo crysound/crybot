@@ -12,7 +12,7 @@ import nativeText from "./native-text.cjs";
 import { pairingPageUrl, parseServerInput } from "./server-address.mjs";
 
 const NOW = 1_800_000_000_000;
-const origin = "https://cry-u-1a2b3c4d5e6f.fly.dev";
+const origin = "https://cry-u-1a2b3c4d5e6f.example.test";
 const code = "ABCD-EFGH-JK23";
 
 test("the Admin says whether this account may move to its Cloud, and when an ended Cloud it still holds is deleted", () => {
@@ -47,8 +47,8 @@ test("a Cloud whose plan sleeps carries the Admin's power word; a malformed one 
 
 test("a malformed summary is no machine at all", () => {
   for (const input of [null, undefined, "ready", [], { state: "running", origin }, { state: "ready" }, { state: "ready", origin: null },
-    { state: "ready", origin: "http://cry-u-1a2b3c4d5e6f.fly.dev" }, { state: "ready", origin: `${origin}/pair` },
-    { state: "ready", origin: "https://user:pw@cry-u-1a2b3c4d5e6f.fly.dev" }, { state: "ready", origin: "https://localhost" },
+    { state: "ready", origin: "http://cry-u-1a2b3c4d5e6f.example.test" }, { state: "ready", origin: `${origin}/pair` },
+    { state: "ready", origin: "https://user:pw@cry-u-1a2b3c4d5e6f.example.test" }, { state: "ready", origin: "https://localhost" },
     { state: "stopped", origin: "javascript:alert(1)" }, { state: "toString", origin }, { state: "__proto__", origin },
     { state: "allowance_used", origin }]) {
     assert.equal(parseCloudSummary(input), null, JSON.stringify(input));
@@ -58,7 +58,7 @@ test("a malformed summary is no machine at all", () => {
 test("a pairing grant is accepted only for the machine it was asked for, fresh and well formed", () => {
   const grant = { cloudContractVersion: 1, origin, code, pairingUrl: `${origin}/pair#code=${code}`, expiresAt: NOW + 300_000, credential: `cry_pair_${"c".repeat(43)}` };
   assert.deepEqual(parsePairingGrant(grant, origin, NOW), { origin, code, expiresAt: NOW + 300_000 });
-  for (const bad of [{ ...grant, origin: "https://cry-u-ffffffffffff.fly.dev" }, { ...grant, cloudContractVersion: 2 }, { ...grant, code: "abcd-efgh-jk23" },
+  for (const bad of [{ ...grant, origin: "https://cry-u-ffffffffffff.example.test" }, { ...grant, cloudContractVersion: 2 }, { ...grant, code: "abcd-efgh-jk23" },
     { ...grant, code: "ABCD-EFGH-JK01" }, { ...grant, code: `${code}&x=1` }, { ...grant, expiresAt: NOW }, { ...grant, expiresAt: NOW + 3_600_000 }, null]) {
     assert.equal(parsePairingGrant(bad, origin, NOW), null, JSON.stringify(bad));
   }
@@ -95,7 +95,7 @@ test("the name and colour chosen while it was set up are what it is listed under
 test("connecting uses the pairing page with the code in the hash, or the machine itself", () => {
   assert.equal(cloudHomeConnectUrl({ origin, grant: { origin, code, expiresAt: NOW + 1 } }, NOW), `${origin}/pair#code=${code}`);
   assert.equal(cloudHomeConnectUrl({ origin, grant: { origin, code, expiresAt: NOW } }, NOW), origin);
-  assert.equal(cloudHomeConnectUrl({ origin, grant: { origin: "https://other.fly.dev", code, expiresAt: NOW + 1 } }, NOW), origin);
+  assert.equal(cloudHomeConnectUrl({ origin, grant: { origin: "https://other.example.test", code, expiresAt: NOW + 1 } }, NOW), origin);
   assert.equal(cloudHomeConnectUrl({ origin, grant: null }, NOW), origin);
   assert.equal(cloudHomeConnectUrl({ origin, grant: { origin, code, expiresAt: NOW + 1 } }, NOW, "phone"), `${origin}/pair?desktop-settings=phone&pair=open#code=${code}`);
   assert.equal(cloudHomeConnectUrl({ origin, grant: null }, NOW, "phone"), `${origin}/?desktop-settings=phone&pair=open`);
@@ -166,7 +166,7 @@ test("a grant for another machine or an Admin refusal never connects", async t =
   const f = await admin(t);
   f.cloud = { state: "ready", origin, pairingAvailable: true };
   await f.connect();
-  f.pairing = { origin: "https://cry-u-ffffffffffff.fly.dev", code, expiresAt: NOW + 300_000 };
+  f.pairing = { origin: "https://cry-u-ffffffffffff.example.test", code, expiresAt: NOW + 300_000 };
   await assert.rejects(f.client.pairHome(), /Invalid Cloud pairing response/);
   f.pairingStatus = 409;
   await assert.rejects(f.client.pairHome(), error => error.status === 409);
@@ -458,7 +458,7 @@ test("the Server menu opens My Cloud through the Cloud's own connection, never a
   await context.switchEnvironment("vps");
   assert.deepEqual(calls, ["remember:null", "look:vps"], "a server that doesn't answer: the window stays where it is");
   answers = true;
-  const acme = { id: "acme", name: "Acme", origin: "https://cry-u-acme.fly.dev", team: { id: "team-acme", role: "member" } };
+  const acme = { id: "acme", name: "Acme", origin: "https://cry-u-acme.example.test", team: { id: "team-acme", role: "member" } };
   context.environmentsState = { environments: [entry, other, acme], activeId: environments.LOCAL_ID };
   calls.length = 0; await context.switchEnvironment("acme");
   assert.deepEqual(calls, ['home:{"place":{"team":"team-acme","name":"Acme"}}'], "a team opens through the home window's team pairing, never a plain navigation");

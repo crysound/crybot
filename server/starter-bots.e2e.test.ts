@@ -11,7 +11,7 @@ import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
-const HOST = "cry-t-0123456789ab.fly.dev";
+const HOST = "cry-t-0123456789ab.example.test";
 const FORWARDED = { host: HOST, "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "https" };
 const CLAUDE = { instanceId: "claude", model: "claude-sonnet-5" };
 const PACKAGE = JSON.parse(readFileSync(join(SERVER_DIR, "..", "shared", "package-fixtures", "full-team.v2.json"), "utf8"));

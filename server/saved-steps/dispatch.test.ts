@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { newId, type ProviderInstance, type RuntimeEvent, type RuntimeEventListener, type SendTurnInput, type TurnStartResult } from "../contracts.ts";
-import { CONTROL_BUSY } from "../control-client.ts";
+import { CONTROL_BUSY } from "../computer-control-client.ts";
 import { Handoffs, unseenMessages, type HandedState, type Handoff } from "../delta-context.ts";
 import { EventBus } from "../harness/bus.ts";
 import { LimitResetClock } from "../limit-resets.ts";

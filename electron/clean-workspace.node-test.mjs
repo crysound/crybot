@@ -10,7 +10,7 @@ import { createLendingTarget } from "./lending-target.mjs";
 import { installOneHome } from "./one-home-main.mjs";
 import { WELCOME_VERSION } from "./onboarding-record.mjs";
 
-const CLOUD = "https://cry-t-1.fly.dev";
+const CLOUD = "https://cry-t-1.example.test";
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status });
 
 /** A computer's data folder on disk, frozen for My Cloud, with the one server the app runs at a time: `running`, and each
@@ -249,7 +249,7 @@ test("another account leaves the journal alone, and nothing reaches the clean wo
 });
 
 test("a Cloud that's gone still brings this computer home from the clean workspace: the lift reaches the frozen copy, not the clean one", async (t) => {
-  const elsewhere = "https://cry-other-2.fly.dev";
+  const elsewhere = "https://cry-other-2.example.test";
   const w = moved(t, { state: ready({ machine: { status: "ready", origin: elsewhere, moves: true } }), journal: null, gone: "deleted" });
   await w.clean.enter();
   await w.main.kick();

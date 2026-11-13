@@ -21,7 +21,7 @@ test("CRYBOT_CLOUD_STAGING=1, and only that, points the app at the fixed staging
 
 test("the staging address is the one exact https origin; staging checkouts are only Dodo's test page", () => {
   assert.equal(cloudOrigin(STAGING_CLOUD_ORIGIN), STAGING_CLOUD_ORIGIN);
-  for (const value of ["http://server.example.test", `${STAGING_CLOUD_ORIGIN}/`, `${STAGING_CLOUD_ORIGIN}:8443`, "https://server.example.test.evil.test", "https://evil.fly.dev"]) {
+  for (const value of ["http://server.example.test", `${STAGING_CLOUD_ORIGIN}/`, `${STAGING_CLOUD_ORIGIN}:8443`, "https://server.example.test.evil.test", "https://evil.example.test"]) {
     assert.throws(() => cloudOrigin(value), /Invalid CryBot Cloud address/, value);
   }
   const test = "https://test.checkout.dodopayments.com/session/cks_1", live = "https://checkout.dodopayments.com/session/cks_1";

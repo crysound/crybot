@@ -13,7 +13,6 @@
 #
 #   docker build -t crybot .
 #   docker build --build-arg ENGINES="@anthropic-ai/claude-code @openai/codex" -t crybot .
-#   docker build --target cloud-home -t cry-cloud-home .
 #   docker buildx build --platform linux/arm64 -t crybot .   # Raspberry Pi 4/5, ARM servers
 #
 # HOME is the /data volume, so engine CLI logins (~/.claude, ~/.codex, ~/.grok,
@@ -126,97 +125,6 @@ ENV AGENT_BROWSER_EXECUTABLE_PATH=/opt/crybot-browser/chrome \
     NODE_ENV=production
 WORKDIR /app
 
-FROM runtime AS cloud-home
-# Tools bots reach for in their shell on a My Cloud: Python, pdftotext and
-# unzip (about 28 MB unpacked), and the bot box (server/bot-box): bubblewrap
-# runs every bot turn in its own namespaces, socat bridges a box's loopback
-# ports to the server's gates. Their own layer, so the Chrome layers beneath
-# stay cached. pnpm, so a bot's shell can install what its project asks for.
-# uv and uvx, so a connector someone runs with uvx comes along when they move here
-# (server/cloud-connections.ts) as an npx one does: about 32 MB, on every user's
-# PATH and out of the volume. What it downloads lives in the volume's cache.
-ARG UV_VERSION=0.13.4
-ARG TARGETARCH
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 poppler-utils unzip bubblewrap socat \
-  && rm -rf /var/lib/apt/lists/* \
-  && HOME=/tmp/cry-build-home npm install -g pnpm@10.33.0 \
-  && uv_arch=x86_64 && if [ "$TARGETARCH" = arm64 ]; then uv_arch=aarch64; fi \
-  && mkdir -p /tmp/uv-install \
-  && curl -fsSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${uv_arch}-unknown-linux-gnu.tar.gz" | tar -xz -C /tmp/uv-install --strip-components=1 \
-  && install -m 0755 /tmp/uv-install/uv /tmp/uv-install/uvx /usr/local/bin/ \
-  && bwrap --version && socat -V | head -1 && HOME=/tmp/cry-build-home pnpm --version && uv --version | grep -qF "uv ${UV_VERSION}" \
-  && rm -rf /tmp/cry-build-home /tmp/uv-install /tmp/node-compile-cache
-# Caddy and Grok are pinned, so they sit beneath the engines, which change
-# more often.
-COPY --from=edge /caddy /usr/local/bin/caddy
-COPY --from=tunnel /cloudflared /usr/local/bin/cloudflared
-# cloudflared's own user: its token rides its environment, which bot can't read.
-RUN useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin cry-tunnel
-# Grok Build, the grok.com subscription engine: xAI's own installer, pinned to
-# the version the Grok driver is verified against (server/drivers/acp/grok.ts).
-# People sign it in from the app with a device code; its login lands in
-# ~/.grok on the volume. Only the binary goes to /usr/local/bin, on every
-# user's PATH and out of the volume; the installer's PATH links and shell
-# setup stay in a throwaway home that the same step removes. If xAI's
-# installer cannot be reached, the build fails: an image without Grok would
-# offer a sign-in that cannot run. GROK_VERSION= (empty) leaves Grok out on
-# purpose.
-ARG GROK_VERSION=1.0.41
-RUN if [ -n "$GROK_VERSION" ]; then \
-      mkdir -p /tmp/grok-install \
-      && curl -fsSL https://x.ai/cli/install.sh -o /tmp/grok-install/install.sh \
-      && HOME=/tmp/grok-install PATH="/tmp/grok-install/.grok/bin:$PATH" bash /tmp/grok-install/install.sh "$GROK_VERSION" \
-      && install -m 0755 "$(readlink -f /tmp/grok-install/.grok/bin/grok)" /usr/local/bin/grok \
-      && HOME=/tmp/grok-install grok --version | grep -qF "grok $GROK_VERSION " \
-      && rm -rf /tmp/grok-install; \
-    fi
-# Engine CLIs baked into the image (space-separated npm packages). The publish
-# job passes each one's current version, or names only and today's date as
-# ENGINES_CACHE_TAG when it cannot look them up. Build-time CLI caches must
-# not end up in the image or a customer's volume.
-ARG CLOUD_HOME_ENGINES="@anthropic-ai/claude-code @openai/codex"
-ARG ENGINES_CACHE_TAG=""
-RUN echo "engines: ${CLOUD_HOME_ENGINES:-none} ${ENGINES_CACHE_TAG}" \
-  && if [ -n "$CLOUD_HOME_ENGINES" ]; then HOME=/tmp/cry-build-home npm install -g $CLOUD_HOME_ENGINES; fi \
-  && rm -rf /tmp/cry-build-home /tmp/node-compile-cache
-COPY deploy/fly/Caddyfile deploy/fly/Caddyfile.tls deploy/fly/Caddyfile.tunnel deploy/fly/edge-routes.caddy /app/cloud/
-# The root supervisor runs /app's code and hands the server its secrets, so
-# no file there may be one `bot` can change: unlike the server image's, these
-# copies stay root's. Only the /data volume is bot's; the launcher refuses to
-# start otherwise (codeTrustProblem), and this check refuses to build.
-# DuckDB and resvg change on a version bump, not per commit: beneath the app files.
-COPY --from=build /src/dist-native/duckdb/target ./duckdb
-COPY --from=build /src/dist-server ./dist-server
-COPY --from=build /src/dist ./dist
-# The bundled skills (server/skill-library.ts reads ./skills from /app).
-COPY --from=build /src/skills ./skills
-RUN export HOME=/tmp/cry-build-home \
- && chmod go-w /app/cloud /app/cloud/Caddyfile /app/cloud/Caddyfile.tls /app/cloud/Caddyfile.tunnel /app/cloud/edge-routes.caddy \
- && caddy version \
- && cloudflared version \
- && CRYBOT_CLOUD_PUBLIC_HOST=validate.fly.dev caddy validate --config /app/cloud/Caddyfile --adapter caddyfile \
- && CRYBOT_CLOUD_PUBLIC_HOST=validate.example.com CRYBOT_CLOUD_EDGE_STORAGE=/tmp/cry-build-home/edge caddy validate --config /app/cloud/Caddyfile.tls --adapter caddyfile \
- && CRYBOT_CLOUD_PUBLIC_HOST=validate.example.com CRYBOT_CLOUD_EDGE_STORAGE=/tmp/cry-build-home/edge CRYBOT_CLOUD_EDGE_CERT_ISSUERS="$(CRYBOT_CLOUD_EDGE_ACME_EMAIL=validate@example.com node --input-type=module -e 'import { edgeCertIssuers } from "/app/dist-server/cloud-home-start.js"; process.stdout.write(edgeCertIssuers(process.env));')" caddy validate --config /app/cloud/Caddyfile.tls --adapter caddyfile \
- && CRYBOT_CLOUD_PUBLIC_HOST=validate.example.com caddy validate --config /app/cloud/Caddyfile.tunnel --adapter caddyfile \
- && test -f /app/dist-server/cloud-home-start.js \
- && untrusted="$(find /app /usr/local/bin/caddy /usr/local/bin/cloudflared \( ! -user root -o ! -type l -perm /022 \) -print)" \
- && if [ -n "$untrusted" ]; then echo "not root's, or writable by others:" >&2; echo "$untrusted" >&2; exit 1; fi \
- && rm -rf /tmp/cry-build-home
-ENV HOME=/data
-VOLUME ["/data"]
-EXPOSE 8080
-# Fly uses the checks in fly.toml; this one serves a plain `docker run`.
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-  CMD curl -sf http://127.0.0.1:8080/api/health | grep -q crybot || exit 1
-# Starts as root: hands a fresh volume to `bot`, runs the server and the edge
-# as `bot`, and hands the server its secrets over a pipe, never an
-# environment `bot` could read (server/cloud-home-start.ts). It runs only
-# root's code from the image, never anything on the volume.
-USER root
-CMD ["node", "/app/dist-server/cloud-home-start.js"]
-
-# The self-hosted server, last so a plain `docker build .` builds it.
 FROM runtime AS server
 # Optional engine CLIs baked into the image (space-separated npm packages).
 ARG ENGINES=""

@@ -14,7 +14,7 @@ import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
-const NEW_HOST = "cry-u-0a1b2c3d4e5f.homes.example", OLD = "https://cry-u-0a1b2c3d4e5f.fly.dev";
+const NEW_HOST = "cry-u-0a1b2c3d4e5f.homes.example", OLD = "https://cry-u-0a1b2c3d4e5f.example.test";
 const secret = randomBytes(32).toString("base64url");
 // Anything but loopback fails here, so the home reaches nothing outside the test.
 const offline = `data:text/javascript,${encodeURIComponent('const real = globalThis.fetch; globalThis.fetch = async (url, init) => String(url).startsWith("http://127.0.0.1:") ? real(url, init) : new Response("offline fixture", { status: 503 });')}`;
@@ -111,7 +111,7 @@ it("takes a browser on the old address as its own, and refuses every other Origi
   expect((await call("POST", "/api/notifications/read-all", OLD)).status).toBe(200);
   expect((await call("GET", "/api/bots", "https://cry-u-older.example.test")).status).toBe(200);
   expect((await call("GET", "/api/bots", `https://${NEW_HOST}`)).status).toBe(200);
-  for (const origin of ["https://evil.example", "https://cry-u-other.fly.dev", OLD.replace("https:", "http:")]) {
+  for (const origin of ["https://evil.example", "https://cry-u-other.example.test", OLD.replace("https:", "http:")]) {
     const refused = await call("POST", "/api/notifications/read-all", origin);
     expect(refused, origin).toEqual({ status: 403, body: { error: "forbidden: cross-origin request" } });
   }
@@ -119,7 +119,7 @@ it("takes a browser on the old address as its own, and refuses every other Origi
 
 it("refuses to start with a former address that is not an exact https origin", async () => {
   const port = await freePortBlock([0, 1]);
-  const bad = await launch("http://cry-u-0a1b2c3d4e5f.fly.dev", port);
+  const bad = await launch("http://cry-u-0a1b2c3d4e5f.example.test", port);
   await new Promise<void>((resolve) => { if (bad.child.exitCode !== null) resolve(); else bad.child.once("exit", () => resolve()); });
   expect(bad.child.exitCode).not.toBe(0);
   expect(bad.output()).toMatch(/Cloud home configuration is invalid: every CRYBOT_CLOUD_LEGACY_ORIGINS entry must be an exact https origin/);

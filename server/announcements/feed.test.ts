@@ -140,3 +140,17 @@ describe("GET /api/announcements", () => {
     expect(requiredScope("POST", ANNOUNCEMENTS_PATH)).toBe("admin");
   });
 });
+
+it("keeps images on the configured feed origin, including cached and bundled cards", async () => {
+  const urls = ["https://feed.example.test/images/a.png", "https://other.example.test/a.png", "https://feed.example.test:444/a.png", "https://user@feed.example.test/a.png"];
+  const cards = urls.map((url, i) => card(`picture-${i}`, { image: { url } }));
+  const request = vi.fn(async () => answer(feed("2026-12-01T09:00:00Z", cards)));
+  const dir = dataDir();
+  const { store } = subject({ dir, fetch: request });
+  await store.refresh();
+  expect(store.cards().map(card => card.image)).toEqual([{ url: urls[0] }, undefined, undefined, undefined]);
+  const changedOrigin = subject({ dir, env: { CRYBOT_ANNOUNCEMENTS_URL: "https://new.example.test/feed" } }).store;
+  expect(changedOrigin.cards().every(card => !card.image)).toBe(true);
+  const bundle = subject({ bundled: feed("2026-11-01T00:00:00Z", cards) }).store;
+  expect(bundle.cards().map(card => card.image)).toEqual([{ url: urls[0] }, undefined, undefined, undefined]);
+});

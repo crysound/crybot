@@ -11,7 +11,7 @@ const example = JSON.parse(read("scripts/testing/fixtures/announcements.example.
 const NOW = Date.parse("2026-12-01T10:00:00Z");
 const DAY = 24 * 60 * 60 * 1000;
 const noPictures = () => null;
-const problems = (value, options = {}) => announcementProblems(typeof value === "string" ? value : JSON.stringify(value, null, 2), { now: NOW, fileSize: noPictures, ...options });
+const problems = (value, options = {}) => announcementProblems(typeof value === "string" ? value : JSON.stringify(value, null, 2), { now: NOW, feedOrigin: "https://feed.example.test", fileSize: noPictures, ...options });
 const tip = (extra = {}) => ({ ...structuredClone(example.cards[0]), ...extra });
 const withCards = (...cards) => ({ ...structuredClone(example), cards });
 
@@ -66,7 +66,7 @@ describe("what the check refuses", () => {
   });
 
   it("a picture that is not in the repository, or too large", () => {
-    const pictured = tip({ image: { url: "https://raw.githubusercontent.com/example/CryBot/main/announcements/images/tip.png", alt: "A tip" } });
+    const pictured = tip({ image: { url: "https://feed.example.test/images/tip.png", alt: "A tip" } });
     expect(problems(withCards(pictured))).toEqual(["tip-first-api-key: the picture announcements/images/tip.png is not in the repository"]);
     expect(problems(withCards(pictured), { fileSize: () => MAX_IMAGE_BYTES + 1 })[0]).toMatch(/larger than/);
     expect(problems(withCards(pictured), { fileSize: () => 40_000 })).toEqual([]);

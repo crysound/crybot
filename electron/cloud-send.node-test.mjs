@@ -11,7 +11,7 @@ import { installCloudSend, openOwnerSession } from "./cloud-send-main.mjs";
 import { installTeamMove } from "./team-move-main.mjs";
 
 const LOCAL = "http://127.0.0.1:4100";
-const CLOUD = "https://cry-u-1.fly.dev";
+const CLOUD = "https://cry-u-1.example.test";
 const summary = (items) => ({ v: 1, appVersion: "0.1.117", items });
 const bot = (id, parts, extra = {}) => ({ key: itemKey.bot(id), kind: "bot", label: id, id, parts, ...extra });
 

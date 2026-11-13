@@ -1,14 +1,9 @@
-import { mkdtempSync, readFileSync, statSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { applyStartupPreferences, parseArgs, runLogin, type CliOptions } from "./cli.ts";
-import { RELAY_NOT_WITH_TUNNEL, relayPairingBlock, relayProblemLines, showRelayPairing } from "./cli-pairing.ts";
+import { applyStartupPreferences, parseArgs, type CliOptions } from "./cli.ts";
+import { relayPairingBlock, relayProblemLines, showRelayPairing } from "./cli-pairing.ts";
 import { serviceServeArgs } from "./service-cli.ts";
 import type { PhoneRelayStatus } from "./phone-relay.ts";
-import { removeTempDir } from "./testing/cleanup.ts";
-import { startControlPlaneStub } from "./testing/control-plane-stub.ts";
 
 const status = (over: Partial<PhoneRelayStatus> = {}): PhoneRelayStatus => ({ relay: "connected", node: "relay1.crybot.com", grant: "ok", phones: 1, maxPhones: 20, ...over });
 const invite = "crybot://pair?address=relay-only.invalid%3A443&token=cry_pair_x&e2e=eyJ2IjoxfQ";
@@ -16,12 +11,12 @@ const invite = "crybot://pair?address=relay-only.invalid%3A443&token=cry_pair_x&
 describe("crybot serve --relay", () => {
   it("is off unless asked for, joins any way in but --tunnel, and never a local start", () => {
     expect(parseArgs(["serve"], {})).not.toHaveProperty("relay");
-    expect(parseArgs(["serve", "--relay"], {})).toMatchObject({ command: "serve", relay: true, tunnel: false });
+    expect(parseArgs(["serve", "--relay"], {})).toMatchObject({ command: "serve", relay: true });
     expect(parseArgs(["serve", "--relay", "--domain", "bot.example.com"], {})).toMatchObject({ relay: true, domain: "bot.example.com" });
     expect(parseArgs(["serve", "--tailscale", "--relay"], {})).toMatchObject({ relay: true, tailscale: true });
     expect(parseArgs(["service", "install", "--relay"], {})).toMatchObject({ command: "service", relay: true });
-    expect(parseArgs(["serve", "--relay", "--tunnel"], {})).toEqual({ error: "choose one of --relay (phones through CryBot Relay) and --tunnel (a public address)" });
-    expect(parseArgs(["serve", "--tailscale", "--tunnel"], {})).toEqual({ error: "choose one of --tailscale (your tailnet) and --tunnel (a public address)" });
+    expect(parseArgs(["serve", "--relay", "--tunnel"], {})).toHaveProperty("error");
+    expect(parseArgs(["serve", "--tailscale", "--tunnel"], {})).toHaveProperty("error");
     expect(parseArgs(["--local", "--relay"], {})).toEqual({ error: "--local cannot be combined with a remote-access option" });
   });
 
@@ -37,13 +32,10 @@ describe("crybot serve --relay", () => {
 
   it("says why a phone cannot pair yet, in the person's terms", () => {
     expect(relayProblemLines(null, "crybot")).toEqual(["CryBot Relay is off on this server. Start it with: crybot serve --relay"]);
-    expect(relayProblemLines(status({ grant: "signed-out", relay: "off" }), "crybot")[0]).toMatch(/^CryBot Relay needs this machine signed in to a CryBot account: crybot login --relay/);
+    expect(relayProblemLines(status({ grant: "signed-out", relay: "off" }), "crybot")[0]).toMatch(/CRYBOT_PHONE_RELAY_TOKEN/);
     expect(relayProblemLines(status({ grant: "unavailable", relay: "off" }), "npx crybot")[0]).toMatch(/not available for this machine right now\. The server keeps working here/);
     expect(relayProblemLines(status({ relay: "connecting", node: null }), "crybot")[0]).toMatch(/^Can't reach CryBot Relay yet\. The server keeps working here/);
     expect(relayProblemLines(status(), "crybot")).toEqual([]);
-    expect(relayProblemLines(status({ grant: "tunnel", relay: "off", reason: "this server runs with --tunnel" }), "crybot")).toEqual([
-      "CryBot Relay stays off here: this server runs with --tunnel. A relay token would make that tunnel go for good; use the relay on a machine signed in with crybot login --relay.",
-    ]);
   });
 
   it("waits for the relay before making a code, and makes none it can't use", async () => {
@@ -60,30 +52,6 @@ describe("crybot serve --relay", () => {
     expect(lines[1]).toBe("Then: crybot pair --phone");
   });
 
-  it("signs a machine in for the relay without reserving one of the scarce tunnel addresses", async () => {
-    const stub = await startControlPlaneStub();
-    const dataDir = mkdtempSync(join(tmpdir(), "cry-login-relay-"));
-    vi.stubEnv("CRYBOT_CONTROL_PLANE_URL", stub.url);
-    try {
-      const lines: string[] = [];
-      const io = { log: (line: string) => lines.push(line), error: (line: string) => lines.push(`error: ${line}`), ask: async () => stub.otp };
-      const options = parseArgs(["login", "--relay", "--email", "vps@example.test", "--data-dir", dataDir], {});
-      if ("error" in options) throw new Error(options.error);
-      expect(await runLogin(options, io)).toBe(0);
-      expect(lines).toEqual(["Signed in as vps@example.test.", "No public address reserved: phones reach this machine through CryBot Relay.", expect.stringMatching(/^Serve there with: {2}.*serve --relay$/)]);
-      expect(stub.calls).toContain("POST /v1/installations");
-      expect([...stub.installations.values()].map((installation) => installation.kind)).toEqual(["server"]);
-      expect(stub.calls.filter((call) => call.includes("/endpoint"))).toEqual([]);
-      const file = join(dataDir, "tunnel-account.json");
-      expect(JSON.parse(readFileSync(file, "utf8")).companionInstallationCredential).toMatch(/^cry_install_/);
-      if (process.platform !== "win32") expect(statSync(file).mode & 0o777).toBe(0o600);
-    } finally {
-      vi.unstubAllEnvs();
-      await stub.close();
-      await removeTempDir(dataDir);
-    }
-  });
-
   it("never prints the one-time credential into a service's log", async () => {
     const lines: string[] = [];
     let minted = 0;
@@ -98,10 +66,9 @@ describe("crybot serve --relay", () => {
       if ("error" in parsed) throw new Error(parsed.error);
       return parsed as CliOptions;
     };
-    expect(() => applyStartupPreferences(start(["start", "--relay"]), { access: "tunnel" })).toThrow(RELAY_NOT_WITH_TUNNEL);
-    expect(applyStartupPreferences(start(["start", "--relay"]), { access: "local" })).toMatchObject({ relay: true, tunnel: false });
+    expect(applyStartupPreferences(start(["start", "--relay"]), { access: "local" })).toMatchObject({ relay: true });
     expect(applyStartupPreferences(start(["start", "--relay"]), undefined)).toMatchObject({ relay: true });
-    expect(applyStartupPreferences(start(["start"]), { access: "tunnel" })).toMatchObject({ tunnel: true });
+    expect(applyStartupPreferences(start(["start"]), { access: "tailscale" })).toMatchObject({ tailscale: true });
     expect(serviceServeArgs({ port: 8799, dataDir: "/d", relay: true })).toEqual(["--port", "8799", "--data-dir", "/d", "--relay"]);
     expect(serviceServeArgs({ port: 8799, dataDir: "/d", domain: "bot.example.com", relay: true })).toEqual(["--port", "8799", "--data-dir", "/d", "--domain", "bot.example.com", "--relay"]);
     expect(serviceServeArgs({ port: 8799, dataDir: "/d" })).toEqual(["--port", "8799", "--data-dir", "/d"]);

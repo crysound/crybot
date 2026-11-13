@@ -21,7 +21,7 @@ function app(origin, argv = [`--cry-local-origin=${LOCAL}`, "--cry-company-deskt
 test("every page in the window learns this app's own version, and only this computer's page counts as this app's own", () => {
   assert.deepEqual(app(LOCAL), { version: "0.1.127", ownPage: true });
   assert.deepEqual(app("https://bots.example.test"), { version: "0.1.127", ownPage: false }, "a server added in the Server menu");
-  assert.deepEqual(app("https://home-7f3k2.fly.dev"), { version: "0.1.127", ownPage: false }, "My Cloud");
+  assert.deepEqual(app("https://home-7f3k2.example.test"), { version: "0.1.127", ownPage: false }, "My Cloud");
   assert.equal(app(LOCAL, [`--cry-local-origin=${LOCAL}`]).version, "", "no version passed: About keeps the page's own");
 });
 

@@ -28,7 +28,7 @@ import { hostTimeout } from "./testing/host-timeout.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
-const HOST = "cry-t-0123456789ab.fly.dev";
+const HOST = "cry-t-0123456789ab.example.test";
 const edge = { host: HOST, "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "https", origin: `https://${HOST}` };
 const SOMEONE_ELSE = "Someone else wrote in this conversation, so it can't use your Chrome. Start a new conversation to use it.";
 const PROFILE = "mine";

@@ -30,7 +30,7 @@ const secret = "S".repeat(43);
 const machineId = "3f9c2a4e-8b1d-4c6e-9a7f-2d5e8c1b0a93";
 const contract = (extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({
   CRYBOT_CLOUD_ROLE: "home", CRYBOT_CLOUD_MACHINE_ID: machineId, CRYBOT_CLOUD_ADMIN_URL: "https://cloud.example.test",
-  CRYBOT_PUBLIC_URL: "https://cry-u-1a2b3c4d5e6f.fly.dev", CRYBOT_CLOUD_BOOTSTRAP_SECRET: secret, ...extra,
+  CRYBOT_PUBLIC_URL: "https://cry-u-1a2b3c4d5e6f.example.test", CRYBOT_CLOUD_BOOTSTRAP_SECRET: secret, ...extra,
 });
 // A platform gateway's settings, as an Admin from before Cloud Pro dropped
 // included AI wrote them. A Cloud home ignores them.
@@ -48,7 +48,7 @@ it("is off on every ordinary server and desktop", () => {
 
 it("reads the Admin's contract", () => {
   expect(cloudHomeConfiguration(contract())).toEqual({
-    role: "home", team: null, machineId, adminOrigin: "https://cloud.example.test", publicOrigin: "https://cry-u-1a2b3c4d5e6f.fly.dev", legacyOrigins: [], bootstrapSecret: secret,
+    role: "home", team: null, machineId, adminOrigin: "https://cloud.example.test", publicOrigin: "https://cry-u-1a2b3c4d5e6f.example.test", legacyOrigins: [], bootstrapSecret: secret,
     warnings: [],
   });
   expect(cloudHomeConfiguration(contract({ CRYBOT_CLOUD_ADMIN_URL: "https://cloud.example.test/" }))!.adminOrigin).toBe("https://cloud.example.test");
@@ -56,17 +56,17 @@ it("reads the Admin's contract", () => {
 
 it("reads the addresses a moved home answered at before, exactly and once each, without its own", () => {
   const legacy = (value: string) => cloudHomeConfiguration(contract({ CRYBOT_CLOUD_LEGACY_ORIGINS: value }))!.legacyOrigins;
-  expect(legacy("https://cry-u-old.fly.dev")).toEqual(["https://cry-u-old.fly.dev"]);
-  expect(legacy(" https://cry-u-old.fly.dev/ , https://older.example.test,https://cry-u-old.fly.dev,https://cry-u-1a2b3c4d5e6f.fly.dev ,"))
-    .toEqual(["https://cry-u-old.fly.dev", "https://older.example.test"]);
+  expect(legacy("https://cry-u-old.example.test")).toEqual(["https://cry-u-old.example.test"]);
+  expect(legacy(" https://cry-u-old.example.test/ , https://older.example.test,https://cry-u-old.example.test,https://cry-u-1a2b3c4d5e6f.example.test ,"))
+    .toEqual(["https://cry-u-old.example.test", "https://older.example.test"]);
   expect(legacy("")).toEqual([]);
 });
 
 it.each([
-  ["an http origin", "http://cry-u-old.fly.dev"],
-  ["an origin with a path", "https://cry-u-old.fly.dev/app"],
-  ["an origin with credentials", "https://user:pass@cry-u-old.fly.dev"],
-  ["a host that is not written as its origin", "https://CRY-U-OLD.fly.dev"],
+  ["an http origin", "http://cry-u-old.example.test"],
+  ["an origin with a path", "https://cry-u-old.example.test/app"],
+  ["an origin with credentials", "https://user:pass@cry-u-old.example.test"],
+  ["a host that is not written as its origin", "https://CRY-U-OLD.example.test"],
   ["a loopback name", "https://localhost"],
   ["a loopback address", "https://127.0.0.1:8443"],
   ["too many", Array.from({ length: 9 }, (_, at) => `https://old-${at}.example.test`).join(",")],
@@ -99,7 +99,7 @@ it.each<[string, NodeJS.ProcessEnv]>([
   ["an http Admin", contract({ CRYBOT_CLOUD_ADMIN_URL: "http://cloud.example.test" })],
   ["an Admin URL with a path", contract({ CRYBOT_CLOUD_ADMIN_URL: "https://cloud.example.test/api" })],
   ["an Admin URL with credentials", contract({ CRYBOT_CLOUD_ADMIN_URL: "https://user:pass@cloud.example.test" })],
-  ["an http public URL", contract({ CRYBOT_PUBLIC_URL: "http://cry-u-1a2b3c4d5e6f.fly.dev" })],
+  ["an http public URL", contract({ CRYBOT_PUBLIC_URL: "http://cry-u-1a2b3c4d5e6f.example.test" })],
   ["a machine id with a slash", contract({ CRYBOT_CLOUD_MACHINE_ID: "home/../x" })],
   ["a short secret", contract({ CRYBOT_CLOUD_BOOTSTRAP_SECRET: "S".repeat(42) })],
   ["a secret with padding", contract({ CRYBOT_CLOUD_BOOTSTRAP_SECRET: `${"S".repeat(42)}=` })],
@@ -283,7 +283,7 @@ it("treats a request the edge forwards as remote, whatever Host it claims", () =
   const url = new URL("http://localhost/api/bots");
   // What Caddy sends upstream: the public Host plus X-Forwarded-*.
   for (const headers of [
-    { host: "home-7f3k2.fly.dev", "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "https" },
+    { host: "home-7f3k2.example.test", "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "https" },
     { host: "localhost:8799", "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "https" },
   ]) {
     const result = resolveRequestAuth(request(headers), { sessions, cookieName: "cry_session_x", streamPath: "/api/events", url });
@@ -391,7 +391,7 @@ it("gives the edge only its routing name and the server the contract, never a ga
   const config = cloudHomeConfiguration(withGateway())!;
   const { server, edge, secrets } = cloudHomeChildEnvironments(config, { ...withGateway(), ...relay, PATH: "/usr/bin" }, "/data");
   expect(server).toMatchObject({ HOME: "/data", CRYBOT_DATA_DIR: "/data/.crybot", NODE_COMPILE_CACHE: "/data/.crybot/cache/node-compile", CRYBOT_PORT: "8799", CRYBOT_WEBHOOK_PORT: "8800",
-    CRYBOT_PUBLIC_URL: "https://cry-u-1a2b3c4d5e6f.fly.dev", CRYBOT_WEBHOOK_PUBLIC_URL: "https://cry-u-1a2b3c4d5e6f.fly.dev", CRYBOT_CLOUD_SECRETS_FD: "3" });
+    CRYBOT_PUBLIC_URL: "https://cry-u-1a2b3c4d5e6f.example.test", CRYBOT_WEBHOOK_PUBLIC_URL: "https://cry-u-1a2b3c4d5e6f.example.test", CRYBOT_CLOUD_SECRETS_FD: "3" });
   for (const key of CLOUD_IGNORED_KEYS) expect(server).not.toHaveProperty(key);
   // The bot box switch reaches the server; an unknown name does not.
   expect(cloudHomeChildEnvironments(config, { ...withGateway(), PATH: "/usr/bin", CRYBOT_BOT_BOX: "0", CRYBOT_SOMETHING_ELSE: "x" }, "/data").server).toMatchObject({ CRYBOT_BOT_BOX: "0" });
@@ -495,9 +495,9 @@ it("hands the server the Admin's export-only switch, so an ended Cloud started f
 });
 
 it("hands the server the addresses a moved home answered at before, and never its edge", () => {
-  const env = contract({ PATH: "/usr/bin", CRYBOT_CLOUD_LEGACY_ORIGINS: "https://cry-u-old.fly.dev" });
+  const env = contract({ PATH: "/usr/bin", CRYBOT_CLOUD_LEGACY_ORIGINS: "https://cry-u-old.example.test" });
   const children = cloudHomeChildEnvironments(cloudHomeConfiguration(env)!, env, "/data");
-  expect(children.server).toMatchObject({ CRYBOT_CLOUD_LEGACY_ORIGINS: "https://cry-u-old.fly.dev" });
+  expect(children.server).toMatchObject({ CRYBOT_CLOUD_LEGACY_ORIGINS: "https://cry-u-old.example.test" });
   expect(children.edge).not.toHaveProperty("CRYBOT_CLOUD_LEGACY_ORIGINS");
 });
 

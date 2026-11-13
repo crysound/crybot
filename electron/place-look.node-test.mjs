@@ -10,7 +10,7 @@ import { railPlaces } from "./cloud-rail.mjs";
 import { createHomePlaces } from "./home-places.mjs";
 import { installPlaceLook, pageLook, placeLook, swatchOf } from "./place-look.mjs";
 
-const HOME = "https://cry-u-1a2b3c4d5e6f.fly.dev", CLIENT_A = "https://cry-c-a.fly.dev", TEAM = "https://cry-t-acme.fly.dev", VPS = "https://bots.example.test";
+const HOME = "https://cry-u-1a2b3c4d5e6f.example.test", CLIENT_A = "https://cry-c-a.example.test", TEAM = "https://cry-t-acme.example.test", VPS = "https://bots.example.test";
 const cloud = (over = {}) => ({ id: "c-a", name: "Client A", color: "green", role: "owner", tier: "pro", runsOn: "cloud", status: "ready", origin: CLIENT_A, teamId: null, primary: false, ...over });
 const CLOUDS = parseCloudList([cloud({ id: "c-home", name: "My Cloud", color: null, origin: HOME, primary: true }), cloud(),
   cloud({ id: "c-acme", name: "Acme", color: "amber", teamId: "team-acme", role: "admin", origin: TEAM })]);

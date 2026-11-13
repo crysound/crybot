@@ -7,7 +7,7 @@ import { createCloudSend, sendNotice } from "./cloud-send.mjs";
 import { manifestGaps, noGaps } from "./cloud-send-check.mjs";
 import { installCloudSend, openOwnerSession } from "./cloud-send-main.mjs";
 
-const CLOUD = "https://cry-u-1.fly.dev";
+const CLOUD = "https://cry-u-1.example.test";
 const LOCAL = "http://127.0.0.1:4100";
 const summary = (items, extra = {}) => ({ v: 1, appVersion: "0.1.120", items, chats: 1, ...extra });
 const bot = (id, parts) => ({ key: itemKey.bot(id), kind: "bot", label: id, id, parts });

@@ -14,7 +14,7 @@ import { createComputerSharing } from "./computer-sharing.mjs";
 import { createLendingTarget } from "./lending-target.mjs";
 import { createAskPrompt } from "./ask-prompt.mjs";
 
-const HOME = "https://cry-u-fixture.fly.dev", TEAM = "https://cry-t-acme.fly.dev";
+const HOME = "https://cry-u-fixture.example.test", TEAM = "https://cry-t-acme.example.test";
 const myCloud = { id: "my-cloud", name: "My Cloud", origin: HOME, home: true };
 const acme = { id: "acme", name: "Acme team", origin: TEAM, team: { id: "t-acme", role: "owner" } };
 const READY = { ready: true, lent: true, reason: null, fix: null };
@@ -183,10 +183,10 @@ test("a prompt closes when the ask was answered elsewhere, and doesn't come up w
   const focused = { isDestroyed: () => false, isFocused: () => true, isVisible: () => true, show: () => {}, webContents: { getURL: () => `${HOME}/chat` } };
   const prompt = createAskPrompt({ dialog, window: () => focused, platform: "win32" });
   assert.equal(await prompt({ id: "my-cloud", name: "My Cloud", origin: HOME }, ask(), new AbortController().signal), null, "the card is right there");
-  assert.equal(await prompt({ id: "client", name: "Client A", origin: "https://cry-c-a.fly.dev" }, ask(), new AbortController().signal), "turn-on");
+  assert.equal(await prompt({ id: "client", name: "Client A", origin: "https://cry-c-a.example.test" }, ask(), new AbortController().signal), "turn-on");
   assert.equal(shown.at(-1).length, 1, "a PC's prompt has no parent window, so it shows even with the app in the tray");
   const mac = createAskPrompt({ dialog, window: () => null, platform: "darwin" });
-  assert.equal(await mac({ id: "client", name: "Client A", origin: "https://cry-c-a.fly.dev" }, ask(), new AbortController().signal), null,
+  assert.equal(await mac({ id: "client", name: "Client A", origin: "https://cry-c-a.example.test" }, ask(), new AbortController().signal), null,
     "on a Mac only a window's sheet can be closed again, so no window, no prompt");
 });
 

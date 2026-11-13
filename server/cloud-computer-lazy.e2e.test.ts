@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CONTROL_WAITED } from "./control-client.ts";
+import { CONTROL_WAITED } from "./computer-control-client.ts";
 import { CLOUD_COMPUTER_DEAD_WAITING, CLOUD_COMPUTER_NEEDS_PERSON, CLOUD_COMPUTER_REPLACED, CLOUD_COMPUTER_REPLACED_BY_PERSON } from "../shared/cloud-computer-recovery.ts";
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { freePortBlock } from "./testing/ports.ts";

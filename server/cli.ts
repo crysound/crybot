@@ -3,12 +3,10 @@
 //   crybot setup [--data-dir ~/.crybot]
 //   crybot start [serve options]
 //   crybot serve [--port 8799] [--data-dir ~/.crybot] [--label "cab mini"]
-//                     [--public-url https://host] [--tailscale | --tunnel | --domain HOST] [--relay] [--no-pair]
+//                     [--public-url https://host] [--tailscale | --domain HOST] [--relay] [--no-pair]
 //   crybot pair  [--label "My MacBook"] [--client] [--public-url https://host]
 //   crybot sessions [revoke <id>]
 //   crybot status
-//   crybot login [--email you@example.com] [--relay]
-//   crybot logout
 //   crybot run | send | wait | doctor | team apply | export | …
 //
 // This module only exports: crybot.ts runs main(), so bundling this file into other entries never runs it twice.
@@ -25,7 +23,7 @@ import { parseAllowList } from "./account-signin.ts";
 import { appendAdminAction, flushAdminActivity, sharedSignIn } from "./admin-activity.ts";
 import { bindDecisionRetention, decisionRetentionDays } from "./decision-log.ts";
 import { hostedWorkspaceConfigured } from "./workspace-access.ts";
-import { reportableServerVersion, serverVersion } from "./environment.ts";
+import { serverVersion } from "./environment.ts";
 import { resolveLoopbackTrust } from "./request-auth.ts";
 import { restartPolicy } from "./restart.ts";
 import { writeFileAtomic } from "./atomic.ts";
@@ -39,37 +37,18 @@ import { clearLeftoverTailscaleServe, explainTailscaleFailure, tailnetListenFall
 import { defaultSetupIo, SetupCancelled, type SetupIo } from "./cli-prompts.ts";
 import { HEADLESS_VERB_NAMES, usage } from "./cli-usage.ts";
 import { normalizePhoneOrigin, phonePairingInstructions, runPhoneSetup } from "./cli-phone-setup.ts";
-import { browserSignInLines, desktopOwnedRefusal, formatSessions, pairingBlock, RELAY_NOT_WITH_TUNNEL, relayPairingBlock, showRelayPairing } from "./cli-pairing.ts";
+import { browserSignInLines, desktopOwnedRefusal, formatSessions, pairingBlock, relayPairingBlock, showRelayPairing } from "./cli-pairing.ts";
 import { cliCommand, cliPrefix } from "./cli-invocation.ts";
 import { checkReach, envPublicUrl, lanProblem, localLinkBase, noRouteLines, publicUrlProblem, reachLines, waitForReach, type Route } from "./cli-reach.ts";
 import { lanUrl } from "./lan-address.ts";
 import { isLoopbackHost } from "../electron/server-address.mjs";
 import { parseDuration } from "./headless/args.ts";
 import { signInFromEnv, type AppConfig } from "./config.ts";
-import {
-  cleanupTunnelOrigin,
-  createTunnelAccount,
-  createTunnelOrigin,
-  describeTunnelAccount,
-  describeTunnelState,
-  ensureCloudflared,
-  FLEET_CREDENTIAL_ENV,
-  fleetAccess,
-  fleetCredential,
-  guardianEntry,
-  startTunnel,
-  tunnelAccess,
-  type CompanionOriginEndpoint,
-  type ManagedTunnelAccess,
-  type RunningTunnel,
-  type TunnelAccount,
-  type TunnelRecovery,
-} from "./tunnel.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 export interface CliOptions {
-  command: "setup" | "start" | "serve" | "pair" | "sessions" | "status" | "login" | "logout" | "access" | "service" | "browser" | "fleet" | "help" | "version";
+  command: "setup" | "start" | "serve" | "pair" | "sessions" | "status" | "access" | "service" | "browser" | "fleet" | "help" | "version";
   port: number;
   dataDir: string;
   label?: string;
@@ -77,7 +56,6 @@ export interface CliOptions {
   /** `serve --domain host`: HTTPS on your own domain through a managed Caddy. */
   domain?: string;
   tailscale: boolean;
-  tunnel: boolean;
   relay?: boolean;
   /** `serve --lan`: every private address of this machine, plain http, each connection held to private ends. */
   lan?: boolean;
@@ -119,7 +97,7 @@ export interface CliOptions {
   pairTtlMs?: number;
 }
 
-const COMMANDS = ["setup", "start", "serve", "pair", "sessions", "devices", "status", "login", "logout", "access", "service", "browser", "fleet", "help", "--help", "-h", "--version", "-v", "version"];
+const COMMANDS = ["setup", "start", "serve", "pair", "sessions", "devices", "status", "access", "service", "browser", "fleet", "help", "--help", "-h", "--version", "-v", "version"];
 
 export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env): CliOptions | { error: string } {
   const implicitStart = !argv.length || (argv[0]!.startsWith("--") && argv[0] !== "--help" && argv[0] !== "--version");
@@ -132,7 +110,6 @@ export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env):
     port: Number(env.CRYBOT_PORT || 8799),
     dataDir: env.CRYBOT_DATA_DIR || join(homedir(), ".crybot"),
     tailscale: false,
-    tunnel: false,
     client: false,
     pair: true,
     withDeps: false,
@@ -159,7 +136,7 @@ export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env):
         if (typeof domain !== "string") return domain;
         options.domain = domain;
       }
-      else if (arg === "--tunnel" || arg === "--relay") options[arg === "--tunnel" ? "tunnel" : "relay"] = true;
+      else if (arg === "--relay") options.relay = true;
       else if (arg === "--client" || (options.command === "pair" && arg === "--chat-only")) options.client = true;
       // Which phone will scan; only Android needs a different QR. `pair --phone` alone is a chat-only code for any phone.
       else if (arg === "--phone") {
@@ -207,11 +184,10 @@ export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env):
   if (!Number.isInteger(options.port) || options.port < 1 || options.port > 65_535) return { error: "--port must be 1-65535" };
   const publicUrlRefusal = options.publicUrl ? publicUrlProblem(options.publicUrl) : null;
   if (publicUrlRefusal) return { error: publicUrlRefusal };
-  if (options.tunnel && (options.tailscale || options.relay)) return { error: options.relay ? "choose one of --relay (phones through CryBot Relay) and --tunnel (a public address)" : "choose one of --tailscale (your tailnet) and --tunnel (a public address)" };
   if (options.command === "access" && !options.accessAction) return { error: "access needs one of: list, add EMAIL [--chat-only], remove EMAIL" };
   if (options.command === "service" && !options.serviceAction) return { error: "service needs one of: install [the same options as serve], uninstall" };
-  if (options.domain && (options.tailscale || options.tunnel || options.publicUrl)) return { error: "--domain already gives the server its address; drop --tailscale, --tunnel and --public-url" };
-  if (options.local && (options.tailscale || options.tunnel || options.publicUrl || options.lan || options.relay)) return { error: "--local cannot be combined with a remote-access option" };
+  if (options.domain && (options.tailscale || options.publicUrl)) return { error: "--domain already gives the server its address; drop --tailscale and --public-url" };
+  if (options.local && (options.tailscale || options.publicUrl || options.lan || options.relay)) return { error: "--local cannot be combined with a remote-access option" };
   if (options.command === "browser" && !options.browserAction) return { error: "browser needs an action: install or status" };
   if (options.command === "fleet") {
     if (!options.fleetAction) return { error: "fleet needs one of: init --domain HOST [--operator USER], create NAME --admin EMAIL, list, users NAME add|remove EMAIL, suspend NAME, resume NAME, delete NAME --yes, upgrade, agent" };
@@ -305,21 +281,21 @@ export async function verifyPhoneEndpoint(port: number, origin: string): Promise
 }
 
 export function applyStartupPreferences(options: CliOptions, saved: AppConfig["cliStartup"]): CliOptions {
-  if (options.local) return { ...options, tunnel: false, tailscale: false, publicUrl: undefined, phone: undefined };
-  if (!saved || options.tunnel || options.tailscale || options.publicUrl) return options; if (options.relay && saved.access === "tunnel") throw new Error(RELAY_NOT_WITH_TUNNEL);
+  if (options.local) return { ...options, tailscale: false, publicUrl: undefined, phone: undefined };
+  if (!saved || options.tailscale || options.publicUrl) return options;
   if (saved.access === "public-url" && (!saved.publicUrl || !normalizePhoneOrigin(saved.publicUrl))) {
     throw new Error(`The saved phone address is not a valid HTTPS origin. Run ${cliCommand("setup")} to correct it, or ${cliCommand("--local")} to start only on this computer.`);
   }
   return {
     ...options,
-    tunnel: saved.access === "tunnel", tailscale: saved.access === "tailscale",
+    tailscale: saved.access === "tailscale",
     publicUrl: saved.access === "public-url" ? saved.publicUrl : undefined,
     phone: saved.access === "local" ? undefined : saved.phone,
   };
 }
 
 function startupPreferences(options: CliOptions): NonNullable<AppConfig["cliStartup"]> {
-  const access = options.local ? "local" : options.tunnel ? "tunnel" : options.tailscale ? "tailscale" : options.publicUrl ? "public-url" : "local";
+  const access = options.local ? "local" : options.tailscale ? "tailscale" : options.publicUrl ? "public-url" : "local";
   const publicUrl = access === "public-url" ? normalizePhoneOrigin(options.publicUrl!) : null;
   if (access === "public-url" && !publicUrl) throw new Error("Use an HTTPS origin without a password, path or query for saved phone access. The address was not saved.");
   return {
@@ -425,9 +401,6 @@ export async function runStatus(options: CliOptions, io: CliIo = defaultIo()): P
     const sessions = await api(options.port, "/api/auth/sessions").catch(() => null);
     if (Array.isArray(sessions?.body?.sessions)) io.log(`Paired   ${sessions.body.sessions.length} device${sessions.body.sessions.length === 1 ? "" : "s"}   ${cliCommand("devices")}`);
   }
-  const account = options.json ? null : describeTunnelAccount(createTunnelAccount({ dataDir: options.dataDir, version: reportableServerVersion() }).credentials.read());
-  if (!options.json && fleetCredential()) io.log(`CryBot web address: managed by the fleet (${FLEET_CREDENTIAL_ENV} is set)`);
-  else if (account?.address) io.log(`CryBot web address: ${account.address} (signed in as ${account.email ?? "?"}; serve it with ${cliCommand("serve --tunnel")})`);
   return body ? 0 : 1;
 }
 
@@ -496,72 +469,6 @@ export async function runAccess(options: CliOptions, io: CliIo = defaultIo()): P
   return 0;
 }
 
-export async function runLogin(options: CliOptions, io: CliIo = defaultIo()): Promise<number> {
-  const account = createTunnelAccount({ dataDir: options.dataDir, version: reportableServerVersion(), relayOnly: options.relay === true });
-  if (fleetCredential()) io.log(`note: ${FLEET_CREDENTIAL_ENV} is set, so serve --tunnel will use that credential rather than this account`);
-  if (account.credentials.status === "unavailable") {
-    io.error(`${account.credentials.file} exists but could not be read; fix or remove it, then try again`);
-    return 1;
-  }
-  if (!account.controlPlane) {
-    io.error("CRYBOT_CONTROL_PLANE_URL is set but is not an https address");
-    return 1;
-  }
-  const existing = describeTunnelAccount(account.credentials.read());
-  if (existing.address) io.log(`already signed in as ${existing.email ?? "?"} (${existing.address}); signing in again refreshes it`);
-  const email = (options.email ?? (await io.ask("Email for your CryBot account: "))).trim();
-  if (!email) {
-    io.error(`an email address is needed: ${cliCommand("login --email you@example.com")}`);
-    return 1;
-  }
-  try {
-    await account.service.requestCode(email);
-  } catch (error) {
-    io.error(`could not send a sign-in code: ${message(error)}`);
-    return 1;
-  }
-  const code = (await io.ask(`Enter the 8-digit code we emailed to ${email}: `)).trim();
-  let state;
-  try {
-    state = await account.service.verifyCode(email, code);
-  } catch (error) {
-    io.error(`sign-in failed: ${message(error)}`);
-    return 1;
-  }
-  const signedIn = describeTunnelAccount(account.credentials.read());
-  if (!signedIn.address && !(options.relay && signedIn.installationId)) {
-    io.error(`signed in, but no public address was issued${state.message ? `: ${state.message}` : ""}`);
-    return 1;
-  }
-  io.log(`Signed in as ${signedIn.email ?? email}.`);
-  io.log(signedIn.address ? `This machine's public address: ${signedIn.address}` : "No public address reserved: phones reach this machine through CryBot Relay.");
-  io.log(`Serve there with:  ${cliCommand(signedIn.address ? "serve --tunnel" : "serve --relay")}`);
-  return 0;
-}
-
-export async function runLogout(options: CliOptions, io: CliIo = defaultIo()): Promise<number> {
-  const account = createTunnelAccount({ dataDir: options.dataDir, version: reportableServerVersion() });
-  const before = describeTunnelAccount(account.credentials.read());
-  if (!before.email) {
-    io.log("this machine is not signed in");
-    return 0;
-  }
-  let state;
-  try {
-    state = await account.service.signOut();
-  } catch (error) {
-    io.error(`sign-out failed: ${message(error)}`);
-    return 1;
-  }
-  const after = describeTunnelAccount(account.credentials.read());
-  if (after.email) {
-    io.error(`still signed in${state.message ? `: ${state.message}` : ""}`);
-    return 1;
-  }
-  io.log(`Signed out ${before.email}${before.address ? `; ${before.address} is released` : ""}.`);
-  return 0;
-}
-
 export async function runBrowser(options: CliOptions, io: CliIo = defaultIo()): Promise<number> {
   const { browserEngineStatus, describeBrowserEngine, ensureChrome, installAgentBrowserBinary, resolveAgentBrowserBinary } = await import("./browser-engine.ts");
   const status = browserEngineStatus({ dataDir: options.dataDir });
@@ -611,58 +518,6 @@ export function serverEntry(here = HERE): { command: string; args: string[]; sta
   return { command: process.execPath, args: ["--experimental-strip-types", source], staticDir, skillsDir: existsSync(join(root, "skills")) ? join(root, "skills") : null };
 }
 
-interface TunnelPlan {
-  access: ManagedTunnelAccess;
-  binary: string;
-  guardian: string;
-  origin: CompanionOriginEndpoint;
-  account: TunnelAccount | null;
-}
-
-/** Fails closed: never a silent fallback to a local-only server. */
-async function planTunnel(options: CliOptions, log: (line: string) => void, recovery: TunnelRecovery): Promise<TunnelPlan | { error: string }> {
-  let access: ManagedTunnelAccess | null = null;
-  let account: TunnelAccount | null = null;
-  const fail = (error: string) => {
-    account?.service.dispose();
-    return { error };
-  };
-  const credential = fleetCredential();
-  if (credential) {
-    log(`tunnel: using the installation credential from ${FLEET_CREDENTIAL_ENV}`);
-    try {
-      access = await fleetAccess({ credential, version: reportableServerVersion() });
-    } catch (error) {
-      return { error: `--tunnel: ${message(error)}` };
-    }
-  } else {
-    account = createTunnelAccount({ dataDir: options.dataDir, version: reportableServerVersion(), recovery, log: (line) => log(`tunnel: ${line}`) });
-    if (account.credentials.status === "unavailable") return fail(`${account.credentials.file} exists but could not be read; fix or remove it`);
-    if (!describeTunnelAccount(account.credentials.read()).email) {
-      return fail(`no account on this machine yet: run ${cliCommand("login")} first, then ${cliCommand("serve --tunnel")}`);
-    }
-    try {
-      const state = await account.service.retry();
-      const saved = tunnelAccess(account.credentials.read()) !== null;
-      if (state.status === "signed-out") log(`tunnel: the sign-in on this machine expired; run ${cliCommand("login")} to renew it${saved ? " (serving the saved address until then)" : ""}`);
-      else if (state.message) log(`tunnel: ${state.message}${saved ? " Serving the saved address for now." : ""}`);
-    } catch (error) {
-      log(`tunnel: control plane not reachable right now (${message(error)}); using the saved address`);
-    }
-    access = tunnelAccess(account.credentials.read());
-    if (!access) return fail(`this machine has no public address; run ${cliCommand("login")} again`);
-  }
-  let binary: string;
-  try {
-    binary = await ensureCloudflared({ dataDir: options.dataDir, log });
-  } catch (error) {
-    return fail(`--tunnel: ${message(error)}`);
-  }
-  const guardian = guardianEntry();
-  if (!guardian) return fail("--tunnel: the connector guardian is missing from this install");
-  return { access, binary, guardian, origin: createTunnelOrigin(), account };
-}
-
 export async function runServe(options: CliOptions, log: (line: string) => void = console.log): Promise<number> {
   const { browserEngineStatus, describeBrowserEngine } = await import("./browser-engine.ts");
   if (await serverUp(options.port)) {
@@ -679,18 +534,6 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
       return 1;
     }
     tailscale = probe.status;
-  }
-  let plan: TunnelPlan | null = null;
-  const serving: { tunnel: RunningTunnel | null } = { tunnel: null };
-  if (options.tunnel) {
-    const planned = await planTunnel(options, log, { running: () => serving.tunnel });
-    if ("error" in planned) {
-      console.error(planned.error);
-      return 1;
-    }
-    plan = planned;
-    if (publicUrl && publicUrl !== plan.access.endpoint) log(`note: --public-url is ignored with --tunnel; the address is ${plan.access.endpoint}`);
-    publicUrl = plan.access.endpoint;
   }
   let caddyBinary: string | null = null;
   if (options.domain) {
@@ -719,7 +562,6 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
   if (entry.staticDir) env.CRYBOT_STATIC_DIR = entry.staticDir;
   if (entry.skillsDir && !process.env.CRYBOT_SKILLS_DIR) env.CRYBOT_SKILLS_DIR = entry.skillsDir;
   if (options.label && !process.env.CRYBOT_ENVIRONMENT_LABEL) env.CRYBOT_ENVIRONMENT_LABEL = options.label;
-  if (plan) Object.assign(env, { CRYBOT_TUNNEL_SOCKET: plan.origin.socketPath, CRYBOT_SERVES_TUNNEL: "1" });
   const lanRefusal = options.lan ? lanProblem() : null;
   if (lanRefusal) log(lanRefusal);
   if (options.lan && !lanRefusal) env.CRYBOT_LAN = "1";
@@ -758,8 +600,6 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
     }
   } catch (error) {
     await tailscaleShare?.stop().catch(() => undefined);
-    plan?.account?.service.dispose();
-    if (plan) cleanupTunnelOrigin(plan.origin);
     if (error instanceof SetupCancelled) {
       log("Startup cancelled. No server was started; your saved work is unchanged.");
       return 130;
@@ -775,15 +615,10 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
     child.once("error", () => { exited = 1; done(1); });
     child.once("exit", (code, signal) => { exited = code ?? (signal === "SIGTERM" || signal === "SIGINT" ? 0 : 1); done(exited); });
   });
-  let tunnel: RunningTunnel | null = null;
   let caddy: RunningCaddy | null = null;
   let stopping: Promise<void> | null = null;
   const stop = () => {
     stopping ??= (async () => {
-      serving.tunnel = null;
-      plan?.account?.service.dispose();
-      // The gateway and the edge stop accepting before the server they forward to goes away.
-      if (tunnel) await tunnel.stop().catch(() => undefined);
       if (caddy) await caddy.stop().catch(() => undefined);
       await tailscaleShare?.stop().catch(() => undefined);
       if (exited === null) {
@@ -793,7 +628,6 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
         await childExit;
         clearTimeout(timer);
       }
-      if (plan) cleanupTunnelOrigin(plan.origin);
     })();
     return stopping;
   };
@@ -831,22 +665,9 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
         return 1;
       }
     }
-    if (plan && child.pid) {
-      tunnel = startTunnel({
-        dataDir: options.dataDir,
-        access: plan.access,
-        originTarget: { pid: child.pid, socketPath: plan.origin.socketPath },
-        binaryPath: plan.binary,
-        guardian: plan.guardian,
-        onState: (state) => log(describeTunnelState(state, plan.access.endpoint)),
-      });
-      tunnel.started.catch((error: unknown) => log(`tunnel: ${message(error)}`));
-      serving.tunnel = tunnel;
-      void plan.account?.service.restore().catch(() => undefined);
-    }
     const prefix = cliPrefix();
     const described = await api(options.port, "/.well-known/crybot/environment").catch(() => null);
-    const route: Route | null = plan ? "tunnel" : options.domain ? "domain" : tailscaleShare ? "tailscale" : publicUrl ? "public-url" : env.CRYBOT_LAN === "1" ? "lan" : null;
+    const route: Route | null = options.domain ? "domain" : tailscaleShare ? "tailscale" : publicUrl ? "public-url" : env.CRYBOT_LAN === "1" ? "lan" : null;
     const origin = route === "lan" ? lanUrl(options.port, env) : publicUrl ?? null;
     log("");
     log(`CryBot ${serverVersion()} · server "${described?.body?.label ?? options.label ?? "this machine"}"`);
@@ -916,7 +737,7 @@ export async function runOnboardingCommand(
   }
   process.env.CRYBOT_DATA_DIR = options.dataDir;
   if (options.command !== "setup" && await (flow.running ?? isWorkspaceRunning)(options)) {
-    if (options.local || options.tunnel || options.tailscale || options.publicUrl) {
+    if (options.local || options.tailscale || options.publicUrl) {
       io.error("This workspace is already running. Stop it before changing local or remote access; the current connection was not changed.");
       return 1;
     }
@@ -943,13 +764,7 @@ export async function runOnboardingCommand(
     let launch = options.command === "setup" ? options : applyStartupPreferences(options, saved);
     if (interactive && options.pair && !options.local && (options.command === "setup" || !saved)) {
       io.log("\nOne optional step: connect your phone. You can skip this and start chatting here.");
-      const result = await (flow.phoneSetup ?? runPhoneSetup)(launch, prompts, {
-        accountReady: (value) => !!describeTunnelAccount(createTunnelAccount({ dataDir: value.dataDir, version: reportableServerVersion() }).credentials.read()).email,
-        login: (value, ui) => runLogin(value, {
-          log: ui.log, error: ui.log,
-          ask: (question) => /code/i.test(question) ? ui.secret(question) : ui.ask(question),
-        }),
-      });
+      const result = await (flow.phoneSetup ?? runPhoneSetup)(launch, prompts);
       launch = { ...result.options, phone: result.phone };
       saveCliStartup(options.dataDir, startupPreferences(launch));
     }
@@ -990,13 +805,11 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return runSessions(options);
     case "status":
       return runStatus(options);
-    case "login":
-      return runLogin(options);
     case "access":
       return runAccess(options);
     case "service":
       return runServiceCommand({
-        action: options.serviceAction ?? "install", dataDir: options.dataDir, port: options.port, domain: options.domain, tunnel: options.tunnel,
+        action: options.serviceAction ?? "install", dataDir: options.dataDir, port: options.port, domain: options.domain,
         tailscale: options.tailscale, publicUrl: options.publicUrl, lan: options.lan, relay: options.relay, label: options.label, sentinel: options.sentinel, script: process.argv[1] ?? "", node: process.execPath,
       }, { log: (line) => console.log(line), error: (line) => console.error(line) });
     case "fleet":
@@ -1032,8 +845,6 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
         node: process.execPath,
         script: process.argv[1] ?? "",
       }, { log: (line) => console.log(line), error: (line) => console.error(line) });
-    case "logout":
-      return runLogout(options);
     case "version":
       console.log(serverVersion());
       return 0;

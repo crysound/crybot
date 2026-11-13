@@ -116,7 +116,7 @@ test("fails closed on unparsable or opaque origins", () => {
   assert.equal(appPermissionAllowed("notifications", "javascript:alert(1)", LOCAL_ORIGIN), false);
 });
 
-const CLOUD = "https://cry-u-0123456789ab.fly.dev";
+const CLOUD = "https://cry-u-0123456789ab.example.test";
 function cloudFixture({ home = CLOUD } = {}) {
   const main = { getURL: () => `${CLOUD}/chat?botId=bot-1` };
   const state = { home, main, remote: false };
@@ -172,7 +172,7 @@ test("the Cloud's microphone is decided by this computer's media rule, never a c
 test("a server that is not the verified Cloud never hears the microphone", () => {
   const { state, ask, check } = cloudFixture();
   const mic = { isMainFrame: true, mediaTypes: ["audio"] };
-  for (const other of ["https://my-vps.example.com", "http://cry-u-0123456789ab.fly.dev", "https://cry-u-0123456789ab.fly.dev:8443", "https://evil.fly.dev"]) {
+  for (const other of ["https://my-vps.example.com", "http://cry-u-0123456789ab.example.test", "https://cry-u-0123456789ab.example.test:8443", "https://evil.example.test"]) {
     assert.equal(ask("media", { ...mic, requestingUrl: `${other}/chat` }), false, other);
     assert.equal(check("media", other, { isMainFrame: true, mediaType: "audio" }), false, other);
   }
@@ -202,7 +202,7 @@ test("the verified Cloud open in this window may write the clipboard, by the rem
   assert.equal(ask(write, onCloud({ isMainFrame: false })), false, "a subframe");
   assert.equal(check(write, CLOUD, { isMainFrame: false }), false, "a subframe");
   assert.equal(check(write, CLOUD, {}), false, "no frame information");
-  for (const other of ["https://my-vps.example.com", "http://cry-u-0123456789ab.fly.dev", "https://cry-u-0123456789ab.fly.dev:8443", "https://evil.fly.dev"]) {
+  for (const other of ["https://my-vps.example.com", "http://cry-u-0123456789ab.example.test", "https://cry-u-0123456789ab.example.test:8443", "https://evil.example.test"]) {
     assert.equal(ask(write, { requestingUrl: `${other}/chat`, isMainFrame: true }), false, other);
     assert.equal(check(write, other, { isMainFrame: true }), false, other);
   }
@@ -479,10 +479,10 @@ test("the page's answer is the request handler's answer for its microphone", asy
   const { state, handlers } = pageMicFixture();
   const local = { getURL: () => LOCAL_PAGE };
   const other = { getURL: () => `${CLOUD}/` };
-  for (const home of [CLOUD, null, "https://evil.fly.dev"]) {
+  for (const home of [CLOUD, null, "https://evil.example.test"]) {
     state.home = home;
     for (const contents of [state.main, local, other]) {
-      for (const url of [`${CLOUD}/chat`, LOCAL_PAGE, "https://my-vps.example.com/", "http://cry-u-0123456789ab.fly.dev/"]) {
+      for (const url of [`${CLOUD}/chat`, LOCAL_PAGE, "https://my-vps.example.com/", "http://cry-u-0123456789ab.example.test/"]) {
         for (const mainFrame of [true, false]) {
           const granted = await new Promise((resolve) => {
             handlers.request(contents, "media", resolve, { requestingUrl: url, isMainFrame: mainFrame, mediaTypes: ["audio"] });

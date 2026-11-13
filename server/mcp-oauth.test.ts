@@ -746,13 +746,13 @@ describe("McpOAuthManager sign-in from a browser on another computer", () => {
 
 describe("mcpCallbackOrigin", () => {
   it("uses the origin the browser proved when nothing is configured or it is configured", () => {
-    expect(mcpCallbackOrigin("https://me.fly.dev", [])).toBe("https://me.fly.dev");
-    expect(mcpCallbackOrigin("https://bots.acme.com", ["https://me.fly.dev", "https://bots.acme.com"])).toBe("https://bots.acme.com");
+    expect(mcpCallbackOrigin("https://me.example.test", [])).toBe("https://me.example.test");
+    expect(mcpCallbackOrigin("https://bots.acme.com", ["https://me.example.test", "https://bots.acme.com"])).toBe("https://bots.acme.com");
   });
 
   it("prefers a configured address over one nobody vouched for", () => {
-    expect(mcpCallbackOrigin("https://elsewhere.example", ["https://me.fly.dev"])).toBe("https://me.fly.dev");
-    expect(mcpCallbackOrigin(null, [null, undefined, "https://me.fly.dev/"])).toBe("https://me.fly.dev");
+    expect(mcpCallbackOrigin("https://elsewhere.example", ["https://me.example.test"])).toBe("https://me.example.test");
+    expect(mcpCallbackOrigin(null, [null, undefined, "https://me.example.test/"])).toBe("https://me.example.test");
   });
 
   it("returns null for plain http, a path or credentials", () => {

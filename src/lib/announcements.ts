@@ -45,7 +45,8 @@ function readCards(answer: unknown): AnnouncementCard[] {
   const list = (answer as { cards?: unknown } | null)?.cards;
   if (!Array.isArray(list)) return [];
   return list.flatMap((raw) => {
-    const parsed = parseAnnouncementCard(raw);
+    const origin = (answer as { feedOrigin?: unknown } | null)?.feedOrigin;
+    const parsed = parseAnnouncementCard(raw, { feedOrigin: typeof origin === "string" ? origin : undefined });
     return parsed.ok ? [parsed.card] : [];
   });
 }

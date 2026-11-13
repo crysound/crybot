@@ -161,3 +161,56 @@ pnpm vitest run shared/package-format.test.ts --maxWorkers=2 --configLoader runn
 - Windows `CRYBOT_BROWSER_ENGINE_URL` 与 ICNS 实机验证按决定保持现状。
 - server 中仍存在部分旧 hosted/workspace 数据路径与历史业务分支；本轮删除了 broker/旧 CI 测试基础设施，但没有把所有 hosted/cloud 业务模块全部重写为纯自托管实现。前端云组件源文件仍有历史实现，尚未全部删除；这部分不能宣称已完全达到规格 §5 的“代码和界面入口一起删”。
 - 本轮没有 git 提交；工作区保留全部改动供协调者复核。
+
+# T-1207 第 4 轮追加
+
+本轮尚未达到整体验收：第 2 条托管客户端的完整删除未完成，不能把这次工作认定为 §5 已完成。下面区分实际改动、保留判断与未完成项；没有 git 提交。
+
+## 逐项结果
+
+1. **IPC 冲突已消除，但不是通过完整删除云账户实现。** `electron/main.mjs:2464` 与 `electron/preload.cjs:269` 将 companion 账户的通道分离为 `companion-account:*`，云账户仍使用 `account:*`。新增 `electron/ipc-channels.node-test.mjs:6`，以 TypeScript AST 扫描生产 `electron/*.mjs` 的 `ipcMain.handle/on`，展开字面量、已知 method 数组、元组循环和注册包装函数；`electron/ipc-channels.node-test.mjs:69` 断言通道无重复。新测试通过。`electron/preload.node-test.mjs:92` 同步通道断言。`electron/bridge-contract.json:6` 清除前轮已移除的云账户/购买/计划/组织、遥测等 bridge 的兼容契约；没有为这些接口重新加 stub。完整移除账户 IPC 仍属于第 2 条的欠项。
+
+2. **部分删除，未完成。** 已删除 `server/tunnel.ts`、`server/tunnel.test.ts`，移除 CLI 的托管隧道、上游 login/logout 和账户恢复路径：`server/cli.ts:63`、`server/cli.ts:102`、`server/service-cli.ts:46`；`server/cli-phone-setup.ts:29` 仅保留 Tailscale 或用户提供的 HTTPS 入口。移除相关 CLI 测试中的托管用例，并让解析测试断言旧选项被拒绝。`Dockerfile:128` 后的 `cloud-home` 阶段整体删除，包括失效的 `deploy/fly/Caddyfile*` COPY。`server/phone-relay.ts:141` 不再依赖已删除的 tunnel 账户凭据；`server/phone-relay.e2e.test.ts:30` 改为通过同一个隔离 relay fixture 的 `/v1/relay-token` 获取凭据，不写 tunnel-account 文件。
+
+   **仍未删除：** `electron/account.mjs`、`electron/cloud-buy.mjs`、`electron/cloud-plan-ipc.mjs`、`electron/cloud-rail.mjs`、`electron/cloud-trial-notice*`、`electron/account-service.mjs`、`electron/account-messages.mjs`、`electron/accounts-main.mjs`、`electron/control-client.mjs`，以及关联声明、测试、preload/UI/organization/accountRing/Team Cloud/cloud-home 实现。代表性入口仍在 `electron/main.mjs:798`、`:2486`、`:2604`、`:2634` 和 `server/index.ts:700`。`CRYBOT_CONTROL_PLANE_URL` 读取仍在 `electron/account-service.mjs:86`。这不是沙箱造成的删除阻塞，而是本轮没有完成对混合本地/托管依赖的拆分。曾尝试扩大依赖删除，但会连带删掉本地迁移、共享与窗口导航；已收回这些过宽改动。
+
+   **保留判断：**
+   - 原 `server/control-client.ts` 读取的是电脑控制权接口 `CRYBOT_CONTROL_URL/TOKEN`，保障用户接管屏幕时机器人停止操作，不是上游 control plane。保留实现及测试，更名为 `server/computer-control-client.ts:58`，更新 `mcp-bridge`、phone proxy、saved-steps 等导入。这一更名不计作删除托管客户端。
+   - `electron/desktop-remote-client.mjs` 完整保留，未改动；本地 bot-box、本机电脑及用户自填远端服务器路径未作为托管模块删除。没有完成桌面实机启动/配对验证，不能宣称远程模式已通过运行时验收。
+   - `cloud-sync-main`、`one-home`、`own-home-main`、`cloud-power`、`cloud-list` 同时参与本地/自填服务器共享、迁移或窗口行为；目前保留，不代表它们全部符合 §5，仍需抽出本地部分并删除托管分支。
+   - `runOn: "cloud"` 暂保留。`server/routines.ts:46`、`server/index.ts:5983`、`:5993` 表明它选择 bot 的 Boat VM，`server/included-services.ts:84` 支持用户自己配置的 Boat API 和自己的密钥。因此它不是只能在上游托管账户中执行；本地运行的 server 也能调度自己的 Boat 服务。这里不是本机 Podman 执行，不把两者混称。与上游 included-service/Team Cloud 的剩余耦合仍属上述欠项。
+
+3. **已改。** `server/credential-env.ts:45` 将 `CRYBOT_PHONE_RELAY_TOKEN`、broker token 纳入本进程运维密钥清除列表；`server/bot-box/box-check.ts:14` 增加 relay token；`electron/diagnostics.mjs:38` 同时覆盖 broker、relay、installation credential。`electron/diagnostics.test.mjs` 的漂移检查覆盖工作区和运维两类名单。新增 `server/credential-env.test.ts:10`，检查两种环境清除函数、大小写变体，并实际启动子进程读取环境文件，断言 relay/broker token 不存在。子进程输出写隔离临时文件，不通过受限的 stdout pipe。测试通过。
+
+4. **已改。** 共用校验在 `server/optional-feed-url.ts:1`：HTTPS；HTTP 仅 localhost、127.0.0.1、[::1]；拒绝用户名密码。接入 `server/update-check.ts:89`、`server/announcements/feed.ts:77`、`server/model-manifest/manifest.ts:73`；三处 fetch 均为 `redirect: "error"`。`server/update-check.ts:115` 丢弃非 HTTPS 或不同源 releaseUrl。`src/lib/app-links.ts:37` 在 preload 调用和 `window.open` 前限定 http/https/mailto。测试见 `server/optional-feed-url.test.ts:10`、`src/lib/app-links.test.ts:6`，已通过。
+
+5. **已改。** `shared/announcements.ts:77` 的图片校验显式接收 feed origin，不读取环境变量，仅接受同源 HTTPS 图片。`server/announcements/feed.ts:71` 计算并传入 origin，`:87` 也过滤缓存/内置卡片的外源图片；`server/routes/announcements.ts:13` 将 origin 交给前端，`src/lib/announcements.ts:48` 按相同来源解析。`scripts/check-announcements.mjs` 同步校验。`shared/announcements.test.ts`、`server/announcements/feed.test.ts` 覆盖异源主机/端口、凭据、缓存切换来源和内置图片，已通过。
+
+6. **已改名字及测试域名。** 所列测试中的上游作者名改成 ada/owner，中性路径为 `/Users/ada/...`；修改包括 `companion/test/mdns.test.ts`、`server/comms.test.ts`、`server/message-file.test.ts`、`server/peer-*.test.ts`、`server/runtime/envelope.test.ts`、`src/components/ChatMarkdown.test.ts`、`src/lib/group-*.test.ts`。保留测试及 `electron/fixtures/home-window-world.mjs:5` 中的上游测试主机后缀改为 `.example.test`。`scripts/check-brand-residue.mjs:10` 将名字匹配放宽到完整作者名，原署名文件白名单保留。品牌扫描通过。部分名字替换涉及的集成测试没有在本沙箱跑通，见下文。
+
+7. **已改。** `deploy/update.sh:42` 只保留一个 UPDATE_URL；`:161` 的 curl 使用 `--proto =https --proto-redir =https` 且不跟随重定向，wget 后备同样仅 HTTPS、零重定向；`:672` 不再对 404 重复请求同一地址，也删除不可达的 newest 分支。`deploy/README.md:1` 解释服务端 `{version, releaseUrl}` 与脚本 `{image, version}`，镜像示例使用脚本要求的 digest。`scripts/testing/deploy-update.test.ts` 更新隔离 fake curl fixture 和旧双 feed 断言，4 个直接相关用例通过；完整部署回滚套件未通过完整复验，不能报告全绿。
+
+8. **已改。** `.github/workflows/ci.yml:5` 增加 `permissions: contents: read`，三项 actions 固定 commit SHA，行尾标注 checkout v4.2.2、pnpm/action-setup v4.1.0、setup-node v4.4.0。没有在 GitHub 实际触发 CI，也未联网复核这些 SHA。
+
+9. **已改。** `server/phone-relay.ts:140` 的注释改为有效 `CRYBOT_PHONE_RELAY_URL` 才配置 relay，与当前逻辑一致。
+
+10. **已改。** `server/index.ts:12985` 删除 `PASS !== PASS` 恒假分支。
+
+## 验证结果与限制
+
+- `PATH=/opt/node24/bin:$PATH pnpm typecheck`：通过（`/tmp/r4-typecheck-final2.log`，退出 0）。
+- `PATH=/opt/node24/bin:$PATH pnpm lint`：通过（`/tmp/r4-lint-final2.log`，退出 0）。
+- `node scripts/check-brand-residue.mjs`：8343 files checked，0 forbidden references；`git diff --check`、`bash -n deploy/update.sh` 通过。
+- 用户指定的 `systemd-run --scope -q -p MemoryMax=4G -- ...` 无法连接 system scope bus，报 `Operation not permitted`。实际 vitest 使用 `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=768 pnpm vitest run <paths> --maxWorkers=2 --configLoader runner`；这不等价于已通过 systemd 4G scope 验收。`--configLoader runner` 用于避免在只读 node_modules 下生成配置缓存。
+- 安全测试组：`server/optional-feed-url.test.ts`、`server/credential-env.test.ts`、`server/update-check.test.ts`、`server/announcements/feed.test.ts`、`server/model-manifest/manifest.test.ts`、`shared/announcements.test.ts`、`src/lib/app-links.test.ts`、`server/cli-phone-setup.test.ts`：8 文件、132 用例通过（`/tmp/r4-security-final.log`）。新增的真实子进程环境断言随后随下一组复验通过。
+- 回归组：`server/credential-env.test.ts`、`server/optional-feeds.test.ts`、`scripts/check-announcements.test.mjs`、`electron/diagnostics.test.mjs`、`server/cli-relay.test.ts`、`server/cli-lifecycle.test.ts`、`server/cli-pair.test.ts`、`server/cli-setup.test.ts`、`src/lib/announcements.test.ts`：9 文件、195 用例通过（`/tmp/r4-regression-final.log`）。
+- `server/cli.test.ts` 通过名称过滤运行纯解析、pairing block、onboarding mock、saved startup、endpoint identity 用例：28 通过，4 个未选；`server/computer-control-client.test.ts` 的 mock 请求用例 17 通过，4 个未选，包含监听端口的部分留待外部环境。
+- `scripts/testing/deploy-update.test.ts` 名称过滤 `is valid bash|requests the configured feed once|rejects insecure feed`：4 通过、32 未选。全套初次暴露 fixture 镜像仓库与脚本白名单不符，已将 fixture 对齐为 `ghcr.io/crysound/crybot`；再次全套运行未结束，已中断，不计为通过。完整部署 fixture 套件还需复验。
+- `node --test electron/ipc-channels.node-test.mjs electron/preload.node-test.mjs electron/preload-contract.node-test.mjs electron/remote-microphone-permission.node-test.mjs electron/remote-clipboard-permission.node-test.mjs`：5 文件全部通过（`/tmp/r4-node-tests-final.log`）。
+- 扩大到本轮修改的 Electron node-test，加新 IPC 与 contract 测试：58 文件，40 通过、18 失败（`/tmp/r4-electron-affected.log`）。失败文件为 `app-permissions`、`cloud-buy`、`cloud-home`、`cloud-lending`、`cloud-rail`、`cloud-room`、`cloud-send`、`cloud-staging`、`cloud-sync-preload`、`desktop-prefs`、`device-link`、`environments`、`home-window`、`lent-folders`、`own-home-main`、`saved-server`、`two-places`、`use-my-mac`（均在 `electron/` 下，后缀 `.node-test.mjs`）。其中 cloud-home 已确认 `listen EPERM 127.0.0.1`；cloud-buy 缺失前轮移除的 bridge，app-permissions 的账户恢复源码断言与当前实现不符。不是把所有失败都归因于沙箱；托管功能欠项关联的测试也未全部清理完。
+- `server/service-cli.test.ts`：普通 service 的 3 用例通过，Sentinel 的 3 用例失败。实际环境 `/tmp/.git` 存在且只读，Sentinel 按安全规则拒绝把输出写到 `/tmp` 下的仓库；未修改安全规则或测试去绕开它。协调者需在仓库外临时目录重跑。
+- **待沙箱外隔离 fixture 复验：** `server/phone-relay.test.ts`、`server/phone-relay.e2e.test.ts`（更新后的真实 relay/token 流）、`server/cli.test.ts` 的 serve/lan/Caddy 集成用例、`server/cli-probe-env.test.ts`、`server/computer-control-client.test.ts` 的真实 HTTP 等待/超时用例，以及上述 Electron 监听端口用例。名字替换涉及的 `server/comms.test.ts`、`companion/test/mdns.test.ts` 和本轮修改的其他 `*.e2e.test.ts` 也需要协调者按原 fixture 跑；不能宣称全部受影响 vitest 已通过。
+- **验收 grep 未通过：** `git grep -n 'CONTROL_PLANE_URL\|cloud-buy\|cloudBuy\|ensureCloudAccount' -- . ':!docs'` 仍有 3451 行、61 个文件命中，详见 `/tmp/r4-hosted-residue-final.log`。这是第 2 条未完成的直接证据。
+- 仓库引用的 `docs/verification/README.md` 当前不存在；验证均使用测试自行创建的临时目录、mock 或隔离 fixture，没有对用户 live app/数据执行验证，没有成功完成真实服务启动验收。
+
+补充名字替换回归结果：`server/peer-roster.test.ts`、`server/peer-provenance.test.ts`、`server/runtime/envelope.test.ts`、`src/lib/group-call.test.ts`、`src/lib/group-routing.test.ts`、`src/components/ChatMarkdown.test.ts`、`server/message-file.test.ts` 最终为 4 文件通过、3 文件失败，391 用例通过、4 失败（`/tmp/r4-neutral-tests-final.log`）。已将攻击字符串的名字统一为 Owner，与断言一致。剩余失败是 message-file 的 `mkfifo` 子进程报 EPERM；ChatMarkdown 的两个发布页面链接点击用例；envelope 对旧 Unicode 仿冒 marker 的一个用例。后两类不是端口限制，没有在本轮改动其产品实现，仍需处理。最终品牌扫描仍为 8343 文件、0 命中，diff whitespace 检查通过。

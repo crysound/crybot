@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join, sep } from "node:path";
+import { optionalFeedUrl } from "./optional-feed-url.ts";
 
 const CACHE_MS = 60 * 60_000;
 const STALE_MS = 24 * 60 * 60_000;
@@ -85,7 +86,7 @@ export function createUpdateChecker(options: {
   fetch?: typeof fetch;
   now?: () => number;
 }) {
-  const updateUrl = options.url ?? process.env.CRYBOT_UPDATE_URL?.trim();
+  const updateUrl = optionalFeedUrl({ CRYBOT_UPDATE_URL: options.url ?? process.env.CRYBOT_UPDATE_URL }, "CRYBOT_UPDATE_URL");
   const fetchJson = options.fetch ?? fetch;
   const now = options.now ?? Date.now;
   const channel = options.channel ?? "stable";
@@ -99,18 +100,20 @@ export function createUpdateChecker(options: {
     ...updateCommand(options.install),
   });
   const ask = (url: string) => fetchJson(url, {
+    redirect: "error",
     headers: { accept: "application/json", "user-agent": "crybot-update-check" },
     signal: AbortSignal.timeout(8_000),
   });
 
   async function readFeed(): Promise<Found> {
-    const response = await ask(updateUrl!);
+    const response = await ask(updateUrl!.href);
     if (!response.ok) throw new Error(`Update feed answered ${response.status}`);
     const record = await response.json() as { version?: unknown; releaseUrl?: unknown };
     if (typeof record.version !== "string" || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(record.version)) {
       throw new Error("Update feed named no valid version");
     }
-    return { version: record.version, ...(typeof record.releaseUrl === "string" ? { releaseUrl: record.releaseUrl } : {}) };
+    const release = optionalFeedUrl({ release: typeof record.releaseUrl === "string" ? record.releaseUrl : undefined }, "release");
+    return { version: record.version, ...(release?.protocol === "https:" && release.origin === updateUrl!.origin ? { releaseUrl: release.href } : {}) };
   }
 
   return async function check(): Promise<UpdateCheck> {

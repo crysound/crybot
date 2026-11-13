@@ -9,7 +9,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { writeFileAtomic } from "./atomic.ts";
 import { cloudHomePrompt } from "./system-prompt.ts";
 import { availableTools, catalogProfileFromEnv } from "./drivers/agents-catalog.ts";
-import { CONTROL_BUSY, CONTROL_REFUSAL_PLAIN, controlRefusal, createControlClient } from "./control-client.ts";
+import { CONTROL_BUSY, CONTROL_REFUSAL_PLAIN, controlRefusal, createControlClient } from "./computer-control-client.ts";
 import { freePortBlock } from "./testing/ports.ts";
 import { readHandoffs } from "./testing/handoff-rows.ts";
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";

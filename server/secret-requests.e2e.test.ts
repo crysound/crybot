@@ -18,7 +18,7 @@ import { hostTimeout } from "./testing/host-timeout.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
-const HOST = "cry-t-5ec2e7f1a0b9.fly.dev";
+const HOST = "cry-t-5ec2e7f1a0b9.example.test";
 const FILE_CANARY = `sk_test_FILECANARY${randomBytes(12).toString("hex")}`;
 const REF_CANARY = `ntn_REFCANARY${randomBytes(12).toString("hex")}`;
 const bootstrap = randomBytes(32).toString("base64url");

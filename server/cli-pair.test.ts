@@ -5,8 +5,7 @@ import { runPair, type CliOptions } from "./cli.ts";
 import { removeTempDir } from "./testing/cleanup.ts";
 
 const mocks = vi.hoisted(() => ({
-  readCliStartup: vi.fn(),
-  createTunnelAccount: vi.fn(), describeTunnelAccount: vi.fn(), tailscaleStatus: vi.fn(),
+  readCliStartup: vi.fn(), tailscaleStatus: vi.fn(),
   ui: { log: vi.fn(), choose: vi.fn(), ask: vi.fn(), secret: vi.fn(), confirm: vi.fn() },
 }));
 vi.mock("./cli-setup.ts", () => ({ readCliStartup: mocks.readCliStartup }));
@@ -16,11 +15,6 @@ vi.mock("./cli-prompts.ts", async (original) => ({
 vi.mock("./tailscale.ts", () => ({
   tailscaleStatus: mocks.tailscaleStatus,
   tailscaleServe: vi.fn(), clearLeftoverTailscaleServe: vi.fn(), explainTailscaleFailure: vi.fn(),
-}));
-vi.mock("./tunnel.ts", () => ({
-  createTunnelAccount: mocks.createTunnelAccount, describeTunnelAccount: mocks.describeTunnelAccount,
-  cleanupTunnelOrigin: vi.fn(), createTunnelOrigin: vi.fn(), describeTunnelState: vi.fn(),
-  ensureCloudflared: vi.fn(), guardianEntry: vi.fn(), startTunnel: vi.fn(), tunnelAccess: vi.fn(),
 }));
 
 const advertisedOrigin = "https://current.example.test";
@@ -39,13 +33,11 @@ beforeEach(() => {
   // The shared test setup supplies a throwaway HOME before module imports.
   dataDir = mkdtempSync(join(process.env.HOME!, "cli-pair-"));
   vi.stubEnv("CRYBOT_DATA_DIR", dataDir);
-  options = { command: "pair", port: 18451, dataDir, tailscale: false, tunnel: false, client: false, pair: true, json: false };
+  options = { command: "pair", port: 18451, dataDir, tailscale: false, client: false, pair: true, json: false };
   publicUrl = advertisedOrigin;
   remoteWorkspaceId = workspaceId;
   for (const stream of [process.stdin, process.stdout]) Object.defineProperty(stream, "isTTY", { value: true, configurable: true });
   mocks.ui.choose.mockResolvedValue(0);
-  mocks.createTunnelAccount.mockReturnValue({ credentials: { read: () => ({}) } });
-  mocks.describeTunnelAccount.mockReturnValue({ address: "https://old-tunnel.example.test", email: "fixture@example.test" });
   mocks.tailscaleStatus.mockResolvedValue({ status: { dnsName: "old-tailnet.example.test" } });
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});

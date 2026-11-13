@@ -35,7 +35,9 @@ export function platformLabel(platform?: string): string | null {
 }
 
 export async function openExternalLink(url: string): Promise<void> {
-  if (!url) return;
+  try {
+    if (!["http:", "https:", "mailto:"].includes(new URL(url).protocol)) return;
+  } catch { return; }
   if (window.cry?.openExternal) {
     await window.cry.openExternal(url);
     return;

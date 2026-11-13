@@ -73,7 +73,7 @@ let accountListeners: Set<(next: CloudAccountState) => void>;
 let now: number;
 
 const PRELOAD = readFileSync(join(process.cwd(), "electron", "preload.cjs"), "utf8").replace(/\r\n/g, "\n");
-const LOCAL_ORIGIN = "http://127.0.0.1:8799", MY_CLOUD = "https://cry-u-1.fly.dev", VPS = "https://bots.example.test";
+const LOCAL_ORIGIN = "http://127.0.0.1:8799", MY_CLOUD = "https://cry-u-1.example.test", VPS = "https://bots.example.test";
 type Page = "local" | "cloud" | "server";
 type Handler = (event: { page: Page; returnValue?: unknown }, ...args: unknown[]) => unknown;
 interface Desktop {

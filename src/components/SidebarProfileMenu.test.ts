@@ -234,7 +234,7 @@ describe("the Phone & devices row", () => {
 
 describe("choosing where the phone connects", () => {
   const destinations = (account: CloudAccountState | null) => phoneDestinations(connectPhoneEntry("computer", null), cloudPhoneDestination(account));
-  const readyCloud: CloudAccountState = { status: "connected", entitlement: { plan: "pro", status: "active", expiresAt: null, version: 1 }, machine: { status: "ready", origin: "https://home-7f3k2.fly.dev" } };
+  const readyCloud: CloudAccountState = { status: "connected", entitlement: { plan: "pro", status: "active", expiresAt: null, version: 1 }, machine: { status: "ready", origin: "https://home-7f3k2.example.test" } };
   const flush = async () => { for (let i = 0; i < 5; i++) await Promise.resolve(); };
 
   it("to My Cloud opens the Cloud on its phone pairing, as Use the Cloud on your phone does, sending nothing", async () => {

@@ -5,7 +5,7 @@ import { routeSpokenGroupMessage } from "./group-call";
 
 const members = [
   { id: "atlas", name: "Atlas" },
-  { id: "milind", name: "Owner" },
+  { id: "ada", name: "Owner" },
   { id: "research", name: "Deep Research" },
 ] as Bot[];
 

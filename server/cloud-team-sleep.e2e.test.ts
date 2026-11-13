@@ -14,7 +14,7 @@ import { hostTimeout } from "./testing/host-timeout.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = fileURLToPath(new URL("./", import.meta.url));
-const HOST = "cry-t-3f2e1d0c9b8a.fly.dev";
+const HOST = "cry-t-3f2e1d0c9b8a.example.test";
 const MACHINE = "8e2f4a6b-1c3d-4e5f-8a7b-9c0d1e2f3a4b";
 const TEAM = { id: "team-sleep-1", name: "Harbor" };
 const OWNER = { email: "olive@harbor.test", role: "owner" as const }, MEMBER = { email: "ada@harbor.test", role: "member" as const };

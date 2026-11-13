@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 import { delimiter, dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CONTROL_UNCONFIRMED } from "./control-client.ts";
+import { CONTROL_UNCONFIRMED } from "./computer-control-client.ts";
 import { gatedLocalComputer } from "./local-computer.ts";
 import { OWN_PROFILE_UNAVAILABLE } from "./local-computer-guidance.ts";
 import { ComputerJournal, parseJournalEntry } from "./saved-steps/journal.ts";

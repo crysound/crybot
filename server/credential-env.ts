@@ -42,7 +42,7 @@ export const WORKSPACE_CREDENTIAL_ENV = [
 ] as const;
 
 /** Operator secrets only this process reads, plus every `CRYBOT_CLOUD_` var (the underscore leaves out CRYBOT_CLOUDFLARED_PATH). */
-export const CONTROL_PLANE_ENV = ["CRYBOT_INSTALLATION_CREDENTIAL"] as const;
+export const CONTROL_PLANE_ENV = ["CRYBOT_INSTALLATION_CREDENTIAL", "CRYBOT_PHONE_RELAY_TOKEN", "CRYBOT_COMPOSIO_BROKER_TOKEN"] as const;
 export const CONTROL_PLANE_ENV_PREFIX = "CRYBOT_CLOUD_";
 
 /** Names compare case-insensitively because Windows environments do. */

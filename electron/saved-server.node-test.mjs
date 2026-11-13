@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { reopenSavedServer, serverAnswers, serverOpens } from "./saved-server.mjs";
 
-const office = { id: "vps", name: "pro cloud", origin: "https://cry-u-gone.fly.dev" };
+const office = { id: "vps", name: "pro cloud", origin: "https://cry-u-gone.example.test" };
 const answering = (status) => async () => new Response("{}", { status });
 const gone = async () => { throw new TypeError("fetch failed"); };
 const asked = (responses) => {

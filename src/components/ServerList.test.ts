@@ -17,7 +17,7 @@ const workspaces = { probe: vi.fn(async () => ({ outcome: "problem", problem: "u
 const saved = {
   localOrigin: "http://127.0.0.1:1", remote: false, packaged: true, activeId: "local",
   environments: [
-    { id: "cloud", name: "My Cloud", origin: "https://cry-u-1.fly.dev", home: true, kind: "remote" as const },
+    { id: "cloud", name: "My Cloud", origin: "https://cry-u-1.example.test", home: true, kind: "remote" as const },
     { id: "vps", name: "hetzner-1", origin: "https://bot.example.com", kind: "remote" as const },
     { id: "mini", name: "office-mini", origin: "http://192.168.1.50:8799", kind: "remote" as const },
     { id: "mac", name: "Mac at home", origin: "https://mac.tail1234.ts.net", kind: "remote" as const },

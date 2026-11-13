@@ -32,13 +32,12 @@ export const USAGE = `crybot — your team of AI bots, ready in a few steps
   crybot setup [--data-dir DIR]
   crybot start [the same options as serve]
   crybot serve [--port 8799] [--data-dir DIR] [--label NAME]
-                    [--public-url https://host | --domain HOST | --tunnel | --tailscale] [--lan] [--relay]
+                    [--public-url https://host | --domain HOST | --tailscale] [--lan] [--relay]
   crybot pair  [--label NAME] [--phone [ios|android]] [--ttl 24h] [--public-url https://host]
   crybot devices [revoke ID]
   crybot status
   crybot --version
-  crybot login [--email you@example.com] [--relay]
-  crybot logout
+
   crybot access list | add EMAIL [--chat-only] | remove EMAIL
   crybot service install [the same way-in options as serve] [--port N] [--data-dir DIR] | uninstall
                     [--sentinel]   (the health scan below, every two minutes, instead of the server)
@@ -61,10 +60,7 @@ pair    a new pairing code for the running server, with its link and QR
 devices lists paired devices; "devices revoke ID" signs one out
 status  the running server, the address others reach it at, and whether
         that address answers as this server
-login   signs this machine in to an CryBot account (an emailed code)
-        and reserves its public address for --tunnel; with --relay it
-        reserves none, for serve --relay
-logout  releases that address and signs out
+
 access  who may sign in with an emailed code at /pair: an address or
         @domain; --chat-only gives chat and approvals without settings.
         Takes effect at once, no restart.
@@ -96,19 +92,14 @@ Ways in (pick one; --lan can join any):
              link uses this machine's MagicDNS name (needs Tailscale signed in
              and HTTPS certificates enabled for the tailnet); the share ends
              when serve stops
---tunnel     serve at a public https://c-… address through a
-             Cloudflare tunnel: no domain, no proxy, no open port. Run
-             \`crybot login\` once on this machine first.
+
 --domain     serve at https://HOST on your own domain: a pinned Caddy is
              downloaded once and run alongside the server, and gets the
              certificate itself. Point the domain's DNS at this machine and
              open ports 80 and 443.
 
---relay      phones only, and it can join any of the above except --tunnel:
-             the CryBot phone app pairs by QR through CryBot Relay,
-             end-to-end encrypted, with no address, open port or VPN. Run
-             \`crybot login --relay\` once on this machine first. Not on a
-             machine with a tunnel address: the relay stays off there.
+--relay      pair phones through the operator-configured relay.
+             Set CRYBOT_PHONE_RELAY_URL and, if required, CRYBOT_PHONE_RELAY_TOKEN.
 
 --no-open   do not open a browser window
 --no-pair   do not print a pairing code

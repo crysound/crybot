@@ -9,7 +9,7 @@ import { cloudLendingVerdict, createComputerSharing } from "./computer-sharing.m
 import nativeText from "./native-text.cjs";
 import { PERSON_AWAY_SECONDS, personActiveText } from "./lent-screen-presence.mjs";
 
-const ORIGIN = "https://cry-u-fixture.fly.dev";
+const ORIGIN = "https://cry-u-fixture.example.test";
 const binding = { accountId: "acct_1", origin: ORIGIN };
 const env = { id: "my-cloud", name: "My Cloud", origin: ORIGIN };
 
@@ -30,7 +30,7 @@ test("the Cloud verdict: same account and machine run, anything else ends or pau
   assert.deepEqual(cloudLendingVerdict(binding, null, env), { pause: "unverified" });
   assert.deepEqual(cloudLendingVerdict(binding, { status: "unavailable", accountId: null, origin: null }, env), { pause: "unverified" });
   assert.deepEqual(cloudLendingVerdict(binding, { ...connected, accountId: "acct_2" }, env), { stop: "account-changed" });
-  assert.deepEqual(cloudLendingVerdict(binding, { ...connected, origin: "https://cry-u-other.fly.dev" }, env), { stop: "machine-changed" });
+  assert.deepEqual(cloudLendingVerdict(binding, { ...connected, origin: "https://cry-u-other.example.test" }, env), { stop: "machine-changed" });
   assert.deepEqual(cloudLendingVerdict(binding, connected, { origin: "https://evil.example" }), { stop: "machine-changed" });
   assert.deepEqual(cloudLendingVerdict(binding, { status: "reauth-required", accountId: "acct_1", origin: null }, env), { pause: "reauth-required" });
   assert.deepEqual(cloudLendingVerdict(undefined, connected, env), { stop: "signed-out" });
@@ -175,7 +175,7 @@ test("Your Chrome does not outlive the switch: after an Off nothing reports it a
 
 test("refuses to lend unless the Cloud sign-in is verified for this exact machine, and never to a server that is not a Cloud home", async t => {
   const folder = async dir => [{ id: randomUUID(), path: dir, write: false }];
-  for (const cloud of [null, { status: "signed-out", accountId: null, origin: null }, { status: "unavailable", accountId: "acct_1", origin: null }, { status: "connected", accountId: "acct_1", origin: "https://cry-u-other.fly.dev" }]) {
+  for (const cloud of [null, { status: "signed-out", accountId: null, origin: null }, { status: "unavailable", accountId: "acct_1", origin: null }, { status: "connected", accountId: "acct_1", origin: "https://cry-u-other.example.test" }]) {
     const { folderPath, sharing, home } = await lendingFixture(t, { cloud });
     await assert.rejects(sharing.saveCloud(env, { folders: await folder(folderPath), screen: false }), /Open My Cloud first/);
     assert.equal(home.connects.length, 0);
@@ -325,7 +325,7 @@ test("another Cloud account or another machine ends lending; a sign-in that need
     const { folderPath, home, sharing, setCloud } = await lendingFixture(t);
     await sharing.saveCloud(env, { folders: [{ id: randomUUID(), path: folderPath, write: false }], screen: false });
     await connected(sharing, 1, home);
-    setCloud({ status: "connected", accountId: "acct_1", origin: "https://cry-u-new.fly.dev" });
+    setCloud({ status: "connected", accountId: "acct_1", origin: "https://cry-u-new.example.test" });
     sharing.cloudChanged();
     assert.deepEqual([sharing.cloudState(env).enabled, sharing.cloudState(env).problem], [false, "machine-changed"]);
   }
@@ -450,7 +450,7 @@ test("signs back in to My Cloud by itself when its session there ended, and trie
 });
 
 test("another Cloud of the person's own is lent at its own address, apart from My Cloud, and lending to it ends once the session no longer lists it", async t => {
-  const other = { id: "client-a", name: "Client A", origin: "https://cry-c-a.fly.dev", cloud: { id: "c-a", role: "owner" } };
+  const other = { id: "client-a", name: "Client A", origin: "https://cry-c-a.example.test", cloud: { id: "c-a", role: "owner" } };
   let listed = true;
   const asked = [];
   const { folderPath, home, sharing } = await lendingFixture(t, { env: other, cloud: place => {

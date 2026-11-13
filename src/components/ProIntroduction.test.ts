@@ -96,7 +96,7 @@ it("never offers a plan to anyone who pays, may pay, or whose state is unknown; 
   const nobodyToSell: Array<CloudAccountState | null> = [
     null, { status: "signed-out", message: "restoring" }, { status: "signed-out", message: "restore-removed" }, { status: "connecting" },
     plan({ entitlement: paid("max") }), plan({ entitlement: paid("personal"), checking: true }), plan({ entitlement: paid("pro", "inactive") }),
-    plan({ machine: { status: "payment-problem", origin: "https://home.fly.dev" } }), plan({ machine: { status: "stopped" } }),
+    plan({ machine: { status: "payment-problem", origin: "https://home.example.test" } }), plan({ machine: { status: "stopped" } }),
     plan({ purchase: { state: "confirming", tier: "personal" } }), plan({ purchase: { state: "held" } }),
     { status: "unavailable", lastPlan: { tier: "max", active: true } }, { status: "unavailable" },
     { status: "reauth-required", message: "expired", lastPlan: { active: true } }, { status: "reauth-required" },

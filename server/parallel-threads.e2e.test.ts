@@ -9,13 +9,13 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { cloudPairingSignature, cloudRequestSignature } from "./cloud-home.ts";
-import { CONTROL_BUSY } from "./control-client.ts";
+import { CONTROL_BUSY } from "./computer-control-client.ts";
 import { BROWSER_HANDED_OVER, browserBusyText } from "./host/browser-seats.ts";
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
-const HOST = "cry-t-0123456789ab.fly.dev";
+const HOST = "cry-t-0123456789ab.example.test";
 type Role = "desktop" | "home" | "team";
 const TEAM = { id: "team-7f3a", name: "Acme" };
 

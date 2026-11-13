@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CONTROL_BUSY, CONTROL_HANDED_BACK, CONTROL_TURN_ENDED, CONTROL_WAIT_MS, CONTROL_WAITED, controlRefusal, type ControlState } from "../control-client.ts";
+import { CONTROL_BUSY, CONTROL_HANDED_BACK, CONTROL_TURN_ENDED, CONTROL_WAIT_MS, CONTROL_WAITED, controlRefusal, type ControlState } from "../computer-control-client.ts";
 import { computerPersonAwayText } from "../computer-wait.ts";
 import { ChatMcpClient } from "../drivers/chat-mcp-tools.ts";
 import { createGateInterceptor } from "../mcp-bridge.ts";

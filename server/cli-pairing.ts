@@ -90,17 +90,13 @@ export function formatSessions(sessions: Array<{ id: string; label: string; scop
 const isStatus = (value: unknown): value is PhoneRelayStatus =>
   typeof value === "object" && value !== null && typeof (value as PhoneRelayStatus).grant === "string" && typeof (value as PhoneRelayStatus).relay === "string";
 
-/** Until the control plane tells a server from a desktop, a machine that takes a relay token gives back its tunnel. */
-export const RELAY_NOT_WITH_TUNNEL = "--relay cannot be used on a machine whose saved choice is a tunnel address: a relay token would make the tunnel go for good. Start with --local, or use the relay on a machine signed in with `crybot login --relay`.";
-
 /** Why phones cannot pair through the relay yet, in words for the person at the terminal; empty when they can. */
 export function relayProblemLines(status: PhoneRelayStatus | null, prefix: string): string[] {
   if (!status) return [`CryBot Relay is off on this server. Start it with: ${prefix} serve --relay`];
-  if (status.grant === "tunnel") return [`CryBot Relay stays off here: ${status.reason ?? "this machine holds a tunnel address"}. A relay token would make that tunnel go for good; use the relay on a machine signed in with ${prefix} login --relay.`];
-  if (status.grant === "signed-out") return [`CryBot Relay needs this machine signed in to a CryBot account: ${prefix} login --relay (then leave the server running; it connects within a minute).`];
+  if (status.grant === "signed-out") return [`The configured phone relay rejected its credential. Check CRYBOT_PHONE_RELAY_TOKEN.`];
   if (status.grant === "unavailable") return ["CryBot Relay is not available for this machine right now. The server keeps working here; it asks again every half hour."];
-  if (status.grant === "failed") return ["The CryBot account service did not answer. The server keeps working here and keeps trying."];
-  if (status.grant === "waiting") return ["Still asking the CryBot account service for a relay pass…"];
+  if (status.grant === "failed") return ["The configured phone relay did not answer. The server keeps working here and keeps trying."];
+  if (status.grant === "waiting") return ["Still asking the configured phone relay for a relay pass…"];
   if (status.relay !== "connected") return ["Can't reach CryBot Relay yet. The server keeps working here and keeps trying; phones pair once it connects."];
   return [];
 }
@@ -147,6 +143,6 @@ export async function showRelayPairing(input: {
     return true;
   }
   for (const line of relayProblemLines(status, input.prefix)) input.log(line);
-  if (status?.grant !== "tunnel") input.log(`Then: ${input.prefix} pair --phone`);
+  input.log(`Then: ${input.prefix} pair --phone`);
   return false;
 }

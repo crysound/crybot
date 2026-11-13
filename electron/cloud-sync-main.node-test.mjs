@@ -69,7 +69,7 @@ test("a folder added on the Files page is lent, read only, and Stop sharing take
   const picked = join(dir, "home", "Clients");
   mkdirSync(picked, { recursive: true });
   const handlers = new Map();
-  const env = { id: "my-cloud", origin: "https://cry-u-aaaaaaaaaaaa.fly.dev" };
+  const env = { id: "my-cloud", origin: "https://cry-u-aaaaaaaaaaaa.example.test" };
   let state = { enabled: false, folders: [], screen: false, internet: false, chrome: false, terminal: false };
   const saves = [];
   const sharing = {

@@ -1,7 +1,7 @@
 // Unit level: the 45 s e2e wait is too slow for the suite, and what matters is the decision table, not the constant.
 import { describe, expect, it, vi } from "vitest";
 
-import { CONTROL_REFUSAL_PLAIN, CONTROL_UNCONFIRMED, CONTROL_WAITED, type ControlState } from "./control-client.ts";
+import { CONTROL_REFUSAL_PLAIN, CONTROL_UNCONFIRMED, CONTROL_WAITED, type ControlState } from "./computer-control-client.ts";
 import {
   completeFor,
   createChildCalls,

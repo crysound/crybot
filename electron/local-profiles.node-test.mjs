@@ -14,7 +14,7 @@ function computer(t, { home = "cloud", frozen = home === "cloud" } = {}) {
   t.after(() => rmSync(parent, { recursive: true, force: true }));
   const dataDir = join(parent, ".crybot");
   mkdirSync(dataDir, { recursive: true });
-  if (frozen) writeFileSync(join(dataDir, "moved.json"), JSON.stringify({ v: 1, at: 1, cloud: "https://cry-t-1.fly.dev" }));
+  if (frozen) writeFileSync(join(dataDir, "moved.json"), JSON.stringify({ v: 1, at: 1, cloud: "https://cry-t-1.example.test" }));
   let clock = 1_000;
   const w = { dataDir, running: dataDir, swaps: [], home, shown: null, onScreen: "cloud", busy: [], trashed: [], trashFails: false, changes: 0, logs: [], waits: 0, remembered: [] };
   w.now = () => clock;
@@ -130,7 +130,7 @@ test("switching once My Cloud is home: one runs at a time, the next one starts o
   assert.equal(existsSync(join(profileDir(w.dataDir, "work"), "bots.json")), false, "Work starts fresh");
   assert.equal(await w.profiles.open(DEFAULT_PROFILE), true);
   assert.equal(readFileSync(join(profileDir(w.dataDir, DEFAULT_PROFILE), "bots.json"), "utf8"), "[\"Scout\"]");
-  assert.equal(JSON.parse(readFileSync(join(w.dataDir, "moved.json"), "utf8")).cloud, "https://cry-t-1.fly.dev", "the frozen copy stays frozen and never runs");
+  assert.equal(JSON.parse(readFileSync(join(w.dataDir, "moved.json"), "utf8")).cloud, "https://cry-t-1.example.test", "the frozen copy stays frozen and never runs");
   assert.equal(w.swaps.includes(w.dataDir), false);
   assert.equal(await w.profiles.open("nope"), false, "only a workspace the registry has");
 });

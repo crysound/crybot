@@ -20,12 +20,13 @@ const {
 
 // The desktop credential list is a hand copy of server/credential-env.ts WORKSPACE_CREDENTIAL_ENV; this test is the drift alarm.
 describe("credential env parity with server/credential-env.ts", () => {
-  it("matches WORKSPACE_CREDENTIAL_ENV exactly", () => {
+  it("redacts workspace credentials and process-only operator secrets", () => {
     const config = readFileSync(new URL("../server/credential-env.ts", import.meta.url), "utf8");
     const match = config.match(/WORKSPACE_CREDENTIAL_ENV = \[([\s\S]*?)\] as const/);
     expect(match).not.toBeNull();
     const names = [...match[1].matchAll(/"([A-Z0-9_]+)"/g)].map((m) => m[1]);
-    expect(CREDENTIAL_ENV_NAMES).toEqual(names);
+    const operatorNames = config.match(/CONTROL_PLANE_ENV = \[([^\]]+)\]/)[1].match(/"([^"]+)"/g).map(name => JSON.parse(name));
+    expect([...CREDENTIAL_ENV_NAMES].sort()).toEqual([...new Set([...names, ...operatorNames])].sort());
   });
 });
 

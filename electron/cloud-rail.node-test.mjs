@@ -7,7 +7,7 @@ import { parseCloudList } from "./cloud-list.mjs";
 import { addCloudView, createAddedCloudNotice, installCloudRail, railPlaces } from "./cloud-rail.mjs";
 import { otherCloudSnapshot } from "./cloud-plan-ipc.mjs";
 
-const HOME = "https://cry-u-1a2b3c4d5e6f.fly.dev", CLIENT_A = "https://cry-c-a.fly.dev", TEAM = "https://cry-t-acme.fly.dev", VPS = "https://bots.example.test";
+const HOME = "https://cry-u-1a2b3c4d5e6f.example.test", CLIENT_A = "https://cry-c-a.example.test", TEAM = "https://cry-t-acme.example.test", VPS = "https://bots.example.test";
 const LOCAL = "http://127.0.0.1:8799";
 const entry = (over = {}) => ({ id: "c-a", name: "Client A", color: "green", role: "owner", tier: "pro", runsOn: "cloud", status: "ready", origin: CLIENT_A,
   teamId: null, primary: false, ...over });
@@ -275,7 +275,7 @@ test("“{name}” is ready, once per Cloud this app bought, unless its sheet sh
 });
 
 test("a Cloud of your own that ended is marked, and its menu offers Remove from list only when the Admin says so; a running Cloud or a team's never does", () => {
-  const OLD = "https://cry-c-old.fly.dev";
+  const OLD = "https://cry-c-old.example.test";
   const withOld = (over = {}) => saved("home", [{ id: "old", kind: "remote", name: "Old", origin: OLD, cloud: { id: "c-old", role: "owner" } }, ...(over.extra ?? [])]);
   const clouds = parseCloudList([PRIMARY, entry(), entry({ id: "c-old", name: "Old", color: null, status: "ended", origin: OLD, deleteAfter: 1_800_000_000_000, removable: true }),
     entry({ id: "c-team", name: "Acme", color: "amber", teamId: "team-acme", role: "owner", origin: TEAM, status: "ended", removable: true })]);
@@ -288,7 +288,7 @@ test("a Cloud of your own that ended is marked, and its menu offers Remove from 
 });
 
 test("My Cloud that ended and was removed from the list leaves the rail; while it is listed it is a circle that opens its own screen", () => {
-  const OLD = "https://cry-u-old.fly.dev";
+  const OLD = "https://cry-u-old.example.test";
   const before = { activeId: "local", environments: [{ id: "mine", kind: "remote", name: "My Cloud", origin: OLD, home: true }, { id: "a", kind: "remote", name: "Client A", origin: CLIENT_A, cloud: { id: "c-a", role: "owner" } }] };
   const ended = entry({ id: "c-home", name: "My Cloud", color: null, origin: OLD, primary: true, status: "ended", deleteAfter: 1_800_000_000_000, removable: true });
   const listed = railPlaces({ saved: before, home: null, mine: OLD, state: session({ machine: { status: "stopped", origin: OLD }, teams: [], clouds: parseCloudList([ended, entry()]) }) });
@@ -302,7 +302,7 @@ test("My Cloud that ended and was removed from the list leaves the rail; while i
 });
 
 test("Remove from list from a circle's menu: only the rail's own page, only a circle main listed as removable, and by main's own word for the Cloud", async () => {
-  const OLD = "https://cry-c-old.fly.dev", hidden = [];
+  const OLD = "https://cry-c-old.example.test", hidden = [];
   const clouds = parseCloudList([PRIMARY, entry(), entry({ id: "c-old", name: "Old", status: "ended", origin: OLD, removable: true })]);
   const savedOld = saved("home", [{ id: "old", kind: "remote", name: "Old", origin: OLD, cloud: { id: "c-old", role: "owner" } }]);
   const account = { state: () => session({ clouds }), offer: async () => null, hideCloud: async (id) => { hidden.push(id); return { outcome: "removed" }; } };

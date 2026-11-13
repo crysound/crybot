@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Updates this Docker Compose install to the stable version, with a way back:
 #
-#   ./update.sh                  the stable version (the newest release until a first version is made stable)
+#   ./update.sh                  the version named by CRYBOT_UPDATE_URL
 #   ./update.sh --version X.Y.Z  one released version
 #   ./update.sh --check          say what would change, and change nothing
 #   ./update.sh --rollback       put back the version and the data from before the last update (asks first; --yes)
@@ -39,8 +39,7 @@ trap '' HUP PIPE
 
 REPO="ghcr.io/crysound/crybot"
 PINNED="^ghcr\.io/crysound/crybot@sha256:[0-9a-f]{64}$"
-STABLE_URL=${CRYBOT_UPDATE_URL:-}
-NEWEST_URL=${CRYBOT_UPDATE_URL:-}
+UPDATE_URL=${CRYBOT_UPDATE_URL:-}
 SERVICE=${CRYBOT_UPDATE_SERVICE:-cry}
 # A healthy server answers within seconds of starting; two minutes leaves room for a slow first start after an update,
 # and is how long the server is down before a version that never answers is rolled back. CRYBOT_UPDATE_WAIT_S for more.
@@ -159,24 +158,23 @@ json_top() {
     }'
 }
 
-# GET $1 into BODY. Returns 0 with the body, 1 when there is no such file (HTTP 404, or a file:// path that is not
-# there), 2 when it could not be asked (no network, a timeout, any other answer).
 fetch() {
   local url=$1 got code rc headers
   BODY=""
   if command -v curl >/dev/null 2>&1; then
-    got=$(curl -sSL --max-time 20 -w '\n%{http_code}' "$url" 2>/dev/null)
+    got=$(curl --proto =https --proto-redir =https -sS --max-time 20 -w '\n%{http_code}' "$url" 2>/dev/null)
     rc=$?
     code=${got##*$'\n'}
     BODY=${got%$'\n'*}
     case "$rc:$code" in
-      0:200 | 0:000) return 0 ;;
-      0:404 | 37:*) BODY=""; return 1 ;;
+      0:200) return 0 ;;
+      0:404) BODY=""; return 1 ;;
       *) BODY=""; return 2 ;;
     esac
   fi
+  case "$url" in https://*) ;; *) return 2 ;; esac
   headers=$(mktemp) || return 2
-  BODY=$(wget -S -T 20 -qO- "$url" 2>"$headers")
+  BODY=$(wget --https-only --max-redirect=0 -S -T 20 -qO- "$url" 2>"$headers")
   rc=$?
   if [ "$rc" = 0 ]; then rm -f "$headers"; return 0; fi
   BODY=""
@@ -671,35 +669,22 @@ interrupted() {
   exit 130
 }
 
-# The image and version a plain run takes: the stable channel's, or the newest release before any is stable. Sets
-# CHANNEL, J_target and J_version, or refuses.
 resolve_target() {
-  CHANNEL=""
   if [ -n "$WANT_IMAGE" ]; then
     J_target=$WANT_IMAGE
   elif [ -n "$WANT_VERSION" ]; then
     J_target="$REPO:v$WANT_VERSION"
     J_version=$WANT_VERSION
   else
-    [ -n "$STABLE_URL" ] || refuse "Set CRYBOT_UPDATE_URL or pass --image. No update request was sent."
-    fetch "$STABLE_URL"
+    [ -n "$UPDATE_URL" ] || refuse "Set CRYBOT_UPDATE_URL or pass --image. No update request was sent."
+    fetch "$UPDATE_URL"
     case $? in
       0)
-        CHANNEL=stable
         J_target=$(printf '%s' "$BODY" | json_top image)
         J_version=$(printf '%s' "$BODY" | json_top version)
         printf '%s' "$J_target" | grep -Eq "$PINNED" && is_version "$J_version" || refuse "The stable channel names no image this script accepts. Nothing was changed."
         ;;
-      1)
-        # No version has been made stable yet: the newest release, as the server's own update check says then.
-        fetch "$NEWEST_URL" || refuse "Could not find the newest release ($NEWEST_URL). Nothing was changed. To name a version yourself: ./update.sh --version X.Y.Z"
-        J_version=$(printf '%s' "$BODY" | json_top tag_name)
-        J_version=${J_version#v}
-        is_version "$J_version" || refuse "The newest release names no version this script accepts. Nothing was changed."
-        CHANNEL=newest
-        J_target="$REPO:v$J_version"
-        ;;
-      *) refuse "Could not read the stable channel ($STABLE_URL). Nothing was changed. To name a version yourself: ./update.sh --version X.Y.Z" ;;
+      *) refuse "Could not read the stable channel ($UPDATE_URL). Nothing was changed. To name a version yourself: ./update.sh --version X.Y.Z" ;;
     esac
   fi
 }
@@ -796,7 +781,6 @@ if [ "$MODE" = check ]; then
   [ -n "$J_version" ] || J_version=$(image_version "$J_target")
   if [ -n "$RUNNING_VERSION" ] && [ "$RUNNING_VERSION" != "$J_previous_version" ]; then printf '%s\n' "This server runs $(old_name), which says it is $RUNNING_VERSION."
   else printf '%s\n' "This server runs $(old_name)."; fi
-  [ "$CHANNEL" = newest ] && printf '%s\n' "No version has been made stable yet, so ./update.sh takes the newest release, $J_version."
   [ -f "$JOURNAL" ] && printf '%s\n' "An earlier update did not finish. ./update.sh first says what it would cost to go back, and asks."
   if [ -n "$J_previous" ] && [ "$J_previous" = "$J_target" ]; then printf '%s\n' "That is the version asked for. Nothing to do."
   elif [ "$ALLOW_OLDER" != yes ] && [ -n "$(older_reason)" ]; then printf '%s\n' "$(older_reason)" "./update.sh would change nothing without --allow-older."
@@ -819,7 +803,6 @@ abandon() {
 }
 THIS_RUN=yes
 phase pull
-[ "$CHANNEL" = newest ] && say "No version has been made stable yet, so this takes the newest release, $J_version."
 say "Downloading $(new_name)…"
 if ! docker pull -q "$J_target" >>"$LOG" 2>&1 && [ -z "$(image_id "$J_target")" ]; then
   abandon

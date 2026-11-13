@@ -19,7 +19,7 @@ import { hostTimeout } from "./testing/host-timeout.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
-const HOST = "cry-t-0123456789ab.fly.dev";
+const HOST = "cry-t-0123456789ab.example.test";
 const secret = randomBytes(32).toString("base64url");
 const relayToken = `box_cry_${randomBytes(32).toString("base64url")}`;
 let home = "";

@@ -14,7 +14,7 @@ const localOrigin = require("./local-origin.cjs");
 
 const POPUP = "whats-new-2026-11", BOAT = "boat-credit-2026-11", GROK = "grok-move-2026-11", MODELGO = "modelgo-offer-2026-11";
 const NOON = new Date(2026, 9, 16, 12).getTime();
-const LOCAL = "http://127.0.0.1:18799", CLOUD = "https://cry-u-1.fly.dev", VPS = "https://bots.example.test";
+const LOCAL = "http://127.0.0.1:18799", CLOUD = "https://cry-u-1.example.test", VPS = "https://bots.example.test";
 
 test("a page on an older release keeps working with the longer list: its own ids record as before, and it never reads the new one", () => {
   let saved = { seen: [POPUP, GROK, "gone-notice"] };

@@ -623,7 +623,7 @@ posixOnly("Live call e2e", () => {
 
 // Booted as a Cloud home behind its edge, with only loopback reachable.
 posixOnly("Live call on the person's Cloud", () => {
-  const HOST = "cry-t-0123456789ab.fly.dev";
+  const HOST = "cry-t-0123456789ab.example.test";
   const secret = randomBytes(32).toString("base64url");
   const OWNER_KEY = "sk-fake-cloud-owner";
   let child: ChildProcess;

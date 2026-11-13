@@ -75,7 +75,7 @@ function railKeepsItsSize() {
 if (typeof window !== "undefined") {
   for (const type of ["resize", "DOMContentLoaded"]) window.addEventListener(type, () => { leaveRailRoom(); railKeepsItsSize(); });
 }
-const REMOTE_SAFE = new Set(["platform", "app", "getCapabilities", "onCapabilitiesChanged", "applySkin", "setUnreadCount", "permStatus", "workspaces", "rail", "cloudAdd", "cloudPlan", "cloudSendPage", "accountSheet", "desktopNotices", "desktopNotifications", "desktopAnalytics", "desktopLanguage", "updatesConsent", "windowControls", "onOpenAppSettings", "windowFrame", "softwareRendering", "appUpdate"]);
+const REMOTE_SAFE = new Set(["platform", "app", "getCapabilities", "onCapabilitiesChanged", "applySkin", "setUnreadCount", "permStatus", "workspaces", "rail", "accountSheet", "desktopNotices", "desktopNotifications", "desktopLanguage", "windowControls", "onOpenAppSettings", "windowFrame", "softwareRendering", "appUpdate"]);
 /** My Cloud's own page once it is the person's home (main checks the sender again): it is this app's page then. */
 const HOME_PAGE = ["home", "onChatLink", "onPackageInstall", "exportDiagnostics", "openLogsFolder", "openAtLogin", "callActive"];
 function updaterOffered() {
@@ -267,12 +267,12 @@ const bridge = {
   },
   /** Secrets stay in the main process; the renderer sees only status and narrow actions. */
   companionAccount: {
-    state: () => ipcRenderer.invoke("account:state"),
-    requestCode: (email) => ipcRenderer.invoke("account:request-code", email),
-    verifyCode: (email, code) => ipcRenderer.invoke("account:verify-code", email, code),
-    retry: () => ipcRenderer.invoke("account:retry"),
-    prepare: () => ipcRenderer.invoke("account:prepare"),
-    signOut: () => ipcRenderer.invoke("account:sign-out"),
+    state: () => ipcRenderer.invoke("companion-account:state"),
+    requestCode: (email) => ipcRenderer.invoke("companion-account:request-code", email),
+    verifyCode: (email, code) => ipcRenderer.invoke("companion-account:verify-code", email, code),
+    retry: () => ipcRenderer.invoke("companion-account:retry"),
+    prepare: () => ipcRenderer.invoke("companion-account:prepare"),
+    signOut: () => ipcRenderer.invoke("companion-account:sign-out"),
   },
   /** Full/Custom never go through the loopback API, only the embedded server's private utilityProcess port. */
   approvals: {

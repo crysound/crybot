@@ -7,7 +7,7 @@ import { createMoveStatusReport, MOVE_STATUS_GAP_MS, MOVE_STATUS_HEARTBEAT_MS, M
 import { CHECK_PASSES, createOneHome, INCOMPLETE, parseJournal, QUIET_MS } from "./one-home.mjs";
 import { installOneHome, oneHomeCloud } from "./one-home-main.mjs";
 
-const CLOUD = "https://cry-t-1.fly.dev";
+const CLOUD = "https://cry-t-1.example.test";
 const ACCOUNT = { id: "acct-1", email: "person@example.test" };
 const reply = (status, body = {}) => ({ ok: status < 400, status, body });
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status });
@@ -269,7 +269,7 @@ test("what leaves this computer is ids and fixed words: quotes, what My Cloud sa
   assert.equal(safeSentence("This computer's bots can't go yet."), "This computer's bots can't go yet.");
   assert.equal(safeSentence("ENOENT: no such file or directory, open /Users/jane/Documents/plans.md"), "ENOENT: no such file or directory, open …");
   assert.equal(safeSentence("EPERM C:\\Users\\jane\\AppData\\x.db"), "EPERM …");
-  assert.equal(safeSentence("Sent to jane@example.com via https://cry-t-1.fly.dev/api/x?token=1"), "Sent to … via …");
+  assert.equal(safeSentence("Sent to jane@example.com via https://cry-t-1.example.test/api/x?token=1"), "Sent to … via …");
   assert.equal(safeSentence(`Bearer omc_${"A".repeat(43)} was refused`), "Bearer … was refused");
   assert.equal(safeSentence("conversation 3f0c2a9e-1b2c-4d5e-8f90-123456789abc is missing"), "conversation 3f0c2a9e-1b2c-4d5e-8f90-123456789abc is missing", "ids stay");
   assert.equal(safeSentence("line one\nline two\u0007"), "line one line two");

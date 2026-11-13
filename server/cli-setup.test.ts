@@ -700,7 +700,7 @@ describe("CLI startup preferences", () => {
     const original = persist({ cliStartup: { access: "local" } });
     const lease = acquireDataDirLease(DATA_DIR);
     try {
-      expect(() => saveCliStartup(DATA_DIR, { access: "tunnel", phone: "android" })).toThrow(/already using this data directory/);
+      expect(() => saveCliStartup(DATA_DIR, { access: "tailscale", phone: "android" })).toThrow(/already using this data directory/);
       expect(readFileSync(configPath, "utf8")).toBe(original);
     } finally { lease.release(); }
   });

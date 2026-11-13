@@ -121,7 +121,7 @@ function harness(get: () => { world: HomeWorld; shots: string }) {
     // The session lists My Cloud as the person's own, as the Admin does: so its circle is a rail even alone, for ＋.
     // The Admin lists https addresses only; this one's is the fixture's own edge.
     world.account.state = { ...world.account.state, clouds: parseCloudList([{ id: "c-home", name: "My Cloud", color: null, role: "owner", tier: "pro", runsOn: "cloud",
-      status: "ready", origin: "https://cry-u-fixture.fly.dev", teamId: null, primary: true }])!.map((cloud) => ({ ...cloud, origin: world.cloudOrigin })) };
+      status: "ready", origin: "https://cry-u-fixture.example.test", teamId: null, primary: true }])!.map((cloud) => ({ ...cloud, origin: world.cloudOrigin })) };
     // Each page's dev server bundles what it imports on the first visit, then reloads it once: done before anything counts.
     for (const url of [`${world.localOrigin}/`, `${world.cloudOrigin}/`]) {
       await world.window.loadURL(url).catch(() => {});

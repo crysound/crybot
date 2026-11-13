@@ -19,7 +19,7 @@ describe("crybot service", () => {
   afterEach(() => removeTempDir(dir));
 
   it("repeats the serve options the person gave, --public-url and --lan included", () => {
-    expect(serviceServeArgs({ port: 8799, dataDir: "/d", domain: "a.example.com", tunnel: true, label: "x" })).toEqual(["--port", "8799", "--data-dir", "/d", "--domain", "a.example.com", "--label", "x"]);
+    expect(serviceServeArgs({ port: 8799, dataDir: "/d", domain: "a.example.com", tailscale: true, label: "x" })).toEqual(["--port", "8799", "--data-dir", "/d", "--domain", "a.example.com", "--label", "x"]);
     expect(serviceServeArgs({ port: 1, dataDir: "/d", tailscale: true })).toEqual(["--port", "1", "--data-dir", "/d", "--tailscale"]);
     expect(serviceServeArgs({ port: 1, dataDir: "/d", publicUrl: "https://bot.example.com", lan: true })).toEqual(["--port", "1", "--data-dir", "/d", "--public-url", "https://bot.example.com", "--lan"]);
   });
@@ -50,8 +50,8 @@ describe("crybot service", () => {
   });
 
   it("writes a launchd agent on macOS and explains uninstall on both", () => {
-    expect(runServiceCommand({ action: "install", dataDir: dir, port: 8799, tunnel: true, script: "/opt/homebrew/lib/node_modules/crybot/cli.js", node: "/opt/homebrew/bin/node", platform: "darwin", home: "/Users/bot" }, io)).toBe(0);
-    expect(readFileSync(join(dir, "com.crybot.serve.plist"), "utf8")).toContain("<string>--tunnel</string>");
+    expect(runServiceCommand({ action: "install", dataDir: dir, port: 8799, tailscale: true, script: "/opt/homebrew/lib/node_modules/crybot/cli.js", node: "/opt/homebrew/bin/node", platform: "darwin", home: "/Users/bot" }, io)).toBe(0);
+    expect(readFileSync(join(dir, "com.crybot.serve.plist"), "utf8")).toContain("<string>--tailscale</string>");
     expect(out.join("\n")).toContain("launchctl bootstrap");
     out.length = 0;
     expect(runServiceCommand({ action: "uninstall", dataDir: dir, port: 8799, script: "/x", node: "/n", platform: "linux" }, io)).toBe(0);

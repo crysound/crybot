@@ -36,7 +36,7 @@ describe("mentionedBots", () => {
     { id: "4", name: "Ghost", hidden: true },
   ];
   it("matches a tag at a word start, case-insensitively", () => {
-    expect(mentionedBots("hey @milind, look", peers).map((b) => b.id)).toEqual(["3"]);
+    expect(mentionedBots("hey @ada, look", peers).map((b) => b.id)).toEqual(["3"]);
     expect(mentionedBots("@Owner first thing", peers).map((b) => b.id)).toEqual(["3"]);
   });
   it("prefers the longest name so prefixes never half-match", () => {
@@ -46,7 +46,7 @@ describe("mentionedBots", () => {
     expect(mentionedBots("@Owner and @New Bot and @Owner", peers).map((b) => b.id)).toEqual(["3", "1"]);
   });
   it("ignores emails, hidden bots, and mid-word @", () => {
-    expect(mentionedBots("mail milind@milind.dev please", peers)).toEqual([]);
+    expect(mentionedBots("mail ada@ada.dev please", peers)).toEqual([]);
     expect(mentionedBots("@Ghost around?", peers)).toEqual([]);
   });
   it("routes Markdown- and punctuation-wrapped mentions", () => {
@@ -56,15 +56,15 @@ describe("mentionedBots", () => {
   });
   it("requires a word boundary at the end of the name", () => {
     expect(mentionedBots("ask @New Bottle about it", peers)).toEqual([]);
-    expect(mentionedBots("@Milindo is someone else", peers)).toEqual([]);
-    expect(mentionedBots("@Milind𐐀 is someone else", peers)).toEqual([]);
+    expect(mentionedBots("@adao is someone else", peers)).toEqual([]);
+    expect(mentionedBots("@ada𐐀 is someone else", peers)).toEqual([]);
   });
 });
 
 describe("roomResponders", () => {
   const members = [
     { id: "atlas", name: "Atlas" },
-    { id: "milind", name: "Owner" },
+    { id: "ada", name: "Owner" },
   ];
 
   it("routes an unmentioned message to the configured lead", () => {

@@ -463,32 +463,32 @@ describe("resolveRequestAuth", () => {
     if (!browser.ok) throw new Error(browser.error);
     // What the old address's forwarder sends: Host rewritten to this home's name, the page's own Origin kept.
     const forwarded = (origin: string, cookie = token, extra: Record<string, string> = {}) => ({
-      host: "cry-u-1.homes.example", "x-forwarded-proto": "https", "x-forwarded-for": "203.0.113.9", "x-forwarded-host": "cry-u-1.fly.dev",
+      host: "cry-u-1.homes.example", "x-forwarded-proto": "https", "x-forwarded-for": "203.0.113.9", "x-forwarded-host": "cry-u-1.example.test",
       cookie: `${cookieName}=${cookie}`, origin, ...extra,
     });
     const page = { "sec-fetch-site": "same-origin", "sec-fetch-dest": "empty" };
     try {
-      acceptLegacyOrigins(["https://cry-u-1.fly.dev"]);
-      expect(resolve(forwarded("https://cry-u-1.fly.dev"), "/api/bots", "POST").auth?.kind).toBe("session");
-      expect(resolve(forwarded("https://CRY-U-1.fly.dev "), "/api/bots", "POST").auth?.kind).toBe("session");
-      expect(resolve(forwarded("https://cry-u-1.fly.dev", browser.token, page), "/api/bots", "POST").auth?.kind).toBe("session");
-      expect(resolve(forwarded("https://cry-u-1.fly.dev"), "/api/events").auth?.kind).toBe("session");
-      expect(isSameOrigin(request({ host: "cry-u-1.homes.example", "x-forwarded-proto": "https", origin: "https://cry-u-1.fly.dev", upgrade: "websocket" }))).toBe(true);
-      expect(provesSameOrigin(request({ host: "cry-u-1.homes.example", "x-forwarded-proto": "https", origin: "https://cry-u-1.fly.dev" }))).toBe(true);
+      acceptLegacyOrigins(["https://cry-u-1.example.test"]);
+      expect(resolve(forwarded("https://cry-u-1.example.test"), "/api/bots", "POST").auth?.kind).toBe("session");
+      expect(resolve(forwarded("https://CRY-U-1.example.test "), "/api/bots", "POST").auth?.kind).toBe("session");
+      expect(resolve(forwarded("https://cry-u-1.example.test", browser.token, page), "/api/bots", "POST").auth?.kind).toBe("session");
+      expect(resolve(forwarded("https://cry-u-1.example.test"), "/api/events").auth?.kind).toBe("session");
+      expect(isSameOrigin(request({ host: "cry-u-1.homes.example", "x-forwarded-proto": "https", origin: "https://cry-u-1.example.test", upgrade: "websocket" }))).toBe(true);
+      expect(provesSameOrigin(request({ host: "cry-u-1.homes.example", "x-forwarded-proto": "https", origin: "https://cry-u-1.example.test" }))).toBe(true);
       // Only the exact origin: not another app on the same provider, its http twin, a port, or a name X-Forwarded-Host gives.
-      for (const origin of ["https://cry-u-2.fly.dev", "http://cry-u-1.fly.dev", "https://cry-u-1.fly.dev:8443", "https://evil.example"]) {
+      for (const origin of ["https://cry-u-2.example.test", "http://cry-u-1.example.test", "https://cry-u-1.example.test:8443", "https://evil.example"]) {
         const refused = resolve(forwarded(origin), "/api/bots", "POST");
         expect(refused, origin).toMatchObject({ auth: null, status: 403, error: "forbidden: cross-origin request" });
       }
       expect(isSameOrigin(request({ host: "cry-u-1.homes.example", "x-forwarded-proto": "https", "x-forwarded-host": "evil.example", origin: "https://evil.example" }))).toBe(false);
       // Never loopback trust: the former address is a remote page's, so a request with no session is still refused.
-      expect(resolve({ host: "127.0.0.1:8799", origin: "https://cry-u-1.fly.dev" }).auth).toBeNull();
+      expect(resolve({ host: "127.0.0.1:8799", origin: "https://cry-u-1.example.test" }).auth).toBeNull();
     } finally {
       acceptLegacyOrigins([]);
     }
-    const unconfigured = resolve(forwarded("https://cry-u-1.fly.dev"), "/api/bots", "POST");
+    const unconfigured = resolve(forwarded("https://cry-u-1.example.test"), "/api/bots", "POST");
     expect(unconfigured).toMatchObject({ auth: null, status: 403, error: "forbidden: cross-origin request" });
-    expect(isSameOrigin(request({ host: "cry-u-1.homes.example", "x-forwarded-proto": "https", "x-forwarded-host": "cry-u-1.fly.dev", origin: "https://cry-u-1.fly.dev" }))).toBe(false);
+    expect(isSameOrigin(request({ host: "cry-u-1.homes.example", "x-forwarded-proto": "https", "x-forwarded-host": "cry-u-1.example.test", origin: "https://cry-u-1.example.test" }))).toBe(false);
   });
 
   it("lets a browser sign-in's session make changes only when the browser says the request is its own page's", () => {
@@ -496,9 +496,9 @@ describe("resolveRequestAuth", () => {
     const signedIn = sessions.exchange({ code: credential, label: "Chrome on Mac", source: "1.2.3.4", browser: true });
     if (!signedIn.ok) throw new Error(signedIn.error);
     const cookie = `${cookieName}=${signedIn.token}`;
-    const cloud = { host: "cry-u-0123456789ab.fly.dev", "x-forwarded-proto": "https", cookie };
+    const cloud = { host: "cry-u-0123456789ab.example.test", "x-forwarded-proto": "https", cookie };
     expect(resolve(cloud).auth?.kind).toBe("session");
-    expect(resolve({ ...cloud, origin: "https://cry-u-0123456789ab.fly.dev" }, "/api/bots", "POST").auth?.kind).toBe("session");
+    expect(resolve({ ...cloud, origin: "https://cry-u-0123456789ab.example.test" }, "/api/bots", "POST").auth?.kind).toBe("session");
     expect(resolve({ ...cloud, "sec-fetch-site": "same-origin" }, "/api/bots", "DELETE").auth?.kind).toBe("session");
     for (const [headers, method] of [[{}, "POST"], [{}, "PUT"], [{}, "PATCH"], [{}, "DELETE"], [{ "sec-fetch-site": "none" }, "POST"], [{ "sec-fetch-site": "cross-site" }, "POST"],
       [{ "sec-fetch-site": "same-site" }, "POST"], [{ origin: "https://evil.example", "sec-fetch-site": "same-origin" }, "POST"]] as const) {
@@ -515,7 +515,7 @@ describe("resolveRequestAuth", () => {
     expect(resolve({ ...cloud, "sec-fetch-site": "same-origin" }, connectorRefresh, "GET").auth?.kind).toBe("session");
     expect(resolve({ ...cloud, "sec-fetch-site": "same-site" }, "/api/bots", "GET").auth?.kind).toBe("session");
     const paired = pairedToken();
-    expect(resolve({ host: "cry-u-0123456789ab.fly.dev", "x-forwarded-proto": "https", cookie: `${cookieName}=${paired}` }, "/api/bots", "POST").auth?.kind).toBe("session");
+    expect(resolve({ host: "cry-u-0123456789ab.example.test", "x-forwarded-proto": "https", cookie: `${cookieName}=${paired}` }, "/api/bots", "POST").auth?.kind).toBe("session");
     expect(provesSameOrigin(request({ host: "a.example", origin: "http://a.example" }))).toBe(true);
     expect(provesSameOrigin(request({ host: "a.example" }))).toBe(false);
     expect(provesSameOrigin(request({ host: "a.example", origin: "https://evil.example", "sec-fetch-site": "same-origin" }))).toBe(false);

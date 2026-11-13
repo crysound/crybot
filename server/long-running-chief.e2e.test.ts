@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
 
 import { launchVerificationServer, runControlCry, verificationServerArgs, verificationServerEnvironment } from "../scripts/control-cry.ts";
-import { CONTROL_WAITED } from "./control-client.ts";
+import { CONTROL_WAITED } from "./computer-control-client.ts";
 import { CONSENT_RULE } from "./peer-provenance.ts";
 import { waitForExit } from "./testing/cleanup.ts";
 import { readHandoffs } from "./testing/handoff-rows.ts";

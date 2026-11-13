@@ -88,7 +88,7 @@ const ALARM = ["cannot currently be verified", "unavailable until", "expired or 
 const button = (label: string) => render().nodes.find(node => node.type === "button" && node.props.children === label);
 
 it("a failed re-check keeps the plan, Cloud and Connect, and only says it is checking", async () => {
-  const machine = { status: "ready" as const, origin: "https://home-7f3k2.fly.dev" };
+  const machine = { status: "ready" as const, origin: "https://home-7f3k2.example.test" };
   await ready({ ...free, entitlement: { plan: "pro", tier: "max", status: "active", expiresAt: 1_900_000_000_000, version: 3 }, machine, checking: true });
   const { html } = render();
   all(html, [">Max<", "Checking with CryBot Cloud…", "Open My Cloud", "Manage subscription"]);
@@ -136,7 +136,7 @@ it("a sign-in that ended asks to sign in again, keeps the plan, and offers nothi
   all(render().html, ["no longer signed in to CryBot Cloud", "Sign in again"]); none(render().html, BUY);
 });
 it("a payment problem or a stopped Cloud is never 'Free account' with a plan to choose", async () => {
-  const origin = "https://home-7f3k2.fly.dev";
+  const origin = "https://home-7f3k2.example.test";
   await ready({ ...free, machine: { status: "payment-problem", origin } });
   let html = render().html;
   all(html, ["CryBot Cloud · not active right now", "problem with your payment", "Update payment in your browser"]); none(html, BUY);
@@ -256,7 +256,7 @@ it("on My Cloud once it is home, Settings is that app's own: the plan is managed
 });
 
 const pro: CloudAccountState = { ...free, entitlement: { plan: "pro", status: "active", expiresAt: 1_900_000_000_000, version: 2 } };
-const origin = "https://home-7f3k2.fly.dev";
+const origin = "https://home-7f3k2.example.test";
 it("stays exactly as before when the account has no Cloud machine", async () => {
   await ready(free);
   expect(render().html).not.toContain("My Cloud");
@@ -542,7 +542,7 @@ it("a Team plan has no Cloud of its own: the team's Cloud under its name, Open {
   const onTeam = (machine: Machine): CloudAccountState => ({ ...free, entitlement: { plan: "pro", tier: "team", status: "active", expiresAt: 1_900_000_000_000, version: 2 },
     teams: [{ id: "team-acme", name: "Acme", role: "owner", machine }] });
   bridge.openTeam = vi.fn().mockResolvedValue(undefined);
-  await ready(onTeam({ status: "ready", origin: "https://cry-t-2.fly.dev" }));
+  await ready(onTeam({ status: "ready", origin: "https://cry-t-2.example.test" }));
   let html = render().html;
   all(html, ['data-cloud-team="true"', "Acme is ready. It keeps your team&#x27;s bots running 24/7", "Open Acme"]);
   none(html, ["Setting up", "Reserving your machine", "Open My Cloud", PHONE, "is not ready yet"]);
@@ -553,6 +553,6 @@ it("a Team plan has no Cloud of its own: the team's Cloud under its name, Open {
   all(html, ["Setting up your team&#x27;s Cloud", 'data-cloud-setup="storage"', "Reserving your machine"]); none(html, ["Open Acme", PHONE]);
   push({ ...onTeam(null), teams: undefined });
   all(render().html, ["Your team&#x27;s Cloud", "Setting up your team&#x27;s Cloud"]);
-  push({ ...onTeam({ status: "ready", origin: "https://cry-t-2.fly.dev" }), entitlement: { plan: "pro", tier: "pro", status: "active", expiresAt: 1_900_000_000_000, version: 3 } });
+  push({ ...onTeam({ status: "ready", origin: "https://cry-t-2.example.test" }), entitlement: { plan: "pro", tier: "pro", status: "active", expiresAt: 1_900_000_000_000, version: 3 } });
   all(render().html, ["Setting up the Cloud"]); none(render().html, ["data-cloud-phone"]);
 });

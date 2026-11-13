@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   CONTROL_REFUSAL_PLAIN, CONTROL_TURN_ENDED, CONTROL_UNCONFIRMED, CONTROL_WAIT_MS, controlRefusal, createControlClient,
-} from "./control-client.ts";
+} from "./computer-control-client.ts";
 
 const options = { url: "http://control.test/state", token: "fixture-token" };
 const unavailable = { held: true, helpOpen: false, blockedReason: CONTROL_UNCONFIRMED };
