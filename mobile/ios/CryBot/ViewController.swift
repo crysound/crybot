@@ -16,6 +16,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         let configured = (Bundle.main.object(forInfoDictionaryKey: "CRYBOT_SERVER_URL") as? String ?? "").trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         serverWasInjected = validServer(configured)
         serverURL = serverWasInjected ? configured : (preferences.string(forKey: "server") ?? "")
+        WatchSync.shared.refresh(server: serverURL)
         loginHosts = Set((Bundle.main.object(forInfoDictionaryKey: "CRYBOT_LOGIN_HOSTS") as? String ?? "").split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }.filter { !$0.isEmpty })
         if validServer(serverURL) { showWebView() } else { showServerForm() }
     }
@@ -78,6 +79,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
     }
 
     private func showWebView() {
+        WatchSync.shared.refresh(server: serverURL)
         removeWebView()
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
@@ -185,6 +187,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         webView.scrollView.refreshControl?.endRefreshing()
+        WatchSync.shared.refresh(server: serverURL)
     }
 
     func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin, initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType, decisionHandler: @escaping (WKPermissionDecision) -> Void) {
