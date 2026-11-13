@@ -74,7 +74,11 @@ describe("relay tokens", () => {
 
   it("accepts a complete relay domain and rejects local, single-label, and IP hosts", () => {
     expect(validRelayGrant(grant({ nodes: ["relay.example.com"] }))).toEqual(grant({ nodes: ["relay.example.com"] }));
-    for (const host of ["localhost", "relay", "127.0.0.1", "::1", "2001:db8::1"]) {
+    expect(validRelayGrant(grant({ nodes: ["r1.relay.example.com"] }))).toEqual(grant({ nodes: ["r1.relay.example.com"] }));
+    for (const host of [
+      "localhost", "LOCALHOST", "localhost.", "foo.localhost", "relay.localhost", "relay", "127.0.0.1", "::1", "2001:db8::1",
+      "127.1", "0x7f.0.0.1", "0177.0.0.1", "0x7f.1", "10.1", "192.168.1", "00127.0.0.1",
+    ]) {
       expect(validRelayGrant(grant({ nodes: [host] })), host).toBeNull();
     }
   });

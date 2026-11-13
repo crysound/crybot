@@ -7,8 +7,16 @@ const BACKOFF_MS = [MINUTE_MS, 2 * MINUTE_MS, 4 * MINUTE_MS, 8 * MINUTE_MS, 16 *
 const MIN_REFRESH_MS = MINUTE_MS;
 const DNS_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
 const RELAY_HOST = new RegExp(`^(?=.{1,253}$)(?=[^.]*\\.)${DNS_LABEL}(?:\\.${DNS_LABEL})+$`, "i");
-const IPV4_STYLE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
-const isRelayHost = (value) => typeof value === "string" && value.toLowerCase() !== "localhost" && !IPV4_STYLE.test(value) && RELAY_HOST.test(value);
+const NUMERIC_HOST_LAST_LABEL = /^(?:\d+|0x[0-9a-f]*)$/i;
+const isRelayHost = (value) => {
+  if (typeof value !== "string") return false;
+  const lower = value.toLowerCase();
+  const lastLabel = lower.slice(lower.lastIndexOf(".") + 1);
+  return lower !== "localhost"
+    && !lower.endsWith(".localhost")
+    && !NUMERIC_HOST_LAST_LABEL.test(lastLabel)
+    && RELAY_HOST.test(value);
+};
 const HOST_ID = /^[A-Za-z0-9_-]{22}$/;
 const TOKEN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 

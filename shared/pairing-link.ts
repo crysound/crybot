@@ -20,8 +20,16 @@ export interface PairingE2EDescriptor {
 const B64U_FIELD = /^[A-Za-z0-9_-]+$/;
 const DNS_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
 const RELAY_HOST = new RegExp(`^(?=.{1,253}$)(?=[^.]*\\.)${DNS_LABEL}(?:\\.${DNS_LABEL})+$`, "i");
-const IPV4_STYLE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
-export const isRelayHost = (value: unknown): value is string => typeof value === "string" && value.toLowerCase() !== "localhost" && !IPV4_STYLE.test(value) && RELAY_HOST.test(value);
+const NUMERIC_HOST_LAST_LABEL = /^(?:\d+|0x[0-9a-f]*)$/i;
+export const isRelayHost = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const lower = value.toLowerCase();
+  const lastLabel = lower.slice(lower.lastIndexOf(".") + 1);
+  return lower !== "localhost"
+    && !lower.endsWith(".localhost")
+    && !NUMERIC_HOST_LAST_LABEL.test(lastLabel)
+    && RELAY_HOST.test(value);
+};
 
 /** The QR's `e2e` value, or null for anything a phone would refuse: then the link goes out without it, as from a
  * computer without the encrypted connection. A QR never says "local": a restriction is set per phone, later. */

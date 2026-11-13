@@ -440,3 +440,20 @@ pnpm vitest run shared/package-format.test.ts --maxWorkers=2 --configLoader runn
 - `node scripts/check-brand-residue.mjs`：8298 个文件，0 条残留。
 - 按指定排除范围执行人名残留扫描：无命中；测试中 `omb_` 输入配 `cry_` 期望的复查：无命中。
 - `server/webhook-room-post.e2e.test.ts` 使用隔离启动 fixture 时受沙箱端口块限制（`no free port block`），未把该环境阻塞误报为代码通过或失败。
+
+## 第 10 轮
+
+### 改动
+
+- 三份中继主机校验统一拒绝最后标签为纯数字或 `0x` 十六进制、`localhost` 及其子域名；保留完整多标签 DNS 名称，并覆盖大小写和尾点形式。
+- shared 测试新增同一组样例对 shared、companion、Electron 三份实现的结果一致性回归；三处实现测试均补齐简写 IP、localhost 变体及两个合法域名样例。
+- `companion/test/devices.test.ts` 的无效 Bearer 样例改为 `Bearercry_abc`。
+
+### 验证
+
+- `pnpm vitest run shared/pairing-link.test.ts --maxWorkers=2 --configLoader runner`：15/15 通过。
+- `pnpm vitest run companion/test/e2e/credentials.test.ts --maxWorkers=2 --configLoader runner`：9/9 通过。
+- `pnpm vitest run companion/test/devices.test.ts --maxWorkers=2 --configLoader runner`：32/32 通过。
+- `pnpm vitest run electron/companion-e2e.test.mjs --maxWorkers=2 --configLoader runner`：9/9 通过。
+- `pnpm typecheck`、`pnpm lint`、`node scripts/check-brand-residue.mjs`（8299 个文件，0 残留）和 `git diff --check`：通过。
+- 未访问用户 live app 或数据；未提交 git commit。

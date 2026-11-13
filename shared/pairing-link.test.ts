@@ -24,8 +24,35 @@ describe("phonePairingLink", () => {
 
   it("accepts complete relay domains and rejects local, single-label, and IP hosts", () => {
     expect(isRelayHost("relay.example.com")).toBe(true);
-    for (const host of ["localhost", "relay", "127.0.0.1", "::1", "2001:db8::1"]) {
+    expect(isRelayHost("r1.relay.example.com")).toBe(true);
+    for (const host of [
+      "localhost", "LOCALHOST", "localhost.", "foo.localhost", "relay.localhost", "relay", "127.0.0.1", "::1", "2001:db8::1",
+      "127.1", "0x7f.0.0.1", "0177.0.0.1", "0x7f.1", "10.1", "192.168.1", "00127.0.0.1",
+    ]) {
       expect(isRelayHost(host), host).toBe(false);
+    }
+  });
+
+  it("keeps relay host validation identical in the shared, companion, and electron copies", async () => {
+    const [{ isRelayHost: companionIsRelayHost }, { validRelayGrant }] = await Promise.all([
+      import("../companion/src/e2e/descriptor.ts"),
+      import("../electron/relay-token.mjs"),
+    ]);
+    const hosts = [
+      "127.1", "0x7f.0.0.1", "0177.0.0.1", "0x7f.1", "10.1", "192.168.1", "00127.0.0.1",
+      "localhost", "LOCALHOST", "localhost.", "foo.localhost", "relay.localhost", "relay.example.com", "r1.relay.example.com",
+    ];
+    for (const host of hosts) {
+      const shared = isRelayHost(host);
+      const companion = companionIsRelayHost(host);
+      const electron = validRelayGrant({
+        token: "token.sig",
+        hostId: "a".repeat(22),
+        nodes: [host],
+        expiresAt: 2,
+        refreshAfter: 1,
+      }) !== null;
+      expect([companion, electron], host).toEqual([shared, shared]);
     }
   });
 
