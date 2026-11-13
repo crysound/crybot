@@ -1,4 +1,4 @@
-// B 玻璃：唯一的配色与造型来源。node crysound/brand/logo-src/src/gen.mjs
+// Cry Bot logo: the single source of colors and shapes.
 // PNG/ICO 导出需要已有的 sharp（也可用 LOGO_SHARP_MODULE 指向已安装的 sharp）。
 import { writeFileSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -13,7 +13,7 @@ const HEAD16 = "M6.53 52.8A26 26 0 0 1 57.47 52.8A6 6 0 0 1 51.6 60H12.4A6 6 0 0
 const EYES16 = "M26.5 40H29.5A2.5 2.5 0 0 1 32 42.5V49.5A2.5 2.5 0 0 1 29.5 52H26.5A2.5 2.5 0 0 1 24 49.5V42.5A2.5 2.5 0 0 1 26.5 40ZM42.5 40H45.5A2.5 2.5 0 0 1 48 42.5V49.5A2.5 2.5 0 0 1 45.5 52H42.5A2.5 2.5 0 0 1 40 49.5V42.5A2.5 2.5 0 0 1 42.5 40Z";
 
 const svg = (size, defs, body) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-labelledby="title"><title id="title">工作伙伴</title>` +
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-labelledby="title"><title id="title">Cry Bot</title>` +
   (defs ? `<defs>${defs}</defs>` : "") + body + `</svg>\n`;
 const lin = (id, [x1, y1, x2, y2], stops) =>
   `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stops.map(([o, c, a]) => `<stop offset="${o}" stop-color="${c}"${a !== undefined ? ` stop-opacity="${a}"` : ""}/>`).join("")}</linearGradient>`;
