@@ -9471,8 +9471,6 @@
   "native.cloud.mailRefused": "我的 Cloud 沒有接收你的信箱。",
   "native.html.nothingToOpen": "沒有可開啟的內容",
   "native.html.tooLarge": "這個頁面太大，無法開啟（2 MB）",
-  "native.accounts.moving": "這台電腦的機器人正在搬到 Cloud。請等完成後再試一次。",
-  "native.accounts.myComputer": "我的電腦",
   "server.outside.routineFromBefore": "這個例行工作是在這次更新前建立的。開啟它並儲存一次，即可以完整存取權執行。",
   "server.outside.routineFromOutside": "一次 Webhook 執行建立或變更了這個例行工作，因此它在沒有完整存取權的情況下執行。開啟它並儲存一次，即可以完整存取權執行。",
   "server.outside.conversationFromBefore": "這個對話建立於我的 Cloud 只屬於你之前，因此這個機器人在其中工作時不使用終端機。開始新的對話即可完整使用它。",

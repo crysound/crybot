@@ -21,7 +21,7 @@ const EVERYDAY_PREFIXES: Record<string, readonly string[]> = {
     "computer.screen.", "vm.cloud.", "browser.",
   ],
   "Cry Bot Cloud: buying it, setting it up, moving to it and sharing with it": [
-    "cloudPlan.", "cloudIntro.", "cloudTrial.", "cloudCancel.", "cloudSetup.", "cloudIntent.", "cloudNotice.", "cloudHowTo.", "whatsNew.",
+    "cloudPlan.", "cloudIntro.", "cloudTrial.", "cloudCancel.", "cloudSetup.", "cloudIntent.", "cloudNotice.", "whatsNew.",
     "cloudCredit.", "cloudPower.", "cloudSignIn.", "cloudAdd.", "cloudHome.", "cloudPhone.", "cloudAccount.", "pro.", "lending.",
     "files.", "usageMeter.", "roomCard.", "botLimit.",
   ],

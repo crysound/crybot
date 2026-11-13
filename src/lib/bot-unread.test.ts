@@ -21,8 +21,8 @@ describe("browser unread indicator", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("prefixes the title with the count, replaces an older count, and drops it at zero", () => {
-    expect(titleWithUnread("Cry Bot", 3)).toBe("(3) CryBot");
-    expect(titleWithUnread("(3) CryBot", 5)).toBe("(5) CryBot");
+    expect(titleWithUnread("Cry Bot", 3)).toBe("(3) Cry Bot");
+    expect(titleWithUnread("(3) Cry Bot", 5)).toBe("(5) Cry Bot");
     expect(titleWithUnread("(5) Acme", 0)).toBe("Acme");
     expect(titleWithUnread("Acme", 0)).toBe("Acme");
   });
@@ -35,7 +35,7 @@ describe("browser unread indicator", () => {
     vi.stubGlobal("navigator", { setAppBadge, clearAppBadge });
 
     showBrowserUnread(2);
-    expect(doc.title).toBe("(2) CryBot");
+    expect(doc.title).toBe("(2) Cry Bot");
     expect(setAppBadge).toHaveBeenCalledWith(2);
 
     showBrowserUnread(0);
@@ -44,13 +44,13 @@ describe("browser unread indicator", () => {
   });
 
   it("keeps the page's own title, such as a white-label name or a preview page's", () => {
-    const doc = { title: "Isolated CryBot Chat" };
+    const doc = { title: "Isolated Cry Bot Chat" };
     vi.stubGlobal("document", doc);
     vi.stubGlobal("navigator", {});
     showBrowserUnread(0);
-    expect(doc.title).toBe("Isolated CryBot Chat");
+    expect(doc.title).toBe("Isolated Cry Bot Chat");
     showBrowserUnread(1);
-    expect(doc.title).toBe("(1) Isolated CryBot Chat");
+    expect(doc.title).toBe("(1) Isolated Cry Bot Chat");
   });
 
   it("still sets the title where the Badging API is missing or refuses", () => {
@@ -58,10 +58,10 @@ describe("browser unread indicator", () => {
     vi.stubGlobal("document", doc);
     vi.stubGlobal("navigator", {});
     showBrowserUnread(1);
-    expect(doc.title).toBe("(1) CryBot");
+    expect(doc.title).toBe("(1) Cry Bot");
 
     vi.stubGlobal("navigator", { setAppBadge: () => Promise.reject(new Error("NotAllowedError")) });
     showBrowserUnread(4);
-    expect(doc.title).toBe("(4) CryBot");
+    expect(doc.title).toBe("(4) Cry Bot");
   });
 });

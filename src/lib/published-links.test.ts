@@ -15,7 +15,7 @@ const { closeAppPreview, useAppPreview } = await import("./app-preview");
 const { publishedLink, usePageOpener, withPageOpen } = await import("./page-open");
 const { appInitial, rememberPublishedApps } = await import("./published-apps");
 
-const PAGE = "https://server.example.test/";
+const PAGE = "https://abcdefghijklmnopqrst.crybot.page/";
 const STAND_IN: PublishedApp = { id: "netlify-mira-s1", source: "netlify", title: "Bakery order page", url: "http://127.0.0.1:4010/live/abc/", bot: { id: "mira", name: "Mira" }, publishedAt: 1, access: "netlify-team", canDelete: true };
 
 afterEach(() => { rememberPublishedApps([]); closeAppPreview(); opened.length = 0; store.ref = null; });

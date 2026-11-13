@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -6,6 +6,9 @@ import { join } from "node:path";
 import { browserBundlePaths, browserBundleSpec, CHROME_VERSION, SUPPORTED_BROWSER_TARGETS } from "../server/browser-bundle-release.ts";
 import { resolveAgentBrowserReleaseAsset } from "../server/browser-engine-release.ts";
 import { BROWSER_LICENSE_FILES, browserExtractionCommand, bundleInventory, parsePrepareBrowserArgs, releaseBytes, stageBrowserTarget, targetsForPreparation, verifyAssetBytes, verifyBrowserBundle, verifyBundleInventory } from "./prepare-browser.mjs";
+
+vi.hoisted(() => vi.stubEnv("CRYBOT_BROWSER_ENGINE_URL", "https://browser.example.test/agent-browser-win32-x64.exe"));
+afterAll(() => vi.unstubAllEnvs());
 
 const fixtures = [];
 function fixture() { const root = mkdtempSync(join(tmpdir(), "cry-browser-prepare-test-")); fixtures.push(root); return root; }
