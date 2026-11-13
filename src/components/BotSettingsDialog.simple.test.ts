@@ -937,7 +937,7 @@ describe("the Library tab", () => {
     expect(rowValue(rendered, "folder")).toBe("Private");
     click(find(rendered, "data-panel-page", "folder"));
     expect(onOpen).toHaveBeenLastCalledWith("folder");
-    expect(rowValue(library(makeBot({ cwd: "/Users/omkar/Projects/site" })), "folder")).toBe("/Users/omkar/Projects/site");
+    expect(rowValue(library(makeBot({ cwd: "/Users/alex/Projects/site" })), "folder")).toBe("/Users/alex/Projects/site");
   });
 });
 
@@ -1271,7 +1271,7 @@ describe("the drill-in pages", () => {
   });
 
   it("keeps the bot's own private folder, or a folder chosen with the native picker, saved through the bot route", async () => {
-    const pickFolder = vi.fn(() => Promise.resolve("/Users/omkar/Projects/site"));
+    const pickFolder = vi.fn(() => Promise.resolve("/Users/alex/Projects/site"));
     (window as unknown as { cry: unknown }).cry = { pickFolder };
     const rendered = body("folder");
     expect(find(rendered, "data-panel-choice", "private").props.checked).toBe(true);
@@ -1282,14 +1282,14 @@ describe("the drill-in pages", () => {
     await Promise.resolve();
     expect(pickFolder).toHaveBeenCalledWith(undefined);
     await Promise.resolve();
-    expect(fixture.api).toHaveBeenCalledWith("/api/bots/scout", { method: "PATCH", body: JSON.stringify({ cwd: "/Users/omkar/Projects/site" }) });
+    expect(fixture.api).toHaveBeenCalledWith("/api/bots/scout", { method: "PATCH", body: JSON.stringify({ cwd: "/Users/alex/Projects/site" }) });
 
     fresh();
-    const chosen = body("folder", makeBot({ cwd: "/Users/omkar/Projects/site" }));
+    const chosen = body("folder", makeBot({ cwd: "/Users/alex/Projects/site" }));
     expect(find(chosen, "data-panel-choice", "pick").props.checked).toBe(true);
-    expect(chosen.html).toContain("/Users/omkar/Projects/site");
+    expect(chosen.html).toContain("/Users/alex/Projects/site");
     click(find(chosen, "data-panel-action", "pick-folder"));
-    expect(pickFolder).toHaveBeenLastCalledWith("/Users/omkar/Projects/site");
+    expect(pickFolder).toHaveBeenLastCalledWith("/Users/alex/Projects/site");
     click(find(chosen, "data-panel-choice", "private"));
     expect(fixture.api).toHaveBeenLastCalledWith("/api/bots/scout", { method: "PATCH", body: JSON.stringify({ cwd: null }) });
   });

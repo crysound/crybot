@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { fromB64u, HOST_ID_BYTES, RELAY_TOKEN_MAX_CHARS } from "./credentials.ts";
-import { RELAY_HOST } from "./descriptor.ts";
+import { isRelayHost } from "./descriptor.ts";
 import { generateKeyPair, keyPairFromPrivate, type KeyPair } from "./noise.ts";
 import { DATA_DIR, ensureDataDir, writeFileAtomic } from "../state.ts";
 
@@ -30,7 +30,7 @@ export function parseRelayConfig(value: unknown): RelayConfig | null | "invalid"
   const id = typeof hostId === "string" ? fromB64u(hostId) : null;
   if (!id || id.length !== HOST_ID_BYTES) return "invalid";
   if (!Array.isArray(nodes) || nodes.length < 1 || nodes.length > 4) return "invalid";
-  if (!nodes.every((node): node is string => typeof node === "string" && RELAY_HOST.test(node))) return "invalid";
+  if (!nodes.every((node): node is string => isRelayHost(node))) return "invalid";
   if (typeof relayToken !== "string" || relayToken.length > RELAY_TOKEN_MAX_CHARS || !TOKEN.test(relayToken)) return "invalid";
   return { hostId: id, nodes: [...nodes], token: relayToken };
 }

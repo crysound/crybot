@@ -6,8 +6,10 @@ import { isPublicKey, PUBLIC_KEY_BYTES } from "./noise.ts";
 export const DESCRIPTOR_VERSION = 1;
 export const MAX_DESCRIPTOR_CHARS = 1024;
 export const MAX_RELAY_NODES = 4;
-export const RELAY_HOST = /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/;
-
+const DNS_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
+const RELAY_HOST = new RegExp(`^(?=.{1,253}$)(?=[^.]*\\.)${DNS_LABEL}(?:\\.${DNS_LABEL})+$`, "i");
+const IPV4_STYLE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+export const isRelayHost = (value: unknown): value is string => typeof value === "string" && value.toLowerCase() !== "localhost" && !IPV4_STYLE.test(value) && RELAY_HOST.test(value);
 export type DescriptorRoutes = "any" | "local";
 
 export interface E2EDescriptor {
@@ -79,6 +81,6 @@ export function parseDescriptor(input: unknown): DescriptorParse {
   if (!hostId || hostId.length !== HOST_ID_BYTES) return reject("host_id");
   const relays = fields.r;
   if (!Array.isArray(relays) || relays.length < 1 || relays.length > MAX_RELAY_NODES) return reject("relays");
-  if (!relays.every((host): host is string => typeof host === "string" && RELAY_HOST.test(host))) return reject("relay_host");
+  if (!relays.every(isRelayHost)) return reject("relay_host");
   return { outcome: "ok", descriptor: { v: 1, k: fields.k as string, h: fields.h as string, r: [...relays], ...routes }, transportKey, hostId };
 }

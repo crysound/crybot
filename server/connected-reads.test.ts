@@ -53,7 +53,7 @@ describe("reading Composio's answers", () => {
     expect(emails[0]!.preview).toBe("Can you send the Q3 numbers by Friday? Thanks");
     expect(profileFromData(fixture("composio-gmail-profile"))).toBe("admin@example.test");
     expect(messageFromData(fixture("composio-gmail-message"))).toMatchObject({ id: "m-1", threadId: "t-1", subject: "Q3 numbers" });
-    expect(threadFromData(fixture("composio-gmail-thread")).map((message) => message.from)).toEqual(["ada@pin.example", "omkar@example.test"]);
+    expect(threadFromData(fixture("composio-gmail-thread")).map((message) => message.from)).toEqual(["ada@pin.example", "user@example.test"]);
     expect(calendarsFromData(fixture("composio-calendar-list")).filter((calendar) => calendar.read).map((calendar) => calendar.id))
       .toEqual(["admin@example.test", "team@group.calendar.google.com", "ada@example.test"]);
   });

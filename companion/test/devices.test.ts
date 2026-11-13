@@ -404,7 +404,7 @@ describe("bearerToken", () => {
     expect(bearerToken("bearer cry_abc")).toBe("cry_abc");
     expect(bearerToken("BEARER cry_abc")).toBe("cry_abc");
     expect(bearerToken("BeArEr cry_abc")).toBe("cry_abc");
-    expect(bearerToken("BeArEr\tomb_abc")).toBe("cry_abc");
+    expect(bearerToken("BeArEr\tcry_abc")).toBe("cry_abc");
     expect(bearerToken("Bearer ")).toBeUndefined();
     expect(bearerToken("Bearer   ")).toBeUndefined();
     expect(bearerToken("Beareromb_abc")).toBeUndefined();

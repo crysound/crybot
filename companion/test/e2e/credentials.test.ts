@@ -83,4 +83,13 @@ describe("descriptors", () => {
     expect(parseDescriptor({ v: 3 }).outcome).toBe("update");
     expect(parseDescriptor(null).outcome).toBe("reject");
   });
+
+  it("accepts a complete relay domain and rejects local, single-label, and IP hosts", () => {
+    const T = generateKeyPair();
+    const base = { v: 1 as const, k: b64u(T.publicKey), h: b64u(Buffer.alloc(16, 1)) };
+    expect(parseDescriptor({ ...base, r: ["relay.example.com"] }).outcome).toBe("ok");
+    for (const host of ["localhost", "relay", "127.0.0.1", "::1", "2001:db8::1"]) {
+      expect(parseDescriptor({ ...base, r: [host] }), host).toMatchObject({ outcome: "reject", reason: "relay_host" });
+    }
+  });
 });

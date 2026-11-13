@@ -67,8 +67,15 @@ function manualTimers() {
 describe("relay tokens", () => {
   it("refuses a grant with any field off", () => {
     expect(validRelayGrant(grant())).toEqual(grant());
-    for (const bad of [{ token: "no-dot" }, { hostId: "short" }, { nodes: ["relay.example.com"] }, { nodes: [] }, { refreshAfter: 11 * 60 * 60_000 }]) {
+    for (const bad of [{ token: "no-dot" }, { hostId: "short" }, { nodes: ["relay"] }, { nodes: [] }, { refreshAfter: 11 * 60 * 60_000 }]) {
       expect(validRelayGrant(grant(bad))).toBeNull();
+    }
+  });
+
+  it("accepts a complete relay domain and rejects local, single-label, and IP hosts", () => {
+    expect(validRelayGrant(grant({ nodes: ["relay.example.com"] }))).toEqual(grant({ nodes: ["relay.example.com"] }));
+    for (const host of ["localhost", "relay", "127.0.0.1", "::1", "2001:db8::1"]) {
+      expect(validRelayGrant(grant({ nodes: [host] })), host).toBeNull();
     }
   });
 

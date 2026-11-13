@@ -412,3 +412,31 @@ pnpm vitest run shared/package-format.test.ts --maxWorkers=2 --configLoader runn
 - 最终品牌扫描、要求的 git grep 和 diff 检查结果见下方最终扫描记录。
 
 最终扫描记录：`node scripts/check-brand-residue.mjs` 检查 **8299 files，0 forbidden references**（`/tmp/r8-brand.log`）；指定 `git grep 'CONTROL_PLANE_URL\|cloud-buy\|cloudBuy\|ensureCloudAccount\|openCloudAdd' -- . ':!docs'` **零命中**（退出 1，`/tmp/r8-residue.log` 空）。另检查尚未跟踪的三个恢复测试文件，同样零命中。`git diff --check` 通过。
+
+## 第 9 轮
+
+本轮继续保留第 8 轮工作树改动，未提交。
+
+### 改动
+
+1. 清理测试样例中的上游人名：代码和测试范围内统一为中性名字，并修正房主路径大小写测试，使 Linux 的大小写不匹配和 Windows 的大小写不敏感语义保持原意；修复 `server/recall.test.ts`、`server/host/room-sessions.test.ts` 的前后断言一致性。
+2. 修复 `companion/test/devices.test.ts` 的 Bearer 输入，将残留的 `omb_abc` 改为 `cry_abc`，并确认测试中没有 `omb_` 输入配 `cry_` 期望的同类项。
+3. 收紧中继主机校验：三端采用相同的完整域名规则，拒绝 `localhost`、单段主机名、IPv4/IPv6 及 IP 样式写法；各端测试覆盖拒绝项和 `relay.example.com` 通过项。Electron 和 companion 产物各自内置规则，避免自包含发布包跨目录加载顶层模块。
+4. npm 安装类型不再生成安装命令；更新检查结果仅保留 feed 提供的发布页链接，更新测试同步调整。
+
+### 验证
+
+- `pnpm vitest run shared/pairing-link.test.ts --maxWorkers=2 --configLoader runner`：14/14 通过。
+- `pnpm vitest run companion/test/e2e/credentials.test.ts companion/test/devices.test.ts --maxWorkers=2 --configLoader runner`：41/41 通过。
+- `pnpm vitest run electron/companion-e2e.test.mjs --maxWorkers=2 --configLoader runner`：9/9 通过。
+- `pnpm vitest run server/host/room-sessions.test.ts server/recall.test.ts --maxWorkers=2 --configLoader runner`：134/134 通过。
+- `pnpm vitest run server/safety-floor.test.ts --maxWorkers=2 --configLoader runner`：508/508 通过。
+- `pnpm vitest run server/update-check.test.ts --maxWorkers=2 --configLoader runner`：10/10 通过。
+- `pnpm vitest run server/server-update.test.ts --maxWorkers=2 --configLoader runner`：17/17 通过。
+- `pnpm vitest run server/connected-reads.test.ts server/host/room-transcript.test.ts --maxWorkers=2 --configLoader runner`：17/17 通过。
+- `pnpm vitest run src/components/BotSettingsDialog.simple.test.ts -t "keeps the bot's own private folder" --maxWorkers=2 --configLoader runner`：1/1 通过。
+- `BotSettingsDialog.simple.test.ts` 全文件另有既有的 Cursor body 断言失败，与本轮路径样例改动无关；本轮相关 folder 用例单独通过。
+- `pnpm typecheck`：通过；`pnpm lint`：通过；`git diff --check`：通过。
+- `node scripts/check-brand-residue.mjs`：8298 个文件，0 条残留。
+- 按指定排除范围执行人名残留扫描：无命中；测试中 `omb_` 输入配 `cry_` 期望的复查：无命中。
+- `server/webhook-room-post.e2e.test.ts` 使用隔离启动 fixture 时受沙箱端口块限制（`no free port block`），未把该环境阻塞误报为代码通过或失败。

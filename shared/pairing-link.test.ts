@@ -1,6 +1,6 @@
 import { createECDH } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { phonePairingLink } from "./pairing-link";
+import { isRelayHost, phonePairingLink } from "./pairing-link";
 
 describe("phonePairingLink", () => {
   const token = `cry_pair_${"a".repeat(43)}`;
@@ -21,6 +21,13 @@ describe("phonePairingLink", () => {
     const item = query.split("&").find((pair) => pair.startsWith(`${name}=`));
     return item === undefined ? undefined : decodeURIComponent(item.slice(name.length + 1));
   };
+
+  it("accepts complete relay domains and rejects local, single-label, and IP hosts", () => {
+    expect(isRelayHost("relay.example.com")).toBe(true);
+    for (const host of ["localhost", "relay", "127.0.0.1", "::1", "2001:db8::1"]) {
+      expect(isRelayHost(host), host).toBe(false);
+    }
+  });
 
   it("carries the dialable address, one-time token, fallback code, and display name", () => {
     const link = phonePairingLink({

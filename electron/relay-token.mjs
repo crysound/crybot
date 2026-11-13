@@ -5,7 +5,10 @@ const MINUTE_MS = 60_000;
 const UNAVAILABLE_RETRY_MS = 30 * MINUTE_MS;
 const BACKOFF_MS = [MINUTE_MS, 2 * MINUTE_MS, 4 * MINUTE_MS, 8 * MINUTE_MS, 16 * MINUTE_MS, 32 * MINUTE_MS, 60 * MINUTE_MS];
 const MIN_REFRESH_MS = MINUTE_MS;
-const RELAY_HOST = /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/;
+const DNS_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
+const RELAY_HOST = new RegExp(`^(?=.{1,253}$)(?=[^.]*\\.)${DNS_LABEL}(?:\\.${DNS_LABEL})+$`, "i");
+const IPV4_STYLE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+const isRelayHost = (value) => typeof value === "string" && value.toLowerCase() !== "localhost" && !IPV4_STYLE.test(value) && RELAY_HOST.test(value);
 const HOST_ID = /^[A-Za-z0-9_-]{22}$/;
 const TOKEN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 
@@ -21,7 +24,7 @@ export function validRelayGrant(payload) {
   const { token, hostId, nodes, expiresAt, refreshAfter } = payload;
   if (typeof token !== "string" || token.length > 2_048 || !TOKEN.test(token)) return null;
   if (typeof hostId !== "string" || !HOST_ID.test(hostId)) return null;
-  if (!Array.isArray(nodes) || nodes.length < 1 || nodes.length > 4 || !nodes.every((node) => typeof node === "string" && RELAY_HOST.test(node))) return null;
+  if (!Array.isArray(nodes) || nodes.length < 1 || nodes.length > 4 || !nodes.every(isRelayHost)) return null;
   if (!Number.isSafeInteger(expiresAt) || !Number.isSafeInteger(refreshAfter) || refreshAfter > expiresAt) return null;
   return { token, hostId, nodes: [...nodes], expiresAt, refreshAfter };
 }

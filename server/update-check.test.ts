@@ -55,7 +55,10 @@ describe("server update check", () => {
     });
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch).toHaveBeenCalledWith(FEED_URL, expect.anything());
-    expect(await createUpdateChecker({ current: "0.1.92", install: "npm", fetch })()).toMatchObject({ latest: "0.1.93", command: "npm install -g crybot@0.1.93", restart: true });
+    expect(await createUpdateChecker({ current: "0.1.92", install: "npm", fetch })()).toMatchObject({
+      latest: "0.1.93",
+      releaseUrl: "https://updates.example.test/releases/0.1.93",
+    });
   });
 
   it("offers nothing to a server that is already on the stable version or past it", async () => {
@@ -102,7 +105,7 @@ describe("server update check", () => {
     let now = 0;
     const fetch = feed("0.1.92");
     const check = createUpdateChecker({ current: "0.1.92", install: "npm", fetch, now: () => now });
-    expect(await check()).toMatchObject({ available: false, latest: "0.1.92", command: "npm install -g crybot@0.1.92", restart: true });
+    expect(await check()).toMatchObject({ available: false, latest: "0.1.92", releaseUrl: "https://updates.example.test/releases/0.1.92" });
     now = 59 * 60_000;
     await check();
     expect(fetch).toHaveBeenCalledTimes(1);
