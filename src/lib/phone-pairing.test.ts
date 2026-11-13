@@ -45,11 +45,11 @@ describe("where Connect your phone pairs", () => {
   });
 
   it("reads the window's bridges", () => {
-    vi.stubGlobal("window", { ogb: { companion: {} } });
+    vi.stubGlobal("window", { cry: { companion: {} } });
     expect(currentPhonePairingTarget(false)).toBe("computer");
-    vi.stubGlobal("window", { ogb: { companion: {}, remoteClient: { active: true } } });
+    vi.stubGlobal("window", { cry: { companion: {}, remoteClient: { active: true } } });
     expect(currentPhonePairingTarget(false)).toBe("server");
-    vi.stubGlobal("window", { ogb: { cloudPlan: {} } });
+    vi.stubGlobal("window", { cry: { cloudPlan: {} } });
     expect(currentPhonePairingTarget(true)).toBe("cloud");
     vi.stubGlobal("window", {});
     expect(currentPhonePairingTarget(false)).toBe("server");
@@ -217,7 +217,7 @@ describe("the person's Cloud as a destination on this computer", () => {
   });
 
   it("a Team or Business plan has no Cloud of its own to pair here: nothing, never 'once it's ready'", () => {
-    const acme = [{ id: "team-acme", name: "Acme", role: "owner" as const, machine: { status: "ready" as const, origin: "https://omb-t-2.fly.dev" } }];
+    const acme = [{ id: "team-acme", name: "Acme", role: "owner" as const, machine: { status: "ready" as const, origin: "https://cry-t-2.fly.dev" } }];
     for (const tier of ["team", "business"]) {
       expect(cloudPhoneDestination(paid({ entitlement: { plan: "pro", tier, status: "active", expiresAt: null, version: 1 }, machine: undefined, teams: acme })), tier).toBeNull();
     }

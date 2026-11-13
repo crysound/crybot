@@ -8,8 +8,8 @@ import { fishSpeech, type SpeechBridge } from "./fish-speech";
 export const CALL_ENDPOINT_MS = 1_700;
 
 /** The speech bridge this computer listens through: the page's own Fish Audio listener, or the desktop app's helper. */
-export function speechBridge(): SpeechBridge | Window["ogb"] {
-  return desktopCapabilitiesNow().dictation.engine === "fish-audio" ? fishSpeech : globalThis.window?.ogb;
+export function speechBridge(): SpeechBridge | Window["cry"] {
+  return desktopCapabilitiesNow().dictation.engine === "fish-audio" ? fishSpeech : globalThis.window?.cry;
 }
 
 export function fishListeningReady(config: ConfigStatus | null | undefined): boolean {

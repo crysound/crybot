@@ -16,7 +16,7 @@ import { withoutTurnClock } from "./testing/turn-clock-text.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const FAKE_CLAUDE = join(ROOT, "server/testing/fake-claude-cli.ts");
-const INCLUDED = `box_omb_${randomUUID()}`;
+const INCLUDED = `box_cry_${randomUUID()}`;
 // A one-pixel JPEG: what the relay hands back as a screen frame.
 const FRAME = Buffer.from("/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==", "base64");
 
@@ -86,10 +86,10 @@ describe("a cloud computer starts only when the bot uses it", () => {
       .filter((message: any) => message.tool?.name?.startsWith("error:"));
   const selectComputer = (sent: any, surface?: string) => {
     const agents = sent.mcpConfig.mcpServers.agents;
-    const upstream = agents.env.OMB_GATE_UPSTREAM ? JSON.parse(agents.env.OMB_GATE_UPSTREAM).env : agents.env;
+    const upstream = agents.env.CRYBOT_GATE_UPSTREAM ? JSON.parse(agents.env.CRYBOT_GATE_UPSTREAM).env : agents.env;
     return fetch(`${base}/api/internal/computer/select`, {
       method: surface ? "POST" : "GET",
-      headers: { authorization: `Bearer ${upstream.OMB_COMMS_TOKEN}`, "content-type": "application/json" },
+      headers: { authorization: `Bearer ${upstream.CRYBOT_COMMS_TOKEN}`, "content-type": "application/json" },
       ...(surface ? { body: JSON.stringify({ surface }) } : {}),
     }).then(response => response.json() as Promise<any>);
   };
@@ -101,9 +101,9 @@ describe("a cloud computer starts only when the bot uses it", () => {
    * harness-mcp-proxy sends it for the engine. */
   const computerCall = async (sent: any, method: string, params: unknown = {}) => {
     const env = sent.mcpConfig.mcpServers.computer.env;
-    const response = await fetch(new URL("/api/internal/computer/mcp", env.OMB_HARNESS_URL), {
+    const response = await fetch(new URL("/api/internal/computer/mcp", env.CRYBOT_HARNESS_URL), {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${env.OMB_MCP_TOKEN_COMPUTER}` },
+      headers: { "content-type": "application/json", authorization: `Bearer ${env.CRYBOT_MCP_TOKEN_COMPUTER}` },
       body: JSON.stringify({ method, params }),
     });
     return { status: response.status, body: await response.json() as any };
@@ -200,7 +200,7 @@ describe("a cloud computer starts only when the bot uses it", () => {
     await new Promise<void>(resolve => relay.listen(0, "127.0.0.1", resolve));
     const relayBase = `http://127.0.0.1:${(relay.address() as { port: number }).port}`;
 
-    home = mkdtempSync(join(tmpdir(), "omb-cloud-lazy-"));
+    home = mkdtempSync(join(tmpdir(), "cry-cloud-lazy-"));
     data = join(home, "data");
     dumpFile = join(home, "dump.json");
     finishFile = join(home, "finish");
@@ -228,14 +228,14 @@ describe("a cloud computer starts only when the bot uses it", () => {
       cwd: ROOT,
       env: {
         PATH: process.env.PATH, ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
-        HOME: home, USERPROFILE: home, OMB_DATA_DIR: data, TEMP: home, TMP: home, TMPDIR: home,
-        OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1),
+        HOME: home, USERPROFILE: home, CRYBOT_DATA_DIR: data, TEMP: home, TMP: home, TMPDIR: home,
+        CRYBOT_PORT: String(port), CRYBOT_WEBHOOK_PORT: String(port + 1),
         // An own key would go here; nothing may use it.
-        OMB_BOAT_API: `${relayBase}/own-key-must-not-be-used`,
-        OMB_CLOUD_BOAT_URL: `${relayBase}/relay/api/box/v1`,
-        OMB_CLOUD_BOAT_TOKEN: INCLUDED,
+        CRYBOT_BOAT_API: `${relayBase}/own-key-must-not-be-used`,
+        CRYBOT_CLOUD_BOAT_URL: `${relayBase}/relay/api/box/v1`,
+        CRYBOT_CLOUD_BOAT_TOKEN: INCLUDED,
         // The provider's error is still read twice before a computer is deleted; here the reads need not be half an hour apart.
-        OMB_CLOUD_COMPUTER_DEAD_CONFIRM_MS: "0",
+        CRYBOT_CLOUD_COMPUTER_DEAD_CONFIRM_MS: "0",
       },
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -410,7 +410,7 @@ describe("a cloud computer starts only when the bot uses it", () => {
     await finish(bot.id);
 
     const waiting = "Stranded's cloud computer stopped responding. Replace computer in the computer panel gives it a new one; files only on the old computer are lost.";
-    const line = "Stranded's cloud computer stopped responding, so MausBot replaced it with a new one. Files that were only on the old computer are gone.";
+    const line = "Stranded's cloud computer stopped responding, so CryBot replaced it with a new one. Files that were only on the old computer are gone.";
     expect(await recoveryLines(bot.id)).toEqual([`recovery: ${waiting}`, `recovery: ${line}`]);
     expect(inboxNotices(bot.id)).toEqual([waiting, line]);
     await apiOk("PATCH", "/api/config", { features: { cloudComputerAutoReplace: false } });
@@ -442,9 +442,9 @@ describe("a cloud computer starts only when the bot uses it", () => {
     await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: null });
     const sent = await startTurn(bot.id, "Which computers can you use?");
     const agents = sent.mcpConfig.mcpServers.agents;
-    const upstream = agents.env.OMB_GATE_UPSTREAM ? JSON.parse(agents.env.OMB_GATE_UPSTREAM).env : agents.env;
+    const upstream = agents.env.CRYBOT_GATE_UPSTREAM ? JSON.parse(agents.env.CRYBOT_GATE_UPSTREAM).env : agents.env;
     const selection = await fetch(`${base}/api/internal/computer/select`, {
-      headers: { authorization: `Bearer ${upstream.OMB_COMMS_TOKEN}` },
+      headers: { authorization: `Bearer ${upstream.CRYBOT_COMMS_TOKEN}` },
     }).then(response => response.json() as Promise<any>);
     expect(selection.options.find((option: { surface: string }) => option.surface === "cloud")).toMatchObject({
       available: false, reason: "What Scribe can use doesn't include a desktop. Change what Scribe can use in its settings.",
@@ -487,7 +487,7 @@ describe("a cloud computer starts only when the bot uses it", () => {
     const sender = await cloudBot("Sender", { computer: null });
     const before = { creates: creates(), resumes: resumes() };
     const agents = (await startTurn(sender.id, "Hand the desktop check over")).mcpConfig.mcpServers.agents;
-    const token = (agents.env.OMB_GATE_UPSTREAM ? JSON.parse(agents.env.OMB_GATE_UPSTREAM).env : agents.env).OMB_COMMS_TOKEN;
+    const token = (agents.env.CRYBOT_GATE_UPSTREAM ? JSON.parse(agents.env.CRYBOT_GATE_UPSTREAM).env : agents.env).CRYBOT_COMMS_TOKEN;
     const handed = async (botId: string, call: Record<string, unknown>) => {
       rmSync(dumpFile, { force: true });
       const response = await fetch(`${base}/api/internal/coordinate-bots`, {

@@ -3,7 +3,7 @@ import { Check, Loader2, Minus } from "lucide-react";
 import { useCloudSendNotice } from "@/components/CloudSendStrip";
 import { countedList } from "@/lib/cloud-send";
 import { WindowDragStrip } from "@/components/DesktopCapabilities";
-import { track } from "@/lib/analytics";
+
 import { reopenCloudIntent } from "@/lib/cloud-intent";
 import {
   CLOUD_SETUP_MOVE_SKIPPED, CLOUD_WELCOME_DONE, CLOUD_WELCOME_SHOWN, WELCOME_STEPS, welcomeStepFinished, welcomeStepHint, welcomeView, welcomeViewAfter,
@@ -75,9 +75,9 @@ export function CloudWelcome() {
   const bot = visible.find((candidate) => candidate.chiefOfStaff) ?? visible[0] ?? null;
   const team = Boolean(state.config?.team);
   const cloudHasWork = visible.filter((candidate) => !candidate.defaultBot?.person).length > 1 || state.groups.length > 0;
-  const sendBridge = window.ogb?.remoteClient?.active ? undefined : window.ogb?.cloudSendPage;
+  const sendBridge = window.cry?.remoteClient?.active ? undefined : window.cry?.cloudSendPage;
   // An older app still offers Copy this computer by hand: it moves bots here by itself only once updated.
-  const older = Boolean(sendBridge && window.ogb && "cloudMove" in window.ogb);
+  const older = Boolean(sendBridge && window.cry && "cloudMove" in window.cry);
   const [notice] = useCloudSendNotice(sendBridge);
   const sent = sentHere(notice);
   // Main answers at once; until it does, no choice is shown that it may take back a moment later.
@@ -95,7 +95,7 @@ export function CloudWelcome() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
-    track("cloud_welcome_step", { step: view });
+
     if (!navigated.current) return;
     navigated.current = false;
     heading.current?.focus();
@@ -147,8 +147,8 @@ export function CloudWelcome() {
     go(welcomeViewAfter(withEarlyHints(record, ids), step), focus);
   };
   const finishBring = (outcome: BringOutcome) => finish("bring", outcome === "skipped" ? [CLOUD_SETUP_MOVE_SKIPPED] : []);
-  const end = (reason: "done" | "skipped") => {
-    track("cloud_welcome_ended", { reason, at: view });
+  const end = (_reason: "done" | "skipped") => {
+
     remember([CLOUD_WELCOME_DONE]);
     endWelcomeHere();
   };

@@ -16,9 +16,9 @@ describe("festival dress-up", () => {
   });
 
   it("leaves a silver bot in its own body while dressed", () => {
-    expect(wornBody("cursor", "silver", "diwali")).toBe("cursor");
+    expect(wornBody("dome", "silver", "diwali")).toBe("dome");
     expect(wornBody(undefined, "silver", "halloween")).toBeUndefined();
-    expect(wornBody("cursor", "chrome", "diwali")).toBe("cursor");
+    expect(wornBody("dome", "chrome", "diwali")).toBe("dome");
   });
 
   it("keeps a body from the same festival the bot already chose, and dresses over any other", () => {

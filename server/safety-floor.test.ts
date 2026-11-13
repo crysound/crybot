@@ -706,9 +706,9 @@ describe("floorVerdict", () => {
     expect(floorVerdict("rm -rf /Users/omkar/", "darwin", "/Users/omkar/")?.rule).toBe("delete-home");
     expect(floorVerdict("rm -rf /users/OMKAR/*", "darwin", "/Users/omkar")?.rule).toBe("delete-home");
     expect(floorVerdict("rm -rf /home/omkar", "linux", "/home/omkar")?.rule).toBe("delete-home");
-    expect(floorVerdict("rm -rf /home/Omkar", "linux", "/home/omkar")).toBeNull();
+    expect(floorVerdict("rm -rf /home/User", "linux", "/home/omkar")).toBeNull();
     expect(floorVerdict("rm -rf /Users/omkar/project", "darwin", "/Users/omkar")).toBeNull();
-    expect(floorVerdict("rd /s /q C:\\Users\\Omkar", "win32", "C:\\Users\\omkar")?.rule).toBe("delete-home");
+    expect(floorVerdict("rd /s /q C:\\Users\\User", "win32", "C:\\Users\\omkar")?.rule).toBe("delete-home");
     expect(floorVerdict("rm -rf /c/Users/omkar", "win32", "C:\\Users\\omkar")?.rule).toBe("delete-home");
     expect(floorVerdict("rd /s /q C:\\Users\\omkar\\project", "win32", "C:\\Users\\omkar")).toBeNull();
   });
@@ -718,7 +718,7 @@ describe("floorVerdict", () => {
     expect(floorVerdict("rm -rf /tmp", "linux", "/tmp")).toBeNull();
     expect(floorVerdict("rm -rf /tmp/sandbox-home", "linux", "/tmp/sandbox-home")).toBeNull();
     expect(floorVerdict("rm -rf /private/tmp", "darwin", "/private/tmp")).toBeNull();
-    expect(floorVerdict("rm -rf /var/folders/ab/cd/T/omb-home", "darwin", "/var/folders/ab/cd/T/omb-home")).toBeNull();
+    expect(floorVerdict("rm -rf /var/folders/ab/cd/T/cry-home", "darwin", "/var/folders/ab/cd/T/cry-home")).toBeNull();
     expect(floorVerdict("rd /s /q C:\\Users\\ci\\AppData\\Local\\Temp\\home", "win32", "C:\\Users\\ci\\AppData\\Local\\Temp\\home")).toBeNull();
     // the command that says "home" still means it
     expect(floorVerdict("rm -rf ~", "linux", "/tmp")?.rule).toBe("delete-home");

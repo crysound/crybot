@@ -49,8 +49,8 @@ export function LiveCallSettings({ onClose }: { onClose: () => void }) {
     setSaving(true);
     setError(null);
     try {
-      const status: ConfigStatus = window.ogb?.setCredential
-        ? await window.ogb.setCredential("openaiLiveKey", "")
+      const status: ConfigStatus = window.cry?.setCredential
+        ? await window.cry.setCredential("openaiLiveKey", "")
         : await api("/api/config", { method: "PUT", body: JSON.stringify({ live: { key: "" } }) });
       dispatch({ type: "configStatus", config: status });
     } catch (removeError) {

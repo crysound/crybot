@@ -75,7 +75,7 @@ function NewBotEditor({ defaultsMode = false, onClose, onCreated, readyBotId }: 
   const showThreads = useShowThreads();
   const sections = useAdvancedMode() ? SECTIONS : SECTIONS.filter((section) => section !== "Model");
   const [everyone, setEveryone] = useState(false);
-  const choosesVisibility = !team && !defaultsMode && typeof window !== "undefined" && !window.ogb && ownerOrAdmin === true;
+  const choosesVisibility = !team && !defaultsMode && typeof window !== "undefined" && !window.cry && ownerOrAdmin === true;
   const dialog = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;

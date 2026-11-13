@@ -161,7 +161,7 @@ beforeEach(() => {
   fixture.beacons = [];
   fixture.live = null;
   state = { ...initialState, instances: [engine], config: { box: { configured: true } } as AppState["config"], computerControl: {} } as AppState;
-  vi.stubGlobal("ogb", {
+  vi.stubGlobal("cry", {
     desktopViewer: { open: vi.fn(async () => true), close: vi.fn(async () => true), onState: () => () => {}, currentState: async () => ({ open: false, contextId: null }) },
   });
   vi.spyOn(window, "open").mockImplementation(() => null);
@@ -193,7 +193,7 @@ describe("taking control of a Local VM", () => {
     await press("Take control");
     await shownLive();
     expect(liveDesktop()!.dataset.target).toBe(`local/bot-${"a".repeat(64)}`);
-    expect(window.ogb!.desktopViewer!.open, "nothing may open in another window").not.toHaveBeenCalled();
+    expect(window.cry!.desktopViewer!.open, "nothing may open in another window").not.toHaveBeenCalled();
     expect(window.open).not.toHaveBeenCalled();
     expect(fixture.controls).toEqual([{ action: "take", controlLeaseId: expect.stringMatching(/^[0-9a-f]{36}$/), target: `local/bot-${"a".repeat(64)}` }]);
     expect(document.body.textContent).toContain("You're in control");
@@ -393,7 +393,7 @@ describe("taking control of a Local VM", () => {
     await settle();
     expect(releases()).toHaveLength(1);
     expect(liveDesktop()).toBeNull();
-    expect(document.body.textContent).toContain("MausBot couldn't open the live desktop. Try again.");
+    expect(document.body.textContent).toContain("CryBot couldn't open the live desktop. Try again.");
   });
 });
 
@@ -404,7 +404,7 @@ describe("taking control of other computers", () => {
     await shownLive();
     expect(liveDesktop()!.dataset.target).toBe("vps/scout");
     expect(fixture.controls[0]).toMatchObject({ action: "take", target: "vps/scout" });
-    expect(window.ogb!.desktopViewer!.open).not.toHaveBeenCalled();
+    expect(window.cry!.desktopViewer!.open).not.toHaveBeenCalled();
     await press("Hand control back");
     expect(fixture.beacons.some((beacon) => beacon.url.startsWith("/api/bots/scout/computer/viewer-close"))).toBe(true);
   });
@@ -414,7 +414,7 @@ describe("taking control of other computers", () => {
     await press("Take control");
     expect(liveDesktop()).toBeNull();
     expect(fixture.posts).toContain("/api/bots/scout/computer/join");
-    expect(window.ogb!.desktopViewer!.open).toHaveBeenCalledWith("https://desktop.invalid/scout", "Scout's live desktop", "scout");
+    expect(window.cry!.desktopViewer!.open).toHaveBeenCalledWith("https://desktop.invalid/scout", "Scout's live desktop", "scout");
   });
 
   it("closing a cloud computer's viewer window gives back the hold its open took, by that lease", async () => {
@@ -430,6 +430,6 @@ describe("taking control of other computers", () => {
     await press("Full screen");
     expect(fixture.controls).toEqual([{ action: "take", controlLeaseId: expect.stringMatching(/^[0-9a-f]{36}$/) }]);
     expect(fixture.controlPaths.at(-1)).toContain("threadId=thread");
-    expect(window.ogb!.desktopViewer!.open).toHaveBeenCalledWith("https://desktop.invalid/scout", "Scout's live desktop", "scout");
+    expect(window.cry!.desktopViewer!.open).toHaveBeenCalledWith("https://desktop.invalid/scout", "Scout's live desktop", "scout");
   });
 });

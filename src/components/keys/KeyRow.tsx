@@ -4,8 +4,8 @@ import { useStore } from "@/state/store";
 import { installCommandFor } from "@/state/engine-install";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
-import type { KeyResult, KeyVia } from "@/lib/analytics-allowlist";
-import { keyRemoved, keySaved, keySaveFailure, savedKeyResult } from "@/lib/product-events";
+import type { KeyResult, KeyVia } from "@/lib/setup-types";
+
 import { InstanceProviderMark } from "../ProviderIcons";
 import { FIELD_EDGE, SettingsLook, SettingsMark } from "../SettingsPrimitives";
 import { keyEntry, keyForInstance, looksLikeOtherKey, savedState, shownKeyEntry, type KeyEntry, type KeyId, type SavedState } from "./key-catalog";
@@ -205,10 +205,10 @@ export function KeyRow({
       if (!now.configured) setProblem(t("keys.row.notKept"));
       onSaved?.(now.configured);
       if (now.configured && via === "settings") target.settingsEvent?.("add_key");
-      keySaved(target.analytics, via, now.configured && target.test ? await runCheck() : savedKeyResult(target.analytics));
+
     } catch (cause) {
       setProblem(errorText(cause));
-      keySaved(target.analytics, via, keySaveFailure(cause));
+
     } finally {
       busyRef.current = false;
       setBusy(null);
@@ -254,7 +254,7 @@ export function KeyRow({
       setReplacing(false);
       setDraft("");
       onSaved?.(target.saved(status).configured);
-      keyRemoved(target.analytics, via);
+
     } catch (cause) {
       setProblem(errorText(cause));
     } finally {

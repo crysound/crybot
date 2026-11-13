@@ -57,11 +57,11 @@ const formatsDevice = (word: string): boolean => {
 };
 
 // A function that pipes itself into itself in the background, then runs; the name is bounded to keep the regex cheap.
-const BOMB_BODY = String.raw`\s*\{\s*\1\s*\|\s*\1\s*&\s*\}\s*;?\s*\1(?![\w:.-])`;
-const BOMB_NAME = String.raw`([A-Za-z_:.][\w:.-]{0,63})`;
+const BCRYBOT_BODY = String.raw`\s*\{\s*\1\s*\|\s*\1\s*&\s*\}\s*;?\s*\1(?![\w:.-])`;
+const BCRYBOT_NAME = String.raw`([A-Za-z_:.][\w:.-]{0,63})`;
 const FORK_BOMBS = [
-  new RegExp(String.raw`(?:^|[\s;&|(){}])${BOMB_NAME}\s*\(\s*\)${BOMB_BODY}`),
-  new RegExp(String.raw`(?:^|[\s;&|(){}])function\s+${BOMB_NAME}\s*(?:\(\s*\))?${BOMB_BODY}`),
+  new RegExp(String.raw`(?:^|[\s;&|(){}])${BCRYBOT_NAME}\s*\(\s*\)${BCRYBOT_BODY}`),
+  new RegExp(String.raw`(?:^|[\s;&|(){}])function\s+${BCRYBOT_NAME}\s*(?:\(\s*\))?${BCRYBOT_BODY}`),
 ];
 
 interface Command {

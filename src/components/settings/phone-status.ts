@@ -17,7 +17,7 @@ export type PhonePlaceState =
 /** Phones paired with the place on screen, as the outer menu and the nav say it in a few words. */
 export function usePhonePlaceState(enabled = true): PhonePlaceState {
   const { state } = useStore();
-  const here = companionBridge() !== null && window.ogb?.remoteClient?.active !== true;
+  const here = companionBridge() !== null && window.cry?.remoteClient?.active !== true;
   const local = useSidebarPhoneStatus();
   const [server, setServer] = useState<PhonePlaceState>({ kind: "checking" });
   const policy = state.config?.managedPolicy;

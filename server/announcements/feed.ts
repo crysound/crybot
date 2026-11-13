@@ -8,12 +8,12 @@ import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import bundledFeedJson from "../../announcements/announcements.json" with { type: "json" };
-import { ANNOUNCEMENTS_URL, liveCards, parseAnnouncementFeed, type AnnouncementCard, type AnnouncementFeed } from "../../shared/announcements.ts";
+import { liveCards, parseAnnouncementFeed, type AnnouncementCard, type AnnouncementFeed } from "../../shared/announcements.ts";
 import { writeFileAtomic } from "../atomic.ts";
 import { DATA_DIR } from "../config.ts";
 
 /** "1" stops the download and every remote card on this server's pages, the bundled ones included. */
-export const ANNOUNCEMENTS_DISABLE_ENV = "OMB_DISABLE_ANNOUNCEMENTS";
+export const ANNOUNCEMENTS_DISABLE_ENV = "CRYBOT_DISABLE_ANNOUNCEMENTS";
 export const ANNOUNCEMENTS_TTL_MS = 60 * 60 * 1000;
 /** Back off failed fetches, so an offline computer does not try on every page load. */
 export const ANNOUNCEMENTS_RETRY_MS = 5 * 60 * 1000;
@@ -68,7 +68,8 @@ export class AnnouncementStore {
   }
 
   get disabled(): boolean {
-    return (this.options.env ?? process.env)[ANNOUNCEMENTS_DISABLE_ENV] === "1";
+    const env = this.options.env ?? process.env;
+    return !env.CRYBOT_ANNOUNCEMENTS_URL?.trim() || env[ANNOUNCEMENTS_DISABLE_ENV] === "1";
   }
 
   /** The newest usable copy. Reads the disk cache once and never waits on the network. */
@@ -166,8 +167,8 @@ export class AnnouncementStore {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.options.timeoutMs ?? ANNOUNCEMENTS_FETCH_TIMEOUT_MS);
     try {
-      const response = await (this.options.fetch ?? fetch)(ANNOUNCEMENTS_URL, {
-        headers: { accept: "application/json", "user-agent": "OpenMausBot" },
+      const response = await (this.options.fetch ?? fetch)((this.options.env ?? process.env).CRYBOT_ANNOUNCEMENTS_URL!.trim(), {
+        headers: { accept: "application/json", "user-agent": "Cry Bot" },
         // Nothing of the person's goes with it.
         credentials: "omit",
         referrerPolicy: "no-referrer",

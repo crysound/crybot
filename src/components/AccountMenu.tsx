@@ -34,9 +34,9 @@ export function switchNote(result: Pick<RailOpenResult | AccountSwitchResult, "o
 
 /** Who is signed in on this device, on this app's own page; on any other page, only whether main offers the sheet. */
 export function useAccounts(): AccountsAccess & { sheet: { email: string | null; note: string | null } | null; closeSheet(): void } {
-  const bridge = window.ogb?.remoteClient?.active ? undefined : window.ogb?.accounts;
-  const remote = window.ogb?.accountSheet;
-  const own = window.ogb?.app?.ownPage === true && Boolean(bridge);
+  const bridge = window.cry?.remoteClient?.active ? undefined : window.cry?.accounts;
+  const remote = window.cry?.accountSheet;
+  const own = window.cry?.app?.ownPage === true && Boolean(bridge);
   const places = usePlaces();
   const [view, setView] = useState<AccountsView | null>(null);
   const [offered, setOffered] = useState(false);
@@ -64,7 +64,7 @@ export function useAccounts(): AccountsAccess & { sheet: { email: string | null;
   };
 }
 
-/** The You menu's row for the MausBot Cloud page, on this app's own page: Sign in while nobody is signed in here, so whoever was
+/** The You menu's row for the CryBot Cloud page, on this app's own page: Sign in while nobody is signed in here, so whoever was
  * told to sign in finds the words. Any other page knows nothing of who is signed in. */
 export function cloudRowLabel(view: AccountsView | null): string {
   return t(view && !view.active ? "accounts.signIn" : "settings.section.cloudAccount");
@@ -90,7 +90,7 @@ const EMAIL_STEP: CloudSignInPhase = { step: "email", intent: false, problem: nu
 /** Add another account in place: the emailed code, or the browser for single sign-on and two-step. The account in use goes
  * on until this succeeds; the code's attempt and the token stay in main. */
 function AddAccount({ start, onDone, onBack }: { start: string; onDone: (note: string | null) => void; onBack: () => void }) {
-  const bridge = window.ogb?.accounts;
+  const bridge = window.cry?.accounts;
   const [phase, setPhase] = useState<CloudSignInPhase>(EMAIL_STEP);
   const [email, setEmail] = useState(start);
   const [code, setCode] = useState("");
@@ -145,7 +145,7 @@ function AddAccount({ start, onDone, onBack }: { start: string; onDone: (note: s
 /** Over any place's page, on the rail's own page, or over this computer's: who is signed in here and Sign out, or a plain line
  * (`note`). `adding`: the sign-in, for this address when it has one: Add another account, or a saved account whose sign-in ended. */
 export function AccountsSheet({ onClose, adding = null, note: given = null }: { onClose: () => void; adding?: string | null; note?: string | null }) {
-  const bridge = window.ogb?.accounts;
+  const bridge = window.cry?.accounts;
   const [view, setView] = useState<AccountsView | null>(null);
   const [note, setNote] = useState<string | null>(given);
   const [add, setAdd] = useState<string | null>(adding);
@@ -183,17 +183,17 @@ export function AccountsSheet({ onClose, adding = null, note: given = null }: { 
 
 /** The sheet as the rail's page keeps it: asked for by main, from the person's click on the page beside the rail. */
 export function useAccountsSheet(): { open: boolean; close: () => void } {
-  const bridge = window.ogb?.accounts;
+  const bridge = window.cry?.accounts;
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!bridge) return;
     void bridge.sheetPending().then((pending) => { if (pending) setOpen(true); }).catch(() => {});
     return bridge.onOpenSheet(() => setOpen(true));
   }, [bridge]);
-  useEffect(() => { if (open) void window.ogb?.rail?.expand?.(true)?.catch(() => {}); }, [open]);
+  useEffect(() => { if (open) void window.cry?.rail?.expand?.(true)?.catch(() => {}); }, [open]);
   return { open, close: () => {
     setOpen(false);
-    void window.ogb?.rail?.expand?.(false)?.catch(() => {});
+    void window.cry?.rail?.expand?.(false)?.catch(() => {});
     void bridge?.sheetClosed().catch(() => {});
   } };
 }

@@ -24,7 +24,7 @@ import type { LocaleKey } from "@/locales";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { BulkSelectFilters, ThreadListFooter, deleteThreadsInBulk, useBulkSelect } from "./BulkSelectBar";
  
-import { StackedMauses } from "./StackedMauses";
+import { StackedBots } from "./StackedBots";
 import { LocalComputerAutoWarning } from "./LocalComputerAutoWarning";
 import { nextRename } from "@/lib/rename";
 import { useDesktopCapabilities, windowFramed } from "./DesktopCapabilities";
@@ -194,7 +194,7 @@ export const GroupListItem = memo(function GroupListItem({
       title={density === "icons" ? group.name : undefined}
       aria-label={density === "icons" ? group.name : undefined}
     >
-      <StackedMauses members={members} density={railTile ? "comfortable" : density} large={simpleRow || railTile} />
+      <StackedBots members={members} density={railTile ? "comfortable" : density} large={simpleRow || railTile} />
       <div className={cn("min-w-0 flex-1", density === "icons" && "hidden")}>
         <div className={cn("flex items-baseline justify-between gap-2", simpleRow && "pr-7")}>
           <span className={cn("truncate text-[14px] text-ink", simpleRow ? "font-medium leading-5" : "font-semibold")}>{group.name}</span>
@@ -239,7 +239,7 @@ function RoomContextMenu({
   const motion = useHeldMenuMotion(menu);
   const shown = motion.value;
   const dispatch = useStoreDispatch(), store = useStoreRef();
-  const remoteClient = window.ogb?.remoteClient?.active === true;
+  const remoteClient = window.cry?.remoteClient?.active === true;
   const group = useStoreSelector((s) => shown ? s.groups.find((g) => g.id === shown.groupId) : undefined);
   const [renaming, setRenaming] = useState(false);
   const [describing, setDescribing] = useState(false);
@@ -700,7 +700,7 @@ export const BotListItem = memo(function BotListItem(props: BotRowProps) {
   const { bot, selected, deleting, mascotMotion, reveal, pendingQueued, instances, liveCall, density, query, dispatch, onMenu, renameRequest, botDrag: drag, botDrop: drop, botDragging: dragging } = props;
   const showThreads = useShowThreads();
   const liveMedia = useLiveMedia();
-  const remoteClient = typeof window !== "undefined" && window.ogb?.remoteClient?.active === true;
+  const remoteClient = typeof window !== "undefined" && window.cry?.remoteClient?.active === true;
   const [renaming, setRenaming] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
   const [threadsOpen, setThreadsOpen] = useSearchDisclosure(`bot:${bot.id}`, showThreads ? query : "", searchMatchesThreads(query, bot.tasks, bot.projects));
@@ -931,7 +931,7 @@ export const Sidebar = memo(function Sidebar({ open, onClose, collapseToIcons = 
   const cloudOwner = useCloudOwner(state.config?.cloudHome === true);
   const endHowTo = useCallback(() => endCloudHowTo(dispatch), [dispatch]);
   const showThreads = useShowThreads();
-  const remoteClient = window.ogb?.remoteClient?.active === true;
+  const remoteClient = window.cry?.remoteClient?.active === true;
   const { capabilities } = useDesktopCapabilities();
   const phone = useMediaQuery(PHONE_LAYOUT, false);
   const importReturnRef = useRef<HTMLButtonElement>(null);
@@ -1027,7 +1027,7 @@ export const Sidebar = memo(function Sidebar({ open, onClose, collapseToIcons = 
 
   useEffect(() => {
     if (remoteClient) return;
-    return window.ogb?.onPackageInstall?.((url) => {
+    return window.cry?.onPackageInstall?.((url) => {
       setTeamInstallUrl(url);
       setTeamLibraryOpen(true);
     });

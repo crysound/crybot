@@ -25,11 +25,11 @@ async function type(value: string) {
 
 beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  window.ogb = { cloudSendPage: page } as never;
+  window.cry = { cloudSendPage: page } as never;
   for (const fn of [page.moveBots, page.moveEverything, onClose]) fn.mockClear();
   container = document.createElement("div"); document.body.append(container); root = createRoot(container);
 });
-afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); delete (window as { ogb?: unknown }).ogb; });
+afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); delete (window as { cry?: unknown }).cry; });
 
 it("Move everything is one press, and closes the dialog", async () => {
   await render(named(4));
@@ -97,7 +97,7 @@ it("a bot's menu offers Move to My Cloud, and it goes after one confirm", async 
 });
 
 it("a bot's menu leaves it out for the helper, a bot on its way, and when My Cloud can't take bots", async () => {
-  await menu({ id: "maus", name: "Maus", defaultBot: { v: 1 } });
+  await menu({ id: "bot", name: "Bot", defaultBot: { v: 1 } });
   expect(q("[data-item]")).toBeNull();
   await menu({ id: "moving-one", name: "Pip" });
   expect(q("[data-item]")).toBeNull();

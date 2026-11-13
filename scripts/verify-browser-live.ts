@@ -2,17 +2,17 @@
 import { readFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { launchVerificationServer, runControlOmb } from "./control-omb.ts";
+import { launchVerificationServer, runControlCry } from "./control-cry.ts";
 import { mountPreview, parkUntilSignal, type MountedPreview } from "./testing/preview-fixture.ts";
 
 
-const binaryPath = process.env.OMB_VERIFY_BROWSER_BINARY;
-const executablePath = process.env.OMB_VERIFY_BROWSER_CHROME;
-if (!binaryPath || !executablePath) throw new Error("Set OMB_VERIFY_BROWSER_BINARY and OMB_VERIFY_BROWSER_CHROME to explicit installed binaries.");
+const binaryPath = process.env.CRYBOT_VERIFY_BROWSER_BINARY;
+const executablePath = process.env.CRYBOT_VERIFY_BROWSER_CHROME;
+if (!binaryPath || !executablePath) throw new Error("Set CRYBOT_VERIFY_BROWSER_BINARY and CRYBOT_VERIFY_BROWSER_CHROME to explicit installed binaries.");
 const fixture = await launchVerificationServer(process.env, undefined, undefined, { binaryPath, executablePath });
 let ui: MountedPreview | undefined;
 try {
-  await runControlOmb(["new-bot", "--name", "Pepper", "--url", fixture.info.url]);
+  await runControlCry(["new-bot", "--name", "Pepper", "--url", fixture.info.url]);
   const { bots } = await (await fetch(`${fixture.info.url}/api/bots`)).json() as any;
   await fetch(`${fixture.info.url}/api/config`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ features: { browser: true } }) });
   await fetch(`${fixture.info.url}/api/bots/${bots[0].id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ browser: true }) });

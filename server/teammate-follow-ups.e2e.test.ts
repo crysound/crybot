@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { expect, it } from "vitest";
 
-import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry } from "../scripts/control-cry.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 import { ownTurnText } from "./testing/room-handoff-agent.ts";
 
@@ -35,7 +35,7 @@ function assignments(dataDir: string): Row[] {
 }
 
 async function scenario(test: (f: any) => Promise<void>) {
-  const session = await launchVerificationServer({ ...process.env }, undefined, undefined, undefined, undefined, { scripted: true });
+  const session = await launchVerificationServer({ ...process.env }, undefined, undefined, undefined, { scripted: true });
   const { url, dataDir } = session.info;
   try {
     const api = async (method: string, path: string, body?: unknown) => {
@@ -46,7 +46,7 @@ async function scenario(test: (f: any) => Promise<void>) {
       try { parsed = JSON.parse(raw); } catch {}
       return { status: response.status, body: parsed };
     };
-    const bot = async (name: string, section: string) => ((await runControlOmb(["new-bot", "--name", name, "--section", section, "--url", url])) as any).bot;
+    const bot = async (name: string, section: string) => ((await runControlCry(["new-bot", "--name", name, "--section", section, "--url", url])) as any).bot;
     const clive = await bot("Clive", "Leadership");
     const mira = await bot("Mira", "Engineering");
     expect((await api("PATCH", `/api/bots/${clive.id}`, { chiefOfStaff: true, managedSections: ["Engineering"], acknowledgePeerScope: true })).status).toBe(200);
@@ -140,7 +140,7 @@ it("Q2 takes Clive's reply to Mira's thread as the answer to the card her ask to
     { key: "C-REPLY", match: ["Q2-SAG"], steps: [{ arguments: { bot_ids: [f.mira.id], message: "Only the footer text" } }], reply: "C-REPLY: passed on." },
     { key: "C1", match: [SETTLED, REPORT_FROM_MIRA], reply: "Q2-FINAL: the fix is in." });
   f.script(f.mira.id, { key: "M1", match: ["Q2-BRIEF"], timeoutMs: 90_000,
-    steps: [{ server: "ogb", tool: "ask_user", arguments: { question, choices: ["Only the footer text", "The footer and the welcome text"] }, capture: { answer: "([\\s\\S]+)" } }],
+    steps: [{ server: "cry", tool: "ask_user", arguments: { question, choices: ["Only the footer text", "The footer and the welcome text"] }, capture: { answer: "([\\s\\S]+)" } }],
     reply: "Q2-RESULT: done with {{answer}}" });
   await f.say(f.clive.id, f.job, "Q2-JOB: have Mira apply the fix.");
   await expect.poll(() => f.children()[0]?.status, { timeout: 30_000 }).toBe("running");
@@ -242,7 +242,7 @@ it("F4 keeps a second assignment Clive hands Mira in the same turn its own job, 
 
 const PERSON_QUESTION = "Keep the old pricing page as a backup?";
 const askThePerson = (f: any, key: string) => f.script(f.mira.id, { key: "M1", match: [key], timeoutMs: 90_000,
-  steps: [{ server: "ogb", tool: "ask_user", arguments: { question: PERSON_QUESTION, choices: ["Keep it", "Delete it"] }, capture: { answer: "([\\s\\S]+)" } }],
+  steps: [{ server: "cry", tool: "ask_user", arguments: { question: PERSON_QUESTION, choices: ["Keep it", "Delete it"] }, capture: { answer: "([\\s\\S]+)" } }],
   reply: `${key}-RESULT: done with {{answer}}` });
 const asking = async (f: any, chat: string) => (await f.messages(chat)).find((message: any) => message.card?.subtitle === PERSON_QUESTION)?.card;
 
@@ -318,7 +318,7 @@ it("P4 keeps Mira's question from a Clive turn a webhook started: it is not list
   await f.say(f.mira.id, chat, "P4: redo the pricing page.");
   await expect.poll(async () => (await asking(f, chat)) !== undefined, { timeout: 30_000 }).toBe(true);
 
-  const hook = await f.api("POST", "/api/webhooks", { name: "P4", prompt: "P4-HOOK: tell Mira to keep it.", botId: f.clive.id, runOn: "maus" });
+  const hook = await f.api("POST", "/api/webhooks", { name: "P4", prompt: "P4-HOOK: tell Mira to keep it.", botId: f.clive.id, runOn: "bot" });
   expect(hook.status, JSON.stringify(hook.body)).toBe(201);
   const delivered = await fetch(hook.body.credential.url, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
   expect(delivered.status).toBe(202);

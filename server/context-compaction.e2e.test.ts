@@ -3,7 +3,7 @@ import { closeSync, existsSync, openSync, readFileSync, writeFileSync } from "no
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb, verificationServerEnvironment } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry, verificationServerEnvironment } from "../scripts/control-cry.ts";
 import { request } from "../scripts/mcp-server.ts";
 import { waitForExit } from "./testing/cleanup.ts";
 
@@ -14,7 +14,7 @@ async function fixture(test: (f: Awaited<ReturnType<typeof setup>>) => Promise<v
 
 async function setup(hang: boolean, fakeEnv: NodeJS.ProcessEnv) {
   const env = { ...process.env, ...fakeEnv, FAKE_CLAUDE_VERSION: "2.1.270", ...(hang ? { FAKE_CLAUDE_TEXT_HANG: "1" } : {}) };
-  const session = await launchVerificationServer(env, undefined, undefined, undefined, undefined, { scripted: true });
+  const session = await launchVerificationServer(env, undefined, undefined, undefined, { scripted: true });
   let ready = false;
   try {
     let restarted: ChildProcess | undefined;
@@ -25,7 +25,7 @@ async function setup(hang: boolean, fakeEnv: NodeJS.ProcessEnv) {
       return result;
     };
     const cli = async (...args: string[]) => {
-      const result = await runControlOmb(args, { env: { OPENMAUSBOT_URL: session.info.url } }) as any;
+      const result = await runControlCry(args, { env: { CRYBOT_URL: session.info.url } }) as any;
       evidence.push({ command: args, result });
       return result;
     };
@@ -165,7 +165,7 @@ it.each([
     await f.restart(() => {
       const path = join(f.session.info.dataDir, "config.json");
       const config = JSON.parse(readFileSync(path, "utf8"));
-      config.instances.claude.environment.OMB_CLAUDE_AUTOCOMPACT = native;
+      config.instances.claude.environment.CRYBOT_CLAUDE_AUTOCOMPACT = native;
       writeFileSync(path, JSON.stringify(config));
     });
   }

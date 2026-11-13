@@ -28,7 +28,7 @@ beforeEach(() => {
   vi.clearAllMocks(); f.values = []; f.index = 0; f.effects = []; f.dispatch = vi.fn(); offer = TRIAL;
   openExternal = vi.fn().mockResolvedValue(true);
   bridge = { state: vi.fn(async () => signedOut), onState: vi.fn(() => () => {}), offer: vi.fn(async () => offer) };
-  vi.stubGlobal("window", { ogb: { cloudAccount: bridge, openExternal } });
+  vi.stubGlobal("window", { cry: { cloudAccount: bridge, openExternal } });
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -49,9 +49,9 @@ const press = (label: string, Component = ProSettingsCard) => {
 
 it("for someone who may buy: what Cloud does, the Admin's lowest price and money-back; Start free trial and Compare plans both open the sheet, never the website", async () => {
   const html = await card(signedOut);
-  for (const text of ["MausBot Cloud", "Keeps your bots and routines running 24/7, even when this computer is off.", "MausBot Cloud plans from $15/month + tax.",
-    "14-day money-back on every plan.", "OpenMausBot on this computer stays free and open source.", "Compare plans", "Start free trial", "Sign in to your Cloud plan"]) expect(html).toContain(text);
-  for (const gone of ["OMB", "$89", "launch price", "New features first", "Get Pro", "OpenMausBot Pro", "OpenMausBot Cloud"]) expect(html).not.toContain(gone);
+  for (const text of ["CryBot Cloud", "Keeps your bots and routines running 24/7, even when this computer is off.", "CryBot Cloud plans from $15/month + tax.",
+    "14-day money-back on every plan.", "CryBot on this computer stays free and open source.", "Compare plans", "Start free trial", "Sign in to your Cloud plan"]) expect(html).toContain(text);
+  for (const gone of ["CRY", "$89", "launch price", "New features first", "Get Pro", "CryBot Pro", "CryBot Cloud"]) expect(html).not.toContain(gone);
   press("Start free trial");
   expect(f.dispatch).toHaveBeenCalledWith({ type: "openCloudAdd", source: "app_settings" });
   f.dispatch.mockClear();
@@ -75,20 +75,20 @@ it("without a trial it says Add a Cloud; signed in, no sign-in link; without the
 
 it("someone with a plan sees that plan and the way to it, never an offer, and Cloud is never asked", async () => {
   for (const [state, text] of [
-    [plan({ entitlement: paid("max") }), "Max active · verified by MausBot Cloud"],
+    [plan({ entitlement: paid("max") }), "Max active · verified by CryBot Cloud"],
     [plan({ entitlement: paid("pro", "inactive") }), "Pro · not active right now"],
     [plan({ purchase: { state: "confirming", tier: "personal" } }), "Personal · payment received"],
-    [{ status: "unavailable", lastPlan: { tier: "personal", active: true } }, "Personal · checking with MausBot Cloud…"],
+    [{ status: "unavailable", lastPlan: { tier: "personal", active: true } }, "Personal · checking with CryBot Cloud…"],
     [{ status: "reauth-required", message: "expired", lastPlan: { tier: "max", active: true } }, "Sign in again to use the Cloud on this computer. Your plan is not affected."],
   ] as const) {
     const html = await card(state as CloudAccountState);
-    expect(html).toContain(text); expect(html).toContain("MausBot Cloud settings");
+    expect(html).toContain(text); expect(html).toContain("CryBot Cloud settings");
     expect(html).not.toContain("Start free trial"); expect(html).not.toContain("$15");
   }
   expect(bridge.offer).not.toHaveBeenCalled();
   for (const state of [{ status: "unavailable" }, { status: "connecting" }, { status: "signed-out", message: "restoring" }] as CloudAccountState[]) expect(await card(state)).toBe("");
   await card(plan({ entitlement: paid("max") }));
-  press("MausBot Cloud settings");
+  press("CryBot Cloud settings");
   expect(f.dispatch).toHaveBeenCalledWith({ type: "toggleAppSettings", open: true, section: "cloudAccount" });
 });
 
@@ -103,7 +103,7 @@ it("never offers a plan to anyone who pays, may pay, or whose state is unknown; 
   ];
   for (const state of nobodyToSell) expect(proOfferAvailable(state), JSON.stringify(state)).toBe(false);
   expect(proOfferAvailable(signedOut)).toBe(true); expect(proOfferAvailable(plan())).toBe(true);
-  vi.stubGlobal("window", { ogb: { remoteClient: { active: true }, cloudAccount: bridge } });
+  vi.stubGlobal("window", { cry: { remoteClient: { active: true }, cloudAccount: bridge } });
   expect(await card(signedOut)).toBe("");
   vi.stubGlobal("window", {});
   expect(await card(signedOut)).toBe("");

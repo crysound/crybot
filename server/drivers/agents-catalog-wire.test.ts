@@ -35,11 +35,11 @@ function profiles(): Record<string, Profile> {
             .filter(Boolean).join("+") || "default";
           all[name] = {
             env: {
-              OMB_SKILL_AUTHORING_ENABLED: flag(skills),
-              OMB_SHARED_COMPUTERS_ENABLED: flag(shared),
-              OMB_VOICE_NOTES: flag(voice),
-              OMB_CHIEF_OF_STAFF: flag(chief),
-              OMB_COMPUTER_SELECTION: "1",
+              CRYBOT_SKILL_AUTHORING_ENABLED: flag(skills),
+              CRYBOT_SHARED_COMPUTERS_ENABLED: flag(shared),
+              CRYBOT_VOICE_NOTES: flag(voice),
+              CRYBOT_CHIEF_OF_STAFF: flag(chief),
+              CRYBOT_COMPUTER_SELECTION: "1",
             },
           };
         }
@@ -47,25 +47,25 @@ function profiles(): Record<string, Profile> {
     }
   }
   for (const name of ["skills+shared+voice", "skills+shared+voice+non-chief"]) {
-    all[`${name}+cloud-home`] = { env: { ...all[name]!.env, OMB_CLOUD_HOME: "1" } };
+    all[`${name}+cloud-home`] = { env: { ...all[name]!.env, CRYBOT_CLOUD_HOME: "1" } };
   }
   // Research is on only with a treg key or a Cloud plan and the bot's switch; the fullest profile carries it.
-  all["skills+shared+voice+x"] = { env: { ...all["skills+shared+voice"]!.env, OMB_X_RESEARCH: "1", OMB_RESEARCH: "1" } };
+  all["skills+shared+voice+x"] = { env: { ...all["skills+shared+voice"]!.env, CRYBOT_X_RESEARCH: "1", CRYBOT_RESEARCH: "1" } };
   // A Team Cloud mounts message_person; the fullest profile carries it.
-  all["skills+shared+voice+x+team"] = { env: { ...all["skills+shared+voice+x"]!.env, OMB_TEAM_PEOPLE: "1" } };
-  all["skills+shared+voice+x+team+images"] = { env: { ...all["skills+shared+voice+x+team"]!.env, OMB_IMAGE_GENERATION: "1" } };
+  all["skills+shared+voice+x+team"] = { env: { ...all["skills+shared+voice+x"]!.env, CRYBOT_TEAM_PEOPLE: "1" } };
+  all["skills+shared+voice+x+team+images"] = { env: { ...all["skills+shared+voice+x+team"]!.env, CRYBOT_IMAGE_GENERATION: "1" } };
   all["default+legacy-switches"] = {
-    env: { ...all.default!.env, OMB_ROOM_TURN: "1", OMB_OWN_THREAD_CREATION: "1", OMB_EXTERNAL_RUNTIME: "1", OMB_ACTIVE_WAITS: "0" },
+    env: { ...all.default!.env, CRYBOT_ROOM_TURN: "1", CRYBOT_OWN_THREAD_CREATION: "1", CRYBOT_EXTERNAL_RUNTIME: "1", CRYBOT_ACTIVE_WAITS: "0" },
   };
-  // The person's MausBot holds a Chief's powers and adds its notification pair; MAUSBOT_ADDS bounds what that costs.
-  for (const name of ["default", "skills+shared+voice"]) all[`${name}+mausbot`] = { env: { ...all[name]!.env, OMB_MAUSBOT: "1" } };
+  // The person's CryBot holds a Chief's powers and adds its notification pair; CRYBOT_ADDS bounds what that costs.
+  for (const name of ["default", "skills+shared+voice"]) all[`${name}+crybot`] = { env: { ...all[name]!.env, CRYBOT_BOTBOT: "1" } };
   // A chat that can never pick its computer: its Works on is Off, or it works on its team's computer. A room is one too.
-  all["default+no-computer-pick"] = { env: { ...all.default!.env, OMB_COMPUTER_SELECTION: "0" } };
-  for (const name of ["default", "non-chief"]) all[`${name}+room`] = { env: { ...all[name]!.env, OMB_COMPUTER_SELECTION: "0", OMB_ROOM: "1" } };
-  all["default+images"] = { env: { ...all.default!.env, OMB_IMAGE_GENERATION: "1" } };
+  all["default+no-computer-pick"] = { env: { ...all.default!.env, CRYBOT_COMPUTER_SELECTION: "0" } };
+  for (const name of ["default", "non-chief"]) all[`${name}+room`] = { env: { ...all[name]!.env, CRYBOT_COMPUTER_SELECTION: "0", CRYBOT_ROOM: "1" } };
+  all["default+images"] = { env: { ...all.default!.env, CRYBOT_IMAGE_GENERATION: "1" } };
   // The plan's included app hosting reaches only a Cloud home the Admin wired for it; the fullest profile carries it.
-  all["skills+shared+voice+x+team+images+hosting"] = { env: { ...all["skills+shared+voice+x+team+images"]!.env, OMB_APP_HOSTING: "1" } };
-  all["default+hosting"] = { env: { ...all.default!.env, OMB_APP_HOSTING: "1" } };
+  all["skills+shared+voice+x+team+images+hosting"] = { env: { ...all["skills+shared+voice+x+team+images"]!.env, CRYBOT_APP_HOSTING: "1" } };
+  all["default+hosting"] = { env: { ...all.default!.env, CRYBOT_APP_HOSTING: "1" } };
   return all;
 }
 
@@ -74,9 +74,9 @@ const CHIEF_ONLY_TOOLS = ["create_bot", "list_team_setup", "list_team_library", 
 const CHIEF_TARGET_TOOLS = ["propose_profile", "propose_model"];
 const CHIEF_PROFILE_TARGET = " A Chief of Staff may pass for_bot_id (from list_bots) for a requested change to another bot in its section.";
 const TEAMWORK_TOOLS = ["list_room_targets", "coordinate_bots", "assignment_status", "list_bots", "list_rooms", "list_threads", "close_thread", "start_thread", "post_to_room"];
-const MAUSBOT_TOOLS = ["list_unread_notifications", "mark_notifications_read"];
-/** MausBot's tools may make its list at most this much longer than the same Chief's without them. */
-const MAUSBOT_ADDS = 0.02;
+const CRYBOT_TOOLS = ["list_unread_notifications", "mark_notifications_read"];
+/** CryBot's tools may make its list at most this much longer than the same Chief's without them. */
+const CRYBOT_ADDS = 0.02;
 const RESEARCH_TOOLS = ["x_search", "research_search", "research_endpoint", "research_call"];
 /** Only on the person's own Cloud: never on the fullest profile, a Team Cloud's. */
 const OWN_CLOUD_TOOLS = ["ask_for_computer"];
@@ -104,8 +104,8 @@ const BUDGET_BASELINE: Record<string, number> = {
   "skills+shared+voice+cloud-home": 67556,
   "skills+shared+voice+non-chief+cloud-home": 58673,
   "default+legacy-switches": 61763,
-  "default+mausbot": 62414,
-  "skills+shared+voice+mausbot": 68441,
+  "default+crybot": 62414,
+  "skills+shared+voice+crybot": 68441,
   "skills+shared+voice+x": 71614,
   "skills+shared+voice+x+team": 71614,
   "default+no-computer-pick": 60923,
@@ -121,10 +121,10 @@ const RPC_PREFIX = '{"jsonrpc":"2.0","id":1,"result":';
 
 /** One tools/list `result` from a fresh proxy, sliced out of the raw stdout line, never re-serialized. */
 async function toolsListWire(entry: string, env: Record<string, string>): Promise<string> {
-  // A developer shell or an OpenMausBot turn can carry OMB_* switches; the profile must be the only source.
-  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("OMB_")));
+  // A developer shell or an CryBot turn can carry CRYBOT_* switches; the profile must be the only source.
+  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("CRYBOT_")));
   const child = spawn(process.execPath, [entry], {
-    env: { ...inherited, OMB_HARNESS_URL: "http://127.0.0.1:9", OMB_BOT_ID: "bot-golden", OMB_THREAD_ID: "thread-golden", OMB_COMMS_TOKEN: "unused", OMB_TURN_DEPTH: "0", ...env },
+    env: { ...inherited, CRYBOT_HARNESS_URL: "http://127.0.0.1:9", CRYBOT_BOT_ID: "bot-golden", CRYBOT_THREAD_ID: "thread-golden", CRYBOT_COMMS_TOKEN: "unused", CRYBOT_TURN_DEPTH: "0", ...env },
     stdio: ["pipe", "pipe", "inherit"],
   });
   try {
@@ -201,7 +201,7 @@ describe("agents proxy tools/list golden", () => {
       const names = toolsOf(wire).map((tool) => tool.name);
       const at = names.indexOf("delete_trigger");
       expect(at, name).toBeGreaterThan(-1);
-      const waits = PROFILES[name]!.env.OMB_ROOM === "1" ? [] : ["wait_until", "list_waits", "cancel_wait"];
+      const waits = PROFILES[name]!.env.CRYBOT_ROOM === "1" ? [] : ["wait_until", "list_waits", "cancel_wait"];
       expect(names.slice(at + 1, at + 1 + waits.length), name).toEqual(waits);
       expect(names.filter((tool) => /wait/.test(tool) && tool !== "assignment_status"), name).toEqual(waits);
     }
@@ -215,9 +215,9 @@ describe("agents proxy tools/list golden", () => {
     const full = new Map(toolsOf(wires[FULL]!).map((tool) => [tool.name, JSON.stringify(tool)]));
     for (const [name, profile] of Object.entries(PROFILES)) {
       for (const tool of toolsOf(wires[name]!)) {
-        if (profile.env.OMB_CLOUD_HOME === "1" && (tool.name === "select_computer" || OWN_CLOUD_TOOLS.includes(tool.name))) continue;
-        if (profile.env.OMB_CHIEF_OF_STAFF === "0" && CHIEF_TARGET_TOOLS.includes(tool.name)) continue;
-        if (profile.env.OMB_MAUSBOT === "1" && MAUSBOT_TOOLS.includes(tool.name)) continue;
+        if (profile.env.CRYBOT_CLOUD_HOME === "1" && (tool.name === "select_computer" || OWN_CLOUD_TOOLS.includes(tool.name))) continue;
+        if (profile.env.CRYBOT_CHIEF_OF_STAFF === "0" && CHIEF_TARGET_TOOLS.includes(tool.name)) continue;
+        if (profile.env.CRYBOT_BOTBOT === "1" && CRYBOT_TOOLS.includes(tool.name)) continue;
         expect(JSON.stringify(tool), `${name}: ${tool.name}`).toBe(full.get(tool.name));
       }
     }
@@ -259,9 +259,9 @@ describe("agents proxy tools/list golden", () => {
   it("mounts ask_for_computer only on a person's own Cloud that is lent their computer, never a Team Cloud", () => {
     for (const [name, profile] of Object.entries(PROFILES)) {
       expect(toolsOf(wires[name]!).some((tool) => tool.name === "ask_for_computer"), name)
-        .toBe(profile.env.OMB_CLOUD_HOME === "1" && profile.env.OMB_SHARED_COMPUTERS_ENABLED === "1" && profile.env.OMB_TEAM_PEOPLE !== "1");
+        .toBe(profile.env.CRYBOT_CLOUD_HOME === "1" && profile.env.CRYBOT_SHARED_COMPUTERS_ENABLED === "1" && profile.env.CRYBOT_TEAM_PEOPLE !== "1");
     }
-    const team = catalogProfileFromEnv({ ...PROFILES["skills+shared+voice+cloud-home"]!.env, OMB_TEAM_PEOPLE: "1", OMB_BOT_ID: "bot-golden" });
+    const team = catalogProfileFromEnv({ ...PROFILES["skills+shared+voice+cloud-home"]!.env, CRYBOT_TEAM_PEOPLE: "1", CRYBOT_BOT_ID: "bot-golden" });
     expect(availableTools(team).map((tool) => tool.name)).not.toContain("ask_for_computer");
   });
 
@@ -270,7 +270,7 @@ describe("agents proxy tools/list golden", () => {
     const HOSTING_TOOLS = ["publish_app", "check_app_hosting"];
     expect(names(wires["default+hosting"]!).filter((tool) => !HOSTING_TOOLS.includes(tool))).toEqual(names(wires.default!));
     for (const [name, profile] of Object.entries(PROFILES)) {
-      for (const tool of HOSTING_TOOLS) expect(names(wires[name]!).includes(tool), `${name}: ${tool}`).toBe(profile.env.OMB_APP_HOSTING === "1");
+      for (const tool of HOSTING_TOOLS) expect(names(wires[name]!).includes(tool), `${name}: ${tool}`).toBe(profile.env.CRYBOT_APP_HOSTING === "1");
     }
   });
 
@@ -278,13 +278,13 @@ describe("agents proxy tools/list golden", () => {
     const names = (wire: string) => toolsOf(wire).map((tool) => tool.name);
     expect(names(wires["default+images"]!).filter((tool) => tool !== "generate_image")).toEqual(names(wires.default!));
     for (const [name, profile] of Object.entries(PROFILES)) {
-      expect(names(wires[name]!).includes("generate_image"), name).toBe(profile.env.OMB_IMAGE_GENERATION === "1");
+      expect(names(wires[name]!).includes("generate_image"), name).toBe(profile.env.CRYBOT_IMAGE_GENERATION === "1");
     }
   });
 
   it("ignores the switches that once picked a catalog profile", () => {
     expect(wires["default+legacy-switches"]).toBe(wires.default);
-    const profile = catalogProfileFromEnv({ OMB_BOT_ID: "bot-golden", OMB_CHIEF_OF_STAFF: "1", OMB_COMPUTER_SELECTION: "1", OMB_ROOM_TURN: "1", OMB_OWN_THREAD_CREATION: "1", OMB_EXTERNAL_RUNTIME: "1", OMB_ACTIVE_WAITS: "0" });
+    const profile = catalogProfileFromEnv({ CRYBOT_BOT_ID: "bot-golden", CRYBOT_CHIEF_OF_STAFF: "1", CRYBOT_COMPUTER_SELECTION: "1", CRYBOT_ROOM_TURN: "1", CRYBOT_OWN_THREAD_CREATION: "1", CRYBOT_EXTERNAL_RUNTIME: "1", CRYBOT_ACTIVE_WAITS: "0" });
     expect(JSON.stringify({ tools: availableTools(profile) })).toBe(wires.default);
     expect(profile).not.toHaveProperty("activeWaits");
     expect(profile).not.toHaveProperty("coordinating");
@@ -312,7 +312,7 @@ describe("agents proxy tools/list golden", () => {
 
   it("shows only a Chief of Staff the Chief-only tools, and for_bot_id on another bot's profile or model", () => {
     type SchemaTool = Tool & { description: string; inputSchema: { properties: Record<string, unknown> } };
-    const nonChief = Object.keys(PROFILES).filter((name) => PROFILES[name]!.env.OMB_CHIEF_OF_STAFF === "0");
+    const nonChief = Object.keys(PROFILES).filter((name) => PROFILES[name]!.env.CRYBOT_CHIEF_OF_STAFF === "0");
     expect(nonChief).toHaveLength(10);
     for (const name of nonChief) {
       const chiefTools = toolsOf(wires[name.startsWith("non-chief") ? name.replace("non-chief", "default") : name.replace("+non-chief", "")]!) as SchemaTool[];
@@ -343,17 +343,17 @@ describe("agents proxy tools/list golden", () => {
       expect(names(`${name}+room`), name).toEqual(names(name).filter((tool) => !["select_computer", "wait_until", "list_waits", "cancel_wait", "burst"].includes(tool)));
     }
     for (const [name, profile] of Object.entries(PROFILES)) {
-      expect(names(name).includes("select_computer"), name).toBe(profile.env.OMB_COMPUTER_SELECTION === "1");
+      expect(names(name).includes("select_computer"), name).toBe(profile.env.CRYBOT_COMPUTER_SELECTION === "1");
       expect(names(name).includes("show_widget"), name).toBe(true);
       expect(names(name).includes("show_html"), name).toBe(true);
-      expect(names(name).includes("wait_until"), name).toBe(profile.env.OMB_ROOM !== "1");
+      expect(names(name).includes("wait_until"), name).toBe(profile.env.CRYBOT_ROOM !== "1");
     }
   });
 
   it("shows the X and research tools only where research is on, and adds nothing else", () => {
     for (const [name, profile] of Object.entries(PROFILES)) {
       const names = toolsOf(wires[name]!).map((tool) => tool.name);
-      for (const tool of RESEARCH_TOOLS) expect(names.includes(tool), `${name}: ${tool}`).toBe(profile.env.OMB_X_RESEARCH === "1" && profile.env.OMB_RESEARCH === "1");
+      for (const tool of RESEARCH_TOOLS) expect(names.includes(tool), `${name}: ${tool}`).toBe(profile.env.CRYBOT_X_RESEARCH === "1" && profile.env.CRYBOT_RESEARCH === "1");
     }
     const switchedOn = Object.keys(PROFILES).filter((name) => name.endsWith("+x"));
     expect(switchedOn).toHaveLength(1);
@@ -361,14 +361,14 @@ describe("agents proxy tools/list golden", () => {
       const without = toolsOf(wires[name.slice(0, -"+x".length)]!).map((tool) => tool.name);
       expect(toolsOf(wires[name]!).map((tool) => tool.name).filter((tool) => !RESEARCH_TOOLS.includes(tool))).toEqual(without);
       // A plan's relay can have X without research: x_search alone, and nothing else changes.
-      const xOnly = availableTools(catalogProfileFromEnv({ OMB_BOT_ID: "bot-golden", ...PROFILES[name]!.env, OMB_RESEARCH: "0" })).map((tool) => tool.name);
+      const xOnly = availableTools(catalogProfileFromEnv({ CRYBOT_BOT_ID: "bot-golden", ...PROFILES[name]!.env, CRYBOT_RESEARCH: "0" })).map((tool) => tool.name);
       expect(xOnly).toEqual(toolsOf(wires[name]!).map((tool) => tool.name).filter((tool) => tool === "x_search" || !RESEARCH_TOOLS.includes(tool)));
     }
   });
 
   it("is what the catalog module computes in-process, so another front end mounts the same tools", () => {
     for (const [name, profile] of Object.entries(PROFILES)) {
-      const tools = availableTools(catalogProfileFromEnv({ OMB_BOT_ID: "bot-golden", ...profile.env }));
+      const tools = availableTools(catalogProfileFromEnv({ CRYBOT_BOT_ID: "bot-golden", ...profile.env }));
       expect(JSON.stringify({ tools }), name).toBe(wires[name]);
     }
   });
@@ -396,7 +396,7 @@ describe("agents proxy tools/list from the packaged bundle", () => {
 
   it("serves the same bytes with no source tree beside it", async () => {
       // Same esbuild options as scripts/bundle-server.mjs: the proxy runs as its own process from one inlined file.
-    directory = realpathSync(mkdtempSync(join(tmpdir(), "omb-agents-proxy-bundle-")));
+    directory = realpathSync(mkdtempSync(join(tmpdir(), "cry-agents-proxy-bundle-")));
     await build({
       entryPoints: [PROXY_SOURCE],
       bundle: true,
@@ -438,12 +438,12 @@ describe("agents proxy tools/list wire size", () => {
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  it.each(Object.keys(PROFILES).filter((name) => name.endsWith("+mausbot")))("%s adds at most 2% to the same Chief's list", (name) => {
-    const without = name.slice(0, -"+mausbot".length);
+  it.each(Object.keys(PROFILES).filter((name) => name.endsWith("+crybot")))("%s adds at most 2% to the same Chief's list", (name) => {
+    const without = name.slice(0, -"+crybot".length);
     const tools = toolsOf(wires[name]!).map((tool) => tool.name);
-    expect(tools.slice(-MAUSBOT_TOOLS.length)).toEqual(MAUSBOT_TOOLS);
-    expect(tools.slice(0, -MAUSBOT_TOOLS.length)).toEqual(toolsOf(wires[without]!).map((tool) => tool.name));
-    expect(bytes(wires[name]!)).toBeLessThanOrEqual(Math.floor(bytes(wires[without]!) * (1 + MAUSBOT_ADDS)));
+    expect(tools.slice(-CRYBOT_TOOLS.length)).toEqual(CRYBOT_TOOLS);
+    expect(tools.slice(0, -CRYBOT_TOOLS.length)).toEqual(toolsOf(wires[without]!).map((tool) => tool.name));
+    expect(bytes(wires[name]!)).toBeLessThanOrEqual(Math.floor(bytes(wires[without]!) * (1 + CRYBOT_ADDS)));
   });
 
   it.each(Object.keys(PROFILES))("%s stays within 2% of its budget baseline", (name) => {

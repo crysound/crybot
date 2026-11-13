@@ -1,10 +1,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry } from "../scripts/control-cry.ts";
 
 it("offers configured Cline to Chief team setup and runs a Cline specialist in the isolated server", async () => {
-  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, { scripted: true }, ["cline"]);
+  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, { scripted: true }, ["cline"]);
   const { url, dataDir } = fixture.info;
   const plan = join(dataDir, "room-plan.json");
   const api = async (method: string, path: string, body?: unknown) => {
@@ -14,7 +14,7 @@ it("offers configured Cline to Chief team setup and runs a Cline specialist in t
     expect(response.ok, JSON.stringify(result)).toBe(true);
     return result as any;
   };
-  const cli = (...args: string[]) => runControlOmb([...args, "--url", url]) as Promise<any>;
+  const cli = (...args: string[]) => runControlCry([...args, "--url", url]) as Promise<any>;
   try {
     const chief = (await cli("new-bot", "--name", "Fixture Chief")).bot;
     await api("PATCH", `/api/bots/${chief.id}`, { chiefOfStaff: true });

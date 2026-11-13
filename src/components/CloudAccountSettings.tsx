@@ -154,7 +154,7 @@ export function CloudPlanOnCloud({ bridge, usage = null, upgrade, extra }: { bri
 }
 
 /** Security: the public native snapshot carries no credential and cannot activate a plan. */
-/** `onSignIn`: the sheet's email-code sign-in (the browser approval stays for openmausbot://cloud and Sign in again). */
+/** `onSignIn`: the sheet's email-code sign-in (the browser approval stays for crybot://cloud and Sign in again). */
 /** On a Team Cloud: its people and plan live on the Cloud page, where the person signs in with their own email. */
 export function TeamPeopleCard({ team }: { team: { name: string; cloudPage?: string } }) {
   return <Card title={t("cloudAccount.teamPeopleTitle")}>
@@ -165,7 +165,7 @@ export function TeamPeopleCard({ team }: { team: { name: string; cloudPage?: str
   </Card>;
 }
 
-/** One MausBot account, shown as two pages: `account` (who is signed in, sign in and out) and `plan` (the plan, its Cloud
+/** One CryBot account, shown as two pages: `account` (who is signed in, sign in and out) and `plan` (the plan, its Cloud
  * and cancelling it). */
 export function CloudAccountSettings({ linkRequest = 0, cloudHome = false, teamHome, onAddCloud, onSignIn, part = "plan", advanced = true, usage = null, upgrade, extra, avatar }: {
   /** the person's picture, for the account card's leading slot */
@@ -177,7 +177,7 @@ export function CloudAccountSettings({ linkRequest = 0, cloudHome = false, teamH
   /** a row for the Plan card (Simple's What this place cost) */
   extra?: ReactNode;
 } = {}) {
-  const bridge = window.ogb?.remoteClient?.active ? undefined : window.ogb?.cloudAccount;
+  const bridge = window.cry?.remoteClient?.active ? undefined : window.cry?.cloudAccount;
   const { platform } = useDesktopCapabilities().capabilities.host;
   const [account, setAccount] = useState<CloudAccountState | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState(false), [confirm, setConfirm] = useState<false | "sign-out" | "other-email">(false);
@@ -231,13 +231,13 @@ export function CloudAccountSettings({ linkRequest = 0, cloudHome = false, teamH
     if (action === "sign-in") void perform(() => bridge.begin());
     if (action === "connect") { link.current.connected = true; connectHome(); }
   }, [bridge, linkRequest, account, busy]);
-  const [moveNotice] = useCloudSendNotice(bridge ? window.ogb?.cloudSendPage : undefined);
+  const [moveNotice] = useCloudSendNotice(bridge ? window.cry?.cloudSendPage : undefined);
   const move = moveNotice?.move ? moveLine(moveNotice.move, "local") : null;
   const moving = move && move.kind !== "done" ? move.text : null;
   const offer = useCloudOffer(Boolean(account) && buyOfferAllowed(cloudPlanView(account)), account?.offer);
   const renewal: CloudRenewalActions | null = bridge?.cancelPlan && bridge.keepPlan ? { cancel: survey => bridge.cancelPlan!(survey), keep: () => bridge.keepPlan!() } : null;
   if (!bridge) {
-    const plan = window.ogb?.remoteClient?.active || !cloudHome ? undefined : window.ogb?.cloudPlan;
+    const plan = window.cry?.remoteClient?.active || !cloudHome ? undefined : window.cry?.cloudPlan;
     if (part !== "plan") return null;
     return cloudHome && teamHome ? null
       : plan ? <CloudPlanOnCloud bridge={plan} usage={usage} upgrade={upgrade} extra={extra} /> : <p className="px-4 text-[13px] text-ink-secondary">{t("cloudAccount.desktopOnly")}</p>;
@@ -260,7 +260,7 @@ export function CloudAccountSettings({ linkRequest = 0, cloudHome = false, teamH
     // and Sign out as the card's last row. A Cloud's page draws the same card with "from This computer" in that place.
     const blank = <span aria-hidden="true" />;
     return <>
-      <SettingsGroup label={t("settings.account.mausbot", { app: productName() })} block="mausbot-account">
+      <SettingsGroup label={t("settings.account.crybot", { app: productName() })} block="crybot-account">
         <SettingsRows icons>
           {(!account || view.kind === "unknown") && <SettingRow title={t("cloudAccount.loading")} leading={avatar ?? blank}>{!account && <button type="button" disabled={busy} className="ui-button" onClick={() => void perform(() => bridge.state())}>{t("organization.refresh")}</button>}</SettingRow>}
           {signedOut && <SettingRow title={t("settings.account.signInTitle", { app: productName() })} subtitle={t("settings.account.signInBody")} message={message && <p role="status">{message}</p>} leading={avatar ?? blank}>
@@ -280,8 +280,8 @@ export function CloudAccountSettings({ linkRequest = 0, cloudHome = false, teamH
             <button type="button" disabled={busy} data-danger="" className="settings-quiet cursor-pointer" onClick={() => setConfirm("sign-out")}>{t("settings.account.signOutShort")}</button>
           </SettingRow></div>}
         </SettingsRows>
-        {signed && view.kind === "free" && !confirm && <p className="px-4 text-[12px] leading-4 text-ink-secondary">{t(window.ogb?.accounts ? "cloudAccount.otherEmailOrTeam" : "cloudAccount.otherEmail")}{" "}
-          <button type="button" data-cloud-other-email disabled={busy} className="cursor-pointer text-accent-text hover:underline" onClick={() => (window.ogb?.accounts ? setAddingEmail(true) : setConfirm("other-email"))}>{t(window.ogb?.accounts ? "cloudAccount.addOtherEmail" : "cloudAccount.useOtherEmail")}</button></p>}
+        {signed && view.kind === "free" && !confirm && <p className="px-4 text-[12px] leading-4 text-ink-secondary">{t(window.cry?.accounts ? "cloudAccount.otherEmailOrTeam" : "cloudAccount.otherEmail")}{" "}
+          <button type="button" data-cloud-other-email disabled={busy} className="cursor-pointer text-accent-text hover:underline" onClick={() => (window.cry?.accounts ? setAddingEmail(true) : setConfirm("other-email"))}>{t(window.cry?.accounts ? "cloudAccount.addOtherEmail" : "cloudAccount.useOtherEmail")}</button></p>}
         {errorLine}
       </SettingsGroup>
       {addingEmail && <AccountsSheet adding="" onClose={() => setAddingEmail(false)} />}

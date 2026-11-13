@@ -98,8 +98,8 @@ describe("a Fish Audio call's relay", () => {
     ]);
     await expect(result).resolves.toBe("It is booked for 7pm.");
     await vi.waitFor(() => expect(session.sendUserMessage).toHaveBeenCalledTimes(2));
-    expect(session.sendUserMessage).toHaveBeenNthCalledWith(1, "[OpenMausBot] The confirmation email arrived.", { audio: true });
-    expect(session.sendUserMessage).toHaveBeenNthCalledWith(2, "[OpenMausBot] Looking at the calendar", { audio: false });
+    expect(session.sendUserMessage).toHaveBeenNthCalledWith(1, "[CryBot] The confirmation email arrived.", { audio: true });
+    expect(session.sendUserMessage).toHaveBeenNthCalledWith(2, "[CryBot] Looking at the calendar", { audio: false });
   });
 
   it("keeps the delegation id to the relay's alphabet and never forwards the agent's arguments", async () => {
@@ -229,7 +229,7 @@ describe("a Fish Audio Live call on screen", () => {
   let getUserMedia: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    vi.stubGlobal("window", { ogb: { speechStop: vi.fn(async () => {}) } });
+    vi.stubGlobal("window", { cry: { speechStop: vi.fn(async () => {}) } });
     relay = fakeRelay();
     session = null;
     request = vi.fn(async (path: string, init?: RequestInit) => {

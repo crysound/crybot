@@ -21,7 +21,7 @@ interface Snapshot {
   finishing: boolean;
 }
 
-const DONE_HERE = "omb.cloudWelcome.done";
+const DONE_HERE = "cry.cloudWelcome.done";
 function stored(key: string): string | null {
   try { return globalThis.localStorage?.getItem(key) || null; } catch { return null; }
 }

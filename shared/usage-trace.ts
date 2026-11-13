@@ -45,8 +45,8 @@ export interface TraceTool {
   endedAt?: number;
   status: TraceStatus;
   error?: string;
-  /** Who measured it: OMB's own tools are timed by the server on every engine. */
-  timedBy: "engine" | "omb";
+  /** Who measured it: CRY's own tools are timed by the server on every engine. */
+  timedBy: "engine" | "cry";
   running?: boolean;
 }
 
@@ -150,7 +150,7 @@ export function traceRootId(threadId: string, turnId: string): string {
 }
 
 const SERVER_ICONS: Readonly<Record<string, TraceToolIcon>> = { phone: "phone", data: "data", dweb: "web", browser: "browser", computer: "computer" };
-const OWN_SERVERS = new Set(["agents", "ogb", "composio", OWN_APPS_SERVER, ...Object.keys(SERVER_ICONS)]);
+const OWN_SERVERS = new Set(["agents", "cry", "composio", OWN_APPS_SERVER, ...Object.keys(SERVER_ICONS)]);
 const COMPOSIO_ACTION = /^([A-Z][A-Z0-9]+)_[A-Z0-9_]+$/;
 const BUILT_IN_ICONS: ReadonlyArray<[RegExp, TraceToolIcon]> = [
   [/^(?:websearch|web_search|search_web|google_search|x_search|research)$/, "search"],

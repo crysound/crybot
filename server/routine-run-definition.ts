@@ -33,7 +33,7 @@ export function routineRunDefinition(routine: Routine): Pick<RoutineRun,
     target: routine.target,
     groupId: routine.groupId,
     botId: routine.botId,
-    runOn: routine.runOn ?? "maus",
+    runOn: routine.runOn ?? "bot",
     access: routine.access,
     deliver: routine.deliver,
   };

@@ -1,5 +1,5 @@
 // Adapted from pingdotgg/t3code@00cdceb1 apps/web/src/browser/ServerBrowserSurface.tsx, MIT License, Copyright (c)
-// 2026 T3 Tools Inc. (full text in third_party/t3-code/LICENSE); modified: OpenMausBot's UI, the panel picks the
+// 2026 T3 Tools Inc. (full text in third_party/t3-code/LICENSE); modified: CryBot's UI, the panel picks the
 // transport (the v2 stream, or the v1 view as a fallback), page input goes through the panel's control rules so the
 // first press takes the browser, Shift+Escape returns to the address bar, a larger frame cap is sent in place rather
 // than by reconnecting, so the person keeps the browser they hold, and the page's dropdown lists, cursor shape and HTTP
@@ -19,7 +19,6 @@ import {
 
 import {
   createPreviewFramePainter,
-  PREVIEW_STREAM_SANDBOX_STEPS_URL,
   previewStreamHostSetupMessage,
   previewStreamModifiers,
   uploadPreviewStreamFiles,
@@ -769,7 +768,7 @@ export function StreamSurface(props: {
           {hostSetup.need === "libraries" ? (
             <code className="max-w-md select-all break-all rounded-lg bg-inset px-3 py-2 text-left text-[12px] text-ink">{hostSetup.command}</code>
           ) : (
-            <a href={PREVIEW_STREAM_SANDBOX_STEPS_URL} target="_blank" rel="noopener noreferrer" className="text-[12px] text-ink underline">Browser sandbox setup steps</a>
+            <span className="text-[12px] text-ink">Ask your administrator to allow Chrome’s sandbox in AppArmor.</span>
           )}
           <button type="button" className="rounded-lg border border-hairline px-3 py-1.5 text-[12px] text-ink hover:bg-inset" onClick={() => setHostSetup(null)}>{t("common.tryAgain")}</button>
         </div>

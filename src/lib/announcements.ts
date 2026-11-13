@@ -3,7 +3,7 @@
 // here, from what the page already knows, and nothing about the person leaves it. AppNotices shows the card through the
 // notice queue, after every notice someone must act on.
 import { useEffect, useSyncExternalStore } from "react";
-import { track } from "@/lib/analytics";
+
 import { hintSeen, type OnboardingStatus } from "@/lib/onboarding";
 import { localDay } from "@/lib/notices";
 import type { CloudPlanView } from "@/lib/cloud-plan";
@@ -24,8 +24,8 @@ const RETRY_MS = 5 * 60 * 1000;
 
 const SEEN_PREFIX = "announcement:";
 const SPONSOR_DAY_PREFIX = "announcement-sponsor:";
-const LAUNCH_KEY = "omb.launch.announcement";
-const SPONSOR_DAY_STORAGE = "omb.announcement.sponsor-day";
+const LAUNCH_KEY = "cry.launch.announcement";
+const SPONSOR_DAY_STORAGE = "cry.announcement.sponsor-day";
 /** The workspace record keeps this many cards' marks at most, beside the app's own hints (server/config.ts caps them all). */
 const MAX_KEPT_HINTS = 10;
 const HINTS_CAP = 100;
@@ -89,7 +89,7 @@ export function announcementPlatform(userAgent: string | undefined): Announcemen
   return null;
 }
 
-/** The desktop app's own page, a MausBot Cloud's page, or any other server's. */
+/** The desktop app's own page, a CryBot Cloud's page, or any other server's. */
 export function announcementSurface(local: boolean, cloudHome: boolean): AnnouncementSurface {
   return local ? "desktop" : cloudHome ? "cloud" : "server";
 }
@@ -240,6 +240,6 @@ export type AnnouncementAction = "shown" | "primary" | "secondary" | "close";
 
 /** One event per card and step, under the same analytics switch as every other event. The id is the card's own, from
  * the public file, the same for everyone. */
-export function reportAnnouncement(card: { id: string; kind: AnnouncementKind }, action: AnnouncementAction): void {
-  track("announcement", { id: card.id, kind: card.kind, action });
+export function reportAnnouncement(_card: { id: string; kind: AnnouncementKind }, _action: AnnouncementAction): void {
+
 }

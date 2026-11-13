@@ -8,7 +8,6 @@ import { useMediaQuery } from "@/lib/use-media-query";
 import { setAdvancedMode } from "@/lib/interface-mode";
 import { api, useStore, type ConfigStatus } from "@/state/store";
 import { useIsTopLayer } from "../Layer";
-import { LicenseExpiryBanner } from "../LicenseExpiryBanner";
 import { shortcutLabel } from "../ShortcutHint";
 import { SettingsLook } from "../SettingsPrimitives";
 import { SettingsPageBody } from "./pages/SettingsPageBody";
@@ -24,7 +23,7 @@ import { SettingsSkeletonCard, SettingsUnreachable } from "./SettingsStates";
 
 const NARROW = "(max-width: 767.98px)";
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
-const OPENED = "omb-settings-opened";
+const OPENED = "cry-settings-opened";
 
 function markOpened(): void {
   try { if (!localStorage.getItem(OPENED)) localStorage.setItem(OPENED, String(Date.now())); } catch { /* storage may be blocked */ }
@@ -74,7 +73,7 @@ export function SettingsWindow() {
   }, [anchor, target.page]);
   // A link, a notice or a search result that asks for what only Advanced mode shows turns Advanced on and lands there.
   useEffect(() => { if (target.advanced) setAdvancedMode(true); }, [target.advanced]);
-  useEffect(() => window.ogb?.onOpenAppSettings?.(() => setQuery("")), []);
+  useEffect(() => window.cry?.onOpenAppSettings?.(() => setQuery("")), []);
   useEffect(markOpened, []);
 
   const hits = useMemo(() => searchSettings(query, ctx, (entry) => hitLabel({ entry, elsewhere: false, score: 0 }, place, ctx.desktop),
@@ -191,7 +190,6 @@ export function SettingsWindow() {
                     <div className={cn("flex max-w-[640px] flex-col", narrow && "max-w-none")}>
                       <SettingsPageHeader page={page} ctx={ctx} place={place} scrolled={scrolled} narrow={narrow} missing={missing} />
                       <div key={target.page} data-settings-page-body={target.page} className={cn("flex flex-col gap-6", narrow && "px-4")}>
-                        <LicenseExpiryBanner config={state.config} />
                         {page.owner === "place" && state.config === null
                           ? state.error ? <SettingsUnreachable place={place.name} onRetry={() => void api<ConfigStatus>("/api/config").then((config) => dispatch({ type: "configStatus", config })).catch(() => {})} />
                             : <><SettingsSkeletonCard place={place.name} /><SettingsSkeletonCard place={place.name} /></>

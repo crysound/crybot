@@ -28,11 +28,11 @@ describe("the note's way to My Cloud", () => {
     vi.resetModules();
     const connectHome = vi.fn(async () => ({}));
     const confirm = vi.fn(() => false);
-    vi.stubGlobal("window", { ogb: { cloudAccount: { connectHome } }, confirm });
+    vi.stubGlobal("window", { cry: { cloudAccount: { connectHome } }, confirm });
     vi.doMock("@/state/store", () => ({ useStore: () => ({ state: { config: { cloudHome: false } }, dispatch: vi.fn() }) }));
     vi.doMock("./ProIntroduction", () => ({ useCloudPlan: () => ({ view: { kind: "paid", label: "Pro", checking: false }, account: { machine: { status: "ready" } } }) }));
     vi.doMock("./onboarding/WelcomeGate", () => ({ localDesktopPage: () => true }));
-    vi.doMock("@/lib/brand", () => ({ brandStatus: () => ({ source: "default" }), productName: () => "MausBot" }));
+    vi.doMock("@/lib/brand", () => ({ brandStatus: () => ({ source: "default" }), productName: () => "Cry Bot" }));
     const { RoutineScheduleNote } = await import("./RoutineScheduleNote");
     const html = renderToStaticMarkup(createElement(RoutineScheduleNote));
     expect(html.replace(/<[^>]+>/g, "")).toContain("To run routines 24/7, create them in the Cloud. Open the Cloud");

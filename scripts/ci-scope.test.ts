@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 function fixture(source = "src/page.ts") {
-  const directory = mkdtempSync(join(tmpdir(), "omb-ci-scope-"));
+  const directory = mkdtempSync(join(tmpdir(), "cry-ci-scope-"));
   temporaryDirectories.push(directory);
   const git = (...args: string[]) => execFileSync("git", args, { cwd: directory, encoding: "utf8" }).trim();
   git("init", "--quiet");
@@ -100,7 +100,7 @@ describe("CI path scope", () => {
   });
 
   it("runs a test under scripts/ wherever the suite runs, without the build", () => {
-    expect(selectCiScope(["scripts/generate-locale.test.mjs", "scripts/testing/control-omb-ui.e2e.test.ts"]))
+    expect(selectCiScope(["scripts/generate-locale.test.mjs", "scripts/testing/control-cry-ui.e2e.test.ts"]))
       .toEqual({ areas: ["script-tests"], checks: ["browser-identity", "host-tests", "linux-tests", "ui-smoke"] });
   });
 
@@ -116,7 +116,7 @@ describe("CI path scope", () => {
   });
 
   it.each([
-    ["server/index.ts"], ["shared/types.ts"], ["companion/src/index.ts"], ["enterprise/license.ts"], ["evals/runners/run-evals.ts"],
+    ["server/index.ts"], ["shared/types.ts"], ["companion/src/index.ts"], ["evals/runners/run-evals.ts"],
     ["skills/pdf/SKILL.md"], ["cloudflare/composio-broker/src/index.ts"], ["Dockerfile"], ["deploy/podman/run.sh"],
     ...SRC_OUTSIDE_RENDERER.map((file) => [file]),
   ])("runs every check that runs the server for %j", (file) => {
@@ -233,7 +233,7 @@ describe("CI outputs", () => {
       "server/cloud-team-gateway-mcp.e2e.test.ts",
       "server/cloud-team-inbox.e2e.test.ts",
       "server/cloud-team-included-hosting.e2e.test.ts",
-      "server/cloud-team-mausbot-reach.e2e.test.ts",
+      "server/cloud-team-crybot-reach.e2e.test.ts",
       "server/cloud-team-member-secrets.e2e.test.ts",
       "server/cloud-team-new-chat-private.e2e.test.ts",
       "server/cloud-team-open-reach.e2e.test.ts",
@@ -301,7 +301,7 @@ describe("CI outputs", () => {
       "server/question-routing.e2e.test.ts",
       "server/team-protocol.e2e.test.ts",
       "server/team-small-fixes.e2e.test.ts",
-      "server/team-mausbot-followup.e2e.test.ts",
+      "server/team-crybot-followup.e2e.test.ts",
       "server/team-no-ai.e2e.test.ts",
       "server/team-refused-handoff.e2e.test.ts",
       "server/two-places.e2e.test.ts",
@@ -312,7 +312,7 @@ describe("CI outputs", () => {
       "server/bot-api-team.e2e.test.ts",
       "server/cloud-team-conversation-share.e2e.test.ts",
       "server/cloud-team-first-look.e2e.test.ts",
-      "server/cloud-team-mausbot-own-chat.e2e.test.ts",
+      "server/cloud-team-crybot-own-chat.e2e.test.ts",
       "server/connector-stayed.e2e.test.ts",
       "server/email/host.test.ts",
       "server/email/inline-images.test.ts",
@@ -425,7 +425,7 @@ describe("the Linux work in the static job, on a Boat VM", () => {
     writeFileSync(eventPath, JSON.stringify({ pull_request: { base: { sha: base }, head: { sha: git("rev-parse", "HEAD") } } }));
     const result = spawnSync(process.execPath, [script], {
       cwd: directory, encoding: "utf8", timeout: 5_000,
-      env: { ...process.env, GITHUB_EVENT_NAME: "pull_request", GITHUB_EVENT_PATH: eventPath, GITHUB_OUTPUT: outputPath, OMB_CI_LINUX_IN_STATIC: "true" },
+      env: { ...process.env, GITHUB_EVENT_NAME: "pull_request", GITHUB_EVENT_PATH: eventPath, GITHUB_OUTPUT: outputPath, CRYBOT_CI_LINUX_IN_STATIC: "true" },
     });
     expect(result.status, result.stderr).toBe(0);
     expect(outputs(readFileSync(outputPath, "utf8"))).toEqual(moveLinuxIntoStatic(ciOutputs(selectCiScope(["src/App.tsx"]), LINUX)));
@@ -444,7 +444,7 @@ describe("Windows on a pull request", () => {
   });
 
   it.each([
-    "electron/main.mjs", "build/installer.nsh", "electron-builder.yml", "maus.ps1", "scripts/build-cua-win.mjs",
+    "electron/main.mjs", "build/installer.nsh", "electron-builder.yml", "bot.ps1", "scripts/build-cua-win.mjs",
     "scripts/smoke-cua-win-embedded.mjs", "server/win32-paths.ts", "server/shell/windows.ts", "server/foo.win32.test.ts",
     ".github/workflows/package-win.yml", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".gitattributes", "vite.config.ts",
     "third_party/browser/agent-browser-windows-stdio.patch", ".github/workflows/ci.yml", "scripts/ci-scope.mjs",
@@ -456,7 +456,7 @@ describe("Windows on a pull request", () => {
 
   it.each([
     "server/index.ts", "src/components/WindowFrame.tsx", "server/darwin.ts", "server/twin.ts", "scripts/verify-sidebar.ts",
-    "scripts/testing/rail-preview.tsx", "scripts/control-omb.ts", ".github/workflows/boat.yml", "tsconfig.json", "server/delta-context.e2e.test.ts",
+    "scripts/testing/rail-preview.tsx", "scripts/control-cry.ts", ".github/workflows/boat.yml", "tsconfig.json", "server/delta-context.e2e.test.ts",
   ])("waits for main for %s alone", (file) => {
     expect(reason([file])).toBeNull();
   });
@@ -533,7 +533,7 @@ describe("the repository's import graph", () => {
     const frameSmoke = readFileSync(join(ROOT, "scripts/smoke-app-frames.mjs"), "utf8");
     expect(frameSmoke).toContain('resolveDir: join(ROOT, "src/components/app")');
     expect(frameSmoke).toContain("from \\\"./app-frame-host.ts\\\"");
-    const runtime = ["server", "shared", "electron", "companion", "enterprise", "evals", "cloudflare"]
+    const runtime = ["server", "shared", "electron", "companion", "evals", "cloudflare"]
       .flatMap((directory) => codeFiles(join(ROOT, directory)))
       .filter((file) => !TEST_FILE.test(relative(ROOT, file).split("\\").join("/")));
     expect(runtime.length).toBeGreaterThan(500);
@@ -544,7 +544,7 @@ describe("the repository's import graph", () => {
   });
 
   it("runs every test outside the renderer that reads a translation other than English with the locale tests", () => {
-    const files = ["server", "shared", "electron", "companion", "enterprise", "evals", "scripts", "cloudflare"]
+    const files = ["server", "shared", "electron", "companion", "evals", "scripts", "cloudflare"]
       .flatMap((directory) => codeFiles(join(ROOT, directory)))
       // The selection names the catalogs without reading them.
       .filter((file) => !/[/\\]ci-scope\.(?:mjs|test\.ts)$/.test(file));
@@ -570,7 +570,7 @@ describe("the repository's import graph", () => {
     expect(inStatic).toContain("scripts/testing/verification-docs.test.ts");
     // A docs path a test reads from the repository root: join(ROOT, "docs", ...), new URL("docs/...", ROOT) or read("docs/...").
     const DOCS_READ = /(?:(?:join|resolve)\(\s*ROOT\s*,\s*|new URL\(\s*|\bread\w*\(\s*)["'`]((?:apps\/docs|docs)\b[^"'`]*|[A-Z][A-Z_]+\.md)["'`]/g;
-    const readers = ["server", "shared", "electron", "companion", "enterprise", "evals", "scripts", "src", "cloudflare"]
+    const readers = ["server", "shared", "electron", "companion", "evals", "scripts", "src", "cloudflare"]
       .flatMap((directory) => codeFiles(join(ROOT, directory)))
       .filter((file) => /\.(?:test|node-test)\.[cm]?[jt]sx?$/.test(file) && !file.endsWith("ci-scope.test.ts"))
       .filter((file) => [...readFileSync(file, "utf8").replace(/(["'`])\s*,\s*(["'`])/g, "/").matchAll(DOCS_READ)]
@@ -581,7 +581,7 @@ describe("the repository's import graph", () => {
   });
 
   it("never loads a test file from other code, so a test under scripts/ affects only the jobs that run it", () => {
-    const code = ["server", "shared", "electron", "companion", "enterprise", "evals", "scripts", "src", "cloudflare"]
+    const code = ["server", "shared", "electron", "companion", "evals", "scripts", "src", "cloudflare"]
       .flatMap((directory) => codeFiles(join(ROOT, directory)));
     const loaders = code.filter((file) => imports(file).some((target) => /\.test\.[cm]?[jt]sx?$/.test(target)));
     expect(loaders.map((file) => relative(ROOT, file))).toEqual([]);
@@ -681,7 +681,7 @@ describe("CI scope CLI", () => {
 });
 
 const pkg = (version: string, extra: Record<string, unknown> = {}) =>
-  `${JSON.stringify({ name: "openmausbot", private: true, version, scripts: { test: "vitest run" }, ...extra }, null, 2)}\n`;
+  `${JSON.stringify({ name: "crybot", private: true, version, scripts: { test: "vitest run" }, ...extra }, null, 2)}\n`;
 
 describe("version-only package.json", () => {
   it("is only a changed top-level version", () => {
@@ -695,7 +695,7 @@ describe("version-only package.json", () => {
     ["a dependency added", pkg("0.1.100"), pkg("0.1.101", { dependencies: { zod: "4" } })],
     ["a script changed", pkg("0.1.100"), pkg("0.1.101").replace("vitest run", "vitest run --bail")],
     ["a nested version changed", pkg("0.1.100", { engines: { version: "1" } }), pkg("0.1.101", { engines: { version: "2" } })],
-    ["other keys reordered", pkg("0.1.100"), JSON.stringify({ private: true, name: "openmausbot", version: "0.1.101", scripts: { test: "vitest run" } })],
+    ["other keys reordered", pkg("0.1.100"), JSON.stringify({ private: true, name: "crybot", version: "0.1.101", scripts: { test: "vitest run" } })],
     ["no version before", JSON.stringify({ name: "x" }), JSON.stringify({ name: "x", version: "1.0.0" })],
     ["not JSON", "{", pkg("0.1.101")],
     ["not an object", "[]", "[]"],

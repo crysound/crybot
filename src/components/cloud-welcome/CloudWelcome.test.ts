@@ -37,7 +37,7 @@ import { CloudWelcome, sentHere } from "./CloudWelcome";
 import { CLOUD_SETUP_MOVE_SKIPPED, CLOUD_WELCOME_DONE, CLOUD_WELCOME_SHOWN as SHOWN, welcomeStepHint } from "@/lib/cloud-setup";
 import { resetCloudWelcome, useCloudWelcome } from "@/lib/cloud-welcome";
 
-const CLOUD = { name: "Studio Cloud", origin: "https://omb-u-1a2b3c4d5e6f.fly.dev" };
+const CLOUD = { name: "Studio Cloud", origin: "https://cry-u-1a2b3c4d5e6f.fly.dev" };
 const quiet: CloudSendNotice = { ready: true, bots: [], updatedBots: [], skills: 0, logins: 0, onePassword: false, settings: 0, signature: "", dismissed: false, running: false, last: null, whole: null };
 const claude = { instanceId: "claude", driverKind: "claudeAgent", displayName: "Claude", access: "subscription", authentication: { method: "paste-code" }, snapshot: { state: "available", authenticated: false }, models: { default: "", options: [] } };
 const codex = { ...claude, instanceId: "codex", driverKind: "codex", displayName: "Codex" };
@@ -73,7 +73,7 @@ beforeEach(() => {
   fixture.imported = null;
   fixture.state = {
     connected: true, selectedId: "b1", activeView: "chat", routines: [], groups: [],
-    bots: [{ id: "b1", threadId: "t1", name: "Maus" }, { id: "b2", threadId: "t2", name: "Ada", chiefOfStaff: true }],
+    bots: [{ id: "b1", threadId: "t1", name: "Bot" }, { id: "b2", threadId: "t2", name: "Ada", chiefOfStaff: true }],
     instances: [claude, codex],
     config: { cloudHome: true, onboarding: { ...EMPTY_ONBOARDING }, profile: { name: "", email: "", aboutMe: "" } },
   };
@@ -82,11 +82,11 @@ beforeEach(() => {
     if (patch.onboarding) return { ...fixture.state.config, onboarding: { ...fixture.state.config.onboarding, ...patch.onboarding } };
     throw new Error(`unexpected ${path}`);
   });
-  window.ogb = {
+  window.cry = {
     platform: "darwin", cloudPlan: { state: vi.fn() },
     cloudSendPage: { notice: vi.fn().mockResolvedValue(quiet), dismiss: vi.fn(), onNotice: vi.fn(() => () => {}) },
     workspaces: { state: vi.fn().mockResolvedValue({ local: false, name: "Studio Cloud", origin: CLOUD.origin }), menu: vi.fn() },
-  } as unknown as typeof window.ogb;
+  } as unknown as typeof window.cry;
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -94,16 +94,16 @@ beforeEach(() => {
 afterEach(() => {
   flushSync(() => root.unmount());
   host.remove();
-  delete window.ogb;
+  delete window.cry;
   vi.unstubAllGlobals();
 });
 
 describe("CloudWelcome on a Team Cloud", () => {
-  const OWN = { id: "mine", threadId: "tm", name: "MausBot", defaultBot: { person: "nuno@acme.test" } };
+  const OWN = { id: "mine", threadId: "tm", name: "CryBot", defaultBot: { person: "nuno@acme.test" } };
   const FIRST = { id: "b2", threadId: "t2", name: "Poppy", chiefOfStaff: true };
   beforeEach(() => { fixture.state.config.team = { id: "team-acme", name: "Acme" }; fixture.state.bots = [OWN, FIRST]; });
 
-  it("an empty team isn't told its bots are already here: the Owner's own MausBot and the first bot are no work", async () => {
+  it("an empty team isn't told its bots are already here: the Owner's own CryBot and the first bot are no work", async () => {
     render();
     await vi.waitFor(() => expect(host.querySelector('[data-bring-choice="fresh"]')).not.toBeNull());
     expect(text()).not.toContain("Your bots are already here");
@@ -140,7 +140,7 @@ describe("CloudWelcome", () => {
     render();
     await vi.waitFor(() => expect(text()).toContain("What should Studio Cloud start with?"));
     expect(text()).toContain("Welcome to Studio Cloud");
-    expect(text()).toContain("Bots on your computer come here by themselves from the MausBot app.");
+    expect(text()).toContain("Bots on your computer come here by themselves from the CryBot app.");
     expect(host.querySelector('[data-bring-choice="fresh"]')).not.toBeNull();
     expect(host.querySelector("[data-bring-desktop]"), "this is the desktop app already").toBeNull();
     expect(host.querySelector("[data-bring-update]")).toBeNull();
@@ -155,9 +155,9 @@ describe("CloudWelcome", () => {
 
   it("in an older app that still copies by hand, says to update it to bring the bots here by itself", async () => {
     fixture.state.bots = [fixture.state.bots[0]];
-    window.ogb = { ...window.ogb!, cloudMove: {} } as unknown as typeof window.ogb;
+    window.cry = { ...window.cry!, cloudMove: {} } as unknown as typeof window.cry;
     render();
-    await vi.waitFor(() => expect(host.querySelector("[data-bring-update]")?.textContent).toBe("Update MausBot to bring your bots here by itself."));
+    await vi.waitFor(() => expect(host.querySelector("[data-bring-update]")?.textContent).toBe("Update CryBot to bring your bots here by itself."));
     expect([...host.querySelectorAll("button")].some((node) => node.textContent?.startsWith("Copy"))).toBe(false);
   });
 
@@ -186,7 +186,7 @@ describe("CloudWelcome", () => {
   });
 
   it("outside the desktop app, tells the same from the bots and rooms the Cloud shows", () => {
-    delete window.ogb;
+    delete window.cry;
     fixture.state = { ...fixture.state, bots: [...fixture.state.bots, { id: "b3", threadId: "t3", name: "Rex" }] };
     render();
     expect(text()).toContain("Your bots are already here");
@@ -225,7 +225,7 @@ describe("CloudWelcome", () => {
   });
 
   it("in a desktop app connected to another server as its client, offers no copy from here either", () => {
-    window.ogb = { ...window.ogb!, remoteClient: { active: true } } as unknown as typeof window.ogb;
+    window.cry = { ...window.cry!, remoteClient: { active: true } } as unknown as typeof window.cry;
     fixture.state.bots = [fixture.state.bots[0]];
     render();
     expect(text()).toContain("Open the desktop app to bring your bots from your computer.");
@@ -233,7 +233,7 @@ describe("CloudWelcome", () => {
   });
 
   it("outside the desktop app, starts fresh and says where the copy is", () => {
-    delete window.ogb;
+    delete window.cry;
     fixture.state.bots = [fixture.state.bots[0]];
     render();
     expect(text()).toContain("Welcome to My Cloud");
@@ -320,20 +320,20 @@ describe("CloudWelcome", () => {
     render();
     await vi.waitFor(() => expect(text()).toContain("Welcome to Studio Cloud"));
     const folders = host.querySelector('[data-welcome-files="folders"]')!;
-    expect(folders.textContent).toContain("Bots on Studio Cloud use the files on this computer by themselves while it's awake and MausBot is open. There's nothing to set up.");
+    expect(folders.textContent).toContain("Bots on Studio Cloud use the files on this computer by themselves while it's awake and CryBot is open. There's nothing to set up.");
     expect(folders.querySelector("button")).toBeNull();
   });
 
   it("from a browser, or on a Team Cloud, the folders card says the desktop app shares folders through Files", async () => {
     fixture.state.config.onboarding = { ...EMPTY_ONBOARDING, hintsSeen: [welcomeStepHint("bring"), welcomeStepHint("engine")] };
     const desktopText = "Bots on Studio Cloud can read folders you share from your computer, even when it's off. Share them from the desktop app, under Files.";
-    delete (window.ogb as Record<string, unknown>).cloudPlan;
+    delete (window.cry as Record<string, unknown>).cloudPlan;
     render();
     await vi.waitFor(() => expect(text()).toContain("Welcome to Studio Cloud"));
     expect(host.querySelector('[data-welcome-files="folders"]')?.textContent).toContain(desktopText);
     flushSync(() => root.unmount());
     root = createRoot(host);
-    (window.ogb as Record<string, unknown>).cloudPlan = { state: vi.fn() };
+    (window.cry as Record<string, unknown>).cloudPlan = { state: vi.fn() };
     fixture.state.config.team = { id: "t-acme", name: "Acme" };
     render();
     // On a team the welcome is the team's, by its name: never "My Cloud" or the Cloud's address.
@@ -378,7 +378,7 @@ describe("CloudWelcome", () => {
     const withSend = (value: CloudSendNotice | null) => {
       const page = { notice: vi.fn().mockResolvedValue(value), dismiss: vi.fn(),
         onNotice: vi.fn((listener: (next: CloudSendNotice) => void) => { pushNotice = listener; return () => {}; }) };
-      window.ogb = { ...window.ogb!, cloudSendPage: page } as unknown as typeof window.ogb;
+      window.cry = { ...window.cry!, cloudSendPage: page } as unknown as typeof window.cry;
       return page;
     };
     const rail = () => host.querySelector('[data-welcome-rail="bring"]')!;

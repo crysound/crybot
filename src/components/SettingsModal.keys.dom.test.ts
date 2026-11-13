@@ -83,7 +83,7 @@ beforeEach(() => {
     if (action.type === "configStatus") fx.config = action.config!;
     publish();
   });
-  vi.stubGlobal("ogb", undefined);
+  vi.stubGlobal("cry", undefined);
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);

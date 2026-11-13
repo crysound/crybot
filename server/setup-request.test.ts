@@ -210,7 +210,7 @@ describe("the line after the press", () => {
   it("with one person, is anyone's next line: a press here and a message from the phone", () => {
     const s = setup();
     askForSetup(s.store, s.bot.id, s.threadId, "en");
-    expect(s.take(s.say("sort my inbox", s.threadId, { sender: { name: "Omkar's iPhone", id: "phone-session" } }))).toBe(true);
+    expect(s.take(s.say("sort my inbox", s.threadId, { sender: { name: "User's iPhone", id: "phone-session" } }))).toBe(true);
   });
 
   it("clears without setting up when the bot was given instructions after the press", () => {

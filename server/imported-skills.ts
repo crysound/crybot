@@ -414,7 +414,7 @@ export interface SkillTurnEngine {
 }
 
 /** The skill folders a turn's engine loads in place: ~/.claude/skills for Claude Code with "Also use my Claude Code
- * skills" (or OMB_CLAUDE_INHERIT_USER_CONFIG); for Codex, its user and admin scopes. */
+ * skills" (or CRYBOT_CLAUDE_INHERIT_USER_CONFIG); for Codex, its user and admin scopes. */
 export function nativeSkillFolders(
   engine: SkillTurnEngine | undefined,
   options: { claudeUserSkills: boolean; home?: string; env?: Record<string, string | undefined> },
@@ -424,7 +424,7 @@ export function nativeSkillFolders(
   const absolute = (value: string | undefined) => (value && isAbsolute(value) ? value : null);
   const home = absolute(engine.environment?.HOME) ?? options.home ?? homedir();
   if (engine.driverKind === "claudeAgent") {
-    if (env.OMB_CLAUDE_INHERIT_USER_CONFIG === "1") return [join(absolute(env.CLAUDE_CONFIG_DIR) ?? join(home, ".claude"), "skills")];
+    if (env.CRYBOT_CLAUDE_INHERIT_USER_CONFIG === "1") return [join(absolute(env.CLAUDE_CONFIG_DIR) ?? join(home, ".claude"), "skills")];
     if (!options.claudeUserSkills) return [];
     const folder = join(home, ".claude", "skills");
     try {
@@ -439,7 +439,7 @@ export function nativeSkillFolders(
 
 /** The folders codex-cli (0.163.0–0.167.0) loads user and admin skills from, in its own order: $CODEX_HOME/skills (a
  * ChatGPT-plan instance links the person's into its own home), ~/.agents/skills and /etc/codex/skills. It also reads
- * `.agents/skills` from the turn's folder up to the repository root, where OpenMausBot links a bot's granted skills. */
+ * `.agents/skills` from the turn's folder up to the repository root, where CryBot links a bot's granted skills. */
 export function codexSkillRoots(home: string, codexHome: string | undefined): string[] {
   const own = codexHome && isAbsolute(codexHome) ? codexHome : join(home, ".codex");
   return [join(own, "skills"), join(home, ".agents", "skills"), ...(process.platform === "win32" ? [] : ["/etc/codex/skills"])];

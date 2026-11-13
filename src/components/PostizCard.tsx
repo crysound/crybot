@@ -6,7 +6,7 @@ import { t } from "@/lib/i18n";
 import { openExternalLink } from "@/lib/app-links";
 import { reserveConnectionPage } from "@/lib/connector-oauth";
 import { completeMcpSignIn, mcpSignInLink, runMcpSignIn, type McpSignInStatus } from "@/lib/mcp-sign-in";
-import { keySaved, keySaveFailure } from "@/lib/product-events";
+
 import { POSTIZ_API, postizErrorText, postizHost, postizSaveErrorText } from "@/lib/postiz";
 import { isPostizStatus, POSTIZ_CLOUD, POSTIZ_KEY_PAGE, POSTIZ_SERVER, type PostizStatus } from "../../shared/postiz";
 import { cleanKey, looksLikeKey, saveCredential } from "./keys/key-save";
@@ -19,7 +19,7 @@ const SERVER = encodeURIComponent(POSTIZ_SERVER);
 const OWN_SIGN_IN_POLL_MS = 1_500;
 const OWN_SIGN_IN_WAIT_MS = 5 * 60_000;
 
-/** OpenMausBot's own mark for Postiz: no Postiz artwork is bundled. */
+/** CryBot's own mark for Postiz: no Postiz artwork is bundled. */
 export function PostizIcon() {
   return (
     <svg viewBox="0 0 40 40" className="size-10 shrink-0 rounded-[8px]" aria-hidden="true">
@@ -200,12 +200,12 @@ export function PostizCard({ refreshKey = 0, onConnection }: {
         if (wanted !== saved) applied(await api("/api/config", { method: "PUT", body: JSON.stringify({ postiz: { url: wanted } }) }));
         applied(await saveCredential("postiz", value, state.config?.postiz?.configured !== true));
       }
-      keySaved("postiz", "apps", "ok");
+
       if (!mounted.current) return;
       setKey("");
       setKeyMode(false);
     } catch (cause) {
-      keySaved("postiz", "apps", keySaveFailure(cause));
+
       if (mounted.current) setError(postizSaveErrorText(cause, target || POSTIZ_CLOUD));
     } finally {
       if (mounted.current) {

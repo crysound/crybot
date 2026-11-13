@@ -1,12 +1,12 @@
 // Ported from T3 Code's apps/server/src/preview/PreviewBrowserHost.ts,
 // Copyright 2026 T3 Tools Inc., used under the MIT License
 // (third_party/t3-code/LICENSE). Modified: plain TypeScript instead of Effect,
-// OMB's command and environment names, and an AppArmor profile pinned to one
+// CRY's command and environment names, and an AppArmor profile pinned to one
 // exact executable instead of a wildcard path.
 //
-// OMB never turns Chrome's sandbox off by itself on a host. A host that cannot
+// CRY never turns Chrome's sandbox off by itself on a host. A host that cannot
 // give it one gets the manual setup steps instead, and only an operator's explicit
-// OMB_BROWSER_SANDBOX=0 launches without it. The computer container image (also
+// CRYBOT_BROWSER_SANDBOX=0 launches without it. The computer container image (also
 // run on a VPS) is the exception: it drops capabilities, so its Chrome runs
 // without its own sandbox and the container is the isolation boundary.
 
@@ -15,20 +15,19 @@ import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute } from "node:path";
 
 /** Installs the Linux libraries Chrome needs (as root, once). */
-export const LIBRARIES_COMMAND = "sudo openmausbot browser install --with-deps";
+export const LIBRARIES_COMMAND = "sudo crybot browser install --with-deps";
 /** There is no command for the sandbox: an administrator allows one root-owned Chrome by hand. */
-export const SANDBOX_STEPS_URL = "https://github.com/milind-soni/OpenMausBot/blob/main/docs/deploy-vps.md#ubuntu-2404-browser-sandbox";
 
 /** What Chrome prints before aborting when it cannot sandbox itself. */
 export const NO_SANDBOX_SIGNATURE = "No usable sandbox";
 
 export function sandboxDisabled(env: Readonly<Record<string, string | undefined>>): boolean {
-  return env.OMB_BROWSER_SANDBOX === "0";
+  return env.CRYBOT_BROWSER_SANDBOX === "0";
 }
 
 /** Set on Ubuntu 23.10+: unprivileged user namespaces need an AppArmor profile. */
 export const USERNS_RESTRICTION = "/proc/sys/kernel/apparmor_restrict_unprivileged_userns";
-export const APPARMOR_PROFILE_NAME = "openmausbot-chrome";
+export const APPARMOR_PROFILE_NAME = "crybot-chrome";
 export const APPARMOR_PROFILE_PATH = `/etc/apparmor.d/${APPARMOR_PROFILE_NAME}`;
 
 /**
@@ -40,7 +39,7 @@ export function appArmorProfile(executable: string): string {
   if (!isAbsolute(executable) || /[\s*?[\]{}"'\\^]/.test(executable) || !executable.startsWith("/opt/")) {
     throw new Error(`The browser's AppArmor exemption is only for a root-owned path under /opt, not ${executable}.`);
   }
-  return `# Written for OpenMausBot: lets its Chrome use its sandbox.
+  return `# Written for CryBot: lets its Chrome use its sandbox.
 abi <abi/4.0>,
 include <tunables/global>
 
@@ -86,7 +85,7 @@ export class BrowserHostError extends Error {
 
   constructor(kind: "sandbox" | "libraries", libraries: readonly string[] = []) {
     super(kind === "sandbox"
-      ? `This host blocks the sandbox the browser runs in (AppArmor on Ubuntu 23.10+). An administrator can allow it for one root-owned copy of Chrome, following ${SANDBOX_STEPS_URL}, then try again.`
+      ? `This host blocks the sandbox the browser runs in (AppArmor on Ubuntu 23.10+). An administrator can allow it for one root-owned copy of Chrome, then try again.`
       : `This host is missing libraries the browser needs (${libraries.join(", ")}). Run \`${LIBRARIES_COMMAND}\` on the host to install them, then try again.`);
     this.name = "BrowserHostError";
     this.kind = kind;

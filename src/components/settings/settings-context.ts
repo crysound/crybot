@@ -17,23 +17,23 @@ export function useSettingsContext(): SettingsContext {
   const admin = useOwnerOrAdmin() === true;
   const places = usePlaces();
   const known = useKnownPlaceCount();
-  const ogb = typeof window === "undefined" ? undefined : window.ogb;
-  const client = ogb?.remoteClient?.active === true;
+  const cry = typeof window === "undefined" ? undefined : window.cry;
+  const client = cry?.remoteClient?.active === true;
   const cloud = state.config?.cloudHome === true;
   const team = Boolean(state.config?.team);
-  const desktop = Boolean(ogb);
+  const desktop = Boolean(cry);
   return {
     desktop,
     here: pageIsThisComputer(),
-    home: pageIsThisComputer() || Boolean(ogb?.home),
+    home: pageIsThisComputer() || Boolean(cry?.home),
     cloud,
     team,
     client,
     admin,
-    places: known > 1 || (!ogb?.environments && railShown(places)),
-    plan: desktop ? Boolean(ogb?.cloudAccount || (ogb?.cloudPlan && cloud)) : cloud && !team && admin,
-    organization: Boolean(ogb?.organization) && !client,
-    environments: Boolean(ogb?.environments),
+    places: known > 1 || (!cry?.environments && railShown(places)),
+    plan: false,
+    organization: false,
+    environments: Boolean(cry?.environments),
     installations: workspacesAvailable(state.config),
     skills: skillsLibraryEnabled(state.config),
     advanced,
@@ -44,7 +44,7 @@ export function useSettingsContext(): SettingsContext {
 function useKnownPlaceCount(): number {
   const [count, setCount] = useState(0);
   useEffect(() => {
-    const environments = window.ogb?.remoteClient?.active ? undefined : window.ogb?.environments;
+    const environments = window.cry?.remoteClient?.active ? undefined : window.cry?.environments;
     if (!environments) return;
     let alive = true;
     void environments.state().then((next) => { if (alive) setCount(next?.environments?.length ?? 0); }).catch(() => {});
@@ -66,7 +66,7 @@ export interface OtherPlace {
 export function useOtherPlaces(page?: string): OtherPlace[] {
   const { places } = usePlaces();
   const [listed, setListed] = useState<OtherPlace[]>([]);
-  const environments = typeof window === "undefined" || window.ogb?.remoteClient?.active ? undefined : window.ogb?.environments;
+  const environments = typeof window === "undefined" || window.cry?.remoteClient?.active ? undefined : window.cry?.environments;
   useEffect(() => {
     if (!environments || places.length > 0) return;
     let alive = true;
@@ -82,14 +82,14 @@ export function useOtherPlaces(page?: string): OtherPlace[] {
     }).catch(() => {});
     return () => { alive = false; };
   }, [environments, places.length]);
-  const open = typeof window === "undefined" ? undefined : window.ogb?.workspaces?.open;
+  const open = typeof window === "undefined" ? undefined : window.cry?.workspaces?.open;
   if (places.length > 0) {
     return places.filter((place) => !place.active).map((place) => ({
       key: place.id, name: place.name, kind: place.kind, color: place.color ?? null, open: () => void open?.(place.id),
     }));
   }
   // A Cloud's page in the desktop window can't read the rail's list, but This computer is always on it.
-  const openComputer = typeof window === "undefined" || window.ogb?.remoteClient?.active ? undefined : window.ogb?.rail?.openComputer;
+  const openComputer = typeof window === "undefined" || window.cry?.remoteClient?.active ? undefined : window.cry?.rail?.openComputer;
   if (listed.length === 0 && openComputer && !pageIsThisComputer()) {
     return [{ key: "computer", name: t("rail.thisComputer"), kind: "computer", color: null, open: () => void openComputer(page).catch(() => {}) }];
   }

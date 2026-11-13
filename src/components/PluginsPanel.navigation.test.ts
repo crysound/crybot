@@ -63,7 +63,7 @@ vi.mock("./PostizCard", () => ({
 import { HOSTED_MCP_APPS } from "@/lib/hosted-mcp-apps";
 import { APPS_PREVIEW_COUNT, PluginsPanel, USED_BY_AVATAR_SIZE, botsUsingService } from "./PluginsPanel";
 import { connectedInventoryCopy } from "@/lib/connector-status";
-import { FACE_BOX } from "./cursor-face-data";
+import { FACE_BOX } from "./mascot-face-data";
 import { MASCOT_BODIES } from "../../shared/mascot-bodies";
 
 const CARDS = 0;
@@ -708,7 +708,7 @@ describe("Apps pop-up", () => {
     fixture.instances = [claude];
     fixture.bots = [
       bot("scout"),
-      bot("arrow", { mascotBody: "cursor" }),
+      bot("arrow", { mascotBody: "dome" }),
       bot("photo", { avatarUrl: "/api/attachments/photo.webp", avatarCrop: "square" }),
     ];
     const { nodes: tree } = render();
@@ -724,7 +724,7 @@ describe("Apps pop-up", () => {
   });
 
   it("draws them small enough that no mascot body reaches the ring", () => {
-    // CursorAvatar's viewBox is the face box plus 15 units on every side.
+    // AnimatedMascot's viewBox is the face box plus 15 units on every side.
     const box = FACE_BOX + 30;
     const centre = FACE_BOX / 2;
     for (const body of Object.values(MASCOT_BODIES)) {

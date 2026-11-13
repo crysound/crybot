@@ -10,7 +10,7 @@ import { UpdatesRow } from "./AppSettingsRows";
 afterEach(() => vi.unstubAllGlobals());
 function render(state: UpdaterState | null) {
   fixture.state = state;
-  vi.stubGlobal("window", { ogb: { updater: { check: vi.fn(), install: vi.fn(), onState: vi.fn() } } });
+  vi.stubGlobal("window", { cry: { updater: { check: vi.fn(), install: vi.fn(), onState: vi.fn() } } });
   return renderToStaticMarkup(createElement(UpdatesRow));
 }
 
@@ -24,7 +24,7 @@ it("shows this app's update where the desktop app answers, with no Download step
   expect(downloading).toContain("Downloading 40%");
   expect(downloading).toContain("disabled");
   const ready = render({ status: "downloaded", version: "0.2.0" });
-  expect(ready).toContain("MausBot 0.2.0 is ready. Restart the app to apply it.");
+  expect(ready).toContain("CryBot 0.2.0 is ready. Restart the app to apply it.");
   expect(ready).toContain("Restart and install");
-  expect(render({ status: "downloaded", version: "0.2.0", installMode: "handoff" })).toContain("MausBot 0.2.0 is ready. Install it in a terminal.");
+  expect(render({ status: "downloaded", version: "0.2.0", installMode: "handoff" })).toContain("CryBot 0.2.0 is ready. Install it in a terminal.");
 });

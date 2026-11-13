@@ -65,10 +65,10 @@ beforeEach(() => {
   f.dispatch = action => { dispatched.push(action); };
   f.state = {
     connected: true, instances: [signedOut], activeView: "chat", selectedId: "b1",
-    bots: [{ id: "b1", threadId: "t1", name: "Maus" }], routines: [],
+    bots: [{ id: "b1", threadId: "t1", name: "Bot" }], routines: [],
     config: { cloudHome: true, onboarding: { ...EMPTY_ONBOARDING } },
   };
-  vi.stubGlobal("window", { ogb: { platform: "darwin" }, addEventListener: vi.fn(), removeEventListener: vi.fn() });
+  vi.stubGlobal("window", { cry: { platform: "darwin" }, addEventListener: vi.fn(), removeEventListener: vi.fn() });
   vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {} });
   vi.mocked(api).mockImplementation(async (path: string, init?: RequestInit) => {
     if (path === "/api/shared-computers") return { computers: lent };
@@ -114,7 +114,7 @@ it("on a new Cloud stays out of the way while the welcome fills the window", asy
 it("when the person steps away from the welcome, it is the welcome's steps in short, and Continue setup goes back to the step", async () => {
   await mount();
   let { html } = render();
-  expect(html).toContain("Set up MausBot Cloud");
+  expect(html).toContain("Set up CryBot Cloud");
   expect(html).toContain("1 of 4 done");
   expect(html).toContain("Bring your stuff");
   expect(html).toContain("Bring your bots, chats and memory, or start fresh.");
@@ -164,7 +164,7 @@ it("on a Cloud set up before the welcome, starts one step in and leads with a fi
   setUpBeforeWelcome();
   await mount();
   const { html } = render();
-  expect(html).toContain("Set up MausBot Cloud");
+  expect(html).toContain("Set up CryBot Cloud");
   expect(html).toContain("1 of 3 done");
   expect(html).toContain("Give it a first job");
   for (const title of ["Create the Cloud", "Connect your AI"]) expect(html).toContain(title);
@@ -227,26 +227,26 @@ it("minimizes to its progress on this device, and opens again", async () => {
   expect(html).toContain("1 of 3 done");
   expect(html).not.toContain("Give it a first job");
   expect(button("Hide setup")).toBeUndefined();
-  expect(setItem).toHaveBeenLastCalledWith("omb.cloudSetup.collapsed", "1");
+  expect(setItem).toHaveBeenLastCalledWith("cry.cloudSetup.collapsed", "1");
   expect(api).not.toHaveBeenCalledWith("/api/config", expect.anything());
   toggle();
   ({ html } = render());
   expect(html).toContain("Give it a first job");
-  expect(setItem).toHaveBeenLastCalledWith("omb.cloudSetup.collapsed", "0");
+  expect(setItem).toHaveBeenLastCalledWith("cry.cloudSetup.collapsed", "0");
 });
 
 it("says the Cloud is ready once, in the session that finished it", async () => {
   setUpBeforeWelcome();
   f.state.instances = [ready];
   await mount();
-  expect(render().html).toContain("Set up MausBot Cloud");
+  expect(render().html).toContain("Set up CryBot Cloud");
   f.state.config.onboarding = { ...EMPTY_ONBOARDING, hintsSeen: [CLOUD_INTENT_ASKED], firstTurnAt: "2026-09-30T08:00:00.000Z" };
   render(); for (const effect of f.effects) effect();
   // The mocked hooks are one list across components: the finale is a new child, so it starts fresh.
   f.values.splice(f.ownHooks);
   const { html } = render();
   expect(html).toContain("The Cloud is ready");
-  expect(html).not.toContain("Set up MausBot Cloud");
+  expect(html).not.toContain("Set up CryBot Cloud");
 });
 
 it("fills its progress from the left by how many steps are done, whichever they are, and picking a step does not move it", async () => {
@@ -277,7 +277,7 @@ it("opens the chat the job went to as the bot's row does: with threads hidden at
   f.state.instances = [ready];
   markIntentSent("b1");
   f.state.activeView = "routines";
-  f.state.bots = [{ id: "b1", threadId: "t1", mainThreadId: "main", name: "Maus",
+  f.state.bots = [{ id: "b1", threadId: "t1", mainThreadId: "main", name: "Bot",
     tasks: [{ threadId: "t1", title: "Routine report", createdAt: 1 }, { threadId: "main", title: "Set up", createdAt: 2 }] }];
   await mount();
   button("Open the chat")!.props.onClick!();
@@ -293,7 +293,7 @@ it("is ready only once the job's routine exists, not when the bot's first turn a
   f.state.config.onboarding = { ...EMPTY_ONBOARDING, hintsSeen: [CLOUD_INTENT_ASKED, CLOUD_INTENT_GIVEN], firstTurnAt: "2026-10-06T08:00:00.000Z" };
   f.state.routines = [];
   await mount();
-  expect(render().html).toContain("Set up MausBot Cloud");
+  expect(render().html).toContain("Set up CryBot Cloud");
   expect(statuses().plan).toBe("todo");
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(8, 0, 0, 0);
   f.state.routines = [{ id: "r1", name: "Morning news digest", botId: "b1", createdAt: Date.now(), nextRunAt: tomorrow.getTime() }];

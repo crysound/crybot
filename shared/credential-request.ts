@@ -1,4 +1,3 @@
-import { MODELGO_URL } from "./modelgo.ts";
 /**
  * Credentials an agent may ask the person to provide through an inline
  * card. The id is the entire authority surface: agents never choose a
@@ -105,7 +104,7 @@ export const CREDENTIAL_TARGETS = {
     label: "ModelGo API key",
     description: "Runs ModelGo models with your own key.",
     placeholder: "Paste your ModelGo API key",
-    helpUrl: MODELGO_URL,
+    helpUrl: "https://modelgo.ai",
   },
   metaApiKey: {
     label: "Meta API key",
@@ -151,7 +150,7 @@ export type CredentialConfig = {
   onePassword?: { connected?: boolean };
 };
 
-/** A secret OpenMausBot does not keep itself: the bot names it, and gets a one-use reference or a private file. */
+/** A secret CryBot does not keep itself: the bot names it, and gets a one-use reference or a private file. */
 export const CUSTOM_SECRET_TARGET = "customSecret";
 export type SecretDelivery = "ref" | "file";
 export const SECRET_DELIVERIES: readonly SecretDelivery[] = ["ref", "file"];

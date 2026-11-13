@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AppWindow, Bot as BotIcon, Cloud, Download, Mail, Smartphone, Sparkles, type LucideIcon } from "lucide-react";
 
-import { track } from "@/lib/analytics";
+
 import { INTRO_CHIPS, setupSteps, type IntroChip, type SetupStep } from "@/lib/default-bot";
 import { t } from "@/lib/i18n";
 import { phonePairingSettingsAction } from "@/lib/phone-pairing";
@@ -30,7 +30,7 @@ export function setupAction(step: SetupStep): Action {
   }
 }
 
-/** What is left to set up, under MausBot's intro on a new install (Advanced mode). */
+/** What is left to set up, under CryBot's intro on a new install (Advanced mode). */
 export function HelperSetup() {
   const { state, dispatch } = useStore();
   const steps = setupSteps({
@@ -38,7 +38,7 @@ export function HelperSetup() {
     ownBots: state.bots.filter((bot) => !bot.hidden && !bot.defaultBot).length,
     onCloud: state.config?.cloudHome === true,
     team: Boolean(state.config?.team),
-    remote: typeof window !== "undefined" && window.ogb?.remoteClient?.active === true,
+    remote: typeof window !== "undefined" && window.cry?.remoteClient?.active === true,
   });
   if (!steps.length) return null;
   return (
@@ -49,7 +49,7 @@ export function HelperSetup() {
           const { label, icon: Icon } = STEPS[step];
           return (
             <button key={step} type="button" data-helper-step={step} onClick={() => {
-              if (step === "cloud") track("onboarding_cloud", { action: "start_trial" });
+              if (step === "cloud") {}
               dispatch(setupAction(step));
             }}
               className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-accent/20">
@@ -85,7 +85,7 @@ function IntroConnectAi({ onClose }: { onClose: () => void }) {
   return <ConnectAiDialog tested={useWelcomeAi(state.instances, true)} onClose={onClose} />;
 }
 
-/** What is still missing, as chips under MausBot's follow-up (Simple mode): at most INTRO_CHIPS, and one that was tapped
+/** What is still missing, as chips under CryBot's follow-up (Simple mode): at most INTRO_CHIPS, and one that was tapped
  * leaves for the next. */
 export function IntroChips({ chips }: { chips: readonly IntroChip[] }) {
   const { dispatch } = useStore();
@@ -95,7 +95,7 @@ export function IntroChips({ chips }: { chips: readonly IntroChip[] }) {
   const tap = (chip: IntroChip) => {
     setTapped((now) => new Set([...now, chip]));
     if (chip === "ai") return setConnecting(true);
-    if (chip === "cloud") track("onboarding_cloud", { action: "start_trial" });
+    if (chip === "cloud") {}
     dispatch(chipAction(chip));
   };
   return (

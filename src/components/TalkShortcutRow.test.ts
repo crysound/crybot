@@ -19,7 +19,7 @@ let root: Root;
 
 const settle = async () => { for (let i = 0; i < 3; i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); }); };
 const show = async () => { await act(async () => { root.render(createElement(TalkShortcutRow)); }); await settle(); };
-const toggle = () => host.querySelector<HTMLButtonElement>('button[aria-label="Talk to MausBot from any app"]')!;
+const toggle = () => host.querySelector<HTMLButtonElement>('button[aria-label="Talk to CryBot from any app"]')!;
 const click = async (element: HTMLElement) => { await act(async () => { element.click(); }); await settle(); };
 
 beforeEach(() => {
@@ -30,7 +30,7 @@ beforeEach(() => {
     state: vi.fn(async () => current),
     set: vi.fn(async (change: Partial<TalkShortcutState>) => (current = { ...current, ...change })),
   };
-  (window as unknown as { ogb: unknown }).ogb = { talkShortcut: bridge };
+  (window as unknown as { cry: unknown }).cry = { talkShortcut: bridge };
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -38,18 +38,18 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => { root.unmount(); });
   host.remove();
-  delete (window as unknown as { ogb?: unknown }).ogb;
+  delete (window as unknown as { cry?: unknown }).cry;
   vi.unstubAllGlobals();
 });
 
 describe("TalkShortcutRow", () => {
   it("is not shown without the bridge or where Apple speech is unavailable", async () => {
-    (window as unknown as { ogb: unknown }).ogb = {};
+    (window as unknown as { cry: unknown }).cry = {};
     await show();
     expect(host.textContent).toBe("");
     await act(async () => { root.unmount(); });
     root = createRoot(host);
-    (window as unknown as { ogb: unknown }).ogb = { talkShortcut: bridge };
+    (window as unknown as { cry: unknown }).cry = { talkShortcut: bridge };
     current = { ...base, available: false };
     await show();
     expect(host.textContent).toBe("");
@@ -57,7 +57,7 @@ describe("TalkShortcutRow", () => {
 
   it("shows the switch on with the key in its subtitle, and turns it off", async () => {
     await show();
-    expect(host.textContent).toContain("Talk to MausBot from any app");
+    expect(host.textContent).toContain("Talk to CryBot from any app");
     expect(host.textContent).toContain("Hold ⌃⌥Space, speak, let go");
     await click(toggle());
     expect(bridge.set).toHaveBeenCalledWith({ enabled: false });
@@ -107,10 +107,10 @@ describe("TalkShortcutRow", () => {
   });
 
   it("is found by search only where the row can show: the Mac app's own page", () => {
-    const mac = { platform: "darwin", talkShortcut: bridge } as unknown as Window["ogb"];
+    const mac = { platform: "darwin", talkShortcut: bridge } as unknown as Window["cry"];
     expect(talkShortcutKeywords(mac)).toContain("hold to talk");
-    expect(talkShortcutKeywords({ platform: "win32", talkShortcut: bridge } as unknown as Window["ogb"])).toEqual([]);
-    expect(talkShortcutKeywords({ platform: "darwin" } as unknown as Window["ogb"])).toEqual([]);
+    expect(talkShortcutKeywords({ platform: "win32", talkShortcut: bridge } as unknown as Window["cry"])).toEqual([]);
+    expect(talkShortcutKeywords({ platform: "darwin" } as unknown as Window["cry"])).toEqual([]);
     expect(talkShortcutKeywords(undefined)).toEqual([]);
   });
 

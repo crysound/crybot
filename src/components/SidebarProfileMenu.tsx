@@ -175,7 +175,7 @@ export function simpleUpdateTop(entry: Pick<UpdateEntry, "phase" | "source" | "i
 
 export function useUpdateItem(): UpdateEntry | null {
   const state = useUpdaterState();
-  const updater = window.ogb?.updater;
+  const updater = window.cry?.updater;
   const [pending, setPending] = useState(false);
   const [checkedAt, setCheckedAt] = useState(0);
   const status = state?.status ?? "idle";
@@ -263,7 +263,7 @@ export function useServerUpdateItem(enabled: boolean): UpdateEntry | null {
 }
 
 export function useCloudPhoneDestination(enabled: boolean): { cloud: CloudPhoneDestination; bridge?: CloudAccountBridge } {
-  const bridge = enabled && !window.ogb?.remoteClient?.active ? window.ogb?.cloudAccount : undefined;
+  const bridge = enabled && !window.cry?.remoteClient?.active ? window.cry?.cloudAccount : undefined;
   const [account, setAccount] = useState<CloudAccountState | null>(null);
   useEffect(() => {
     if (!bridge) return;
@@ -411,7 +411,7 @@ function keyHint(label: string | null | undefined): React.ReactNode {
 
 /** ⌘, opens Settings from the app's own menu; a browser has no such key. */
 function settingsKeyHint(): React.ReactNode {
-  const platform = typeof window === "undefined" ? undefined : window.ogb?.platform;
+  const platform = typeof window === "undefined" ? undefined : window.cry?.platform;
   if (!platform) return undefined;
   return keyHint(platform === "darwin" ? "⌘," : "Ctrl+,");
 }
@@ -525,17 +525,17 @@ export function SidebarProfileMenu({ iconOnly = false, rail = false, circle = fa
   const [menuOpen, setMenuOpen] = useState(false);
   const advancedMode = useAdvancedMode();
   const automationsNeedYou = useAutomationsNeedYou();
-  const planSnapshot = useCloudPlanSnapshot(usageBridge(state.config?.cloudHome === true) ?? (window.ogb?.remoteClient?.active ? undefined : window.ogb?.cloudPlan));
+  const planSnapshot = useCloudPlanSnapshot(usageBridge(state.config?.cloudHome === true) ?? (window.cry?.remoteClient?.active ? undefined : window.cry?.cloudPlan));
   const cloudUsage = cloudUsageSummary(planSnapshot);
   const phoneState = usePhonePlaceState(menuOpen);
   const place = useSettingsPlace();
   const summary = useAccountSummary();
   const desktopUpdate = useUpdateItem();
-  const serverUpdate = useServerUpdateItem(!window.ogb?.updater);
+  const serverUpdate = useServerUpdateItem(!window.cry?.updater);
   const here = pageIsThisComputer();
-  const openComputer = window.ogb?.rail?.openComputer;
+  const openComputer = window.cry?.rail?.openComputer;
   // A Cloud's page in the desktop window can't update the app: the row says where that happens, and goes there.
-  const elsewhereUpdate: UpdateEntry | null = !desktopUpdate && !here && Boolean(window.ogb) && state.config?.cloudHome === true && openComputer ? {
+  const elsewhereUpdate: UpdateEntry | null = !desktopUpdate && !here && Boolean(window.cry) && state.config?.cloudHome === true && openComputer ? {
     phase: "idle", pending: false, label: t("settings.updates.checkFrom", { place: t("rail.thisComputer") }),
     item: { key: "update", label: t("settings.updates.checkFrom", { place: t("rail.thisComputer") }), wrap: true, icon: <RefreshCw size={16} />, trailing: <ArrowUpRight size={12} aria-hidden="true" className="text-ink-tertiary" />, onSelect: () => void openComputer("app").catch(() => {}) },
   } : null;
@@ -555,16 +555,16 @@ export function SidebarProfileMenu({ iconOnly = false, rail = false, circle = fa
 
   const profile = profileForSession(state.config?.profile, session);
   const name = profileLabel(profile);
-  const remote = window.ogb?.remoteClient?.active === true;
+  const remote = window.cry?.remoteClient?.active === true;
   const besideRail = railShown(usePlaces());
   const filesReady = useCloudFilesReady();
-  const desktop = Boolean(window.ogb);
-  const planHere = !remote && (desktop ? Boolean(window.ogb?.cloudAccount || (window.ogb?.cloudPlan && state.config?.cloudHome === true))
+  const desktop = Boolean(window.cry);
+  const planHere = !remote && (desktop ? Boolean(window.cry?.cloudAccount || (window.cry?.cloudPlan && state.config?.cloudHome === true))
     : state.config?.cloudHome === true && !state.config?.team && isOwnerOrAdmin(session));
   const openSettings = (section: AppSettingsSection) => dispatch({ type: "toggleAppSettings", open: true, section });
   const move = useAccountMove(state.config?.cloudHome === true, { onOpen: () => openSettings("plan"), onPairPhone: () => dispatch(phonePairingSettingsAction()) });
   const accounts = useAccounts();
-  const openSource = desktop && !window.ogb?.cloudAccount && !window.ogb?.cloudPlan;
+  const openSource = desktop && !window.cry?.cloudAccount && !window.cry?.cloudPlan;
   const planLine = !desktop ? undefined : cloudUsage ? t("sidebar.menu.plan.used", { plan: summary.plan ?? cloudPlanLabel(planSnapshot?.tier), percent: cloudUsage.value.replace(/\D+/g, "") })
     : summary.signedIn === false || summary.plan === t("settings.account.free") ? t("sidebar.menu.plan.free") : summary.plan ?? undefined;
 
@@ -580,7 +580,7 @@ export function SidebarProfileMenu({ iconOnly = false, rail = false, circle = fa
       onOpen: () => openSettings("account"),
     },
     plan: planHere ? { key: "plan", label: t("settings.page.plan"), ...(planLine ? { subtitle: planLine } : {}), icon: <CreditCard size={16} />, onSelect: () => openSettings("plan") } : null,
-    switchPlace: !besideRail && desktop && !remote && window.ogb?.workspaces && account?.place.switchable
+    switchPlace: !besideRail && desktop && !remote && window.cry?.workspaces && account?.place.switchable
       ? { key: "switch-place", label: t("sidebar.menu.switchPlace"), icon: <ArrowLeftRight size={16} />, chevron: true, onSelect: account.place.openMenu } : null,
     accounts: accountMenuItems(accounts),
     // Simple's own places to go, at every width: the phone's round avatar has them too.
@@ -604,12 +604,12 @@ export function SidebarProfileMenu({ iconOnly = false, rail = false, circle = fa
     onHelp: () => void openExternalLink(HELP_CENTER_URL),
     onFeedback: () => void openExternalLink(FEEDBACK_URL),
     onWhatsNew: () => void openExternalLink(RELEASES_URL),
-    // Every Sign out asks first: "Sign out of MausBot?" and what keeps running.
+    // Every Sign out asks first: "Sign out of CryBot?" and what keeps running.
     signOut: accounts.view?.active ? null
       : !desktop && session?.kind === "session" ? () => setSigningOut("browser")
-      : desktop && !remote && window.ogb?.cloudAccount && summary.signedIn ? () => setSigningOut("desktop")
+      : desktop && !remote && window.cry?.cloudAccount && summary.signedIn ? () => setSigningOut("desktop")
       : null,
-    signOutElsewhere: desktop && !remote && !here && !window.ogb?.cloudAccount && summary.signedIn && openComputer
+    signOutElsewhere: desktop && !remote && !here && !window.cry?.cloudAccount && summary.signedIn && openComputer
       ? { place: t("rail.thisComputer"), open: () => void openComputer("account").catch(() => {}) } : null,
   });
   const noteworthy = update && updateNoteworthy(update.phase, update.pending) && !updateHasButton(update.phase);
@@ -690,7 +690,7 @@ export function SidebarProfileMenu({ iconOnly = false, rail = false, circle = fa
         cloud={signingOut === "desktop" && summary.plan ? t("cloudSetup.myCloud") : null} onClose={() => setSigningOut(null)}
         onConfirm={() => signingOut === "browser"
           ? api("/api/auth/logout", { method: "POST" }).finally(() => location.reload())
-          : window.ogb?.cloudAccount?.signOut()} />}
+          : window.cry?.cloudAccount?.signOut()} />}
       {accounts.sheet && <AccountsSheet adding={accounts.sheet.email} note={accounts.sheet.note} onClose={accounts.closeSheet} />}
     </>
   );

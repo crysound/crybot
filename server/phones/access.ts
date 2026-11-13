@@ -47,7 +47,7 @@ export function phoneAccess(bot: PhoneBot, allowed: Readonly<Partial<Record<Phon
   if (!allowed[cap]) {
     return {
       ok: false,
-      text: `${bot.name} can't use ${Cap} on this phone: it is not allowed in the MausBot app on the phone.`,
+      text: `${bot.name} can't use ${Cap} on this phone: it is not allowed in the CryBot app on the phone.`,
       rows: [{ tool: name, ...noticeSummary(`chat.notice.phone.denied.${cap}`), decision: "auto-denied", rule: `phone:${cap}:not-allowed-on-phone` }],
     };
   }
@@ -76,7 +76,7 @@ export function phoneSystemPrompt(
   return PHONE_PROMPT + sentences.join("");
 }
 
-/** "Omkar's iPhone is an iPhone", or "The iPhone" when the phone is named after its kind (iOS 16+ reports "iPhone"). */
+/** "User's iPhone is an iPhone", or "The iPhone" when the phone is named after its kind (iOS 16+ reports "iPhone"). */
 function describePhone(phone: { name: string; platform: PhonePlatform }): string {
   const kind = phone.platform === "ios" ? "iPhone" : "Android phone";
   return phone.name.trim().toLowerCase() === kind.toLowerCase() ? `The ${kind}` : `${phone.name} is an ${kind}`;

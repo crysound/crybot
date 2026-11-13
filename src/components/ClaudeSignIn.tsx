@@ -3,7 +3,7 @@ import { ExternalLink, Loader2, LogIn } from "lucide-react";
 import { api, ApiError, useStore } from "@/state/store";
 import { t } from "@/lib/i18n";
 import { openExternalLink } from "@/lib/app-links";
-import { engineSignedIn } from "@/lib/product-events";
+
 import { type DeviceSignInStatus } from "./DeviceSignIn";
 
 const SIGN_IN_HOSTS = ["claude.com", "claude.ai", "console.anthropic.com", "platform.claude.com"];
@@ -46,7 +46,7 @@ export function ClaudeSignIn({ instanceId, autoStart = false, onDone }: {
   const succeeded = async () => {
     setAuth({ phase: "succeeded", flowId: null, authorizationUrl: null, expiresAt: null });
     setCode("");
-    engineSignedIn("claude", "code");
+
     // The sign-in already succeeded: a failed catalog refresh must not read as a failed sign-in.
     try { await refreshInstances(); } catch {}
     try { await refreshModels(instanceId); } catch {}
@@ -135,7 +135,7 @@ export function ClaudeSignIn({ instanceId, autoStart = false, onDone }: {
         <div className="space-y-1.5">
           <p className="text-[12px] font-medium text-ink">{t("accounts.claude.step1")}</p>
           <a href={link} target="_blank" rel="noopener noreferrer" onClick={(event) => {
-            if (window.ogb?.openExternal) { event.preventDefault(); void openExternalLink(link); }
+            if (window.cry?.openExternal) { event.preventDefault(); void openExternalLink(link); }
           }} className="flex w-fit items-center gap-1.5 rounded-lg bg-control px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-raised-hover">
             {t("accounts.claude.openAgain")} <ExternalLink size={12} />
           </a>

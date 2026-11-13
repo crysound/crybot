@@ -230,13 +230,13 @@ const SUPPORT: AcpSupport = {
 // and names an MCP server's namespace after its config key: only those two keys get a prefix, so other servers keep theirs.
 const COPILOT_RESERVED_SERVER_NAMES: ReadonlySet<string> = new Set(["browser", "computer"]);
 
-/** The config key Copilot gets for each server, in order: a reserved name becomes `maus_<name>` (numbered if taken). */
+/** The config key Copilot gets for each server, in order: a reserved name becomes `bot_<name>` (numbered if taken). */
 export function copilotServerNames(names: readonly string[]): string[] {
   const taken = new Set(names);
   return names.map((name) => {
     if (!COPILOT_RESERVED_SERVER_NAMES.has(name.toLowerCase())) return name;
-    let key = `maus_${name}`;
-    for (let n = 2; taken.has(key); n++) key = `maus_${name}_${n}`;
+    let key = `bot_${name}`;
+    for (let n = 2; taken.has(key); n++) key = `bot_${name}_${n}`;
     taken.add(key);
     return key;
   });
@@ -247,7 +247,7 @@ export const CopilotAgentDriver = {
   /** Creates an instance with thread-isolated launcher config files, removed when the instance is disposed. */
   async create(input: Parameters<ReturnType<typeof createAcpDriver>["create"]>[0]) {
     // Copilot CLI 1.0.105 rejects stdio servers from ACP clients; --additional-mcp-config accepts them from its launcher.
-    const directory = await mkdtemp(join(tmpdir(), "omb-copilot-mcp-"));
+    const directory = await mkdtemp(join(tmpdir(), "cry-copilot-mcp-"));
     const cleanup = () => rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     try {
       const instance = await createAcpDriver({
@@ -261,10 +261,10 @@ export const CopilotAgentDriver = {
             : { type: server.type, url: server.url,
               headers: Object.fromEntries(server.headers.map(({ name, value }) => [name, value])), tools: ["*"] }]));
           writeFileAtomicIfChanged(path, JSON.stringify({ mcpServers: servers }), { mode: 0o600, durable: false });
-          env.OMB_COPILOT_MCP_CONFIG = path;
+          env.CRYBOT_COPILOT_MCP_CONFIG = path;
         },
         resolveCommand(env, config) {
-          const path = env.OMB_COPILOT_MCP_CONFIG;
+          const path = env.CRYBOT_COPILOT_MCP_CONFIG;
           if (!path) throw new Error("GitHub Copilot's tool configuration was not prepared.");
           return Promise.resolve({ command: config.cli, args: ["--additional-mcp-config", `@${path}`] });
         },

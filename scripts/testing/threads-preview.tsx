@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "../../src/App";
-import { setAnalyticsEnabled, setEmailGateDone } from "../../src/lib/analytics";
+import { setEmailGateDone } from "../../src/lib/welcome-progress";
 import { ADVANCED_MODE_KEY, setAdvancedMode } from "../../src/lib/interface-mode";
 import { GROK_MOVE_NOTICE, MODELGO_OFFER_NOTICE } from "../../src/lib/notices";
 import { markSimpleModePromptSeen } from "../../src/lib/simple-mode-prompt";
@@ -8,12 +8,12 @@ import { applySkinChoice, readSkinChoice } from "../../src/lib/skins";
 import "../../src/styles.css";
 
 // This entry point is served only by the disposable verification launcher.
-// The voice-latency harness opts in with ?ombVoiceProbe=1; the recorder in
+// The voice-latency harness opts in with ?cryVoiceProbe=1; the recorder in
 // src/lib/voice-latency-probe stays inert without this sink.
-if (new URLSearchParams(location.search).has("ombVoiceProbe")) {
-  (window as typeof window & { __ombVoiceProbe?: unknown[] }).__ombVoiceProbe = [];
+if (new URLSearchParams(location.search).has("cryVoiceProbe")) {
+  (window as typeof window & { __cryVoiceProbe?: unknown[] }).__cryVoiceProbe = [];
 }
-setAnalyticsEnabled(false);
+
 // Every launch is a new browser, so it opens in Simple mode as a new install does, unless a test chose a mode first.
 // ?onboarding=1 plays a brand-new install.
 if (localStorage.getItem(ADVANCED_MODE_KEY) == null) setAdvancedMode(false);

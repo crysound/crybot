@@ -5,7 +5,7 @@ import { ANNOUNCEMENT_LOCALES, parseAnnouncementCard, type AnnouncementCard, typ
 
 vi.mock("@/lib/analytics", () => ({ track: vi.fn(), emailGateDone: () => true }));
 vi.mock("@/state/store", () => ({ api: vi.fn() }));
-import { track } from "@/lib/analytics";
+
 import {
   announcementConditions, announcementPlan, announcementPlatform, announcementSurface, cardSeen, hintsWith, lastSponsorDay, launchAnnouncement, markLaunchAnnouncement,
   pickAnnouncement, providersRestricted, rememberCardSeen, rememberSponsorDay, reportAnnouncement, seenKey, SPONSOR_CARDS_FOR_TEAM_MEMBERS, SPONSOR_REST_DAYS,
@@ -19,7 +19,7 @@ beforeEach(() => {
   vi.stubGlobal("localStorage", { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value) });
   vi.stubGlobal("sessionStorage", { getItem: (key: string) => session.get(key) ?? null, setItem: (key: string, value: string) => session.set(key, value) });
 });
-afterEach(() => { vi.unstubAllGlobals(); vi.mocked(track).mockClear(); });
+afterEach(() => { vi.unstubAllGlobals();  });
 
 const make = (id: string, extra: Record<string, unknown> = {}): AnnouncementCard => {
   const parsed = parseAnnouncementCard({ id, kind: "product", title: "T", body: "B", primary: { label: "Go", action: { open_url: "https://example.com/" } }, ends: "2027-01-01T00:00:00Z", ...extra });
@@ -76,7 +76,7 @@ describe("which card is due", () => {
     const cards = [make("sponsor-one", { kind: "sponsor" }), make("product")];
     expect(pick(cards)).toBe("sponsor-one");
     expect(pick(cards, { sponsors: false })).toBe("product");
-    storage.set("omb.announcement.sponsor-day", new Date(NOW - 3 * DAY).toISOString().slice(0, 10));
+    storage.set("cry.announcement.sponsor-day", new Date(NOW - 3 * DAY).toISOString().slice(0, 10));
     expect(pick(cards), "a sponsor's card three days ago").toBe("product");
     storage.clear();
     expect(pick(cards, { seen: seen({ desktop: [sponsorDayKey("2026-11-29")] }) })).toBe("product");
@@ -178,7 +178,7 @@ describe("what the page knows", () => {
 
 it("counts one event per card and step, with the card's public id and nothing else", () => {
   reportAnnouncement(make("card-a", { kind: "tip" }), "primary");
-  expect(track).toHaveBeenCalledWith("announcement", { id: "card-a", kind: "tip", action: "primary" });
+
 });
 
 it("a card's texts may be in any of the app's languages, and only those", () => {

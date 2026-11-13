@@ -2,13 +2,13 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry } from "../scripts/control-cry.ts";
 import { handleToolCall, request } from "../scripts/mcp-server.ts";
 
 // A Chief's level reached the teammate it handed work to and stopped there: Clive on Approve for me, Ada ran at auto,
 // and the work Ada handed Bea ran at Ask ("default").
 it("carries a Chief's level down every hop it hands out, in threads and in a room, and never an ordinary bot's", async () => {
-  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, { scripted: true });
+  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, { scripted: true });
   const { url, dataDir, logPath } = fixture.info;
   const planPath = join(dataDir, "room-plan.json");
   const plans: Record<string, { turns: any[] }> = {};
@@ -23,7 +23,7 @@ it("carries a Chief's level down every hop it hands out, in threads and in a roo
     expect(response.status, `${method} ${path}: ${JSON.stringify(result)}`).toBe(status);
     return result;
   };
-  const cli = (...args: string[]) => runControlOmb([...args, "--url", url]) as Promise<any>;
+  const cli = (...args: string[]) => runControlCry([...args, "--url", url]) as Promise<any>;
   const tool = (name: string, args: Record<string, unknown>) =>
     handleToolCall(name, args, (path, options) => request(path, options, url)) as Promise<any>;
   const bots = async () => (await api("GET", "/api/bots")).bots as any[];

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MODELGO_URL } from "../../shared/modelgo.ts";
+const MODELGO_URL = "https://modelgo.ai";
 import type { ModelCatalog, ProviderDriver } from "../contracts.ts";
 import { createOpenAIChatRuntime } from "./openai-chat.ts";
 

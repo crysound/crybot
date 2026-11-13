@@ -6,7 +6,7 @@ import { Copy, ExternalLink, Loader2 } from "lucide-react";
 import type { CloudOfferPlan } from "../../../electron/cloud-home.mjs";
 import type { CloudSwatch } from "../../../electron/cloud-list.mjs";
 import type { AddCloudView } from "../../../electron/cloud-rail.mjs";
-import { track } from "@/lib/analytics";
+
 import { cn } from "@/lib/cn";
 import { addCloudScreen, addCloudStop, CLOUD_LIST_NAME_LIMIT, DEFAULT_SWATCH, swatchFill, type AddCloudScreen, type AddCloudStop } from "@/lib/cloud-extra";
 import { offerPlanLabel, usd, type CloudSource } from "@/lib/cloud-plan";
@@ -75,7 +75,7 @@ function Stop({ reason, home, busy, interest, onInterest, onClose }: {
 export function AddCloudFlow({ onClose, onFirstCloud, onWide = () => {}, onBack = null, now = Date.now, source }: {
   onClose: () => void; onFirstCloud: () => void; onWide?: (wide: boolean) => void; onBack?: (() => void) | null; now?: () => number; source?: CloudSource;
 }) {
-  const bridge = window.ogb?.cloudAdd;
+  const bridge = window.cry?.cloudAdd;
   const [view, setView] = useState<AddCloudView | null | undefined>(undefined);
   const [tier, setTier] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -89,7 +89,7 @@ export function AddCloudFlow({ onClose, onFirstCloud, onWide = () => {}, onBack 
   const read = () => bridge?.state().then(setView, () => setView(null)) ?? Promise.resolve(setView(null));
   useEffect(() => {
     void read();
-    const off = window.ogb?.workspaces?.onChanged?.(() => void read());
+    const off = window.cry?.workspaces?.onChanged?.(() => void read());
     void bridge?.sheet(true).catch(() => {});
     return () => { off?.(); void bridge?.sheet(false).catch(() => {}); };
   }, []);
@@ -103,7 +103,7 @@ export function AddCloudFlow({ onClose, onFirstCloud, onWide = () => {}, onBack 
   useEffect(() => { onWide(screen.kind === "choose"); }, [screen.kind]);
   useEffect(() => {
     if (screen.kind === "first") onFirstCloud();
-    if (screen.kind === "ready") track("cloud_add_another", { step: "ready" });
+    if (screen.kind === "ready") {}
   }, [screen.kind]);
   useEffect(() => {
     if (root.current?.contains(document.activeElement)) return;
@@ -120,7 +120,7 @@ export function AddCloudFlow({ onClose, onFirstCloud, onWide = () => {}, onBack 
     if (screen.kind !== "name" || !bridge) return;
     const cloudName = name.trim().replace(/\s+/g, " ") || suggested;
     const result = await (source ? bridge.start(screen.plan.tier, cloudName, color, source) : bridge.start(screen.plan.tier, cloudName, color));
-    if (result.outcome === "opened") { track("cloud_add_another", { step: "checkout_opened", plan: screen.plan.tier }); setTier(null); await read(); return; }
+    if (result.outcome === "opened") {  setTier(null); await read(); return; }
     // Another Cloud's checkout still open: main keeps its page, and the sheet follows that one (Reopen, Copy link).
     if (result.outcome === "blocked") { setStop(addCloudStop(result.blocked)); if (result.blocked === "checkout_open") await read(); }
     else if (result.outcome === "unsupported") setStop("one");
@@ -145,7 +145,7 @@ export function AddCloudFlow({ onClose, onFirstCloud, onWide = () => {}, onBack 
       case "choose": return <div>
         {onBack && <div className="px-7 pt-5"><BackLink label={t("rail.back")} onClick={onBack} /></div>}
         <ChooseScreen offer={screen.offer} now={now()} busy={busy} signedOut={false} notice={null} onSignIn={() => {}}
-          onStart={(chosen) => { track("cloud_add_another", { step: "plan", plan: chosen }); setTier(chosen); }} />
+          onStart={(chosen) => {  setTier(chosen); }} />
       </div>;
       case "name": return <NameScreen plan={screen.plan} name={name} color={color} busy={busy} suggested={suggested} onName={setName} onColor={setColor}
         onBack={() => setTier(null)} onContinue={start} />;

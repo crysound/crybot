@@ -1202,7 +1202,7 @@
       "mcp_server"
     ]
   },
-  "default+mausbot": {
+  "default+crybot": {
     "bytes": 63631,
     "sha256": "580c7d5e93bcdc095300fa01ce46982aa794c6cf96d9d24bb21d07bb1df16401",
     "tools": [
@@ -1258,7 +1258,7 @@
       "mark_notifications_read"
     ]
   },
-  "skills+shared+voice+mausbot": {
+  "skills+shared+voice+crybot": {
     "bytes": 69753,
     "sha256": "c6f275dd5a7735cca36490ee665edb08e775c6249207edd05cf298556cb2a913",
     "tools": [

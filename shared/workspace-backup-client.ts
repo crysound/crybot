@@ -1,22 +1,22 @@
 // Exact app-owned browser state that belongs in an encrypted full backup.
 // Never include cookies, authentication tokens, connection caches or unknown keys.
 export const WORKSPACE_BACKUP_CLIENT_KEYS = [
-  "omb-drafts",
-  "omb-draft-attachments",
-  "omb-draft-send-ids",
-  "omb-draft-channel-modes",
-  "omb-skin",
-  "omb-show-threads",
-  "omb-show-run-card",
-  "omb-send-key",
-  "omb-color-user-bubbles",
-  "omb-chat-width",
-  "openmausbot.sidebarDensity",
-  "openmausbot.sidebarToolsLayout",
-  "openmausbot.sidebarCollapsedSections.v1",
-  "openmausbot.sidebarSectionOrder.v1",
-  "omb-analytics-opt-out",
-  "openmausbot.remote-voice.v1",
+  "cry-drafts",
+  "cry-draft-attachments",
+  "cry-draft-send-ids",
+  "cry-draft-channel-modes",
+  "cry-skin",
+  "cry-show-threads",
+  "cry-show-run-card",
+  "cry-send-key",
+  "cry-color-user-bubbles",
+  "cry-chat-width",
+  "crybot.sidebarDensity",
+  "crybot.sidebarToolsLayout",
+  "crybot.sidebarCollapsedSections.v1",
+  "crybot.sidebarSectionOrder.v1",
+  "cry-analytics-opt-out",
+  "crybot.remote-voice.v1",
 ] as const;
 
 export type WorkspaceBackupClientState = Partial<Record<(typeof WORKSPACE_BACKUP_CLIENT_KEYS)[number], string>>;

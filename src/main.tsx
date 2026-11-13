@@ -19,7 +19,7 @@ import { PageBoundary } from "./components/PageBoundary";
 import { endedBeforeReload, forgetEndedSession } from "./lib/session-ended";
 import "./styles.css";
 
-// Before first paint; settleInterfaceMode must run before applySkin writes omb-skin.
+// Before first paint; settleInterfaceMode must run before applySkin writes cry-skin.
 settleInterfaceMode();
 applySkinChoice(readSkinChoice());
 applyFont(readFont());
@@ -34,12 +34,12 @@ const loadApp = () => import("./App").catch((error: unknown) => ({ default: (): 
 const appPage = PAGES_WITHOUT_THE_APP.has(location.pathname) ? null : loadApp();
 
 /** A team's name as its server describes itself to anyone (the descriptor's label), null when it can't say. */
-const teamName = () => fetch("/.well-known/openmausbot/environment").then((res) => res.json() as Promise<{ label?: unknown; capabilities?: { cloudTeam?: unknown } }>)
+const teamName = () => fetch("/.well-known/crybot/environment").then((res) => res.json() as Promise<{ label?: unknown; capabilities?: { cloudTeam?: unknown } }>)
   .then((descriptor) => (descriptor.capabilities?.cloudTeam === true && typeof descriptor.label === "string" ? descriptor.label : null), () => null);
 
 async function chooseRoot(): Promise<React.ReactNode> {
-  const home = window.ogb?.home;
-  if (location.pathname === "/home" && home) return <HomeScreen bridge={home} manage={window.ogb?.cloudPlan?.manage} />;
+  const home = window.cry?.home;
+  if (location.pathname === "/home" && home) return <HomeScreen bridge={home} manage={window.cry?.cloudPlan?.manage} />;
   if (location.pathname === "/pair") {
     const signIn = takeBrowserSignInFromLocation();
     if (signIn) {

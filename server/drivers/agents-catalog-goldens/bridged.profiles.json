@@ -518,7 +518,7 @@
       "use_tool"
     ]
   },
-  "default+mausbot": {
+  "default+crybot": {
     "bytes": 18689,
     "sha256": "d6a9e63c9b6aed14ca89467f8ec3d55e1746398ddec4a9f6473f226b7a133a12",
     "tools": [
@@ -541,7 +541,7 @@
       "use_tool"
     ]
   },
-  "skills+shared+voice+mausbot": {
+  "skills+shared+voice+crybot": {
     "bytes": 19537,
     "sha256": "b031ee1601315c884224a0ef0e83c9195507290d8a5de96b1383f37da9294fd0",
     "tools": [

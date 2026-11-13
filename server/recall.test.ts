@@ -41,7 +41,7 @@ describe("recall terms and query", () => {
   });
 
   it("drops greetings, so a hello never recalls a bot's own greeting", () => {
-    expect(recallTerms("Hi! Quick intro: I'm Omkar")).toEqual(["intro", "omkar"]);
+    expect(recallTerms("Hi! Quick intro: I'm User")).toEqual(["intro", "omkar"]);
     expect(recallQuery("hello there, thanks!")).toBeNull();
   });
 

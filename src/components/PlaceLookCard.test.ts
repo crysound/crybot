@@ -27,7 +27,7 @@ async function page(start: PlaceLook | null, { answer = saved(start ?? COMPUTER)
   const heard = new Set<() => void>();
   const workspaces = { state: vi.fn(async () => ({ local: own, name: start?.name ?? "This computer" })), look: vi.fn(async () => start), color: vi.fn(async (swatch: string | null) => answer(swatch)), onChanged: vi.fn((callback: () => void) => { heard.add(callback); return () => { heard.delete(callback); }; }) };
   // This computer's own page has its phone link (the place-name source reads it), a Cloud's page does not.
-  Object.assign(window, { ogb: { app: { version: "0.1.131", ownPage: own }, workspaces, ...(own ? { companion: {} } : {}) } });
+  Object.assign(window, { cry: { app: { version: "0.1.131", ownPage: own }, workspaces, ...(own ? { companion: {} } : {}) } });
   const { setLocale } = await import("@/lib/i18n");
   setLocale("en");
   const { PlaceLookCard } = await import("./PlaceLookCard");
@@ -140,9 +140,9 @@ it("the Admin's refusal, an Admin without the route, and a failure: said plainly
   }
 });
 
-it("another Cloud of the person's own while the MausBot Cloud sign-in is away: locked, and says why", async () => {
+it("another Cloud of the person's own while the CryBot Cloud sign-in is away: locked, and says why", async () => {
   await page(look({ change: null, reason: "signed-out" }));
-  expect(host.querySelector('[data-place-look="locked"]')?.textContent).toContain("Sign in to MausBot Cloud to change its color.");
+  expect(host.querySelector('[data-place-look="locked"]')?.textContent).toContain("Sign in to CryBot Cloud to change its color.");
   expect(swatch("rose").disabled).toBe(true);
 });
 
@@ -156,7 +156,7 @@ it("a browser or an older app: no colour and no tint, only the place's picture",
   vi.resetModules();
   vi.doMock("@/state/store", () => ({ useStore: () => ({ state: { config: {} } }) }));
   vi.doMock("@/lib/use-owner-or-admin", () => ({ useOwnerOrAdmin: () => true }));
-  Object.assign(window, { ogb: { workspaces: { state: vi.fn(async () => null) } } });
+  Object.assign(window, { cry: { workspaces: { state: vi.fn(async () => null) } } });
   const { PlaceLookCard } = await import("./PlaceLookCard");
   root = createRoot(host);
   await act(async () => { root!.render(createElement(PlaceLookCard)); });

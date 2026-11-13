@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import type { CompanionAccountState } from "../types/ogb";
+import type { CompanionAccountState } from "../types/cry";
 import {
   companionStateRefreshIsCurrent,
   mutateCompanionBridgeState,
@@ -91,7 +91,7 @@ describe("companion status refresh", () => {
   });
 
   it("does not let a pre-mutation poll overwrite a newly opened pairing", async () => {
-    const pairingToken = `omb_pair_${"a".repeat(43)}`;
+    const pairingToken = `cry_pair_${"a".repeat(43)}`;
     const staleState: CompanionState = {
       enabled: true,
       keepAwake: false,
@@ -153,7 +153,7 @@ describe("manual pairing code placement", () => {
   });
 
   it("keeps the code in troubleshooting details when a QR is available", () => {
-    expect(phonePairingManualCodeMode(true, "openmausbot://pair?token=example")).toBe("details");
+    expect(phonePairingManualCodeMode(true, "crybot://pair?token=example")).toBe("details");
     expect(phonePairingManualCodeMode(false, null)).toBe("hidden");
   });
 });

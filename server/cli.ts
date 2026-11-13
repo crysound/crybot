@@ -1,17 +1,17 @@
-// `openmausbot` on the command line: run the server anywhere and pair devices to it.
+// `crybot` on the command line: run the server anywhere and pair devices to it.
 //
-//   openmausbot setup [--data-dir ~/.openmausbot]
-//   openmausbot start [serve options]
-//   openmausbot serve [--port 8799] [--data-dir ~/.openmausbot] [--label "cab mini"]
+//   crybot setup [--data-dir ~/.crybot]
+//   crybot start [serve options]
+//   crybot serve [--port 8799] [--data-dir ~/.crybot] [--label "cab mini"]
 //                     [--public-url https://host] [--tailscale | --tunnel | --domain HOST] [--relay] [--no-pair]
-//   openmausbot pair  [--label "My MacBook"] [--client] [--public-url https://host]
-//   openmausbot sessions [revoke <id>]
-//   openmausbot status
-//   openmausbot login [--email you@example.com] [--relay]
-//   openmausbot logout
-//   openmausbot run | send | wait | doctor | team apply | export | …
+//   crybot pair  [--label "My MacBook"] [--client] [--public-url https://host]
+//   crybot sessions [revoke <id>]
+//   crybot status
+//   crybot login [--email you@example.com] [--relay]
+//   crybot logout
+//   crybot run | send | wait | doctor | team apply | export | …
 //
-// This module only exports: openmausbot.ts runs main(), so bundling this file into other entries never runs it twice.
+// This module only exports: crybot.ts runs main(), so bundling this file into other entries never runs it twice.
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync } from "node:fs";
@@ -24,7 +24,7 @@ import { phonePairingLink } from "../shared/pairing-link.ts";
 import { parseAllowList } from "./account-signin.ts";
 import { appendAdminAction, flushAdminActivity, sharedSignIn } from "./admin-activity.ts";
 import { bindDecisionRetention, decisionRetentionDays } from "./decision-log.ts";
-import { hostedWorkspaceConfigured } from "./enterprise.ts";
+import { hostedWorkspaceConfigured } from "./workspace-access.ts";
 import { reportableServerVersion, serverVersion } from "./environment.ts";
 import { resolveLoopbackTrust } from "./request-auth.ts";
 import { restartPolicy } from "./restart.ts";
@@ -101,10 +101,8 @@ export interface CliOptions {
   slug?: string;
   admins?: string[];
   members?: string[];
-  brandFile?: string;
   anthropicKeyFile?: string;
   cap?: number;
-  licenseKey?: string;
   memory?: string;
   dryRun?: boolean;
   yes?: boolean;
@@ -131,8 +129,8 @@ export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env):
   }
   const options: CliOptions = {
     command: command === "--help" || command === "-h" ? "help" : command === "--version" || command === "-v" ? "version" : command === "devices" ? "sessions" : (command as CliOptions["command"]),
-    port: Number(env.OMB_PORT || 8799),
-    dataDir: env.OMB_DATA_DIR || join(homedir(), ".openmausbot"),
+    port: Number(env.CRYBOT_PORT || 8799),
+    dataDir: env.CRYBOT_DATA_DIR || join(homedir(), ".crybot"),
     tailscale: false,
     tunnel: false,
     client: false,
@@ -194,10 +192,8 @@ export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env):
       else if (options.command === "fleet" && options.fleetAction === "users" && options.slug && !options.fleetUserAction && (arg === "add" || arg === "remove")) { options.fleetUserAction = arg; options.email = value(); }
       else if (options.command === "fleet" && arg === "--admin") options.admins = [...(options.admins ?? []), value()];
       else if (options.command === "fleet" && arg === "--member") options.members = [...(options.members ?? []), value()];
-      else if (options.command === "fleet" && arg === "--brand") options.brandFile = resolve(value());
       else if (options.command === "fleet" && arg === "--anthropic-key-file") options.anthropicKeyFile = resolve(value());
       else if (options.command === "fleet" && arg === "--cap") options.cap = Number(value());
-      else if (options.command === "fleet" && arg === "--license-key") options.licenseKey = value();
       else if (options.command === "fleet" && arg === "--memory") options.memory = value();
       else if (options.command === "fleet" && arg === "--dry-run") options.dryRun = true;
       else if (options.command === "fleet" && arg === "--yes") options.yes = true;
@@ -211,7 +207,7 @@ export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env):
   if (!Number.isInteger(options.port) || options.port < 1 || options.port > 65_535) return { error: "--port must be 1-65535" };
   const publicUrlRefusal = options.publicUrl ? publicUrlProblem(options.publicUrl) : null;
   if (publicUrlRefusal) return { error: publicUrlRefusal };
-  if (options.tunnel && (options.tailscale || options.relay)) return { error: options.relay ? "choose one of --relay (phones through MausBot Relay) and --tunnel (a public address)" : "choose one of --tailscale (your tailnet) and --tunnel (a public address)" };
+  if (options.tunnel && (options.tailscale || options.relay)) return { error: options.relay ? "choose one of --relay (phones through CryBot Relay) and --tunnel (a public address)" : "choose one of --tailscale (your tailnet) and --tunnel (a public address)" };
   if (options.command === "access" && !options.accessAction) return { error: "access needs one of: list, add EMAIL [--chat-only], remove EMAIL" };
   if (options.command === "service" && !options.serviceAction) return { error: "service needs one of: install [the same options as serve], uninstall" };
   if (options.domain && (options.tailscale || options.tunnel || options.publicUrl)) return { error: "--domain already gives the server its address; drop --tailscale, --tunnel and --public-url" };
@@ -253,14 +249,14 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 let serveOwnerToken: string | undefined;
 
 async function api(port: number, path: string, init: { method?: string; body?: string } = {}): Promise<{ status: number; body: any }> {
-  // x-openmausbot-cli names the tool in the activity log; on loopback it grants nothing.
-  const headers: Record<string, string> = { "content-type": "application/json", "x-openmausbot-cli": "1", ...(serveOwnerToken ? { "x-openmausbot-cli-owner": serveOwnerToken } : {}) };
+  // x-crybot-cli names the tool in the activity log; on loopback it grants nothing.
+  const headers: Record<string, string> = { "content-type": "application/json", "x-crybot-cli": "1", ...(serveOwnerToken ? { "x-crybot-cli-owner": serveOwnerToken } : {}) };
   const res = await fetch(`http://127.0.0.1:${port}${path}`, { method: init.method, body: init.body, headers, signal: AbortSignal.timeout(3000) });
   const body: unknown = await res.json().catch(() => ({}));
   return { status: res.status, body };
 }
 
-export const SERVICE_TRUST_HELP = "This server does not treat commands on this computer as its owner (OMB_LOOPBACK_TRUST=service, or a hosted workspace), so it will not pair devices or list sessions for them. Sign in as an admin and use Settings → Remote access, let people sign in with their email (openmausbot access add you@example.com), or restart the server with OMB_LOOPBACK_TRUST=owner.";
+export const SERVICE_TRUST_HELP = "This server does not treat commands on this computer as its owner (CRYBOT_LOOPBACK_TRUST=service, or a hosted workspace), so it will not pair devices or list sessions for them. Sign in as an admin and use Settings → Remote access, let people sign in with their email (crybot access add you@example.com), or restart the server with CRYBOT_LOOPBACK_TRUST=owner.";
 
 function refusedAsService(status: number, body: any): boolean {
   return status === 403 && typeof body?.error === "string" && /shared server|Sign in through the workspace portal/.test(body.error);
@@ -269,7 +265,7 @@ function refusedAsService(status: number, body: any): boolean {
 async function serverUp(port: number, pid?: number): Promise<boolean> {
   try {
     const { status, body } = await api(port, "/api/health");
-    return status === 200 && body?.app === "openmausbot" && (pid === undefined || body.pid === pid);
+    return status === 200 && body?.app === "crybot" && (pid === undefined || body.pid === pid);
   } catch {
     return false;
   }
@@ -279,9 +275,9 @@ async function serverUp(port: number, pid?: number): Promise<boolean> {
 export async function isWorkspaceRunning(options: CliOptions): Promise<boolean> {
   try {
     const { status, body } = await api(options.port, "/api/health");
-    if (status !== 200 || body?.app !== "openmausbot") return false;
+    if (status !== 200 || body?.app !== "crybot") return false;
     const expected = readFileSync(join(options.dataDir, "environment-id"), "utf8").trim();
-    const descriptor = await api(options.port, "/.well-known/openmausbot/environment");
+    const descriptor = await api(options.port, "/.well-known/crybot/environment");
     return /^[0-9a-f-]{36}$/i.test(expected) && descriptor.status === 200 && descriptor.body?.environmentId === expected;
   } catch { return false; }
 }
@@ -300,8 +296,8 @@ export async function openDashboard(port: number, env = process.env): Promise<bo
   });
 }
 
-/** Something already answers there as a MausBot server (before this one has started). */
-const answersAsMausBot = async (origin: string) => typeof (await fetch(`${origin}/.well-known/openmausbot/environment`, { signal: AbortSignal.timeout(3_000) }).then((r) => r.json() as Promise<{ environmentId?: unknown }>).catch(() => null))?.environmentId === "string";
+/** Something already answers there as a CryBot server (before this one has started). */
+const answersAsCryBot = async (origin: string) => typeof (await fetch(`${origin}/.well-known/crybot/environment`, { signal: AbortSignal.timeout(3_000) }).then((r) => r.json() as Promise<{ environmentId?: unknown }>).catch(() => null))?.environmentId === "string";
 
 /** Its public descriptor must identify this exact server; never sends a pairing code or credential. */
 export async function verifyPhoneEndpoint(port: number, origin: string): Promise<boolean> {
@@ -337,7 +333,7 @@ async function showPhonePairing(options: CliOptions, origin: string | undefined,
   if (options.relay) return showRelayPairing({ tty: process.stdout.isTTY === true, status: async () => (await api(options.port, "/api/auth/pairing")).body?.relay, mint: () => mintPairing(options.port, { client: true, label: options.label ?? (options.phone === "android" ? "Android" : "iPhone / iPad"), phone: options.phone ?? "ios" }), log, prefix: cliPrefix() });
   const ready = !!origin && await verifyPhoneEndpoint(options.port, origin);
   if (!ready) {
-    log("Phone access is not reachable yet. OpenMausBot is ready on this computer; no phone pairing code was created.");
+    log("Phone access is not reachable yet. CryBot is ready on this computer; no phone pairing code was created.");
     log(`Check the HTTPS connection, then run ${cliCommand("pair")} again with the same --data-dir and --port.`);
     return false;
   }
@@ -364,7 +360,7 @@ async function mintPairing(port: number, options: { label?: string; client?: boo
 /** Never asks anything: the running server's own address (its routes) goes in the link. */
 export async function runPair(options: CliOptions): Promise<number> {
   if (!(await serverUp(options.port))) {
-    console.error(`No MausBot server is running here. Start it: ${cliCommand("serve")}${options.port !== 8799 ? ` (or name its port: --port ${options.port})` : ""}`);
+    console.error(`No CryBot server is running here. Start it: ${cliCommand("serve")}${options.port !== 8799 ? ` (or name its port: --port ${options.port})` : ""}`);
     return 1;
   }
   const advertised = await api(options.port, "/api/auth/pairing").catch(() => ({ status: 0, body: {} as any }));
@@ -379,7 +375,7 @@ export async function runPair(options: CliOptions): Promise<number> {
 
 export async function runSessions(options: CliOptions): Promise<number> {
   if (!(await serverUp(options.port))) {
-    console.error(`no OpenMausBot server on http://127.0.0.1:${options.port}`);
+    console.error(`no CryBot server on http://127.0.0.1:${options.port}`);
     return 1;
   }
   if (options.revoke) {
@@ -418,11 +414,11 @@ export async function runSessions(options: CliOptions): Promise<number> {
 }
 
 export async function runStatus(options: CliOptions, io: CliIo = defaultIo()): Promise<number> {
-  const body: any = await fetch(`http://127.0.0.1:${options.port}/.well-known/openmausbot/environment`).then((r) => r.json()).catch(() => null);
+  const body: any = await fetch(`http://127.0.0.1:${options.port}/.well-known/crybot/environment`).then((r) => r.json()).catch(() => null);
   if (body && options.json) io.log(JSON.stringify(body, null, 2));
-  if (!body) io.error(`No MausBot server is running here. Start it: ${cliCommand("serve")}`);
+  if (!body) io.error(`No CryBot server is running here. Start it: ${cliCommand("serve")}`);
   if (body && !options.json) {
-    io.log(`Server "${body.label}"   running · MausBot ${body.version} on ${body.platform}\n  Local        127.0.0.1:${options.port}`);
+    io.log(`Server "${body.label}"   running · CryBot ${body.version} on ${body.platform}\n  Local        127.0.0.1:${options.port}`);
     const address = await api(options.port, "/api/auth/pairing").then((r) => (typeof r.body?.publicUrl === "string" ? r.body.publicUrl as string : null)).catch(() => null);
     if (!address || isLoopbackHost(new URL(address).hostname)) io.log(`  Address      none: reachable from this machine only. Ways in: ${cliCommand("serve --help")}`);
     else for (const line of reachLines(address.startsWith("http:") ? "lan" : "public-url", address, options.port, cliPrefix(), address.startsWith("http:") ? undefined : await checkReach(options.port, address))) io.log(`  ${line.replace(/^Reach   /, "Address     ")}`);
@@ -430,12 +426,12 @@ export async function runStatus(options: CliOptions, io: CliIo = defaultIo()): P
     if (Array.isArray(sessions?.body?.sessions)) io.log(`Paired   ${sessions.body.sessions.length} device${sessions.body.sessions.length === 1 ? "" : "s"}   ${cliCommand("devices")}`);
   }
   const account = options.json ? null : describeTunnelAccount(createTunnelAccount({ dataDir: options.dataDir, version: reportableServerVersion() }).credentials.read());
-  if (!options.json && fleetCredential()) io.log(`MausBot web address: managed by the fleet (${FLEET_CREDENTIAL_ENV} is set)`);
-  else if (account?.address) io.log(`MausBot web address: ${account.address} (signed in as ${account.email ?? "?"}; serve it with ${cliCommand("serve --tunnel")})`);
+  if (!options.json && fleetCredential()) io.log(`CryBot web address: managed by the fleet (${FLEET_CREDENTIAL_ENV} is set)`);
+  else if (account?.address) io.log(`CryBot web address: ${account.address} (signed in as ${account.email ?? "?"}; serve it with ${cliCommand("serve --tunnel")})`);
   return body ? 0 : 1;
 }
 
-/** Edits the sign-in allow-list in config.json, server live or stopped (read per request); OMB_SIGNIN_EMAILS wins when it names someone. */
+/** Edits the sign-in allow-list in config.json, server live or stopped (read per request); CRYBOT_SIGNIN_EMAILS wins when it names someone. */
 export async function runAccess(options: CliOptions, io: CliIo = defaultIo()): Promise<number> {
   const file = join(options.dataDir, "config.json");
   let raw: Record<string, unknown> = {};
@@ -471,12 +467,12 @@ export async function runAccess(options: CliOptions, io: CliIo = defaultIo()): P
   };
   if (options.accessAction === "list") {
     if (!admins.length && !members.length) {
-      io.log("nobody can sign in with an email yet; pairing codes only. Add someone with: openmausbot access add you@example.com");
+      io.log("nobody can sign in with an email yet; pairing codes only. Add someone with: crybot access add you@example.com");
       return 0;
     }
     for (const entry of admins) io.log(`${entry.padEnd(40)} full access`);
     for (const entry of members) io.log(`${entry.padEnd(40)} chat and approvals`);
-    if (overridden) io.log("(OMB_SIGNIN_EMAILS / OMB_SIGNIN_MEMBER_EMAILS are set in the environment and win over this list while the server runs)");
+    if (overridden) io.log("(CRYBOT_SIGNIN_EMAILS / CRYBOT_SIGNIN_MEMBER_EMAILS are set in the environment and win over this list while the server runs)");
     return 0;
   }
   const entry = (options.email ?? "").trim().toLowerCase();
@@ -496,7 +492,7 @@ export async function runAccess(options: CliOptions, io: CliIo = defaultIo()): P
   }
   await write(options.chatOnly ? { admins: without(admins), members: [...without(members), entry] } : { admins: [...without(admins), entry], members: without(members) });
   io.log(`${entry} can sign in at /pair with an emailed code (${options.chatOnly ? "chat and approvals" : "full access"})`);
-  if (overridden) io.log("note: OMB_SIGNIN_EMAILS / OMB_SIGNIN_MEMBER_EMAILS are set in the environment and win over this list while the server runs");
+  if (overridden) io.log("note: CRYBOT_SIGNIN_EMAILS / CRYBOT_SIGNIN_MEMBER_EMAILS are set in the environment and win over this list while the server runs");
   return 0;
 }
 
@@ -508,12 +504,12 @@ export async function runLogin(options: CliOptions, io: CliIo = defaultIo()): Pr
     return 1;
   }
   if (!account.controlPlane) {
-    io.error("OMB_CONTROL_PLANE_URL is set but is not an https address");
+    io.error("CRYBOT_CONTROL_PLANE_URL is set but is not an https address");
     return 1;
   }
   const existing = describeTunnelAccount(account.credentials.read());
   if (existing.address) io.log(`already signed in as ${existing.email ?? "?"} (${existing.address}); signing in again refreshes it`);
-  const email = (options.email ?? (await io.ask("Email for your OpenMausBot account: "))).trim();
+  const email = (options.email ?? (await io.ask("Email for your CryBot account: "))).trim();
   if (!email) {
     io.error(`an email address is needed: ${cliCommand("login --email you@example.com")}`);
     return 1;
@@ -538,7 +534,7 @@ export async function runLogin(options: CliOptions, io: CliIo = defaultIo()): Pr
     return 1;
   }
   io.log(`Signed in as ${signedIn.email ?? email}.`);
-  io.log(signedIn.address ? `This machine's public address: ${signedIn.address}` : "No public address reserved: phones reach this machine through MausBot Relay.");
+  io.log(signedIn.address ? `This machine's public address: ${signedIn.address}` : "No public address reserved: phones reach this machine through CryBot Relay.");
   io.log(`Serve there with:  ${cliCommand(signedIn.address ? "serve --tunnel" : "serve --relay")}`);
   return 0;
 }
@@ -571,7 +567,7 @@ export async function runBrowser(options: CliOptions, io: CliIo = defaultIo()): 
   const status = browserEngineStatus({ dataDir: options.dataDir });
   if (options.browserAction === "status") {
     io.log(describeBrowserEngine(status, status.kind === "ready" ? new (await import("./browser/chrome/launcher.ts")).ChromeLauncher({ dataDir: options.dataDir }).describe() : undefined));
-    if (status.kind !== "ready" && status.installable) io.log("install it with:  openmausbot browser install");
+    if (status.kind !== "ready" && status.installable) io.log("install it with:  crybot browser install");
     return status.kind === "ready" ? 0 : 1;
   }
   let binary = resolveAgentBrowserBinary({ dataDir: options.dataDir });
@@ -710,24 +706,24 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
   if (!entry.staticDir) log("note: no built UI found next to the server; the API runs but browsers get no page (build with `pnpm exec vite build`)");
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    OMB_DATA_DIR: options.dataDir,
-    OMB_PORT: String(options.port),
-    OMB_WEBHOOK_PORT: process.env.OMB_WEBHOOK_PORT || String(options.port + 1), ...(options.relay ? { OMB_PHONE_RELAY: "1" } : {}),
+    CRYBOT_DATA_DIR: options.dataDir,
+    CRYBOT_PORT: String(options.port),
+    CRYBOT_WEBHOOK_PORT: process.env.CRYBOT_WEBHOOK_PORT || String(options.port + 1), ...(options.relay ? { CRYBOT_PHONE_RELAY: "1" } : {}),
   };
-  if (options.local) delete env.OMB_PUBLIC_URL;
+  if (options.local) delete env.CRYBOT_PUBLIC_URL;
   // The per-launch secret goes over stdin, not the environment that every engine the server starts inherits.
   const serviceTrust = resolveLoopbackTrust({ env, desktopManaged: false, hostedWorkspace: hostedWorkspaceConfigured(env) }).trust === "service";
   const ownerToken = serviceTrust ? randomBytes(32).toString("base64url") : undefined;
-  if (ownerToken) env.OMB_CLI_OWNER_STDIN = "1";
-  else delete env.OMB_CLI_OWNER_STDIN;
-  if (entry.staticDir) env.OMB_STATIC_DIR = entry.staticDir;
-  if (entry.skillsDir && !process.env.OMB_SKILLS_DIR) env.OMB_SKILLS_DIR = entry.skillsDir;
-  if (options.label && !process.env.OMB_ENVIRONMENT_LABEL) env.OMB_ENVIRONMENT_LABEL = options.label;
-  if (plan) Object.assign(env, { OMB_TUNNEL_SOCKET: plan.origin.socketPath, OMB_SERVES_TUNNEL: "1" });
+  if (ownerToken) env.CRYBOT_CLI_OWNER_STDIN = "1";
+  else delete env.CRYBOT_CLI_OWNER_STDIN;
+  if (entry.staticDir) env.CRYBOT_STATIC_DIR = entry.staticDir;
+  if (entry.skillsDir && !process.env.CRYBOT_SKILLS_DIR) env.CRYBOT_SKILLS_DIR = entry.skillsDir;
+  if (options.label && !process.env.CRYBOT_ENVIRONMENT_LABEL) env.CRYBOT_ENVIRONMENT_LABEL = options.label;
+  if (plan) Object.assign(env, { CRYBOT_TUNNEL_SOCKET: plan.origin.socketPath, CRYBOT_SERVES_TUNNEL: "1" });
   const lanRefusal = options.lan ? lanProblem() : null;
   if (lanRefusal) log(lanRefusal);
-  if (options.lan && !lanRefusal) env.OMB_LAN = "1";
-  else delete env.OMB_LAN;
+  if (options.lan && !lanRefusal) env.CRYBOT_LAN = "1";
+  else delete env.CRYBOT_LAN;
   let logPath: string | undefined;
   let logFd: number | undefined;
   let tailscaleShare: { origin: string; stop(): Promise<void> } | null = null;
@@ -745,7 +741,7 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
       log("\nStarting your workspace…");
     }
     if (tailscale) {
-      const served = await tailscaleServe(tailscale, options.port, { dataDir: options.dataDir, otherServer: answersAsMausBot });
+      const served = await tailscaleServe(tailscale, options.port, { dataDir: options.dataDir, otherServer: answersAsCryBot });
       const listening = "failure" in served ? tailnetListenFallback(served.failure, tailscale, options.port) : null;
       tailscaleShare = "failure" in served ? listening && { origin: listening.origin, stop: async () => {} } : served;
       if (startupCancelled || !tailscaleShare) throw startupCancelled ? new SetupCancelled() : new Error(`--tailscale: ${explainTailscaleFailure("failure" in served ? served.failure : "unknown")}`);
@@ -753,7 +749,7 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
       log(listening?.line ?? `tailscale: serving https://${tailscale.dnsName} → http://127.0.0.1:${options.port} (only your tailnet can reach it)`);
     }
     if (startupCancelled) throw new SetupCancelled();
-    if (publicUrl) env.OMB_PUBLIC_URL = publicUrl;
+    if (publicUrl) env.CRYBOT_PUBLIC_URL = publicUrl;
     child = spawn(entry.command, entry.args, { env, stdio: [ownerToken ? "pipe" : "ignore", logFd ?? "inherit", logFd ?? "inherit"] });
     if (ownerToken) {
       child.stdin?.on("error", () => {});
@@ -812,19 +808,19 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
       await new Promise((r) => setTimeout(r, 250));
     }
     if (exited !== null) {
-      if (exited !== 0) log(`OpenMausBot could not start.${logPath ? ` Details: ${logPath}` : " See the output above."}`);
+      if (exited !== 0) log(`CryBot could not start.${logPath ? ` Details: ${logPath}` : " See the output above."}`);
       return exited;
     }
     if (stopping) return await childExit;
     if (!(await serverUp(options.port, child.pid))) {
-      console.error(`OpenMausBot did not become ready within a minute.${logPath ? ` Details: ${logPath}` : " See its output above."}`);
+      console.error(`CryBot did not become ready within a minute.${logPath ? ` Details: ${logPath}` : " See its output above."}`);
       await stop();
       return 1;
     }
     if (stopping || exited !== null) return await childExit;
     if (options.domain && caddyBinary) {
       try {
-        caddy = await startCaddy({ binary: caddyBinary, dataDir: options.dataDir, domain: options.domain, appPort: options.port, webhookPort: Number(env.OMB_WEBHOOK_PORT), log });
+        caddy = await startCaddy({ binary: caddyBinary, dataDir: options.dataDir, domain: options.domain, appPort: options.port, webhookPort: Number(env.CRYBOT_WEBHOOK_PORT), log });
         log(`https: Caddy serves ${publicUrl} → http://127.0.0.1:${options.port}; it gets the certificate from Let's Encrypt once DNS for ${options.domain} points at this machine`);
         void caddy.exited.then((code) => {
           if (!stopping) log(`caddy: stopped (exit ${code ?? "signal"}); ${publicUrl} is no longer served. Stop and start the server again.`);
@@ -849,11 +845,11 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
       void plan.account?.service.restore().catch(() => undefined);
     }
     const prefix = cliPrefix();
-    const described = await api(options.port, "/.well-known/openmausbot/environment").catch(() => null);
-    const route: Route | null = plan ? "tunnel" : options.domain ? "domain" : tailscaleShare ? "tailscale" : publicUrl ? "public-url" : env.OMB_LAN === "1" ? "lan" : null;
+    const described = await api(options.port, "/.well-known/crybot/environment").catch(() => null);
+    const route: Route | null = plan ? "tunnel" : options.domain ? "domain" : tailscaleShare ? "tailscale" : publicUrl ? "public-url" : env.CRYBOT_LAN === "1" ? "lan" : null;
     const origin = route === "lan" ? lanUrl(options.port, env) : publicUrl ?? null;
     log("");
-    log(`MausBot ${serverVersion()} · server "${described?.body?.label ?? options.label ?? "this machine"}"`);
+    log(`CryBot ${serverVersion()} · server "${described?.body?.label ?? options.label ?? "this machine"}"`);
     if (options.guided) {
       log("Your bots and conversations are saved automatically.");
       log(`Details if you need help: ${logPath}`);
@@ -901,7 +897,7 @@ export async function serveUntilStopped(options: CliOptions, run: (options: CliO
   for (;;) {
     const code = await run(launch);
     if (!policy.again(code)) return code;
-    console.log("\nOpenMausBot is starting again to finish installing a copy from the desktop app…");
+    console.log("\nCryBot is starting again to finish installing a copy from the desktop app…");
     launch = { ...options, pair: false, open: false };
   }
 }
@@ -918,7 +914,7 @@ export async function runOnboardingCommand(
     io.error(`Setup needs an interactive terminal. Run ${cliCommand("setup")} in a terminal, or start unattended with ${cliCommand("serve")}.`);
     return 1;
   }
-  process.env.OMB_DATA_DIR = options.dataDir;
+  process.env.CRYBOT_DATA_DIR = options.dataDir;
   if (options.command !== "setup" && await (flow.running ?? isWorkspaceRunning)(options)) {
     if (options.local || options.tunnel || options.tailscale || options.publicUrl) {
       io.error("This workspace is already running. Stop it before changing local or remote access; the current connection was not changed.");
@@ -959,7 +955,7 @@ export async function runOnboardingCommand(
     }
     if (options.command === "setup") {
       io.log(`\nAll set. Start with: ${cliPrefix()}`);
-      if (options.dataDir !== join(homedir(), ".openmausbot") || options.port !== 8799) {
+      if (options.dataDir !== join(homedir(), ".crybot") || options.port !== 8799) {
         io.log(`Use the same --data-dir (${options.dataDir}) and --port (${options.port}) options when starting.`);
       }
       return 0;
@@ -981,7 +977,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     console.error(`${options.error}\nAll commands and options: ${cliCommand("--help")}`);
     return 2;
   }
-  process.env.OMB_DATA_DIR = options.dataDir;
+  process.env.CRYBOT_DATA_DIR = options.dataDir;
   switch (options.command) {
     case "setup":
     case "start":
@@ -1011,7 +1007,6 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           group: options.group,
           node: process.execPath,
           script: process.argv[1] ?? "",
-          licenseKey: options.licenseKey ?? process.env.OMB_LICENSE_KEY,
         }, { log: (line) => console.log(line) });
         await new Promise<void>((resolveStop) => {
           for (const signal of ["SIGTERM", "SIGINT"] as const) process.once(signal, () => resolveStop());
@@ -1025,10 +1020,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
         operator: options.operator ?? process.env.SUDO_USER,
         admins: options.admins ?? [],
         members: options.members ?? [],
-        brandFile: options.brandFile,
         anthropicKeyFile: options.anthropicKeyFile,
         cap: options.cap,
-        licenseKey: options.licenseKey ?? process.env.OMB_LICENSE_KEY,
         memory: options.memory,
         dryRun: options.dryRun ?? false,
         yes: options.yes ?? false,

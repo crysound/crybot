@@ -18,7 +18,7 @@ beforeEach(() => {
   requests = [];
   owns = true;
   tab = { closed: false, opener: window, location: { replace: vi.fn() }, close: () => { tab.closed = true; } };
-  vi.stubGlobal("ogb", undefined);
+  vi.stubGlobal("cry", undefined);
   vi.spyOn(window, "open").mockImplementation(() => tab as unknown as Window);
 });
 afterEach(() => {
@@ -105,7 +105,7 @@ describe("the app's viewer window", () => {
     { row: "a reopen found another device's hold after an open that took it", opens: [true, false], lease: 0 },
     { row: "no open recorded it", opens: [], lease: null },
   ] as Array<{ row: string; opens: boolean[]; lease: number | null }>)("gives back, when it closes, only a hold its open's take owned: $row", async ({ opens, lease }) => {
-    vi.stubGlobal("ogb", { desktopViewer: { open: vi.fn(async () => true) } });
+    vi.stubGlobal("cry", { desktopViewer: { open: vi.fn(async () => true) } });
     for (const owned of opens) {
       owns = owned;
       await openProviderDesktop({ botId: "scout", title: "Scout's live desktop", request, current: () => true, join: async () => ({ joinUrl: "https://desktop.invalid/scout" }) });
@@ -115,7 +115,7 @@ describe("the app's viewer window", () => {
   });
 
   it("gives back, after a reload of the page, the hold its open took before it", async () => {
-    vi.stubGlobal("ogb", { desktopViewer: { open: vi.fn(async () => true) } });
+    vi.stubGlobal("cry", { desktopViewer: { open: vi.fn(async () => true) } });
     await openProviderDesktop({ botId: "scout", title: "Scout's live desktop", request, current: () => true, join: async () => ({ joinUrl: "https://desktop.invalid/scout" }) });
     vi.resetModules();
     const reloaded = await import("./computer-takeover");
@@ -123,7 +123,7 @@ describe("the app's viewer window", () => {
   });
 
   it("gives back, once the reopened viewer closes, the hold of an open a reload of the page cut off during its join", async () => {
-    vi.stubGlobal("ogb", { desktopViewer: { open: vi.fn(async () => true) } });
+    vi.stubGlobal("cry", { desktopViewer: { open: vi.fn(async () => true) } });
     void openProviderDesktop({ botId: "scout", title: "Scout's live desktop", request, current: () => true, join: () => new Promise(() => {}) });
     await vi.advanceTimersByTimeAsync(0);
     vi.resetModules();
@@ -134,7 +134,7 @@ describe("the app's viewer window", () => {
   });
 
   it("leaves nothing for a close to give back after an open whose join failed gave its hold back", async () => {
-    vi.stubGlobal("ogb", { desktopViewer: { open: vi.fn(async () => true) } });
+    vi.stubGlobal("cry", { desktopViewer: { open: vi.fn(async () => true) } });
     await expect(openProviderDesktop({ botId: "scout", title: "Scout's live desktop", request, current: () => true, join: async () => { throw new Error("join failed"); } })).rejects.toThrow("join failed");
     expect(requests).toEqual([{ action: "take", lease: requests[0]!.lease }, { action: "release", lease: requests[0]!.lease }]);
     expect(viewerClosedRelease("scout")).toBeNull();
@@ -143,7 +143,7 @@ describe("the app's viewer window", () => {
   it("opens and closes as if nothing were recorded when the page's storage refuses", async () => {
     const refuses = () => { throw new Error("storage refused"); };
     vi.stubGlobal("sessionStorage", { getItem: refuses, setItem: refuses, removeItem: refuses });
-    vi.stubGlobal("ogb", { desktopViewer: { open: vi.fn(async () => true) } });
+    vi.stubGlobal("cry", { desktopViewer: { open: vi.fn(async () => true) } });
     await openProviderDesktop({ botId: "scout", title: "Scout's live desktop", request, current: () => true, join: async () => ({ joinUrl: "https://desktop.invalid/scout" }) });
     expect(requests.map((entry) => entry.action), "the open went through").toEqual(["take"]);
     expect(viewerClosedRelease("scout")).toBeNull();

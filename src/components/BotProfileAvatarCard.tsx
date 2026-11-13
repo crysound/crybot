@@ -4,16 +4,16 @@ import type { Bot } from "@/state/store";
 import { cn } from "@/lib/cn";
 import {
   PICKABLE_STATES,
-  MAUS_COLOR_LABEL,
+  BOT_COLOR_LABEL,
   colorSwatch,
-  MAUS_COLOR_NAMES,
-  type MausMotion,
-  type MausState,
+  BOT_COLOR_NAMES,
+  type BotMotion,
+  type BotState,
 } from "@/lib/mascot";
 import { BOT_AVATAR_CROPS } from "../../shared/bot-avatar";
 import { MASCOT_BODY_IDS } from "../../shared/mascot-bodies";
 import { FESTIVAL_IDS, FESTIVALS, type BotBodyId } from "../../shared/bot-body";
-import { BotAvatar, MausAvatar } from "./Avatar";
+import { BotAvatar, MascotAvatar } from "./Avatar";
 import { AvatarImageGenerator } from "./AvatarImageGenerator";
 import { AvatarFraming, OrganizationAvatarIcons, RESET_MASCOT_PATCH, useAvatarImage, type AvatarPatch } from "./avatar-editing";
 import { t } from "@/lib/i18n";
@@ -27,8 +27,8 @@ export function BotProfileAvatarCard({
   onPatch,
 }: {
   bot: Bot;
-  activeState: MausState;
-  mascotMotion: { kind: Exclude<MausMotion, "none">; nonce: number } | null;
+  activeState: BotState;
+  mascotMotion: { kind: Exclude<BotMotion, "none">; nonce: number } | null;
   onPatch: (patch: AvatarPatch) => void;
 }) {
   const { fileRef, crop, uploading, generating, busy, error, upload, removeImage, generate } = useAvatarImage(bot, onPatch);
@@ -137,7 +137,7 @@ export function BotProfileAvatarCard({
                   title={expressionName(expression)}
                   aria-label={t("mascot.useExpression", { expression: expressionName(expression) })}
                 >
-                  <MausAvatar color={bot.color} faceColor={bot.mascotFaceColor} bodyId={bot.mascotBody ?? undefined} state={expression} size={42} animated={false} />
+                  <MascotAvatar color={bot.color} faceColor={bot.mascotFaceColor} bodyId={bot.mascotBody ?? undefined} state={expression} size={42} animated={false} />
                 </button>
               ))}
             </div>
@@ -146,7 +146,7 @@ export function BotProfileAvatarCard({
               {t("botIdentity.color")}
             </div>
             <div className="flex flex-wrap gap-2.5">
-              {MAUS_COLOR_NAMES.map((color) => (
+              {BOT_COLOR_NAMES.map((color) => (
                 <button
                   key={color}
                   type="button"
@@ -158,7 +158,7 @@ export function BotProfileAvatarCard({
                     bot.color === color && "ring-2 ring-accent-border ring-offset-2 ring-offset-card",
                   )}
                   style={{ background: colorSwatch(color) }}
-                  title={t(MAUS_COLOR_LABEL[color])}
+                  title={t(BOT_COLOR_LABEL[color])}
                   aria-label={t("mascot.useColor", { color: colorName(color) })}
                 />
               ))}
@@ -207,7 +207,7 @@ function BodyButton({ id, name, bot, busy, onPatch }: {
   busy: boolean;
   onPatch: (patch: AvatarPatch) => void;
 }) {
-  const selected = (bot.mascotBody ?? "cursor") === id;
+  const selected = (bot.mascotBody ?? "dome") === id;
   return (
     <button
       type="button"
@@ -220,7 +220,7 @@ function BodyButton({ id, name, bot, busy, onPatch }: {
         selected ? "bg-control text-ink" : "text-ink-secondary hover:bg-control/60",
       )}
     >
-      <MausAvatar color={bot.color} faceColor={bot.mascotFaceColor} bodyId={id} size={34} animated={false} trackPointer={false} />
+      <MascotAvatar color={bot.color} faceColor={bot.mascotFaceColor} bodyId={id} size={34} animated={false} trackPointer={false} />
     </button>
   );
 }

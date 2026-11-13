@@ -6,7 +6,7 @@ import { api, ApiError } from "@/state/api";
 import { ANDROID_KEY_NAMES, AndroidNavButtons, fittedUnitPoint, type UnitPoint } from "./android-device-parts";
 import { PhoneScreenPanel } from "./PhoneScreenPanel";
 import { Select } from "./Select";
-import type { AndroidDeviceInput, AndroidDeviceStatus, AndroidUsbDevice } from "@/types/ogb";
+import type { AndroidDeviceInput, AndroidDeviceStatus, AndroidUsbDevice } from "@/types/cry";
 
 const EMPTY_STATUS: AndroidDeviceStatus = { available: false, devices: [] };
 
@@ -27,7 +27,7 @@ async function readServerPhones(): Promise<AndroidDeviceStatus> {
 
 /** With `serverPhones` the server lists the phones plugged into its own computer; otherwise the desktop app does. */
 export function useAndroidUsbDevices(serverPhones = false): AndroidUsbDevicesStatus {
-  const bridge = window.ogb?.androidDevice;
+  const bridge = window.cry?.androidDevice;
   const [status, setStatus] = useState<AndroidDeviceStatus>(EMPTY_STATUS);
   const [scanned, setScanned] = useState(false);
   const pageVisible = usePageVisible();
@@ -84,7 +84,7 @@ function deviceLabel(device: AndroidUsbDevice) {
 }
 
 export function AndroidDevicePanel({ status, serverPhones = false }: { status: AndroidDeviceStatus; serverPhones?: boolean }) {
-  const bridge = serverPhones ? undefined : window.ogb?.androidDevice;
+  const bridge = serverPhones ? undefined : window.cry?.androidDevice;
   const pageVisible = usePageVisible();
   const authorized = status.devices.filter((device) => device.state === "device");
   const [serial, setSerial] = useState(authorized[0]?.serial ?? status.devices[0]?.serial ?? "");

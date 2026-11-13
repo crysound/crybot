@@ -23,7 +23,7 @@ export { awayFromMainThread, botOpensTo, markedThread, openBot, openBotRow, open
 import type { TurnDigest } from "../../shared/digest";
 import type { ToolScope } from "../../shared/tool-scope";
 import type { ModelVariantOption, RuntimeEvent } from "../../shared/runtime-events";
-import type { MausColor, MausMotion } from "@/lib/mascot";
+import type { BotColor, BotMotion } from "@/lib/mascot";
 import type { BotAvatarCrop } from "../../shared/bot-avatar";
 import { approvalModeFor, type ApprovalMode } from "../../shared/approval-mode";
 import { askResetBridge, desktopCapabilitiesNow } from "@/lib/desktop"; import { isBotLimitRefusal, showCreatedPaused, stoppedAtBotLimit } from "@/lib/bot-limit";
@@ -67,7 +67,7 @@ import { unlessRefused } from "@/lib/admin-scope";
 import { olderRunsSince, ROUTINE_RUNS_WINDOW_MS, trimRoutineRuns, withOlderRoutineRuns } from "./routine-runs";
 import { reconcileSnapshotQueues, rememberConsumedQueueId, replaceBotQueues } from "./queue-receipts";
 
-export type { MausColor } from "@/lib/mascot";
+export type { BotColor } from "@/lib/mascot";
 export type { RoutineRunCardData } from "../../shared/routine-run";
 
 export interface OptionCardData extends Pick<WireOptionCard, "fixedOptions" | "lendingLift" | "webhookRequest" | "appTriggerRequest" | "yourComputer" | "computerAsk" | "waitRequest" | "stopped" | "accessRequest" | "mcpRequest" | "summaryCode" | "summaryParams"> {
@@ -141,12 +141,12 @@ export interface Message extends Pick<import("../../shared/wire").WireMessage, "
   parentId?: string | null;
   replyToId?: string;
   sendId?: string;
-  from?: { botId: string; name: string; color: MausColor };
+  from?: { botId: string; name: string; color: BotColor };
   peerAsk?: { botId: string; name: string; unattended?: boolean };
   roomRequest?: { id: string; phase: "request" | "result" };
   reactions?: import("../../shared/wire").WireMessage["reactions"];
   reaction?: string;
-  comm?: { groupId: string; threadId?: string; withBotId: string; withName: string; withColor: MausColor };
+  comm?: { groupId: string; threadId?: string; withBotId: string; withName: string; withColor: BotColor };
   threadRef?: { botId: string; threadId: string; title: string };
   dataResult?: import("../../shared/wire").WireMessage["dataResult"];
   queued?: boolean;
@@ -277,7 +277,7 @@ export interface Bot extends DefaultBotFields, Pick<WireBot, "mascotFaceColor" |
   soul?: string;
   soulDrift?: boolean;
   notifications: boolean;
-  color: MausColor;
+  color: BotColor;
   mascotExpression?: string | null;
   mascotBody?: BotBodyId | null;
   avatarUrl?: string | null;
@@ -594,7 +594,7 @@ export interface AppState {
   mascotMotion: {
     botId: string;
     nonce: number;
-    kind: Exclude<MausMotion, "none">;
+    kind: Exclude<BotMotion, "none">;
   } | null;
   pendingQueued: Record<string, Array<{ queueId: string; text: string; reason?: SteerQueueReason; sender?: ResolvedSender }>>;
   consumedQueueIds: Record<string, true>;
@@ -822,7 +822,7 @@ function updateBot(state: AppState, botId: string, fn: (b: Bot) => Bot): AppStat
 function withMascotMotion(
   state: AppState,
   botId: string,
-  kind: Exclude<MausMotion, "none">,
+  kind: Exclude<BotMotion, "none">,
 ): AppState {
   return {
     ...state,
@@ -1907,8 +1907,8 @@ type TrustedApprovalBridge = {
 };
 
 export function desktopApprovalBridge(): TrustedApprovalBridge | undefined {
-  if (typeof window === "undefined" || !window.ogb?.approvals) return undefined;
-  return desktopCapabilitiesNow().host.packaged ? window.ogb.approvals : undefined;
+  if (typeof window === "undefined" || !window.cry?.approvals) return undefined;
+  return desktopCapabilitiesNow().host.packaged ? window.cry.approvals : undefined;
 }
 
 export async function persistTaskApproval(
@@ -2642,7 +2642,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               memberIds: action.memberIds,
               name: action.name,
               section: action.section,
-              ...(window.ogb?.remoteClient?.active
+              ...(window.cry?.remoteClient?.active
                 ? { setup: { bulletin: "", defaultResponder: { kind: "mentions" } } }
                 : {}),
             }),
@@ -2949,7 +2949,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           return () => rawDispatch({ type: "notificationsHydrated", notifications: Array.isArray(notifications) ? notifications : [] });
         },
       },
-      ...(window.ogb?.remoteClient?.active ? [] : [{
+      ...(window.cry?.remoteClient?.active ? [] : [{
         key: "webhooks",
         request: async () => {
           const { webhooks, attempts, ingress } = snapshotArrays(await api("/api/webhooks"), "webhooks");

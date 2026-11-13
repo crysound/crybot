@@ -6,7 +6,7 @@ const fixture = vi.hoisted(() => ({
   localComputer: { available: false, message: "Accessibility required; grant access in System Settings" } as DesktopCapabilities["localComputer"],
 }));
 vi.stubGlobal("window", {
-  ogb: { platform: "darwin", permOpenSettings: vi.fn(), relaunch: vi.fn() },
+  cry: { platform: "darwin", permOpenSettings: vi.fn(), relaunch: vi.fn() },
 });
 vi.mock("./DesktopCapabilities", () => ({
   useDesktopCapabilities: () => ({ capabilities: { host: { platform: "darwin" }, localComputer: fixture.localComputer }, ready: true }),
@@ -18,9 +18,9 @@ afterAll(() => vi.unstubAllGlobals());
 describe("Mac local computer status", () => {
   it("shows the recorded Accessibility failure and its matching recovery actions", () => {
     const markup = renderToStaticMarkup(createElement(MacLocalControl));
-    expect(markup).toContain("Accessibility is required for MausBot");
+    expect(markup).toContain("Accessibility is required for CryBot");
     expect(markup).toContain("Open Accessibility Settings");
-    expect(markup).toContain("Relaunch MausBot");
+    expect(markup).toContain("Relaunch CryBot");
     expect(markup).not.toContain("Open Screen Recording Settings");
     expect(markup).toContain("Driver detail");
     expect(markup).toContain(">Not now</button>");
@@ -31,7 +31,7 @@ describe("Mac local computer status", () => {
     const markup = renderToStaticMarkup(createElement(MacLocalControl));
     expect(markup).toContain("Local computer control is not ready");
     expect(markup).not.toContain("Accessibility is required");
-    expect(markup).not.toContain("Relaunch MausBot</button>");
+    expect(markup).not.toContain("Relaunch CryBot</button>");
   });
 
   it("does not offer host repair actions to a remote renderer", () => {

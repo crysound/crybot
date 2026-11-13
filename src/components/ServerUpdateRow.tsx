@@ -6,7 +6,7 @@ import { t } from "@/lib/i18n";
 import { serverUpdateConfirmBody, serverUpdateView, type ServerUpdateCheck, type ServerUpdateStatus, type ServerUpdateView } from "@/lib/server-update";
 import { ApiError } from "@/state/api";
 import { api, useStore } from "@/state/store";
-import type { AppUpdateAnswer } from "@/types/ogb";
+import type { AppUpdateAnswer } from "@/types/cry";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { SettingRow } from "./SettingsPrimitives";
 
@@ -15,8 +15,8 @@ const POLL_MS = 4_000;
 
 /** This desktop app's version when the window shows a server from the Server menu that may ask for the app's update. */
 function askableAppVersion(): string | null {
-  const ogb = typeof window === "undefined" ? undefined : window.ogb;
-  return ogb?.app?.ownPage === false && ogb.appUpdate && ogb.app.version ? ogb.app.version : null;
+  const cry = typeof window === "undefined" ? undefined : window.cry;
+  return cry?.app?.ownPage === false && cry.appUpdate && cry.app.version ? cry.app.version : null;
 }
 
 const settled = (status: ServerUpdateStatus | null) => status?.run?.outcome !== "requested" && status?.run?.outcome !== "running";
@@ -103,7 +103,7 @@ export function useServerUpdate() {
 
   const updateApp = useCallback(async () => {
     try {
-      setAppAnswer(await window.ogb!.appUpdate!.request());
+      setAppAnswer(await window.cry!.appUpdate!.request());
     } catch {
       setAppAnswer("failed");
     }

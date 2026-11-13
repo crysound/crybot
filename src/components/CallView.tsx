@@ -23,7 +23,7 @@ import { LiveKeyNeeded } from "./LiveKeyNeeded";
 import { liveLineHeldElsewhere } from "./LiveCallBar";
 import { isRoutineApproval, isSkillApproval, pendingApprovals, spokenApprovalPrompt } from "./PendingApproval";
 import { titledCard } from "./ApprovalCard";
-import { callStarted } from "@/lib/product-events";
+
 import { useDesktopCapabilities } from "./DesktopCapabilities";
 import { callCapabilityHelp, type CallCapabilityHelp } from "@/lib/call-capability";
 import { onCallStartRequest } from "@/lib/call-start-request";
@@ -42,7 +42,7 @@ export type CallButtonPlacement = "header" | "composer" | "panel";
  * call mode. */
 /** `inverse` (phone composer): a round ink-coloured button with an app-coloured glyph: white on Midnight, dark on Meadow. */
 export function CallButton({ bot, placement = "header", fill, ink, inverse }: { bot: Bot; placement?: CallButtonPlacement; fill?: string; ink?: string; inverse?: boolean }) {
-  const { state } = useStore();
+
   return (
     <CallTargetButton
       placement={placement}
@@ -56,7 +56,7 @@ export function CallButton({ bot, placement = "header", fill, ink, inverse }: { 
       setupBotId={bot.id}
       requireExplicitVoices={false}
       liveCapable
-      onStart={(mode) => callStarted(state.instances, bot.modelSelection?.instanceId, mode)}
+      onStart={(_mode) => undefined}
     />
   );
 }
@@ -100,7 +100,7 @@ export function CallTargetButton({
   const liveElsewhere = liveRunning && media.botId !== targetId;
   const onCall = useOnCall() === targetId;
   const active = onCall || onLiveCall;
-  const remoteClient = globalThis.window?.ogb?.remoteClient?.active === true;
+  const remoteClient = globalThis.window?.cry?.remoteClient?.active === true;
   const capabilityHelp = capabilitiesReady
     ? callCapabilityHelp(capabilities, Boolean(speechBridge()?.speechStart), fishListeningReady(state.config))
     : null;

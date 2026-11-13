@@ -6,11 +6,11 @@ import { overviewStatus } from "./SettingsPageHeader";
 
 beforeEach(() => {
   setLocale("en");
-  (window as unknown as { ogb: unknown }).ogb = { app: { version: "9.8.7", ownPage: false } };
+  (window as unknown as { cry: unknown }).cry = { app: { version: "9.8.7", ownPage: false } };
 });
 
 afterEach(() => {
-  delete (window as unknown as { ogb?: unknown }).ogb;
+  delete (window as unknown as { cry?: unknown }).cry;
 });
 
 describe("overviewStatus on a Cloud's page in the desktop window", () => {

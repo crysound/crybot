@@ -11,7 +11,7 @@ import { OwnServerLink, RailSheet } from "./PlaceAddSheet";
 import { SettingsLinkRow, SettingsRows, Switch } from "./SettingsPrimitives";
 import { PlaceBadge } from "./settings/SettingsNav";
 
-type Saved = Awaited<ReturnType<NonNullable<NonNullable<Window["ogb"]>["environments"]>["state"]>>;
+type Saved = Awaited<ReturnType<NonNullable<NonNullable<Window["cry"]>["environments"]>["state"]>>;
 type Entry = Saved["environments"][number];
 type Sheet = { address: string; locked: boolean; title: string } | null;
 /** A saved server of the person's own (this desktop is its admin), and how lending this computer to it is. */
@@ -24,9 +24,9 @@ const clock = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-dig
 /** The update command that fits how the server was installed, pinned to this app's version. */
 export function updateCommand(install: ServerInstall | null, version: string): string {
   if (install === "docker") return "git pull && ./update.sh";
-  if (install === "global") return `npm install -g openmausbot@${version}`;
+  if (install === "global") return `npm install -g crybot@${version}`;
   if (install === "source") return "git pull && pnpm install";
-  return `npx openmausbot@${version} serve`;
+  return `npx crybot@${version} serve`;
 }
 
 function UpdateNote({ name, status, appVersion, onHide }: { name: string; status: ServerStatus; appVersion: string; onHide: () => void }) {
@@ -78,7 +78,7 @@ export function ServerList({ saved, busy, sharingOffered, ownServers = [], appVe
   saved: Saved; busy: boolean; sharingOffered: boolean; ownServers?: OwnServerSharing[]; appVersion: string | null;
   onSwitch: (id: string) => void; onForget: (id: string) => void; onComputerAccess: (id: string) => void; onShare?: (id: string, on: boolean) => void;
 }) {
-  const bridge = window.ogb?.environments;
+  const bridge = window.cry?.environments;
   const [statuses, setStatuses] = useState<ServerStatus[]>([]);
   const [hidden, setHidden] = useState<string[]>([]);
   const [sheet, setSheet] = useState<Sheet>(null);

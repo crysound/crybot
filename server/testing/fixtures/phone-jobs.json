@@ -1,7 +1,7 @@
 {
   "registration": {
     "installId": "inst-fixture-0001",
-    "name": "Omkar's iPhone",
+    "name": "User's iPhone",
     "platform": "ios",
     "appVersion": "1.9.0",
     "timeZone": "Asia/Kolkata",
@@ -19,7 +19,7 @@
       "key": "companion:fixture-device",
       "registration": {
         "installId": "inst-fixture-0001",
-        "name": "Omkar's iPhone",
+        "name": "User's iPhone",
         "platform": "ios",
         "appVersion": "1.9.0",
         "timeZone": "Asia/Kolkata",

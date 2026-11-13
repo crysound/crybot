@@ -6,11 +6,11 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import { hostTimeout } from "./testing/host-timeout.ts";
 
-const INCLUDED = "box_omb_included-relay-token";
+const INCLUDED = "box_cry_included-relay-token";
 const OWN = "boat_own-key";
 const botId = "auto-sleep-test";
 const boxId = "bx_23456789";
-const machineName = `ogb-${botId.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, "")}-${createHash("sha256").update(botId).digest("hex").slice(0, 6)}`;
+const machineName = `cry-${botId.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, "")}-${createHash("sha256").update(botId).digest("hex").slice(0, 6)}`;
 
 let api: Server;
 let base = "";
@@ -97,10 +97,10 @@ describe("a cloud computer goes to sleep after its idle window", () => {
     logs = [];
     busy = false;
     vi.stubEnv("BOX_TOKEN", undefined);
-    vi.stubEnv("OMB_BOAT_API", `${base}/boat/api/v1`);
-    vi.stubEnv("OMB_CLOUD_BOAT_URL", `${base}/relay/api/box/v1`);
-    vi.stubEnv("OMB_CLOUD_BOAT_TOKEN", INCLUDED);
-    vi.stubEnv("OMB_CLOUD_COMPUTER_IDLE_MS", "1000");
+    vi.stubEnv("CRYBOT_BOAT_API", `${base}/boat/api/v1`);
+    vi.stubEnv("CRYBOT_CLOUD_BOAT_URL", `${base}/relay/api/box/v1`);
+    vi.stubEnv("CRYBOT_CLOUD_BOAT_TOKEN", INCLUDED);
+    vi.stubEnv("CRYBOT_CLOUD_COMPUTER_IDLE_MS", "1000");
   });
 
   afterEach(() => {

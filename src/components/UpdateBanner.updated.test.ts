@@ -20,7 +20,7 @@ beforeEach(async () => {
   seen.mockClear();
   focused = false;
   vi.spyOn(document, "hasFocus").mockImplementation(() => focused);
-  (window as unknown as { ogb: unknown }).ogb = {
+  (window as unknown as { cry: unknown }).cry = {
     updater: {
       onState: (callback: (state: UpdaterState) => void) => {
         push = callback;
@@ -40,7 +40,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  delete (window as unknown as { ogb?: unknown }).ogb;
+  delete (window as unknown as { cry?: unknown }).cry;
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
@@ -52,7 +52,7 @@ describe("the line after the app updated itself", () => {
 
     focused = true;
     await act(async () => window.dispatchEvent(new Event("focus")));
-    expect(line()).toBe("MausBot updated itself to 0.1.130.");
+    expect(line()).toBe("CryBot updated itself to 0.1.130.");
     expect(seen).not.toHaveBeenCalled();
 
     await act(async () => vi.advanceTimersByTime(5_000));
@@ -66,6 +66,6 @@ describe("the line after the app updated itself", () => {
     await act(async () => root.render(createElement(UpdateBanner)));
     await act(async () => push({ status: "downloaded", version: "0.1.131", updated: "0.1.130", installsByItself: true }));
     expect(line()).toBeNull();
-    expect(host.textContent).toContain("MausBot 0.1.131 is ready");
+    expect(host.textContent).toContain("CryBot 0.1.131 is ready");
   });
 });

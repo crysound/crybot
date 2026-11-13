@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { productName } from "@/lib/brand";
 import { FakePhoneSocket, fakePhoneStream } from "@/testing/phone-stream";
-import type { AndroidDeviceStatus, AndroidUsbDevice } from "@/types/ogb";
+import type { AndroidDeviceStatus, AndroidUsbDevice } from "@/types/cry";
 import { AndroidDevicePanel, useAndroidUsbDevices, type AndroidUsbDevicesStatus } from "./AndroidDevicePanel";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -37,7 +37,7 @@ async function draw(element: ReturnType<typeof createElement>) {
 function server(answer: () => Promise<Response>) {
   const fetch = vi.fn((_path: string, _init?: RequestInit) => answer());
   vi.stubGlobal("fetch", fetch);
-  vi.stubGlobal("ogb", { androidDevice: bridge });
+  vi.stubGlobal("cry", { androidDevice: bridge });
   return fetch;
 }
 
@@ -121,7 +121,7 @@ describe("useAndroidUsbDevices asking the server", () => {
   it("forgets the server's phones and stops asking when the feature goes off on a page without the desktop app", async () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
     const fetch = server(async () => json({ available: true, devices: [PHONE] }));
-    vi.stubGlobal("ogb", undefined);
+    vi.stubGlobal("cry", undefined);
     await draw(createElement(Probe));
     expect(latest.devices).toEqual([PHONE]);
 
@@ -139,13 +139,13 @@ describe("useAndroidUsbDevices asking the server", () => {
 
 describe("AndroidDevicePanel with the server's phones", () => {
   const panel = (status: AndroidDeviceStatus, serverPhones: boolean) => {
-    vi.stubGlobal("ogb", { androidDevice: bridge });
+    vi.stubGlobal("cry", { androidDevice: bridge });
     return draw(createElement(AndroidDevicePanel, { status, serverPhones }));
   };
 
   it("shows a ready phone's live screen from the server, not the desktop app's screenshots", async () => {
     await panel({ available: true, devices: [PHONE] }, true);
-    expect(FakePhoneSocket.all.map((socket) => new URL(socket.url, "http://omb.test").pathname)).toEqual(["/api/usb-phones/p1/stream"]);
+    expect(FakePhoneSocket.all.map((socket) => new URL(socket.url, "http://cry.test").pathname)).toEqual(["/api/usb-phones/p1/stream"]);
     expect(bridge.frame).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain("Watching · the bots keep working");
     expect(document.body.textContent).toContain("First-time USB setup");

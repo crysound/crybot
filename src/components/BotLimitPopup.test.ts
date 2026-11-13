@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const fixture = vi.hoisted(() => ({ state: { config: { cloudHome: true, botLimit: 5 } as Record<string, unknown>, bots: [] as unknown[] } }));
 vi.mock("@/state/store", () => ({ useStore: () => ({ state: fixture.state, dispatch: vi.fn() }) }));
-vi.mock("./Avatar", () => ({ MausAvatar: () => createElement("i", { "data-mark": "" }), BotAvatar: () => createElement("i", { "data-avatar": "" }) }));
+vi.mock("./Avatar", () => ({ MascotAvatar: () => createElement("i", { "data-mark": "" }), BotAvatar: () => createElement("i", { "data-avatar": "" }) }));
 const posted = vi.hoisted(() => [] as Array<{ path: string; body: unknown }>);
 vi.mock("@/state/api", () => ({ api: vi.fn(async (path: string, init?: { body?: string }) => { posted.push({ path, body: init?.body ? JSON.parse(init.body) : undefined }); return {}; }) }));
 vi.mock("@/lib/app-links", async (original) => ({ ...await original<typeof import("@/lib/app-links")>(), openExternalLink: vi.fn(async () => {}) }));
@@ -37,7 +37,7 @@ function bridge(snapshot: Record<string, unknown>) {
   };
 }
 async function open(plan?: ReturnType<typeof bridge>, reason?: "tasks" | "paused") {
-  (window as unknown as { ogb?: unknown }).ogb = plan ? { cloudPlan: plan } : undefined;
+  (window as unknown as { cry?: unknown }).cry = plan ? { cloudPlan: plan } : undefined;
   await act(async () => { root.render(createElement(BotLimitPopup)); });
   await act(async () => { showBotLimit(reason); });
   await act(async () => {});
@@ -53,7 +53,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => { closeBotLimit(); root.unmount(); });
   host.remove();
-  delete (window as unknown as { ogb?: unknown }).ogb;
+  delete (window as unknown as { cry?: unknown }).cry;
 });
 
 describe("the bot limit popup", () => {
@@ -114,7 +114,7 @@ describe("the bot limit popup", () => {
     expect(dialog()!.querySelector("p")?.textContent).toBe("To create more, upgrade this Cloud on its Plan page. Every bot you have stays as it is.");
     expect(buttons()).toEqual(["Open the Plan page", "Not now", "Close"]);
     await press("Open the Plan page");
-    expect(openExternalLink).toHaveBeenCalledExactlyOnceWith("https://cloud.openmausbot.com/cloud");
+    expect(openExternalLink).toHaveBeenCalledExactlyOnceWith("https://server.example.test/cloud");
   });
 
   it("on a person's other Cloud, which only reads its plan, opens its Plan page and closes", async () => {
@@ -193,7 +193,7 @@ describe("the popup for Starter's other limits", () => {
     const bots = made(6).map((bot, n) => ({ ...bot, name: n === 5 ? "Scout" : bot.id, tasks: [{ updatedAt: n === 1 ? 1 : 100 + n }], ...(n === 0 ? { busy: true } : {}) }));
     // A server that makes any number of bots sends no botLimit.
     fixture.state = { config: { cloudHome: true, awakeLimit: 5, pausedBots: ["b5"] }, bots };
-    (window as unknown as { ogb?: unknown }).ogb = { cloudPlan: bridge({ status: "paid", tier: "starter", usage: STARTER }) };
+    (window as unknown as { cry?: unknown }).cry = { cloudPlan: bridge({ status: "paid", tier: "starter", usage: STARTER }) };
     await act(async () => { root.render(createElement(BotLimitPopup)); });
     await act(async () => { showCreatedPaused("b5"); });
     await act(async () => {});

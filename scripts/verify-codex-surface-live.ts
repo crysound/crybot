@@ -3,17 +3,17 @@
 // sign-in is copied into the disposable home; cleanup removes that copy.
 import { chmodSync, copyFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { launchVerificationServer } from "./control-omb.ts";
-import { ensureUiBrowser } from "./testing/control-omb-ui.ts";
+import { launchVerificationServer } from "./control-cry.ts";
+import { ensureUiBrowser } from "./testing/control-cry-ui.ts";
 import { fixtureApi, mountPreview, parkUntilSignal } from "./testing/preview-fixture.ts";
 
-const cli = process.env.OMB_VERIFY_CODEX_CLI;
-const auth = process.env.OMB_VERIFY_CODEX_AUTH;
-const model = process.env.OMB_VERIFY_CODEX_MODEL;
-if (!cli || !auth || !model) throw new Error("Supply OMB_VERIFY_CODEX_CLI, OMB_VERIFY_CODEX_AUTH and OMB_VERIFY_CODEX_MODEL explicitly. This test uses real model quota.");
+const cli = process.env.CRYBOT_VERIFY_CODEX_CLI;
+const auth = process.env.CRYBOT_VERIFY_CODEX_AUTH;
+const model = process.env.CRYBOT_VERIFY_CODEX_MODEL;
+if (!cli || !auth || !model) throw new Error("Supply CRYBOT_VERIFY_CODEX_CLI, CRYBOT_VERIFY_CODEX_AUTH and CRYBOT_VERIFY_CODEX_MODEL explicitly. This test uses real model quota.");
 const browser = await ensureUiBrowser(process.env, console.error);
-const fixture = await launchVerificationServer({ OMB_BROWSER_TIMING: process.env.OMB_BROWSER_TIMING }, undefined, undefined,
-  { binaryPath: browser.binary, executablePath: browser.chrome ?? "" }, undefined, undefined, ["codex"]);
+const fixture = await launchVerificationServer({ CRYBOT_BROWSER_TIMING: process.env.CRYBOT_BROWSER_TIMING }, undefined, undefined,
+  { binaryPath: browser.binary, executablePath: browser.chrome ?? "" }, undefined, ["codex"]);
 let preview: Awaited<ReturnType<typeof mountPreview>> | undefined;
 try {
   const codexHome = join(fixture.info.dataDir, ".codex");

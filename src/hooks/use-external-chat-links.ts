@@ -10,7 +10,7 @@ export function useExternalChatLinks(state: AppState, dispatch: (action: Action)
   useEffect(() => {
     const fromAddress = takeThreadLinkFromLocation();
     if (fromAddress) setLink(fromAddress);
-    return window.ogb?.onChatLink?.(setLink);
+    return window.cry?.onChatLink?.(setLink);
   }, []);
   useEffect(() => {
     if (!link || !state.hydrated) return;
@@ -25,7 +25,7 @@ export function useExternalChatLinks(state: AppState, dispatch: (action: Action)
 export function useDesktopNotificationOpens(state: AppState, dispatch: (action: Action) => void): void {
   const [target, setTarget] = useState<ThreadTarget | null>(null);
   const showThreads = useShowThreads();
-  useEffect(() => window.ogb?.desktopNotifications?.onOpen(setTarget), []);
+  useEffect(() => window.cry?.desktopNotifications?.onOpen(setTarget), []);
   useEffect(() => {
     if (!target || !state.hydrated) return;
     setTarget(null);

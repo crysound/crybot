@@ -43,7 +43,7 @@ const state = (patch: Partial<UpdaterState>): UpdaterState => ({ status: "idle",
 
 describe("profileInitials", () => {
   it("takes the first letter of the first two words", () => {
-    expect(profileInitials({ name: "Milind Soni" })).toBe("MS");
+    expect(profileInitials({ name: "Hangzhou Crysound Electronics Co., Ltd." })).toBe("MS");
     expect(profileInitials({ name: "Ada Byron Lovelace" })).toBe("AB");
   });
 
@@ -60,7 +60,7 @@ describe("profileInitials", () => {
 
 describe("profileLabel", () => {
   it("prefers the name, then the email, then You", () => {
-    expect(profileLabel({ name: "Omkar", email: "o@x.dev" })).toBe("Omkar");
+    expect(profileLabel({ name: "User", email: "o@x.dev" })).toBe("User");
     expect(profileLabel({ email: "o@x.dev" })).toBe("o@x.dev");
     expect(profileLabel(undefined)).toBe("You");
   });
@@ -109,7 +109,7 @@ describe("updatePhase", () => {
 describe("updateLabel", () => {
   it("names the version it is ready to install", () => {
     expect(updateLabel("downloaded", state({ status: "downloaded", version: "0.2.0" }))).toBe(
-      "Restart to update to MausBot 0.2.0",
+      "Restart to update to CryBot 0.2.0",
     );
   });
 
@@ -123,7 +123,7 @@ describe("updateLabel", () => {
     expect(updateLabel("installing", state({ status: "installing", message: "Restart is taking longer than expected." })))
       .toBe("Restart is taking longer than expected.");
     expect(updateLabel("downloaded", state({ status: "downloaded", version: "0.2.0", installMode: "handoff" })))
-      .toBe("Install MausBot 0.2.0");
+      .toBe("Install CryBot 0.2.0");
     expect(updateLabel("installing", state({ status: "installing", installMode: "handoff" })))
       .toBe("Opening a terminal…");
   });
@@ -197,7 +197,7 @@ describe("updateNoteworthy", () => {
 describe("outward links", () => {
   it("sends Help Center to the docs the website also links to", () => {
     expect(HELP_CENTER_URL).toBe(DOCS_URL);
-    expect(DOCS_URL).toBe("https://github.com/milind-soni/OpenMausBot/tree/main/docs");
+    expect(DOCS_URL).toBe("https://github.com/example/project/tree/main/docs");
   });
 
   it("sends Send Feedback to the Discord community", () => {
@@ -246,7 +246,7 @@ describe("choosing where the phone connects", () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 
-  it("when the Cloud cannot be opened, lands on Settings → MausBot Cloud, which says what to do", async () => {
+  it("when the Cloud cannot be opened, lands on Settings → CryBot Cloud, which says what to do", async () => {
     const bridge = { connectHomeForPhone: vi.fn().mockRejectedValue(new Error("offline")) };
     const dispatch = vi.fn();
     selectPhoneDestination(destinations(readyCloud)[0]!, { bridge, dispatch });
@@ -378,7 +378,7 @@ describe("Simple mode's account menu", () => {
   });
 
   it("raises an update that is ready or failed to its own top row with a pill, and keeps it out of support", () => {
-    const update = { key: "update", label: "Restart to update to MausBot 0.2.0", subtitle: "notes", attention: true, onSelect: noop };
+    const update = { key: "update", label: "Restart to update to CryBot 0.2.0", subtitle: "notes", attention: true, onSelect: noop };
     const items = build({ update, updateTop: { label: "Update ready", action: "Restart" } });
     expect(groups(items)[0]).toEqual(["update"]);
     expect(items[0]).toMatchObject({ label: "Update ready", subtitle: undefined, attention: false });
@@ -422,14 +422,14 @@ describe("Simple mode's account menu", () => {
   });
 
   it("adds the move to My Cloud: a short warning once failing, shared with automations, and a quiet segment on its way", () => {
-    expect(accountLabel("Omkar", { automationsNeedYou: false, update: null, move: "failed" })).toBe("Omkar · My Cloud move needs you");
-    expect(accountLabel("Omkar", { automationsNeedYou: true, update: null, move: "failed" })).toBe("Omkar · My Cloud move and automations need you");
-    expect(accountLabel("Omkar", { automationsNeedYou: true, update: "Update ready", move: "failed" })).toBe("Omkar · My Cloud move and automations need you · Update ready");
-    expect(accountLabel("Omkar", { automationsNeedYou: false, update: null, move: "sending" })).toBe("Omkar · Moving to My Cloud…");
-    expect(accountLabel("Omkar", { automationsNeedYou: true, update: null, move: "sending" })).toBe("Omkar · Automations need you · Moving to My Cloud…");
-    expect(accountLabel("Omkar", { automationsNeedYou: false, update: null, move: "done" })).toBe("Omkar");
-    expect(accountLabel("Omkar", { automationsNeedYou: true, update: null, move: "done" })).toBe("Omkar · Automations need you");
-    expect(accountLabel("Omkar", { automationsNeedYou: false, update: null, move: null })).toBe("Omkar");
+    expect(accountLabel("User", { automationsNeedYou: false, update: null, move: "failed" })).toBe("User · My Cloud move needs you");
+    expect(accountLabel("User", { automationsNeedYou: true, update: null, move: "failed" })).toBe("User · My Cloud move and automations need you");
+    expect(accountLabel("User", { automationsNeedYou: true, update: "Update ready", move: "failed" })).toBe("User · My Cloud move and automations need you · Update ready");
+    expect(accountLabel("User", { automationsNeedYou: false, update: null, move: "sending" })).toBe("User · Moving to My Cloud…");
+    expect(accountLabel("User", { automationsNeedYou: true, update: null, move: "sending" })).toBe("User · Automations need you · Moving to My Cloud…");
+    expect(accountLabel("User", { automationsNeedYou: false, update: null, move: "done" })).toBe("User");
+    expect(accountLabel("User", { automationsNeedYou: true, update: null, move: "done" })).toBe("User · Automations need you");
+    expect(accountLabel("User", { automationsNeedYou: false, update: null, move: null })).toBe("User");
   });
 
   it("raises the avatar's dot red for a failing move like automations, and none on its way or once done", () => {
@@ -447,7 +447,7 @@ describe("Simple mode's account menu", () => {
 
   it("puts the move's row first, in its own group, above a raised update", () => {
     const move = [{ key: "cloud-move", label: "Try My Cloud move again", title: "My Cloud did not answer.", onSelect: noop }];
-    const update = { key: "update", label: "OpenMausBot 0.2.0 ready, restart", onSelect: noop };
+    const update = { key: "update", label: "CryBot 0.2.0 ready, restart", onSelect: noop };
     expect(groups(build({ move }))).toEqual([
       ["cloud-move"],
       ["account"],

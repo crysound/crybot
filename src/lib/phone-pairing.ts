@@ -17,8 +17,8 @@ export const phonePairingSettingsAction = (): Extract<Action, { type: "toggleApp
 });
 
 export function currentPhonePairingTarget(cloudHome: boolean): PhonePairingTarget {
-  const ogb = typeof window === "undefined" ? undefined : (window.ogb as { companion?: unknown; remoteClient?: { active?: boolean } } | undefined);
-  return phonePairingTarget({ companion: Boolean(ogb?.companion), remoteClient: ogb?.remoteClient?.active === true, cloudHome });
+  const cry = typeof window === "undefined" ? undefined : (window.cry as { companion?: unknown; remoteClient?: { active?: boolean } } | undefined);
+  return phonePairingTarget({ companion: Boolean(cry?.companion), remoteClient: cry?.remoteClient?.active === true, cloudHome });
 }
 
 export function phonePairingTarget(input: { companion: boolean; remoteClient: boolean; cloudHome: boolean }): PhonePairingTarget {
@@ -116,7 +116,7 @@ let pairOnOpen = false;
 /** `?desktop-settings=phone` opens Settings on the phone pairing. Only with `pair=open`, and only in the desktop app's
  * own window (never a browser tab), does it also open Pair a phone once, so a link can't show a code on someone's screen
  * unasked. */
-export function takePhonePairingRequest(href: string, desktop = typeof window !== "undefined" && Boolean(window.ogb)): string | null {
+export function takePhonePairingRequest(href: string, desktop = typeof window !== "undefined" && Boolean(window.cry)): string | null {
   const url = new URL(href);
   if (url.searchParams.get("desktop-settings") !== "phone") return null;
   pairOnOpen = desktop && url.searchParams.get("pair") === "open";

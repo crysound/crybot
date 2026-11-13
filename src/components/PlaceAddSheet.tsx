@@ -7,7 +7,7 @@ import type { CloudSwatch } from "../../electron/cloud-list.mjs";
 import type { RailAddChoices, RailPlace } from "../../electron/cloud-rail.mjs";
 import { EXAMPLE_ADDRESS, parseServerInput } from "../../electron/server-address.mjs";
 import { CONNECT_PROBLEM_KEYS, type ServerProbe, type ServerProbeProblem } from "../../electron/server-probe.mjs";
-import { track } from "@/lib/analytics";
+
 import { cn } from "@/lib/cn";
 import { CLOUD_LIST_NAME_LIMIT, CLOUD_SWATCH_ORDER, SWATCH_COLOR, swatchFill } from "@/lib/cloud-extra";
 import { useCopyFeedback } from "@/lib/copy-text";
@@ -20,7 +20,7 @@ import { BackLink, FIELD, Heading, PRIMARY_WIDE } from "./cloud-buy/parts";
 import { Layer, useIsTopLayer } from "./Layer";
 import { SwatchRadios } from "./SwatchRadios";
 
-const PAIR_COMMAND = "npx openmausbot pair";
+const PAIR_COMMAND = "npx crybot pair";
 
 /** A command to run on the server, with its own Copy button. */
 function CommandLine({ command }: { command: string }) {
@@ -57,7 +57,7 @@ export function OwnServerLink({ onBack, onConnected, connect = null, start = nul
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const codeField = useRef<HTMLInputElement>(null);
-  const workspaces = window.ogb?.workspaces;
+  const workspaces = window.cry?.workspaces;
   const canProbe = typeof workspaces?.probe === "function";
   const parsed = parseServerInput(address, code);
   const linkHasCode = parsed.ok && !code.trim() && (parsed.code !== null || parsed.credential !== null);
@@ -90,7 +90,7 @@ export function OwnServerLink({ onBack, onConnected, connect = null, start = nul
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!address.trim() || busy || (canProbe && !found)) return;
-    track("rail_add", { step: "link" });
+
     setBusy(true);
     setFailure(null);
     try {
@@ -204,7 +204,7 @@ export function NewLocalWorkspace({ places, onBack, onDone }: { places: readonly
     setBusy(true); setProblem(null);
     const outcome = await createLocal(shown, color === "slate" ? null : color);
     setBusy(false);
-    if (outcome === "made") { track("rail_add", { step: "local" }); onDone(); return; }
+    if (outcome === "made") {  onDone(); return; }
     setProblem(outcome === "taken" ? "taken" : "failed");
   };
   return <form data-place-add="local" className="flex flex-col gap-4 px-[30px] pb-[26px] pt-7" onSubmit={(event) => { event.preventDefault(); void create(); }}>
@@ -239,7 +239,7 @@ export function NewLocalWorkspace({ places, onBack, onDone }: { places: readonly
  * on a sheet of its own. */
 export function NewLocalFromMenu() {
   const [open, setOpen] = useState(false);
-  useEffect(() => (window.ogb?.remoteClient?.active ? undefined : window.ogb?.workspaces?.onNewLocal?.(() => setOpen(true))), []);
+  useEffect(() => (window.cry?.remoteClient?.active ? undefined : window.cry?.workspaces?.onNewLocal?.(() => setOpen(true))), []);
   if (!open) return null;
   return <RailSheet focusKey="local" onClose={() => setOpen(false)}>
     <NewLocalWorkspace places={[]} onBack={null} onDone={() => setOpen(false)} />
@@ -251,9 +251,9 @@ export function PlaceAddSheet({ choices, places = [], connect = null, onClose, o
   const several = [local, organization, choices.cloud, server, account].filter(Boolean).length > 1;
   const [view, setView] = useState<"choose" | "local" | "cloud" | "server" | "organization">(connect ? "server" : several ? "choose" : local ? "local" : organization ? "organization" : choices.cloud ? "cloud" : "server");
   const [wide, setWide] = useState(false);
-  const workspaces = window.ogb?.workspaces;
+  const workspaces = window.cry?.workspaces;
   const firstCloud = () => {
-    track("rail_add", { step: "cloud" });
+
     onClose();
     void workspaces?.add?.("cloud").catch(() => {});
   };

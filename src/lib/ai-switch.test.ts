@@ -16,7 +16,7 @@ const { forgetStops, noteRuntimeTurn } = await import("./stop-turn");
 
 const asked: Message = { id: "ask-1", at: 1, role: "user", kind: "text", text: "Plan my week" };
 const bot = (busy: boolean, messages: Message[] = [asked]): Bot => ({
-  id: "bot-1", threadId: "thread-1", name: "Maus", title: "", description: "", notifications: true, color: "green", unread: false, busy,
+  id: "bot-1", threadId: "thread-1", name: "Bot", title: "", description: "", notifications: true, color: "green", unread: false, busy,
   modelSelection: { instanceId: "opencodeGo", model: "free" }, messages,
   tasks: [{ threadId: "thread-1", title: "Chat", createdAt: 1, busy }],
 } as unknown as Bot);
@@ -125,7 +125,7 @@ describe("Switch AI", () => {
 
   it("on a paired desktop, saves a switch that resets approval to Ask on the host, not through the desktop's own bridge", async () => {
     const setMode = vi.fn();
-    window.ogb = { approvals: { setMode }, remoteClient: { active: true } } as unknown as NonNullable<Window["ogb"]>;
+    window.cry = { approvals: { setMode }, remoteClient: { active: true } } as unknown as NonNullable<Window["cry"]>;
     try {
       noteRuntimeTurn(frame("turn.started", "turn-1"));
       show(createElement(Picker, { bot: bot(true) }), createElement(Row), createElement(Keeper, { bot: bot(true) }));
@@ -139,12 +139,12 @@ describe("Switch AI", () => {
       expect(saves()).toEqual([["/api/bots/bot-1/tasks/thread-1", { method: "PATCH",
         body: JSON.stringify({ modelSelection: { instanceId: "claude", model: "opus" }, resetApprovalToAsk: true }) }]]);
     } finally {
-      delete window.ogb;
+      delete window.cry;
     }
   });
 
   it("on a paired desktop, refuses a switch that leaves Custom approval before stopping the turn", async () => {
-    window.ogb = { approvals: { setMode: vi.fn() }, remoteClient: { active: true } } as unknown as NonNullable<Window["ogb"]>;
+    window.cry = { approvals: { setMode: vi.fn() }, remoteClient: { active: true } } as unknown as NonNullable<Window["cry"]>;
     try {
       const custom = { ...bot(true), approvalMode: "custom" } as Bot;
       noteRuntimeTurn(frame("turn.started", "turn-1"));
@@ -155,7 +155,7 @@ describe("Switch AI", () => {
       expect(api).not.toHaveBeenCalled();
       expect(store).toHaveBeenCalledWith({ type: "error", message: expect.stringContaining("host computer") });
     } finally {
-      delete window.ogb;
+      delete window.cry;
     }
   });
 

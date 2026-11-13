@@ -10,7 +10,7 @@ import { connectorStatusMemory, preloadConnectedApps, rememberConnectorStatus } 
 import { reserveConnectionPage, reusableConnectionUrl, type PendingAuthorization } from "@/lib/connector-oauth";
 import { mcpSignInLink } from "@/lib/mcp-sign-in";
 import { pollConnector } from "@/lib/connector-poll";
-import { connectorConnect } from "@/lib/product-events";
+
 import { managedConnectorUnavailableReason } from "../../shared/connector-availability";
 import { isConnectorToolGrantShape } from "@/lib/connector-grants";
 import {
@@ -112,7 +112,7 @@ export function botsUsingService(bots: Bot[], instances: InstanceInfo[], slug: s
 
 export function PluginsPanel() {
   const { state, dispatch } = useStore();
-  const remoteClient = window.ogb?.remoteClient?.active === true;
+  const remoteClient = window.cry?.remoteClient?.active === true;
   const dialogRef = useRef<HTMLDivElement>(null);
   const surface = state.pluginsSurface;
   const [cards, setCards] = useState<ToolkitCard[] | null>(null);
@@ -330,7 +330,7 @@ export function PluginsPanel() {
     polls.current.get(slug)?.();
     const stop = pollConnector(before, () => refreshStatus([slug]).then((services) => services[slug]), (result) => {
       if (polls.current.get(slug) === stop) polls.current.delete(slug);
-      connectorConnect(slug, result);
+
       if (result === "connected" && firstConnection) appGrants.appConnected(slug, cards?.find((card) => card.slug === slug)?.label ?? slug);
     });
     polls.current.set(slug, stop);

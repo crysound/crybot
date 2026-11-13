@@ -6,10 +6,10 @@
 #   ./update.sh --check          say what would change, and change nothing
 #   ./update.sh --rollback       put back the version and the data from before the last update (asks first; --yes)
 #   ./update.sh --allow-older    go ahead when the version asked for is older than, or no newer than, the one running
-#   ./update.sh --dir PATH       the install's folder, when it is not this one (the installer's: /opt/openmausbot)
+#   ./update.sh --dir PATH       the install's folder, when it is not this one (the installer's: /opt/crybot)
 #
 # It runs on the server itself, beside docker-compose.yml, because a server cannot replace its own container. The steps
-# are the ones the MausBot connector runs for a connected server (connector/src/home.ts `update`): download the new
+# are the ones the CryBot connector runs for a connected server (connector/src/home.ts `update`): download the new
 # image by digest, stop the server and check that it stopped, copy its data into a new Docker volume and check the copy
 # file by file, start the new image, and wait until it answers and can still start bots. When it does not, the old image
 # and the copy are put back. The copy from the update before is removed only once the new copy has been checked.
@@ -19,7 +19,7 @@
 # run left unfinished (a reboot, a kill) is kept when its new version is healthy; otherwise the next run asks before it
 # puts the old data back, and says what that loses.
 #
-# Exit codes, the same ones the connector's update runner reads (connector/host/mausbot-update-runner.sh):
+# Exit codes, the same ones the connector's update runner reads (connector/host/crybot-update-runner.sh):
 #   0    done, or nothing to do
 #   1    the update failed, and the old version and its data are back
 #   2    the old version or its data could not be brought back: see what it said; ./update.sh --rollback tries again
@@ -37,36 +37,36 @@ umask 022
 # update half-way. Output to a terminal that has gone is lost; .update/update.log keeps it.
 trap '' HUP PIPE
 
-REPO="ghcr.io/milind-soni/openmausbot"
-PINNED="^ghcr\.io/milind-soni/openmausbot@sha256:[0-9a-f]{64}$"
-STABLE_URL=${OMB_STABLE_URL:-https://raw.githubusercontent.com/milind-soni/OpenMausBot/channels/stable.json}
-NEWEST_URL=${OMB_NEWEST_URL:-https://api.github.com/repos/milind-soni/OpenMausBot/releases/latest}
-SERVICE=${OMB_UPDATE_SERVICE:-omb}
+REPO="ghcr.io/crysound/crybot"
+PINNED="^ghcr\.io/crysound/crybot@sha256:[0-9a-f]{64}$"
+STABLE_URL=${CRYBOT_UPDATE_URL:-}
+NEWEST_URL=${CRYBOT_UPDATE_URL:-}
+SERVICE=${CRYBOT_UPDATE_SERVICE:-cry}
 # A healthy server answers within seconds of starting; two minutes leaves room for a slow first start after an update,
-# and is how long the server is down before a version that never answers is rolled back. OMB_UPDATE_WAIT_S for more.
-WAIT_S=${OMB_UPDATE_WAIT_S:-120}
-ENGINE_WAIT_S=${OMB_UPDATE_ENGINE_WAIT_S:-120}
-POLL_S=${OMB_UPDATE_POLL_S:-5}
+# and is how long the server is down before a version that never answers is rolled back. CRYBOT_UPDATE_WAIT_S for more.
+WAIT_S=${CRYBOT_UPDATE_WAIT_S:-120}
+ENGINE_WAIT_S=${CRYBOT_UPDATE_ENGINE_WAIT_S:-120}
+POLL_S=${CRYBOT_UPDATE_POLL_S:-5}
 # Set by update-runner.sh: an update the server asked for (the app's Update server button). Whatever runs as the server's
 # user can ask, so such a run trusts nothing the server says, writes nothing through a link in the install's folder,
 # labels its copy of the data as the runner's, and keeps the runner's two newest copies and every copy a person's run made.
-BY_RUNNER=${OMB_UPDATE_BY_RUNNER:-}
-RUNNER_COPY="com.mausbot.by=runner"
+BY_RUNNER=${CRYBOT_UPDATE_BY_RUNNER:-}
+RUNNER_COPY="com.crybot.by=runner"
 # The runner's own folder: a person's run here lets the button try again a version it gave up on (update-runner.sh).
-RUNNER_STATE=${OMB_UPDATE_STATE_DIR:-/var/lib/openmausbot-update}
-KEEP_TAG="openmausbot-before-update:local"
-BACKUP_ROLE="com.mausbot.role=update-backup"
+RUNNER_STATE=${CRYBOT_UPDATE_STATE_DIR:-/var/lib/crybot-update}
+KEEP_TAG="crybot-before-update:local"
+BACKUP_ROLE="com.crybot.role=update-backup"
 
 # The install: --dir, else the folder this script is in when that holds a Compose file, else where the installer
 # (deploy/install.sh) puts one.
-DIR=${OMB_INSTALL_DIR:-}
+DIR=${CRYBOT_INSTALL_DIR:-}
 want_dir=no
 for arg in "$@"; do
   if [ "$want_dir" = yes ]; then DIR=$arg; want_dir=no; elif [ "$arg" = --dir ]; then want_dir=yes; fi
 done
 if [ -z "$DIR" ]; then
   DIR=$(cd "$(dirname "$0")" && pwd)
-  if [ ! -f "$DIR/docker-compose.yml" ] && [ ! -f "$DIR/compose.yaml" ] && [ -f /opt/openmausbot/compose.yaml ]; then DIR=/opt/openmausbot; fi
+  if [ ! -f "$DIR/docker-compose.yml" ] && [ ! -f "$DIR/compose.yaml" ] && [ -f /opt/crybot/compose.yaml ]; then DIR=/opt/crybot; fi
 fi
 STATE="$DIR/.update"
 JOURNAL="$STATE/journal"
@@ -75,7 +75,7 @@ LOCK="$STATE/lock"
 LOG="$STATE/update.log"
 cd "$DIR" 2>/dev/null || { printf '%s\n' "There is no folder $DIR."; exit 4; }
 # The pin is read from .env, never from the shell that happens to run this.
-unset OMB_IMAGE
+unset CRYBOT_IMAGE
 
 # A step interrupted while its output goes to the log still speaks to the terminal.
 exec 3>&1
@@ -253,7 +253,7 @@ helper() { # image, then `-v` mounts as source:target[:ro], then `--` and the sh
   shift
   while [ "$1" != -- ]; do mounts+=(-v "$1"); shift; done
   shift
-  docker run --rm --network none --user 0:0 --label com.mausbot.role=update-helper "${mounts[@]}" --entrypoint sh "$image" -c "$1"
+  docker run --rm --network none --user 0:0 --label com.crybot.role=update-helper "${mounts[@]}" --entrypoint sh "$image" -c "$1"
 }
 # `same A B` succeeds when the two folders hold the same entries and every file has the same checksum.
 VERIFY='manifest() { (cd "$1" && find . -print | LC_ALL=C sort && find . -type f -exec sha256sum {} + | LC_ALL=C sort); }
@@ -274,10 +274,10 @@ new_backup_name() {
 make_backup_volume() { # name image
   local by=()
   [ "$BY_RUNNER" = 1 ] && by=(--label "$RUNNER_COPY")
-  docker volume create --label "$BACKUP_ROLE" --label "com.mausbot.project=$J_project" --label "com.mausbot.data=$J_data" --label "com.mausbot.image=$2" ${by[@]+"${by[@]}"} "$1" >/dev/null
+  docker volume create --label "$BACKUP_ROLE" --label "com.crybot.project=$J_project" --label "com.crybot.data=$J_data" --label "com.crybot.image=$2" ${by[@]+"${by[@]}"} "$1" >/dev/null
 }
 copy_aside() { # data backup image: copy, then check the copy against the data, file by file
-  docker run --rm --network none --user 0:0 --label com.mausbot.role=update-helper -v "$1:/from:ro" -v "$2:/to" --entrypoint cp "$3" -a /from/. /to/ || return 1
+  docker run --rm --network none --user 0:0 --label com.crybot.role=update-helper -v "$1:/from:ro" -v "$2:/to" --entrypoint cp "$3" -a /from/. /to/ || return 1
   helper "$3" "$1:/from:ro" "$2:/to:ro" -- "$VERIFY"'same /from /to'
 }
 # Every copy of this install's data but the one this update made, dropped once that one has been checked. On a run the
@@ -286,13 +286,13 @@ copy_aside() { # data backup image: copy, then check the copy against the data, 
 drop_older_copies() {
   local volume keep=1
   if [ "$BY_RUNNER" = 1 ]; then
-    for volume in $(docker volume ls -q --filter "label=$BACKUP_ROLE" --filter "label=com.mausbot.data=$J_data" --filter "label=$RUNNER_COPY" 2>/dev/null | LC_ALL=C sort -r); do
+    for volume in $(docker volume ls -q --filter "label=$BACKUP_ROLE" --filter "label=com.crybot.data=$J_data" --filter "label=$RUNNER_COPY" 2>/dev/null | LC_ALL=C sort -r); do
       [ "$volume" = "$J_backup" ] && continue
       if [ "$keep" -gt 0 ]; then keep=$((keep - 1)); else docker volume rm -f "$volume" >>"$LOG" 2>&1; fi
     done
     return 0
   fi
-  for volume in $(docker volume ls -q --filter "label=$BACKUP_ROLE" --filter "label=com.mausbot.data=$J_data" 2>/dev/null); do
+  for volume in $(docker volume ls -q --filter "label=$BACKUP_ROLE" --filter "label=com.crybot.data=$J_data" 2>/dev/null); do
     [ "$volume" = "$J_backup" ] || docker volume rm -f "$volume" >>"$LOG" 2>&1
   done
 }
@@ -300,13 +300,13 @@ drop_older_copies() {
 # entries swapped for it, by renames on one filesystem. A restore that fails before the swap leaves the data as it was.
 put_back() { # backup data image
   helper "$3" "$1:/from:ro" "$2:/to" -- "$VERIFY"'set -u
-stage=/to/.omb-restore
-old=/to/.omb-replaced
+stage=/to/.cry-restore
+old=/to/.cry-replaced
 rm -rf "$stage" "$old"
 mkdir "$stage" || exit 1
 if ! cp -a /from/. "$stage"/ || ! same /from "$stage"; then rm -rf "$stage"; exit 1; fi
 mkdir "$old" || exit 1
-find /to -mindepth 1 -maxdepth 1 ! -name .omb-restore ! -name .omb-replaced -exec mv {} "$old"/ \; || exit 1
+find /to -mindepth 1 -maxdepth 1 ! -name .cry-restore ! -name .cry-replaced -exec mv {} "$old"/ \; || exit 1
 find "$stage" -mindepth 1 -maxdepth 1 -exec mv {} /to/ \; || exit 1
 rmdir "$stage" && rm -rf "$old"'
 }
@@ -330,16 +330,16 @@ room_for_copy() { # data backup image → 0 when there is room where the copy go
 pin_previous() {
   local named
   case "$J_previous" in "$REPO@sha256:"*) ;; *) return 0 ;; esac
-  named=$(sed -n 's/^OMB_IMAGE=//p' .env 2>/dev/null | tail -n 1)
+  named=$(sed -n 's/^CRYBOT_IMAGE=//p' .env 2>/dev/null | tail -n 1)
   case "$named" in
     *@sha256:* | *:v[0-9]*.[0-9]*.[0-9]*) return 0 ;;
   esac
   pin_image "$J_previous"
 }
-pin_image() { # writes OMB_IMAGE=<ref> into .env, keeping every other line and the file's mode
+pin_image() { # writes CRYBOT_IMAGE=<ref> into .env, keeping every other line and the file's mode
   local tmp="$DIR/.env.update.tmp"
-  if [ -f .env ]; then cp -p .env "$tmp" && grep -v '^OMB_IMAGE=' .env >"$tmp"; else : >"$tmp" && chmod 600 "$tmp"; fi
-  printf 'OMB_IMAGE=%s\n' "$1" >>"$tmp" && mv "$tmp" .env
+  if [ -f .env ]; then cp -p .env "$tmp" && grep -v '^CRYBOT_IMAGE=' .env >"$tmp"; else : >"$tmp" && chmod 600 "$tmp"; fi
+  printf 'CRYBOT_IMAGE=%s\n' "$1" >>"$tmp" && mv "$tmp" .env
 }
 keep_env() {
   rm -f "$STATE/env.before" "$STATE/env.absent" "$STATE/compose.yaml.before" "$STATE/Caddyfile.before"
@@ -359,10 +359,10 @@ restore_env() {
 # network then, and stayed in the old, dead one whenever the server restarted without it: HTTPS refused while both
 # containers looked healthy. The installer rewrites its own two files at every run; an update does the same, with the
 # copies below, which are the installer's own (scripts/server-installer.test.ts keeps them equal).
-INSTALLER_MARK="# Written by MausBot's installer (deploy/install.sh)"
-old_installer_layout() { [ -f compose.yaml ] && grep -qF "$INSTALLER_MARK" compose.yaml && grep -q '^ *network_mode: "service:omb"' compose.yaml; }
+INSTALLER_MARK="# Written by CryBot's installer (deploy/install.sh)"
+old_installer_layout() { [ -f compose.yaml ] && grep -qF "$INSTALLER_MARK" compose.yaml && grep -q '^ *network_mode: "service:cry"' compose.yaml; }
 # A Compose file of this repository's (path B) with Caddy in the server's network: `git pull` brings the current one.
-old_repository_layout() { [ -f docker-compose.yml ] && grep -q '^ *network_mode: "service:omb"' docker-compose.yml; }
+old_repository_layout() { [ -f docker-compose.yml ] && grep -q '^ *network_mode: "service:cry"' docker-compose.yml; }
 move_installer_layout() {
   cp -p compose.yaml "$STATE/compose.yaml.before" && cp -p Caddyfile "$STATE/Caddyfile.before" || return 1
   installer_compose >compose.yaml.update.tmp && mv compose.yaml.update.tmp compose.yaml &&
@@ -370,42 +370,42 @@ move_installer_layout() {
 }
 installer_compose() {
   cat <<'COMPOSE'
-# Written by MausBot's installer (deploy/install.sh), and written again each time it runs: put your own settings in
+# Written by CryBot's installer (deploy/install.sh), and written again each time it runs: put your own settings in
 # .env beside this file, which the installer keeps. The server only listens on loopback inside its container, and on
 # two Unix sockets in the `edge` volume, which Caddy, in its own container, reaches it through. A request on a socket is
 # always a remote one to the server. Caddy does not share the server's network: a server that restarted on its own came
 # back in a new one, and left Caddy refusing HTTPS in the old one.
-name: openmausbot
+name: crybot
 services:
-  omb:
-    image: ${OMB_IMAGE:?run the installer again}
+  cry:
+    image: ${CRYBOT_IMAGE:?run the installer again}
     restart: unless-stopped
     init: true
     shm_size: 512m
     volumes:
       - ./data:/data
-      - edge:/run/openmausbot
+      - edge:/run/crybot
       # The Update server button (update-runner.sh, root's folder): the server leaves a request in the first, reads the
       # outcome in the second.
-      - /var/lib/openmausbot-update/request:/run/omb-update/request
-      - /var/lib/openmausbot-update/status:/run/omb-update/status:ro
+      - /var/lib/crybot-update/request:/run/cry-update/request
+      - /var/lib/crybot-update/status:/run/cry-update/status:ro
     environment:
-      OMB_PORT: "8799"
-      OMB_WEBHOOK_PORT: "8800"
-      OMB_TUNNEL_SOCKET: /run/openmausbot/http.sock
-      OMB_WEBHOOK_SOCKET: /run/openmausbot/hooks.sock
-      OMB_WEBHOOK_PUBLIC_URL: https://${DOMAIN}
-      OMB_PUBLIC_URL: https://${DOMAIN}
-      OMB_SERVER_NAME: ${OMB_SERVER_NAME:-${DOMAIN}}
+      CRYBOT_PORT: "8799"
+      CRYBOT_WEBHOOK_PORT: "8800"
+      CRYBOT_TUNNEL_SOCKET: /run/crybot/http.sock
+      CRYBOT_WEBHOOK_SOCKET: /run/crybot/hooks.sock
+      CRYBOT_WEBHOOK_PUBLIC_URL: https://${DOMAIN}
+      CRYBOT_PUBLIC_URL: https://${DOMAIN}
+      CRYBOT_SERVER_NAME: ${CRYBOT_SERVER_NAME:-${DOMAIN}}
       # Passed only when .env sets them: an empty one would still be set, and Settings' own lists are used when not.
-      OMB_SIGNIN_EMAILS:
-      OMB_SIGNIN_MEMBER_EMAILS:
-      OMB_SIGNIN_SMTP_URL:
-      OMB_SIGNIN_SMTP_FROM:
-      # "1": phones pair by QR through MausBot Relay. Sign in once: docker compose exec omb openmausbot login --relay
-      OMB_PHONE_RELAY:
+      CRYBOT_SIGNIN_EMAILS:
+      CRYBOT_SIGNIN_MEMBER_EMAILS:
+      CRYBOT_SIGNIN_SMTP_URL:
+      CRYBOT_SIGNIN_SMTP_FROM:
+      # "1": phones pair by QR through CryBot Relay. Sign in once: docker compose exec cry crybot login --relay
+      CRYBOT_PHONE_RELAY:
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8799/api/health | grep -q openmausbot"]
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8799/api/health | grep -q crybot"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -419,13 +419,13 @@ services:
     # Started with the server, not after it is healthy: Caddy reaches it over the socket
     # whenever it answers, so `up` never waits on the server's health.
     depends_on:
-      omb:
+      cry:
         condition: service_started
     environment:
       DOMAIN: ${DOMAIN}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - edge:/run/openmausbot
+      - edge:/run/crybot
       - ./caddy/data:/data
       - ./caddy/config:/config
 
@@ -448,7 +448,7 @@ installer_caddyfile() {
 	# own per-hook secrets), so it sits outside any login. The path is passed
 	# through unchanged: the receiver routes on /hooks/<id>.
 	handle /hooks/* {
-		reverse_proxy unix//run/openmausbot/hooks.sock
+		reverse_proxy unix//run/crybot/hooks.sock
 	}
 
 	handle {
@@ -458,7 +458,7 @@ installer_caddyfile() {
 		#   }
 		# and set both variables in .env (hash with `caddy hash-password`,
 		# every `$` doubled for Compose).
-		reverse_proxy unix//run/openmausbot/http.sock {
+		reverse_proxy unix//run/crybot/http.sock {
 			# SSE: stream events as they arrive
 			flush_interval -1
 			# Compression is `encode`'s job above; the server would gzip its
@@ -478,17 +478,17 @@ stop_server() {
   [ -z "$cid" ] || [ "$(inspect '{{.State.Running}}' "$cid")" = false ]
 }
 
-answers() { compose exec -T "$SERVICE" sh -c 'curl -sf --max-time 5 "http://127.0.0.1:${OMB_PORT:-8799}/api/health"' 2>/dev/null | grep -q openmausbot; }
+answers() { compose exec -T "$SERVICE" sh -c 'curl -sf --max-time 5 "http://127.0.0.1:${CRYBOT_PORT:-8799}/api/health"' 2>/dev/null | grep -q crybot; }
 reported_version() {
-  compose exec -T "$SERVICE" sh -c 'curl -sf --max-time 5 "http://127.0.0.1:${OMB_PORT:-8799}/.well-known/openmausbot/environment"' 2>/dev/null | json_top version
+  compose exec -T "$SERVICE" sh -c 'curl -sf --max-time 5 "http://127.0.0.1:${CRYBOT_PORT:-8799}/.well-known/crybot/environment"' 2>/dev/null | json_top version
 }
 # How many engines can start a bot, as the server counts them (GET /api/health/engines, which a hardened server answers
 # a local caller without a session); nothing from a version without that count.
 engine_count() {
-  compose exec -T "$SERVICE" sh -c 'curl -sf --max-time 10 "http://127.0.0.1:${OMB_PORT:-8799}/api/health/engines"' 2>/dev/null |
+  compose exec -T "$SERVICE" sh -c 'curl -sf --max-time 10 "http://127.0.0.1:${CRYBOT_PORT:-8799}/api/health/engines"' 2>/dev/null |
     sed -n 's/.*"engines":\([0-9][0-9]*\).*/\1/p' | head -n 1
 }
-# At least one engine can start a bot, within $1 seconds: the server's count, or `openmausbot doctor` on a version that
+# At least one engine can start a bot, within $1 seconds: the server's count, or `crybot doctor` on a version that
 # has no count (it needs the owner's trust, so on a hardened version without the count this cannot tell).
 engine_ready() {
   local deadline=$(($(date +%s) + ${1:-0})) count
@@ -496,7 +496,7 @@ engine_ready() {
     count=$(engine_count)
     if [ -n "$count" ]; then
       [ "$count" -gt 0 ] && return 0
-    elif compose exec -T "$SERVICE" openmausbot doctor >/dev/null 2>&1; then
+    elif compose exec -T "$SERVICE" crybot doctor >/dev/null 2>&1; then
       return 0
     fi
     [ "$(date +%s)" -lt "$deadline" ] || return 1
@@ -681,6 +681,7 @@ resolve_target() {
     J_target="$REPO:v$WANT_VERSION"
     J_version=$WANT_VERSION
   else
+    [ -n "$STABLE_URL" ] || refuse "Set CRYBOT_UPDATE_URL or pass --image. No update request was sent."
     fetch "$STABLE_URL"
     case $? in
       0)
@@ -842,9 +843,9 @@ if [ "$ALLOW_OLDER" != yes ] && [ -n "$(older_reason)" ]; then
   say "Nothing was changed. To go ahead anyway, with the data copied first: ./update.sh --allow-older${WANT_VERSION:+ --version $WANT_VERSION}${WANT_IMAGE:+ --image $WANT_IMAGE}"
   exit 5
 fi
-if ! OMB_IMAGE="$J_target" docker compose config 2>/dev/null | grep -qF "image: $J_target"; then
+if ! CRYBOT_IMAGE="$J_target" docker compose config 2>/dev/null | grep -qF "image: $J_target"; then
   abandon
-  refuse "The Compose file in $DIR does not take its image from OMB_IMAGE. Get the current one (git pull, or run the installer again), then run this again. Nothing was changed."
+  refuse "The Compose file in $DIR does not take its image from CRYBOT_IMAGE. Get the current one (git pull, or run the installer again), then run this again. Nothing was changed."
 fi
 BACKUP_MADE=yes
 if ! make_backup_volume "$J_backup" "$J_previous_id" || ! room_for_copy "$J_data" "$J_backup" "$J_previous_id"; then

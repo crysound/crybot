@@ -45,7 +45,7 @@ function room(options: { threadId?: string; shared?: { messages: Map<string, Mes
     store: { messagesFor: (id) => threads.get(id) ?? [] },
     teammateReportContext: (requestId) => reports.get(requestId) ?? `[report ${requestId}]`,
   });
-  // `env: {}`: the developer's own OMB_ROOM_SESSIONS must not decide a test.
+  // `env: {}`: the developer's own CRYBOT_ROOM_SESSIONS must not decide a test.
   const create = () => createRoomSessions({
     settings: () => ({ roomSessions: state.enabled }), env: {}, messagesFor: (id) => threads.get(id) ?? [], now: () => state.now,
   });
@@ -69,7 +69,7 @@ function room(options: { threadId?: string; shared?: { messages: Map<string, Mes
     const input: RoomDispatchInput = {
       threadId, botId, claimId: `claim-${serial}`, instance: claude, guestConfined: false, reset: false, hooks: true,
       config: ["You are a bot in the room.", "/work", { instanceId: "claude", model: "opus" }],
-      window: transcript.window(threadId, "Omkar", undefined, botId), tail: tailFor(botId), wrap: wrapWith(),
+      window: transcript.window(threadId, "User", undefined, botId), tail: tailFor(botId), wrap: wrapWith(),
       ...overrides,
     };
     const turn = { botId, claimId: input.claimId, turnId: `turn-${serial}`, instance: input.instance, result: sessions.dispatch(input), input };
@@ -128,26 +128,26 @@ function room(options: { threadId?: string; shared?: { messages: Map<string, Mes
 
 describe("renderRoomDelta", () => {
   it("lists the new lines under one note, as the window renders them", () => {
-    expect(renderRoomDelta([{ id: "a", text: "Omkar: trim the middle" }, { id: "b", text: "[Posted by @Writer]\nWriter: done" }]))
+    expect(renderRoomDelta([{ id: "a", text: "User: trim the middle" }, { id: "b", text: "[Posted by @Writer]\nWriter: done" }]))
       .toBe(`${NOTE}\nOmkar: trim the middle\n[Posted by @Writer]\nWriter: done`);
   });
 
   it("says when its first lines are older than what the session already holds", () => {
-    expect(renderRoomDelta([{ id: "a", text: "Writer: mid-turn", earlier: true }, { id: "b", text: "Omkar: next" }]))
+    expect(renderRoomDelta([{ id: "a", text: "Writer: mid-turn", earlier: true }, { id: "b", text: "User: next" }]))
       .toBe(`${NOTE}\n(The first message is older than messages you have already seen.)\nWriter: mid-turn\nOmkar: next`);
     expect(renderRoomDelta([{ id: "a", text: "A: 1", earlier: true }, { id: "b", text: "B: 2", earlier: true }, { id: "c", text: "C: 3" }]))
       .toContain("\n(The first 2 messages are older than messages you have already seen.)\nA: 1\nB: 2\nC: 3");
   });
 
   it("puts lines that changed since they were shown first, and says they replace what was shown", () => {
-    expect(renderRoomDelta([{ id: "a", text: "[What Editor did: files]", updated: true }, { id: "b", text: "Omkar: next" }]))
+    expect(renderRoomDelta([{ id: "a", text: "[What Editor did: files]", updated: true }, { id: "b", text: "User: next" }]))
       .toBe(`${NOTE}\n(The first message was shown to you before and has changed since: this copy replaces what you were shown.)\n[What Editor did: files]\nOmkar: next`);
     // window order in, grouped out: changed, then older unseen, then new
     expect(renderRoomDelta([
       { id: "a", text: "Writer: mid-turn", earlier: true },
       { id: "b", text: "[digest one]", updated: true },
       { id: "c", text: "[digest two]", updated: true },
-      { id: "d", text: "Omkar: next" },
+      { id: "d", text: "User: next" },
     ])).toBe([
       NOTE,
       "(The first 2 messages were shown to you before and have changed since: these copies replace what you were shown.)",
@@ -155,7 +155,7 @@ describe("renderRoomDelta", () => {
       "[digest two]",
       "(The next message is older than messages you have already seen.)",
       "Writer: mid-turn",
-      "Omkar: next",
+      "User: next",
     ].join("\n"));
     expect(renderRoomDelta([{ id: "a", text: "A: 1", updated: true }, { id: "b", text: "B: 2", earlier: true }, { id: "c", text: "C: 3", earlier: true }]))
       .toContain("\n(The next 2 messages are older than messages you have already seen.)\nB: 2\nC: 3");
@@ -177,7 +177,7 @@ describe("which engines keep a room session", () => {
   it("is Claude Code alone, for as long as its driver keeps a quiet process", () => {
     expect(Object.keys(ROOM_SESSION_ENGINES)).toEqual(["claudeAgent"]);
     expect(roomSessionIdleMs("claudeAgent", {})).toBe(10 * 60_000);
-    expect(roomSessionIdleMs("claudeAgent", { OMB_CLAUDE_SESSION_IDLE_MS: "60000" })).toBe(60_000);
+    expect(roomSessionIdleMs("claudeAgent", { CRYBOT_CLAUDE_SESSION_IDLE_MS: "60000" })).toBe(60_000);
     for (const other of ["codex", "museCode", "piAgent", "constructor", "toString"]) expect(roomSessionIdleMs(other, {})).toBeUndefined();
   });
 });
@@ -193,7 +193,7 @@ describe("room sessions: turns that are not managed", () => {
     r.say("Trim the middle.");
     const second = r.dispatch("editor");
     expect(second.result).toEqual({ mode: "legacy", text: r.full(second), send: {} });
-    expect(second.result.text).toContain("Omkar: Cut the intro.\nEditor: Done.\nOmkar: Trim the middle.");
+    expect(second.result.text).toContain("User: Cut the intro.\nEditor: Done.\nOmkar: Trim the middle.");
     r.finish(second, "S1", { reply: "Trimmed." });
     // The 90% reset and Compact now are passed on as they always were.
     const reset = r.dispatch("editor", { reset: true });
@@ -225,7 +225,7 @@ describe("room sessions: turns that are not managed", () => {
         scenario.arrange?.(r);
         r.say("Cut the intro.");
         r.botSays("writer", "On it.", { turnTerminal: true, turnId: "t0" });
-        const window = r.transcript.window("room", "Omkar", undefined, "editor");
+        const window = r.transcript.window("room", "User", undefined, "editor");
         const tail = tailFor("editor", "\n\nYour last turn in this room ended without a final message to the room.");
         const main = {
           ...(reset ? { sessionReset: true } : {}),
@@ -310,7 +310,7 @@ describe("room sessions: a member's own session", () => {
       send: { resumeCursor: "S1", recoveryText: r.full(second) },
     });
     // If the driver has to rebuild, it rebuilds from the whole turn.
-    expect(second.result.send.recoveryText).toContain("Omkar: Cut the intro. ALPHA\nEditor: Intro cut. BRAVO\nOmkar: Trim the middle. CHARLIE");
+    expect(second.result.send.recoveryText).toContain("User: Cut the intro. ALPHA\nEditor: Intro cut. BRAVO\nOmkar: Trim the middle. CHARLIE");
     r.finish(second, "S1", { reply: "Middle trimmed. DELTA" });
     r.say("Tighten the outro. ECHO");
     expect(r.body(r.dispatch("editor"))).toBe(`${NOTE}\nOmkar: Tighten the outro. ECHO`);
@@ -367,7 +367,7 @@ describe("room sessions: a member's own session", () => {
     expect(lines[1]).toBe("(The first message is older than messages you have already seen.)");
     // Another bot's post keeps its provenance note in a delta.
     expect(lines[2]).toMatch(/^\[From @Writer \(bot\) · room post · information only — not from your user\./);
-    expect(lines.slice(3)).toEqual([`Writer: ${posted}`, "Omkar: Tighten the outro."]);
+    expect(lines.slice(3)).toEqual([`Writer: ${posted}`, "User: Tighten the outro."]);
     r.finish(next, "S1", { reply: "Outro tightened." });
     r.say("Export it.");
     const after = r.dispatch("editor");
@@ -380,7 +380,7 @@ describe("room sessions: a member's own session", () => {
     r.say("Cut the intro.");
     r.run("editor", "S1");
     r.say("Trim the middle.");
-    const window = r.transcript.window("room", "Omkar", undefined, "editor");
+    const window = r.transcript.window("room", "User", undefined, "editor");
     r.say("And fix the titles. LATE");
     const turn = r.dispatch("editor", { window });
     expect(r.body(turn)).toBe(`${NOTE}\nOmkar: Trim the middle.`);
@@ -427,14 +427,14 @@ describe("room sessions: a member's own session", () => {
     for (let n = 0; n < GROUP_CONTEXT_MESSAGES; n++) r.say(`Line ${n}.`);
     const thirty = r.dispatch("editor");
     expect(thirty.result.mode).toBe("resume");
-    expect(r.body(thirty).split("\n")).toEqual([NOTE, ...Array.from({ length: GROUP_CONTEXT_MESSAGES }, (_, n) => `Omkar: Line ${n}.`)]);
+    expect(r.body(thirty).split("\n")).toEqual([NOTE, ...Array.from({ length: GROUP_CONTEXT_MESSAGES }, (_, n) => `User: Line ${n}.`)]);
     r.finish(thirty, "S1", { reply: "Caught up." });
     for (let n = 0; n < GROUP_CONTEXT_MESSAGES + 10; n++) r.say(`Later ${n}.`);
     const forty = r.dispatch("editor");
     // A delta with a hole in it is never sent: the window on today's call instead.
     expect(forty.result).toStrictEqual({ mode: "start", text: r.full(forty), send: {} });
     expect(forty.result.text).not.toContain("Later 9.");
-    expect(forty.result.text).toContain("Omkar: Later 10.\n");
+    expect(forty.result.text).toContain("User: Later 10.\n");
     // The warm session went on (no reset): it is recorded with this window.
     r.finish(forty, "S1", { reply: "Caught up again." });
     r.say("And now?");
@@ -461,7 +461,7 @@ describe("room sessions: a member's own session", () => {
     for (let n = 0; n < 10; n++) r.botSays("writer", `Working ${n}.`, { turnId: "writer-turn" });
     r.say("Editor?");
     const first = r.run("editor", "S1");
-    expect(first.result.text).toContain("Omkar: Old 16.\n");
+    expect(first.result.text).toContain("User: Old 16.\n");
     expect(first.result.text).not.toContain("Old 15.");
     // The writer's turn settles: its ten notes are hidden from now on, so the
     // window slides back over lines the editor's session was never shown.
@@ -470,7 +470,7 @@ describe("room sessions: a member's own session", () => {
     r.say("Editor again?");
     const second = r.dispatch("editor");
     expect(second.result.mode).toBe("start");
-    expect(second.result.text).toContain("Omkar: Old 9.\n");
+    expect(second.result.text).toContain("User: Old 9.\n");
     expect(second.result.text).not.toContain("Old 8.");
   });
 
@@ -567,7 +567,7 @@ describe("room sessions: when a record is not trusted", () => {
   });
 
   it("starts again when anything in its standing configuration changed", () => {
-    const base = ["You are Editor, a bot in the room \"Edit bay\".", "/work", { instanceId: "claude", model: "opus", effort: "high" }, "ask", { agents: { env: { OMB_TURN_DEPTH: "0" } } }];
+    const base = ["You are Editor, a bot in the room \"Edit bay\".", "/work", { instanceId: "claude", model: "opus", effort: "high" }, "ask", { agents: { env: { CRYBOT_TURN_DEPTH: "0" } } }];
     const changes: unknown[][] = [
       ["You are Editor, a bot in the room \"Cutting room\".", ...base.slice(1)],
       [base[0], "/elsewhere", ...base.slice(2)],
@@ -575,7 +575,7 @@ describe("room sessions: when a record is not trusted", () => {
       [...base.slice(0, 2), { instanceId: "claude", model: "opus", effort: "low" }, ...base.slice(3)],
       [...base.slice(0, 2), { instanceId: "claude", model: "opus", effort: "high", variant: "1m" }, ...base.slice(3)],
       [...base.slice(0, 3), "full", base[4]],
-      [...base.slice(0, 4), { agents: { env: { OMB_TURN_DEPTH: "1" } } }],
+      [...base.slice(0, 4), { agents: { env: { CRYBOT_TURN_DEPTH: "1" } } }],
       [...base, "one more"],
     ];
     for (const changed of changes) {
@@ -838,7 +838,7 @@ describe("room sessions: a native compaction", () => {
     r.say("Tighten the outro.");
     const next = r.dispatch("editor");
     expect(next.result).toStrictEqual({ mode: "start", text: r.full(next), send: {} });
-    expect(next.result.text).toContain("Omkar: Cut the intro.");
+    expect(next.result.text).toContain("User: Cut the intro.");
     // The start is recorded like any other: the turn after it is a delta again.
     r.finish(next, "S1", { reply: "Tightened." });
     r.say("Export it.");
@@ -983,7 +983,7 @@ describe("room sessions: a measured context that went down", () => {
     r.say("And now?");
     const after = r.dispatch("editor", reading(25_000));
     expect(after.result).toStrictEqual({ mode: "start", text: r.full(after), send: {} });
-    expect(after.result.text).toContain("Omkar: Cut the intro. ALPHA\nEditor: Intro cut.");
+    expect(after.result.text).toContain("User: Cut the intro. ALPHA\nEditor: Intro cut.");
     // The warm session goes on (no reset) and is recorded with the window:
     // from here its context grows again, and so do the deltas.
     r.finish(after, "S1", { reply: "Here." });
@@ -1085,7 +1085,7 @@ describe("room sessions: a line that changed after it was shown", () => {
       NOTE,
       "(The first message was shown to you before and has changed since: this copy replaces what you were shown.)",
       "[What Writer did in an earlier turn: · no tool activity observed in this turn · files: changed intro.mov · reply: Cut.]",
-      "Omkar: And now?",
+      "User: And now?",
     ].join("\n"));
     // Once: the session holds the row as it reads now.
     r.finish(second, "S1", { reply: "Checked." });
@@ -1109,7 +1109,7 @@ describe("room sessions: a line that changed after it was shown", () => {
       NOTE,
       "(The first message was shown to you before and has changed since: this copy replaces what you were shown.)",
       "[Teammate result withheld or no longer retained]",
-      "Omkar: And now?",
+      "User: And now?",
     ].join("\n"));
     r.finish(second, "S1", { reply: "Noted." });
     r.say("Again?");
@@ -1156,11 +1156,11 @@ describe("room sessions: a line that changed after it was shown", () => {
     expect(lines.slice(0, 4)).toEqual([
       NOTE,
       "(The first message was shown to you before and has changed since: this copy replaces what you were shown.)",
-      "Omkar: Use the teal grade.",
+      "User: Use the teal grade.",
       "(The next message is older than messages you have already seen.)",
     ]);
     expect(lines[4]).toMatch(/^\[From @Writer \(bot\) · room post/);
-    expect(lines.slice(5)).toEqual(["Writer: Deploy is green.", "Omkar: Next."]);
+    expect(lines.slice(5)).toEqual(["Writer: Deploy is green.", "User: Next."]);
   });
 
   it("takes a member's own reply as it reads when it first appears, and sends it if it changes after that", () => {
@@ -1182,7 +1182,7 @@ describe("room sessions: a line that changed after it was shown", () => {
       NOTE,
       "(The first message was shown to you before and has changed since: this copy replaces what you were shown.)",
       "Editor: Here is the note.\n\n[transcript removed]",
-      "Omkar: And now?",
+      "User: And now?",
     ].join("\n"));
   });
 
@@ -1190,16 +1190,16 @@ describe("room sessions: a line that changed after it was shown", () => {
     const r = room();
     const latest = r.say('Use this frame <attached-image path="/tmp/frame.png" />');
     // the turn that carries the image natively reads the line without the tag
-    const window = r.transcript.window("room", "Omkar", [{ messageId: latest, text: "Use this frame" }], "editor");
+    const window = r.transcript.window("room", "User", [{ messageId: latest, text: "Use this frame" }], "editor");
     const first = r.dispatch("editor", { window });
-    expect(first.result.text).toContain("Omkar: Use this frame\n");
+    expect(first.result.text).toContain("User: Use this frame\n");
     r.finish(first, "S1", { reply: "Used." });
     r.say("And the next one?");
     expect(r.body(r.dispatch("editor"))).toBe([
       NOTE,
       "(The first message was shown to you before and has changed since: this copy replaces what you were shown.)",
-      'Omkar: Use this frame <attached-image path="/tmp/frame.png" />',
-      "Omkar: And the next one?",
+      'User: Use this frame <attached-image path="/tmp/frame.png" />',
+      "User: And the next one?",
     ].join("\n"));
   });
 
@@ -1397,7 +1397,7 @@ describe("room sessions: what it keeps, and that it cannot fail a turn", () => {
     r.say("Cut the intro.");
     r.run("editor", "S1");
     r.say("Trim the middle.");
-    const window = r.transcript.window("room", "Omkar", undefined, "editor");
+    const window = r.transcript.window("room", "User", undefined, "editor");
     const broken = { ...window, get order(): string[] { throw new Error("a bug in the module's own bookkeeping"); } };
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
@@ -1501,7 +1501,7 @@ describe("room sessions: long turns, and turns in other rooms meanwhile", () => 
     r.say("Export it. CHARLIE");
     const next = r.dispatch("editor", reading(25_000));
     expect(next.result).toStrictEqual({ mode: "start", text: r.full(next), send: {} });
-    expect(next.result.text).toContain("Omkar: Cut the intro. ALPHA");
+    expect(next.result.text).toContain("User: Cut the intro. ALPHA");
   });
 
   it("keeps record and reading from the dispatch on, before the provider has acted", () => {
@@ -1557,7 +1557,7 @@ describe("room sessions: long turns, and turns in other rooms meanwhile", () => 
       NOTE,
       "(The first message was shown to you before and has changed since: this copy replaces what you were shown.)",
       "[Teammate result withheld or no longer retained]",
-      "Omkar: Export it.",
+      "User: Export it.",
     ].join("\n"));
   });
 
@@ -1588,7 +1588,7 @@ describe("room sessions: long turns, and turns in other rooms meanwhile", () => 
     r.say("Export it. CHARLIE");
     const next = r.dispatch("editor", reading(25_000));
     expect(next.result).toStrictEqual({ mode: "start", text: r.full(next), send: {} });
-    expect(next.result.text).toContain("Omkar: Cut the intro. ALPHA");
+    expect(next.result.text).toContain("User: Cut the intro. ALPHA");
     // and from there the deltas go on, with the reading growing again
     r.finish(next, "S1", { reply: "Exported." });
     r.say("Thanks.");
@@ -1652,9 +1652,9 @@ describe("room sessions: long turns, and turns in other rooms meanwhile", () => 
   });
 
   it("keeps a reading longer than a record when the idle life is set above a day", () => {
-    // OMB_CLAUDE_SESSION_IDLE_MS may be anything up to 2^31-1 ms, and a
+    // CRYBOT_CLAUDE_SESSION_IDLE_MS may be anything up to 2^31-1 ms, and a
     // record lives that long; a reading must not go before it.
-    vi.stubEnv("OMB_CLAUDE_SESSION_IDLE_MS", String(30 * 60 * MIN));
+    vi.stubEnv("CRYBOT_CLAUDE_SESSION_IDLE_MS", String(30 * 60 * MIN));
     try {
       expect(roomSessionIdleMs("claudeAgent")).toBe(30 * 60 * MIN);
       const { r } = ready();

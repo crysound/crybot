@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, it } from "vitest";
 
-import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry } from "../scripts/control-cry.ts";
 import { request } from "../scripts/mcp-server.ts";
 import type { WireMessage } from "../shared/wire.ts";
 import { withoutTurnClock } from "./testing/turn-clock-text.ts";
@@ -16,10 +16,10 @@ it("names earlier tool calls in a rebuilt session only when switched on", async 
       { name: "Bash", input: { command: "pnpm test", description: "INPUT_PREVIEW_ONLY" }, output: "RESULT_BODY 3 failed", ok: false },
       { name: "Read", input: { file_path: "/fixture/notes.md", limit: 40 }, output: "RESULT_BODY notes", ok: true },
     ]),
-  }, undefined, undefined, undefined, undefined, undefined, ["codex"]);
+  }, undefined, undefined, undefined, undefined, ["codex"]);
   const evidence: unknown[] = [{ fixture: fixture.info }];
   const control = async (...args: string[]) => {
-    const result = await runControlOmb([...args, "--url", fixture.info.url]) as any;
+    const result = await runControlCry([...args, "--url", fixture.info.url]) as any;
     evidence.push({ command: args, result });
     return result;
   };

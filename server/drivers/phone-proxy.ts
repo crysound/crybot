@@ -60,8 +60,8 @@ export function resolveAdbPath(env: NodeJS.ProcessEnv = process.env, platform = 
   const executable = executableName(platform);
   const home = homedir();
   const candidates = [
-    env.OMB_ADB_PATH,
-    env.OMB_RESOURCES_PATH && join(env.OMB_RESOURCES_PATH, "android-platform-tools", platform, executable),
+    env.CRYBOT_ADB_PATH,
+    env.CRYBOT_RESOURCES_PATH && join(env.CRYBOT_RESOURCES_PATH, "android-platform-tools", platform, executable),
     ...(env.PATH ?? "").split(delimiter).map((entry) => entry && join(entry, executable)),
     platform === "darwin" && join(home, "Library/Android/sdk/platform-tools/adb"),
     platform === "darwin" && "/opt/homebrew/bin/adb",
@@ -79,7 +79,7 @@ export function resolveAdbPath(env: NodeJS.ProcessEnv = process.env, platform = 
 
 async function runAdb(args: string[], options: { binary?: boolean; timeoutMs?: number } = {}): Promise<Buffer> {
   const adb = resolveAdbPath();
-  if (!adb) throw new Error("Android platform tools are unavailable. Reopen OpenMausBot or install adb.");
+  if (!adb) throw new Error("Android platform tools are unavailable. Reopen CryBot or install adb.");
   return new Promise((resolve, reject) => {
     const child = spawn(adb, args, { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
     const stdout: Buffer[] = [];
@@ -275,7 +275,7 @@ async function readNodes(onDevice: OnDevice, serial: string) {
   const streamedStart = streamed.indexOf("<?xml");
   if (streamedStart >= 0) return parseUiNodes(streamed.slice(streamedStart));
 
-  const remotePath = "/data/local/tmp/openmaus-window.xml";
+  const remotePath = "/data/local/tmp/crybot-window.xml";
   const saved = (await onDevice(serial, ["shell", `rm -f ${remotePath}; uiautomator dump ${remotePath} >/dev/null && cat ${remotePath}; status=$?; rm -f ${remotePath}; exit $status`])).toString("utf8");
   const savedStart = saved.indexOf("<?xml");
   return parseUiNodes(savedStart >= 0 ? saved.slice(savedStart) : saved);
@@ -310,8 +310,8 @@ export function createPhoneClaim(
   env: NodeJS.ProcessEnv = process.env,
   fetchImpl: typeof fetch = fetch,
 ): EnsureClaim {
-  const url = env.OMB_HARNESS_URL?.trim();
-  const token = env.OMB_PHONE_TOKEN?.trim();
+  const url = env.CRYBOT_HARNESS_URL?.trim();
+  const token = env.CRYBOT_PHONE_TOKEN?.trim();
   if (!url || !token) {
     return async () => ({ ok: true });
   }
@@ -335,9 +335,9 @@ export function createPhoneClaim(
       if (response.status === 401 || response.status === 403) {
         return { ok: false, message: "This turn no longer has phone access. Start a new turn to use the phone." };
       }
-      return { ok: false, message: "OpenMausBot could not reserve the phone for this call. This call was not performed; try again, or start a new turn if it keeps failing." };
+      return { ok: false, message: "CryBot could not reserve the phone for this call. This call was not performed; try again, or start a new turn if it keeps failing." };
     } catch {
-      return { ok: false, message: "OpenMausBot could not be reached to reserve the phone. This call was not performed; try again." };
+      return { ok: false, message: "CryBot could not be reached to reserve the phone. This call was not performed; try again." };
     }
   };
 }
@@ -433,7 +433,7 @@ async function handle(message: Json, ensureClaim: EnsureClaim) {
   const id = message.id;
   const method = message.method;
   const params = (message.params ?? {}) as Json;
-  if (method === "initialize") return ok(id, { protocolVersion: String(params.protocolVersion ?? "2024-11-05"), capabilities: { tools: {} }, serverInfo: { name: "openmausbot-phone", version: "1" } });
+  if (method === "initialize") return ok(id, { protocolVersion: String(params.protocolVersion ?? "2024-11-05"), capabilities: { tools: {} }, serverInfo: { name: "crybot-phone", version: "1" } });
   if (method === "notifications/initialized" || method === "notifications/cancelled") return;
   if (method === "ping") return ok(id, {});
   if (method === "tools/list") return ok(id, { tools: TOOLS });

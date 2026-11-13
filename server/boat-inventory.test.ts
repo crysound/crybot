@@ -12,10 +12,10 @@ const DELETION_OPERATION_ID = "bdop_0123456789abcdef0123456789abcdef";
 const legacyNameFor = (botId: string) => {
   const prefix = botId.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, "");
   const hash = createHash("sha256").update(botId).digest("hex").slice(0, 6);
-  return `ogb-${prefix}-${hash}`;
+  return `cry-${prefix}-${hash}`;
 };
 
-describe("OpenMaus-managed Boat inventory", () => {
+describe("CryBot-managed Boat inventory", () => {
   let api: Server;
   let boats: ProviderBoat[] = [];
   let listStatus = 200;
@@ -120,7 +120,7 @@ describe("OpenMaus-managed Boat inventory", () => {
     });
     await new Promise<void>((resolve) => api.listen(0, "127.0.0.1", resolve));
     const port = (api.address() as { port: number }).port;
-    vi.stubEnv("OMB_BOAT_API", `http://127.0.0.1:${port}/api/v1`);
+    vi.stubEnv("CRYBOT_BOAT_API", `http://127.0.0.1:${port}/api/v1`);
     vi.resetModules();
     boat = await import("./boat.ts");
     journal = await import("./boat-create-idempotency.ts");
@@ -170,9 +170,9 @@ describe("OpenMaus-managed Boat inventory", () => {
         dedicatedIp: "203.0.113.8",
         env: { PRIVATE_KEY: "do-not-leak" },
       },
-      { id: "bx_abcdefgh", name: "ogb-orphaned-abcdef", state: "archived", desktopUrl: "secret" },
+      { id: "bx_abcdefgh", name: "cry-orphaned-abcdef", state: "archived", desktopUrl: "secret" },
       { id: "bx_jkmnpqrs", name: "my-production-box", state: "running" },
-      { id: "bad/id", name: "ogb-invalid0-123456", state: "running" },
+      { id: "bad/id", name: "cry-invalid0-123456", state: "running" },
     ];
 
     const inventory = await boat.listManagedBoats(cfg, [{ botId, name: "Research", inUse: true }]);
@@ -286,7 +286,7 @@ describe("OpenMaus-managed Boat inventory", () => {
     const inventory = await boat.listManagedBoats(cfg, [{ botId, name: "Conflict", inUse: false }]);
 
     expect(inventory).toMatchObject({ available: false, instances: [] });
-    expect(inventory.problem).toMatch(/no longer has its OpenMausBot owner name/i);
+    expect(inventory.problem).toMatch(/no longer has its CryBot owner name/i);
     expect(journal.boatCreateRecoverySnapshot()).toContainEqual({ botId, boxId, resolved: true });
     expect(requests.map(({ method, path }) => `${method} ${path}`)).toEqual([
       "GET /api/v1/sandboxes",
@@ -379,11 +379,11 @@ describe("OpenMaus-managed Boat inventory", () => {
     const legacyBotId = "legacy-owner";
     const currentName = await boat.boatNameFor(currentBotId);
     const orphanName = await boat.boatNameFor("deleted-local-bot");
-    const currentScope = currentName.match(/^ogb-([a-f0-9]{12})-/)?.[1];
+    const currentScope = currentName.match(/^cry-([a-f0-9]{12})-/)?.[1];
     expect(currentScope).toBeTruthy();
     const foreignScope = currentScope === "000000000000" ? "111111111111" : "000000000000";
-    const foreignName = currentName.replace(/^ogb-[a-f0-9]{12}-/, `ogb-${foreignScope}-`);
-    const ownerlessLegacyName = "ogb-orphaned-abcdef";
+    const foreignName = currentName.replace(/^cry-[a-f0-9]{12}-/, `cry-${foreignScope}-`);
+    const ownerlessLegacyName = "cry-orphaned-abcdef";
     boats = [
       { id: "bx_23456789", name: currentName, state: "ready" },
       { id: "bx_abcdefgh", name: legacyNameFor(legacyBotId), state: "archived" },
@@ -590,7 +590,7 @@ describe("OpenMaus-managed Boat inventory", () => {
     deleteRemovesBoat = false;
 
     await expect(boat.deleteManagedBoat(cfg, owners, boxId, managedName)).rejects.toThrow(
-      `boat.dev accepted the deletion of cloud computer ${boxId}, but says it is blocked without a reason OpenMausBot knows. boat.dev keeps retrying on its own; if ${boxId} is still listed in boat.dev later, delete it there.`,
+      `boat.dev accepted the deletion of cloud computer ${boxId}, but says it is blocked without a reason CryBot knows. boat.dev keeps retrying on its own; if ${boxId} is still listed in boat.dev later, delete it there.`,
     );
     expect(deleteJournal.boatDeletionSnapshot()).toEqual([expect.objectContaining({ boxId, phase: "blocked" })]);
     expect(journal.boatCreateRecoverySnapshot()).toContainEqual({ botId, boxId, resolved: true });

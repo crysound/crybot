@@ -148,7 +148,7 @@ function sourceImageExtension(source: string | undefined): string | null {
   if (!source) return null;
   let pathname = source;
   try {
-    pathname = decodeURIComponent(new URL(source, "https://openmausbot.invalid").pathname);
+    pathname = decodeURIComponent(new URL(source, "https://crybot.invalid").pathname);
   } catch {
     pathname = source.split(/[?#]/, 1)[0] ?? source;
   }
@@ -299,7 +299,7 @@ export function useLocalFileSave(filePath: string, name?: string, message?: Mess
     request.current = controller;
     try {
       const response = await requestMessageFile(filePath, message, controller.signal, entry === undefined ? { list: true } : { entry });
-      if (response.headers.get("x-openmausbot-folder") === "1") {
+      if (response.headers.get("x-crybot-folder") === "1") {
         const listing = await response.json() as MessageFolderListing;
         if (!mounted.current || controller.signal.aborted) return;
         setState("idle");
@@ -417,9 +417,9 @@ export function MessageFolderFiles({ folderPath, listing, message }: {
 }
 
 const REVEALABLE_PATH = /^(?:\/(?!\/)|[a-zA-Z]:[\\/])/;
-function revealBridge(): NonNullable<Window["ogb"]>["revealInFolder"] {
-  const ogb = typeof window === "undefined" ? undefined : window.ogb;
-  return ogb?.remoteClient?.active ? undefined : ogb?.revealInFolder;
+function revealBridge(): NonNullable<Window["cry"]>["revealInFolder"] {
+  const cry = typeof window === "undefined" ? undefined : window.cry;
+  return cry?.remoteClient?.active ? undefined : cry?.revealInFolder;
 }
 
 export function OutsideWorkspaceFile({ filePath }: { filePath: string }) {

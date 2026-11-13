@@ -4,7 +4,7 @@ import type { AddCloudView, RailPlace, RailState } from "../../electron/cloud-ra
 import type { PlaceLook } from "../../electron/place-look.mjs";
 import App from "../../src/App";
 import { ChromeRail } from "../../src/components/ChromeRail";
-import { setAnalyticsEnabled, setEmailGateDone } from "../../src/lib/analytics";
+import { setEmailGateDone } from "../../src/lib/welcome-progress";
 import { setAdvancedMode } from "../../src/lib/interface-mode";
 import { NOTICES } from "../../src/lib/notices";
 import { setSidebarDensity, SIDEBAR_WIDTH_KEY, SIMPLE_SIDEBAR_WIDTH_KEY } from "../../src/lib/sidebar-preferences";
@@ -33,7 +33,7 @@ import "../../src/styles.css";
 // starts again. ?settings=frame opens Settings at the window frame's switch. Each page starts with the sidebar at its
 // own width.
 const params = new URLSearchParams(location.search);
-setAnalyticsEnabled(false);
+
 setEmailGateDone("skipped");
 markSimpleModePromptSeen();
 localStorage.setItem(GROK_MOVE_NOTICE, "1");
@@ -127,7 +127,7 @@ const cloudAdd = { state: async () => addView, start: async () => ({ outcome: "o
 if (params.has("railpage")) {
   // The window's own rail page: see-through but for the rail, as main.tsx draws it.
   document.documentElement.style.background = document.body.style.background = "transparent";
-  Object.assign(window, { ogb: {
+  Object.assign(window, { cry: {
     platform: windows ? "win32" : "darwin", getCapabilities: capabilities, onCapabilitiesChanged: () => () => {}, applySkin: ok,
     workspaces: { places: async () => rail, open: ok, add: ok, recolor, onChanged: () => () => {} },
     cloudAdd, rail: { expand: ok, onSkin: () => () => {} },
@@ -147,7 +147,7 @@ if (params.has("railpage")) {
   };
   besidePage();
   const update = params.get("update");
-  Object.assign(window, { ogb: {
+  Object.assign(window, { cry: {
     platform: windows ? "win32" : "darwin",
     app: { version: "0.1.130", ownPage: computer },
     getCapabilities: capabilities,
@@ -157,7 +157,7 @@ if (params.has("railpage")) {
     workspaces: {
       state: async () => (computer ? { local: true, name: "This computer" }
         : onTeam ? { local: false, name: teamName, origin: "https://acme.example", color: "purple", role: "Admin" }
-          : { local: false, name: "My Cloud", origin: "https://omb-u-1.fly.dev", color: "blue" }),
+          : { local: false, name: "My Cloud", origin: "https://cry-u-1.fly.dev", color: "blue" }),
       menu: ok, line: async () => null, open: ok, add: ok,
       places: async () => (hidden ? { ...rail, places: [] } : chrome ? { ...rail, places: [], beside: true as const } : rail),
       onChanged: (heard: () => void) => { placesHeard.add(heard); return () => { placesHeard.delete(heard); }; },
@@ -226,7 +226,7 @@ if (params.has("railpage")) {
     bar.setAttribute("aria-hidden", "true");
     const dark = ["midnight", "foundry", "graphite", "dusk", "halloween", "diwali", "aurora"].includes(params.get("skin") ?? "midnight");
     bar.style.cssText = `position:fixed;inset:0 0 auto 0;height:31px;display:flex;align-items:center;z-index:100;font:12px "Segoe UI",sans-serif;padding-left:12px;${dark ? "background:#202020;color:#fff" : "background:#f3f3f3;color:#000"}`;
-    bar.innerHTML = `<span style="flex:1">MausBot</span>${["\u2013", "\u2610", "\u2715"].map((glyph) => `<span style="width:46px;text-align:center">${glyph}</span>`).join("")}`;
+    bar.innerHTML = `<span style="flex:1">CryBot</span>${["\u2013", "\u2610", "\u2715"].map((glyph) => `<span style="width:46px;text-align:center">${glyph}</span>`).join("")}`;
     document.body.append(bar);
     const below = document.createElement("style");
     below.textContent = "html { padding-top: 31px !important; box-sizing: border-box !important; } #root { height: calc(100vh - 31px) !important; }";
