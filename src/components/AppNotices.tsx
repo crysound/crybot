@@ -1,40 +1,36 @@
 import { useEffect, useState } from "react";
 import type { CloudAccountState } from "../../electron/cloud-account-types.mjs";
-import type { CloudOffer } from "../../electron/cloud-home.mjs";
 import { api, useStore } from "@/state/store";
 import { appVersion } from "@/lib/app-links";
 
 import { announcementConditions, announcementPlan, announcementPlatform, announcementSurface, markLaunchAnnouncement, pickAnnouncement, providersRestricted, rememberCardSeen, rememberSponsorDay,
   reportAnnouncement, SPONSOR_CARDS_FOR_TEAM_MEMBERS, useAnnouncementCards, type SeenRecord } from "@/lib/announcements";
 
-
 import { brandStatus } from "@/lib/brand";
-import { buyOfferAllowed, cloudNoticeKind, cloudPlanView, cloudTrialNotice, cloudTrialView, offerTrialDays } from "@/lib/cloud-status";
+import { cloudNoticeKind, cloudPlanView, cloudTrialNotice, cloudTrialView } from "@/lib/cloud-status";
 import { jobRoutine, useCloudIntent } from "@/lib/cloud-intent";
 import { CLOUD_INTENT_GIVEN, cloudSetupStage } from "@/lib/cloud-setup";
 import { cornerPopupWaits, firstChatQuiet, firstReplyPending } from "@/lib/corner-popup";
-import { ANNOUNCEMENT_NOTICE, CLOUD_INTRO, CLOUD_NOTICE, CLOUD_TRIAL_NOTICE, dismissNotice, dismissNotices, GROK_MOVE_NOTICE, introShown, introStage, launchNotice, markLaunchNotice, nextNotice, noticeSeen, PHONE_UPDATE_NOTICE, phoneUpdateHint, SIMPLE_MODE_NOTICE, TWO_PLACES_NOTICE, UPDATES_CONSENT_NOTICE, usedBefore } from "@/lib/notices";
+import { ANNOUNCEMENT_NOTICE, CLOUD_NOTICE, CLOUD_TRIAL_NOTICE, dismissNotice, dismissNotices, GROK_MOVE_NOTICE, launchNotice, markLaunchNotice, nextNotice, noticeSeen, PHONE_UPDATE_NOTICE, phoneUpdateHint, SIMPLE_MODE_NOTICE, TWO_PLACES_NOTICE, UPDATES_CONSENT_NOTICE, usedBefore } from "@/lib/notices";
 import { useTwoPlaces } from "@/lib/two-places";
 import { SIMPLE_ONLY } from "@/lib/simple-only";
 import { useAdvancedBackDue, useNewLookDue } from "@/lib/new-look";
 import { useAdvancedMode } from "@/lib/interface-mode";
 import { useSimpleModePromptSeen } from "@/lib/simple-mode-prompt";
-import { cloudSignInDue, onboardingCloudOffered, welcomeFinishedThisLaunch, type WelcomeViewer } from "@/lib/onboarding";
+import { cloudSignInDue, welcomeFinishedThisLaunch, type WelcomeViewer } from "@/lib/onboarding";
 import { launchDialogShown, markLaunchDialog } from "@/lib/launch-dialogs";
 import { useUpdaterState } from "@/lib/updater";
 import { phonePairingSettingsAction } from "@/lib/phone-pairing";
-import { activeLocale, t } from "@/lib/i18n";
+import { activeLocale } from "@/lib/i18n";
 import { AnnouncementCard, announcementPlaceAction } from "./AnnouncementCard";
 
 import { engineReady } from "./EngineLibrary";
 
 import { CLOUD_NOTICE_CARD, cloudNoticeStep, CloudNoticeCard } from "./CloudNotice";
-import { CloudTrialIntroCard } from "./CloudTrialIntro";
 import { useMoveQuiet } from "./CloudSendStrip";
 import { CloudTrialNoticeCard, useCloudPlanSnapshot } from "./CloudTrialNotice";
 import { GrokMovePopup, reportGrokMovePopup, type GrokMovePopupAction } from "./GrokMovePopup";
 import { GrokMoveDialog } from "./lazy-screens";
-import { NoticeToast } from "./NoticeCard";
 import { useDesktopNotices, useOtherDialogOpen } from "./notice-dialogs";
 import { localDesktopPage } from "./onboarding/WelcomeGate";
 import { UpdatesConsentDialog, updatesConsentBridge, useUpdatesConsent } from "./UpdatesConsent";
@@ -43,10 +39,6 @@ import { NewLookNotice, reportNewLook } from "./NewLookNotice";
 import { PhoneUpdateCard, phonesToTell, useRetiredLinkPhones } from "./PhoneUpdateNotice";
 import { reportSimpleModePrompt, SimpleModePrompt } from "./SimpleModePrompt";
 import { TwoPlacesCard } from "./TwoPlacesCard";
-
-
-
-
 
 const trialKey = (trial: { state: string; endsAt: number }) => `${trial.state}:${trial.endsAt}`;
 /** A first run lands in its Chief's chat, whose first messages arrive one at a time; the Grok Bot popup follows them. */
@@ -63,16 +55,12 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   const planBridge = !remote && (bridge || (viewer?.cloudHome && (desktopState || !desktop))) ? window.cry?.cloudPlan : undefined;
   const [account, setAccount] = useState<CloudAccountState | null>(null);
   const plan = useCloudPlanSnapshot(planBridge);
-  const [offer, setOffer] = useState<CloudOffer | null | undefined>(undefined);
   const [organization, setOrganization] = useState<boolean | null>(window.cry?.organization ? null : false);
   const [closed, setClosed] = useState(false);
-  const [introOpen, setIntroOpen] = useState(false);
   const [trialOpen, setTrialOpen] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [simpleShown, setSimpleShown] = useState(false);
-
 
   const [announcementShown, setAnnouncementShown] = useState<string | null>(null);
   const [grokShown, setGrokShown] = useState(false);
@@ -108,18 +96,7 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   }, []);
   const view = bridge ? cloudPlanView(account) : null;
   const record = state.config?.onboarding;
-  const introAllowed = Boolean(bridge) && brandStatus().source !== "file" && organization !== true && !onboardingCloudOffered(record);
-  const stage = introStage(record, now());
   const trialDue = cloudTrialNotice(plan);
-  const wantOffer = Boolean(bridge?.offer) && introAllowed && view !== null && buyOfferAllowed(view) && stage !== "done";
-  const offerKey = wantOffer ? `${view?.kind}:${JSON.stringify(account?.offer ?? null)}` : null;
-  useEffect(() => {
-    if (!offerKey || !bridge?.offer) return;
-    let active = true;
-    const answer = (next: CloudOffer | null) => { if (active) { setOffer(next);  } };
-    void bridge.offer().then(answer, () => answer(null));
-    return () => { active = false; };
-  }, [offerKey, bridge]);
   const consentDue = consent.state?.available === true && consent.state.due && !consentDone;
   const consentBlocked = useOtherDialogOpen(consentDue) || Boolean(state.liveCall && state.liveCall.status !== "ended");
   const consentFact = !consentHere || consentDone ? false : consent.state === undefined ? null : consentDue ? (consentBlocked ? null : true) : false;
@@ -133,24 +110,14 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   // A sponsor's card is for whoever chooses a team's providers: its Owner and Admins, never its members.
   const sponsorsHere = SPONSOR_CARDS_FOR_TEAM_MEMBERS || !state.config?.team || viewer?.canSave === true;
 
-
-
   const trial = plan?.trial;
   const key = trial ? trialKey(trial) : null;
   const setupRecord = record && (intent.pending || intent.sent) ? { ...record, hintsSeen: [...record.hintsSeen, CLOUD_INTENT_GIVEN] } : record;
   const setupHere = cloudSignInDue(viewer, state, engineReady)
     || ["waiting", "shown"].includes(cloudSetupStage({ viewer, connected: state.connected, enginesKnown: state.instances.length > 0,
       engineReady: state.instances.some(engineReady), onboarding: setupRecord, planned: Boolean(jobRoutine(state.routines, intent.sent)) }));
-  const waits = cornerPopupWaits(state, updater, { quiet, idle: true, viewer, duringFirstChat: true }) || Boolean(state.cloudAdd) || state.cloudHowTo || setupHere;
+  const waits = cornerPopupWaits(state, updater, { quiet, idle: true, viewer, duringFirstChat: true }) || setupHere;
   const kind = view ? cloudNoticeKind(view, account) : null;
-  const introDue = (): boolean | null => {
-    if (!introAllowed || !view) return false;
-    if (view.kind === "unknown" || view.kind === "connecting" || organization === null) return null;
-    if (!buyOfferAllowed(view) || !usedBefore(state.bots)) return false;
-    if (offer === undefined) return null;
-    if (offerTrialDays(offer) === null) return false;
-    return introOpen || stage === "due" ? true : null;
-  };
   const cards = Boolean(bridge || planBridge);
   // Promotions never land on a new install's first chat: they wait for its first reply, and the full-screen What's new popup
   // also for a launch after the one whose welcome just finished. Account and billing notices keep their own rules.
@@ -211,16 +178,13 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
     [UPDATES_CONSENT_NOTICE]: consentNow,
     [TWO_PLACES_NOTICE]: twoFact,
 
-    [CLOUD_INTRO]: moving ? false : moving === null ? null : introDue(),
     [CLOUD_TRIAL_NOTICE]: planBridge && plan === null ? null : Boolean(key && (trialDue || trialOpen === key)),
     [CLOUD_NOTICE]: !view ? false : view.kind === "unknown" ? null
       : Boolean(kind && !noticeSeen(record, CLOUD_NOTICE_CARD[kind].dismissed)),
 
-
     [ANNOUNCEMENT_NOTICE]: announcementNow,
 
-  }, id => id === CLOUD_INTRO ? stage === "done" && !introOpen
-    : false, launch, closed) : null;
+  }, () => false, launch, closed) : null;
 
   const shownKey = notice === CLOUD_TRIAL_NOTICE ? key : notice === ANNOUNCEMENT_NOTICE ? `${notice}:${announcement?.id}` : notice;
   useEffect(() => {
@@ -228,12 +192,7 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
     markLaunchNotice(notice);
     // The popups and the question own this launch: CryBot's first-launch card waits for a later one.
     if (shownKey === GROK_MOVE_NOTICE || shownKey === SIMPLE_MODE_NOTICE || shownKey === UPDATES_CONSENT_NOTICE) markLaunchDialog("notices");
-    if (shownKey === CLOUD_INTRO) {
-      setIntroOpen(true);
-
-      const patch = introShown(record, now());
-      if (patch) void api("/api/config", { method: "PUT", body: JSON.stringify(patch) }).then(config => dispatch({ type: "configStatus", config })).catch(() => {});
-    } else if (notice === CLOUD_TRIAL_NOTICE && trialOpen !== shownKey) {
+    if (notice === CLOUD_TRIAL_NOTICE && trialOpen !== shownKey) {
       setTrialOpen(shownKey);
       void planBridge?.noticeSeen?.().catch(() => {});
     } else if (shownKey === SIMPLE_MODE_NOTICE && !simpleShown) {
@@ -258,7 +217,6 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   };
   const close = () => { setClosed(true); setTrialOpen(null); setFailed(false); };
   if (grokOpen) return <GrokMoveDialog onClose={() => setGrokOpen(false)} />;
-  if (toast) return <NoticeToast text={toast} onDone={() => setToast(null)} />;
   if (!notice) return null;
 
   if (notice === GROK_MOVE_NOTICE) {
@@ -286,15 +244,6 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
       onYes={async email => { await consent.choose("opted_in", email); done(); }}
       onNo={() => { done(); void consent.choose("declined").catch(() => {}); }} />;
   }
-  if (notice === CLOUD_INTRO && offer) {
-    const done = (_action: string) => {  close(); save(CLOUD_INTRO); };
-    return <CloudTrialIntroCard offer={offer}
-      onStart={() => { done("start"); dispatch({ type: "openCloudAdd", source: "app_card" }); }}
-      onHowTo={() => { done("howto"); dispatch({ type: "cloudHowTo", open: true }); }}
-      onSignIn={view?.kind === "signed-out" ? () => {  close(); dispatch({ type: "openCloudAdd", source: "app_card", signIn: true }); } : undefined}
-      onNotNow={() => { done("not_now"); setToast(t("cloudIntro.later")); }}
-      onDismiss={() => { done("close"); setToast(t("cloudIntro.later")); }} />;
-  }
   if (notice === CLOUD_TRIAL_NOTICE && trial) {
     const shown = cloudTrialView(trial, plan?.credit);
     const act = () => { setFailed(false); void planBridge?.manage().then(close, () => setFailed(true)); };
@@ -314,15 +263,11 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
       onBring={() => {  return two.accept(key).then(close); }}
       onDismiss={() => {  two.dismiss(key); close(); }} />;
   }
-  {}
-  {}
-  {}
   if (notice === ANNOUNCEMENT_NOTICE && announcement) {
     const done = (action: "primary" | "secondary" | "close") => {
       reportAnnouncement(announcement, action); close(); rememberCardSeen(seenRecord, announcement.id, remembering);
     };
     return <AnnouncementCard key={announcement.id} card={announcement} onDone={done} open={place => dispatch(announcementPlaceAction(place))} />;
   }
-  {}
   return null;
 }

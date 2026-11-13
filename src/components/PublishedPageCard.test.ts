@@ -17,7 +17,7 @@ import { StoreContext } from "@/state/store";
 import { usePanelPage, type PanelPage } from "@/lib/page-open";
 import { PublishedPageCard } from "./PublishedPageCard";
 
-const URL = "https://server.example.test/";
+const URL = "https://abcdefghijklmnopqrstuvwxyz.crybot.page/";
 const page = (card: Message["publishedPage"]): Message => ({ id: "m1", at: 1, role: "bot", kind: "text", text: "fallback", publishedPage: card });
 const live = page({ state: "live", title: "Bake sale", pageId: "abcdefghijklmnopqrstuvwxyz", url: URL, usage: { pages: 3, limit: 5 } });
 /** The app's state with Pepper's chat open; Pepper's browser is on and installed. */
@@ -107,14 +107,14 @@ describe("a published page's card", () => {
     } finally { root.unmount(); }
   });
 
-  it("at the free limit, says so in the person's words and opens the app's Get Cloud flow", () => {
+  it("at the free limit, explains usage without a hosted purchase entry even with an old bridge", () => {
     desktop({ cloudAccount: {} });
     const { container, root } = render(page({ state: "limit", title: "Bake sale", plan: "free", upgrade: true, usage: { pages: 5, limit: 5 }, message: "server words" }));
     try {
-      expect(container.textContent).toContain("You’ve used your 5 free pages. CryBot Cloud gives you more, and pages without the badge.");
+      expect(container.textContent).toContain("You’ve used your 5 free pages. Cry Bot Cloud gives you more, and pages without the badge.");
       expect(container.textContent).toContain("5 of 5 pages");
-      container.querySelector("button")!.click();
-      expect(dispatch).toHaveBeenCalledWith({ type: "openCloudAdd", source: "app_pages" });
+      expect(container.querySelectorAll("button")).toHaveLength(0);
+      expect(dispatch).not.toHaveBeenCalled();
     } finally { root.unmount(); }
   });
 

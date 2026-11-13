@@ -5,7 +5,6 @@ import { activeLocale, t } from "@/lib/i18n";
 import { meterAmounts, meterLabel, meterPercent, resetLine } from "@/lib/usage-meter";
 import { CloudCancelSheet, endedLine, type CloudRenewalActions } from "../CloudCancelPlan";
 import { MeterBar, UpgradeButton, type UpgradeUi } from "../CloudUsageMeter";
-import { ProCompareRow } from "../ProIntroduction";
 import { SettingRow, SettingsGroup, SettingsRows } from "../SettingsPrimitives";
 import { fetchTraces, formatCost, usagePeriodRange } from "@/lib/usage-trace";
 
@@ -98,7 +97,6 @@ export function planLayout({ title, subtitle, message, primary, usage, upgrade, 
     <SettingsGroup label={t("settings.simple.billing.plan")} block="plan" footnote={footnote}>
       <SettingsRows>
         <SettingRow title={title} subtitle={subtitle} message={message || undefined}>{primary ?? null}</SettingRow>
-        <ProCompareRow />
         {links}
         {extra}
         {cancel}

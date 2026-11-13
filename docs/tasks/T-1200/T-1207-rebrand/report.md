@@ -286,3 +286,129 @@ pnpm vitest run shared/package-format.test.ts --maxWorkers=2 --configLoader runn
 本轮删/改用例及理由：Cloud 购买入口相关 HomeScreen checkout/payment/buy 测试改断言没有动作；organization:reopen 的托管客户端转发断言改为 disabled；hosted Cloud link 的旧启动断言改为 disabled。以上均为已删除托管接线。备份 IPC、确认框及本地主窗口边界用例均保留并修复 fixture/产品代码。
 
 验证：相关 Electron 6 文件 6 个测试文件通过；`pnpm -s typecheck` 通过；`pnpm -s lint` 通过；`node scripts/check-brand-residue.mjs` 8082 files checked, 0 forbidden references。`pnpm -s build` 首次被共享只读 node_modules 的 Vite 缓存目录拒绝，随后改用 /tmp 可写依赖覆盖运行，构建进入 Vite 但在沙箱中长时间无输出，未能取得退出数字。Electron 全量仍在运行，结果写入 `/tmp/r7-electron-full.log`，完成后由协调者复核；基线新增名单中其余已有失败未处理。
+
+
+# 第 8 轮
+
+基于 HEAD `e15b15c` 修改；未提交。保留用户已有的 `r8.md`。
+
+## 已改
+
+1. **新手引导不再提供托管入口。** `src/lib/default-bot.ts:90`、`:103` 从两个类型和两个引导列表删除 cloud 项；`src/components/HelperSetup.tsx:14` 删除图标、标签、动作分支。`HelperIntro.test.ts:211` 覆盖本机新用户在 Simple / Advanced 两种模式下的实际渲染列表，均没有 Cloud 按钮。
+2. **删除悬空状态和路由。** `src/state/store.tsx` 删除 cloudAdd 的状态、初值、打开/关闭 action 和 reducer；一并删除 cloudHowTo 的状态及 action。`src/App.tsx:118`、`:286`、`electron/preload.cjs:37`、`src/types/cry.d.ts` 删除 cloud-add / cloud-add-howto 路由和桥接类型。`src/components/AppNotices.tsx:119` 的 waits 不再依赖上述状态。`src/App.settings-links.test.ts:65` 断言真实 initialState 不含这两个字段；`AppNotices.test.ts:180` 验证没有托管桥接/状态时 Simple mode 能显示。
+3. **清点其余入口并删除。** `PublishedPageCard.tsx`、`app/PageTools.tsx` 删除增加页数的购买按钮；`ProIntroduction.tsx` 删除购买/登录卡、行和比较入口，仅保留仍被共享组件使用的 useCloudPlan；`settings/plan-parts.tsx` 删除其比较行。`RoutineScheduleNote.tsx` 删除 add-cloud 分支，保留本地/服务器说明及已有目标打开前的确认。`AppNotices.tsx` 删除托管试用推广卡的入口、offer 请求及队列状态；`CloudHowTo.tsx` 整个删除，Sidebar、SidebarFooter、sidebar-state、DesktopWorkspaceSwitcher 同步删除引导接线。主进程删除同名托管添加空函数及 rail 回调中的调用，不补空桥。
+4. **清理专用文案。** 各 locale 删除 cloudHowTo 的 4 个键、两个 helperIntro Cloud 按钮键、routines.scheduleNote.addCloud；使用 `node scripts/generate-locale.mjs --record-hashes` 更新 hashes：补录 0、删除 94 条。`settings/closed-scale.test.ts` 删除已消失的 Pro UI 对应样式债务计数。
+5. **主进程两个小修。** `electron/main.mjs:2315`、`:2316` 的 request-code / verify-code 返回 `hostedDisabledState`，形状为 `{ available: false, status: "unavailable", message: "disabled" }`；`:2446` 的账户切换改为 `accountRing()?.switchTo(id)`。
+
+## 恢复的测试
+
+三个文件均先通过 `git show d383696:<路径>` 原样取回，再做下述调整；没有跳过用例。
+
+| 文件 | 基线顶层用例 | 本轮顶层用例 | 最终结果 |
+| --- | ---: | ---: | --- |
+| `electron/app-permissions.node-test.mjs` | 34 | 34 | 34 通过 |
+| `electron/updates-consent.node-test.mjs` | 26 | 26 | 26 通过；展开嵌套子用例共 53 通过 |
+| `src/components/AppNotices.test.ts` | 85 | 63 | 保留 61、删除 24 个已下线托管推广用例、新增 2；63 全通过 |
+
+- app-permissions 的本地/远程权限、外链、剪贴板、通知、发送方和 fail-closed 断言均保留。依赖旧 account 客户端的 fixture 改为文件内的账户状态 fixture；仍由真实 appPermissionHandlers、myCloudOrigin、rememberedCloudHome 决定权限，不在 fixture 里返回权限结论。
+- updates-consent 的 **26 个测试体和原断言全部保留**。只替换 world fixture：删除已移除的账户客户端与其 OTP/HTTP 接线，用隔离内存 transport 模拟账户状态、回执、错误和暂停/释放响应。真实 createUpdatesConsent / desktop-prefs / IPC 注册仍被执行；“不可用时什么都不问不发”和发送方拒绝边界原样保留，无网络或真实用户数据依赖。
+- AppNotices 改用 `cloud-account-types` 类型。真实 preload、desktop-prefs、updates-consent 仍参与测试；已移除的桥接仅在测试 fixture 内按 local/cloud/server 页面模拟。默认无外部公告；需要公告的用例注入隔离 feed。所有 bot 移动用例原样保留，特别是确认后才移动、Cancel 不动、Escape 不动；未改其断言。
+- 本轮给出的基线 app-permissions 为 33/34 通过，原失败名为 **the app installs these handlers, with its one rule for My Cloud and a wait for the saved sign-in**。该用例包含的权限接线断言仍保留，只将托管启动断言改为当前 disabled 生命周期，本轮通过。没有声称在沙箱内重跑了整套历史基线。
+
+## Electron 用例的逐条变更
+
+1. **the app installs these handlers, with its one rule for My Cloud and a wait for the saved sign-in** → **the app installs these handlers with its one origin rule and hosted sign-in disabled**：保留 permission handlers、IPC、origin、恢复等待等全部安全接线断言；仅替换“启动已删除账户客户端”的断言，要求启动 promise 为已完成状态。主进程不初始化托管客户端另由既有 hosted-disabled 测试覆盖。
+2. **after the sign-in has ended or expired, the same account's Cloud keeps the microphone until sign-out**：仅移除已删除账户模块的 `cloudPlanSnapshot(...).status === "signin"` 套餐展示断言；失效、过期、退出前后的所有麦克风/账户状态断言不变。
+
+其他 32 个 app-permissions 测试体和所有 updates-consent 测试体未修改；0 个 Electron 用例删除。
+
+## AppNotices 删除用例逐条说明
+
+以下均针对已删除的托管试用推广卡或托管 Cloud/Team What's new 营销弹窗，不是本地 bot 移动、通知发送方或权限边界。通用通知互斥、首轮安静期、关闭持久化仍由保留的 Grok/Simple/公告用例覆盖。
+
+1. **offers the free trial to someone signed out who has used the app before, in the Admin's numbers, with Start free trial and Show me how**：托管试用 offer、价格和 Start free trial 入口已删除。
+2. **needs a trial: without one it waits (the star may show), and without money-back from the Admin it says none**：托管试用/退款展示条件已删除。
+3. **never to someone new this launch, who pays or may pay, on a branded build, or a desktop signed in with an organization**：已删除托管推广卡的受众筛选。
+4. **Start free trial opens the Add a Cloud dialog from the card, and the card is done for good**：目标 Add a Cloud 弹窗及动作已删除。
+5. **Show me how starts the one-step tip; Not now, the X and Escape end it for good, then say where Add a Cloud lives**：托管购买引导和购买位置 toast 已删除。
+6. **Sign in to your Cloud plan opens the sheet at its own sign-in and only hides the card for now**：已删除托管账户登录入口。
+7. **shows on at most three days, or one for someone who closed the earlier Pro card**：已删除托管试用推广卡的展示频次。
+8. **never after the welcome's Cloud step, which was this desktop's Cloud offer however it was answered**：已删除托管 Cloud onboarding offer 及后续推广卡。
+9. **never over setup, a dialog, the Add a Cloud dialog or its tip, busy work, or an update being offered**：已删除托管试用卡及其购买弹窗/引导的互斥；本地提示互斥用例仍保留。
+10. **no Cloud plan: once, before every other card, a modal with the new Cloud then Team in the Admin's numbers; Get Pro opens Add a Cloud with its tag**：已删除托管 Cloud/Team 购买营销弹窗及 Get Pro 入口。
+11. **Next shows the Team slide, Back the new Cloud again, each step counted**：已删除托管营销弹窗的 Cloud/Team 两张幻灯片。
+12. **See the new Cloud and Start a Team open the Cloud website with their slide's tag, and end it for good**：已删除托管购买网站 CTA。
+13. **a Cloud plan of one's own, in no team: the Team slide alone**：已删除根据托管订阅展示 Team 幻灯片的逻辑。
+14. **nothing for anyone in a team, owner or member, nor while a payment is linked or needs attention or a checkout is open; the cards after it show**：已删除托管团队、支付、checkout 对购买营销弹窗的筛选。
+15. **a slide the Admin doesn't sell is left out; neither sold, or the Cloud unreachable, waits for a later launch and lets the other cards show**：已删除根据 Admin 销售套餐决定营销幻灯片的逻辑。
+16. **one promo a launch: What's new first; Boat's credit offer waits for the next launch, a reload in this one included**：已删除托管购买营销弹窗及内置 Boat 推广；本地通知排序另有保留用例。
+17. **a new install sees it once onboarding is done and a bot has answered, in a later launch than the welcome's, after CryBot's card**：已删除托管 Cloud 营销活动的首次展示规则；本地首轮/首答门槛仍有覆盖。
+18. **claims the launch for the popups, so CryBot's card waits for a later one**：已删除托管 Cloud 营销弹窗的 launch 占位；保留本地 Grok/Simple 占位用例。
+19. **never during a bot's turn, a room's work, another dialog, a call, Settings, adding a Cloud or an update; it waits and comes back**：已删除托管 Cloud 营销弹窗及购买状态；保留 Simple/Grok 的忙碌、设置、通话、其他弹窗互斥用例。
+20. **Not now, the X, Escape and a click outside end it for good on this computer and in the workspace**：已删除托管 Cloud 营销弹窗的关闭持久化；保留本地 Grok 的 Not now/X/Escape 和公告关闭持久化。
+21. **closed on another port or in another browser on this workspace, it stays closed; the desktop learns an earlier close**：已删除托管营销 campaign 的跨端关闭记录；保留本地通知的 desktop/workspace/browser 记录测试。
+22. **a first run on this computer leaves it for a later launch: everyone who installs sees it once**：已删除托管营销 campaign 的首次安装推迟逻辑；保留本地 Simple 首次启动安静期。
+23. **a new campaign id shows it once more to someone who closed an earlier one**：已删除托管套餐营销 campaign 切换；保留公告按 id 去重的用例。
+24. **never in a remote client's window, on My Cloud's or a saved server's page, on a branded build, a desktop an organization runs, or one that sells no Cloud**：已删除托管购买营销活动的页面/组织/套餐受众筛选。
+
+## AppNotices 保留用例的适配（逐条）
+
+以下改动均保留本地行为断言，替换已删除的推广依赖或同步品牌文字：
+
+1. **an ended sign-in on a paid plan asks to sign in again; the star comes last and is for good**：账户重新登录断言保留；已删除的评分卡改为本地公告，仍验证后续提示及关闭后的持久化。
+2. **comes after What's new, never with it, and right after it closes; No thanks is kept and it is never asked again**：前置弹窗改为现存 Simple mode，点击 Done；同意问题的显示、拒绝后持久化、不发送邮件等断言保留。
+3. **waits for a new install's first reply and for a launch after the one whose welcome finished, then keeps its place after What's new**：前置托管营销弹窗换为 Simple mode；仍覆盖首次回复和跨 launch 门槛及关闭后提问。
+4. **the page never asks main for one, whatever an older main would answer, and the cards go on as before**：评分卡换为本地公告；仍断言本机和远程页面都不请求旧 Use my Mac 桥接。
+5. **is one popup at a time: it comes before What's new, which waits for a later launch**：后续托管营销弹窗换为本地公告；验证 Simple 关闭前不共显、关闭后公告按当前 FOLLOWERS 规则显示、后续 launch 不重现 Simple。
+6. **follows the built-in sponsor card in its launch once that closes, never beside it**：已删除内置 sponsor 换为本地 Simple 弹窗；仍验证公告不并排、关闭后显示、前置提示保有 launch 标记。
+7. **follows a closed What's new in the same launch, then no other remote card that launch**：前置托管营销弹窗换为 Simple mode；保留同次 launch 只显示一条远程公告、重载不越过限制、下一 launch 显示下一条的断言。
+8. **a card left up keeps the corner: a card that arrives meanwhile waits for it to close**：已删除评分卡换为现存手机更新提示；保留新公告到达时不能抢占角落、关闭原提示后才显示的断言。
+9. **shows once this computer's link ended and a paired phone has an older app: the phone, what to do, Open Phone & devices and Not now**：静态品牌文案 CryBot 改为 Cry Bot；设备、入口、launch 标记断言不变。
+10. **names how many phones when more than one has an older app**：仅同步 Cry Bot 文案。
+11. **shows on a branded build too, as Settings → Phone & devices explains it there**：共享 TITLE 常量同步 Cry Bot，品牌构建仍显示提示的断言不变。
+12. **is a notice to act on: ahead of the sponsor's card, which follows once it is closed, and behind the Grok Bot popup**：已删除内置 sponsor 换为本地公告；保留手机提示先于公告、晚于 Grok 的排序断言。
+13. **waits while it can't tell yet, and over a live call**：后续内置 sponsor 换为本地公告 fixture，TITLE 同步品牌；仍检查设备查询未完成和 live call 时不显示。
+
+新增 2 条：**shows Simple mode for a local user without a hosted entry or modal state**；**never offers a hosted trial even if an older desktop supplies an account bridge**。分别覆盖无托管状态时本地提示可显示，以及旧桥存在也不能复活托管试用入口。
+
+## 其他相关测试适配
+
+- `src/components/HelperIntro.test.ts` — **draws its lines and follow-up as the chat's own bubbles, with chips for only what is missing**：删除 Cloud 按钮/派发期望，其他本地引导断言保留；其中旧 Try Cloud 用例改为双模式无托管入口的渲染回归。
+- `src/components/HelperIntro.test.ts` — **shows three chips at most, AI first, and one tapped makes room for the next**：删除 Cloud 按钮/派发期望，其他本地引导断言保留；其中旧 Try Cloud 用例改为双模式无托管入口的渲染回归。
+- `src/components/HelperIntro.test.ts` — **counts Try Cloud as the first run's Cloud moment, then opens Add a Cloud** → **a local new user has no hosted Cloud entry in either onboarding list**：删除 Cloud 按钮/派发期望，其他本地引导断言保留；其中旧 Try Cloud 用例改为双模式无托管入口的渲染回归。
+- `src/components/HelperIntro.test.ts` — **opens the app's own flow for each chip**：删除 Cloud 按钮/派发期望，其他本地引导断言保留；其中旧 Try Cloud 用例改为双模式无托管入口的渲染回归。
+- `src/components/HelperIntro.test.ts` — **arrives part by part: three lines, the bot typing, its follow-up (written once by the server), then the chips**：删除 Cloud 按钮/派发期望，其他本地引导断言保留；其中旧 Try Cloud 用例改为双模式无托管入口的渲染回归。
+- `src/components/HelperIntro.test.ts` — **shows everything at once with reduced motion, and says what it saw itself when the server can't save it**：删除 Cloud 按钮/派发期望，其他本地引导断言保留；其中旧 Try Cloud 用例改为双模式无托管入口的渲染回归。
+- `src/components/HelperIntro.test.ts` — **is the one bubble it always was: who it is, the setup still to do, and asks**：删除 Cloud 按钮/派发期望，其他本地引导断言保留；其中旧 Try Cloud 用例改为双模式无托管入口的渲染回归。
+- `src/components/HelperIntro.test.ts` — **opens the app's own flow for each setup step**：删除 Cloud 按钮/派发期望，其他本地引导断言保留；其中旧 Try Cloud 用例改为双模式无托管入口的渲染回归。
+- `src/lib/default-bot.test.ts` — **in Advanced mode, as on a new install before: an AI, bots, apps, the phone and the Cloud**：列表期望删除 cloud，保留 AI、app、phone、import 等条件。
+- `src/lib/default-bot.test.ts` — **in Simple mode, chips for only what its look around found missing, in order: AI, apps, skills, phone, Cloud**：列表期望删除 cloud，保留 AI、app、phone、import 等条件。
+- `src/components/PublishedPageCard.test.ts` — **at the free limit, says so in the person's words and opens the app's Get Cloud flow** → **at the free limit, explains usage without a hosted purchase entry even with an old bridge**：购买入口断言改为即使旧 bridge 存在也无按钮、不派发；使用当前 Cry Bot 文案。
+- `src/components/RoutineScheduleNote.test.ts` — **My Cloud runs it 24/7; another server, a browser or companion mode while that server runs**：移除购买入口和 offersAllowed 参数，保留已有目标及本地/服务器行为断言。
+- `src/components/RoutineScheduleNote.test.ts` — **This computer: Add a Cloud for someone who may buy where it is offered, Open the Cloud once it is ready, else the note alone** → **This computer: never offers a hosted purchase; an existing ready Cloud can still be opened**：移除购买入口和 offersAllowed 参数，保留已有目标及本地/服务器行为断言。
+- `src/components/DesktopWorkspaceSwitcher.test.ts` — **is the Show me how tip's anchor, and opens the menu as reached from the tip only while the tip is up** → **keeps the server switcher available in every sidebar layout**：已删除 how-to 接线，保留各 sidebar 布局下的服务器切换器断言。
+- `src/components/onboarding/WelcomeFlow.test.ts` — **is two screens with an AI already working: Next, then Create, and it lands in the Chief's chat**：仅将 Meet CryBot / shared CryBot 的旧文案期望同步为 Cry Bot。
+- `src/components/onboarding/WelcomeFlow.test.ts` — **keeps the screen's shape: the pill signs in, and the line under it offers other ways or later**：仅将 Meet CryBot / shared CryBot 的旧文案期望同步为 Cry Bot。
+- `src/components/onboarding/WelcomeFlow.test.ts` — **opens every other way in the Connect an AI dialog, where OpenCode's free model is only a backup**：仅将 Meet CryBot / shared CryBot 的旧文案期望同步为 Cry Bot。
+- `src/components/onboarding/WelcomeFlow.test.ts` — **moves on with Escape, and Enter presses the pill, never past an AI still to connect**：仅将 Meet CryBot / shared CryBot 的旧文案期望同步为 Cry Bot。
+- `src/components/onboarding/WelcomeFlow.test.ts` — **gives a hosted place's admin the first screen only, then the chat**：仅将 Meet CryBot / shared CryBot 的旧文案期望同步为 Cry Bot。
+
+- `PublishedPageCard.test.ts` 的共享 URL fixture 改为 `https://abcdefghijklmnopqrstuvwxyz.crybot.page/`：原 `server.example.test` 不满足现存 `isPublishedPageUrl` 合约，无法测试浏览器面板打开；保留原来的面板、外链、无消息派发断言。
+- `onboarding/WelcomeFlow.test.ts` 删除共享 fixture 的 cloudAdd 字段，16 条用例全部保留；5 个旧品牌文字失败已同步期望，没有改产品逻辑。
+- `App.settings-links.test.ts` 新增 **the local store has no hosted modal state**，原设置/手机深链接用例保留。
+- `settings/closed-scale.test.ts` 仅删除已移除 Pro UI 对应的样式债务条目，不删除用例。
+- 删除 `CloudHowTo.test.ts` 的 3 个用例，因专用托管购买指引组件已删除：**finds the menu button on screen, below it in a full sidebar and beside it in the icons-only one**（仅该指引使用的定位函数）；**one step on the menu that keeps Add a Cloud, with Skip; nothing when not asked for**（已删除购买引导）；**with the menu off screen, the dialog opens instead and says where the menu is for next time**（已删除购买弹窗回退入口）。服务器切换器本身的布局和本地/远程显示用例仍在。
+
+## 验证
+
+所有重命令串行执行，未用 systemd-run；未跑 build、全量 vitest 或全量 Electron。日志写入 `/tmp`，只读取摘要和匹配行。TypeScript 堆上限 3072 MiB，vitest 每 worker 堆上限 2048 MiB、最多 2 workers。
+
+- `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm -s typecheck`：退出 0，`/tmp/r8-typecheck-final.log`。
+- 同样环境下 `pnpm -s lint`：退出 0，`/tmp/r8-lint.log`。
+- 用户指定的 `node --test --test-concurrency=2 electron/app-permissions.node-test.mjs electron/updates-consent.node-test.mjs`：退出 0，两文件通过，`/tmp/r8-node-final.log`。当前进程隔离模式的摘要仅输出文件数，因此另以 Node 24 `--test-isolation=none` 展开计数：**87 通过、0 失败、0 skip**，`/tmp/r8-node-cases.log`（34 权限 + 53 更新同意，后者含子用例）。
+- 定向 vitest：**9 文件、208 用例全部通过**，`/tmp/r8-vitest-final.log`。文件为 AppNotices、HelperIntro、default-bot、PublishedPageCard、RoutineScheduleNote、App.settings-links、DesktopWorkspaceSwitcher、settings/closed-scale、onboarding/WelcomeFlow。命令为 `pnpm exec vitest run <上述路径> --maxWorkers=2 --configLoader runner`；runner 避免向只读 node_modules 写配置缓存。
+- 额外 preload/托管关闭回归：`node --test --test-concurrency=2 electron/hosted-disabled.node-test.mjs electron/preload.node-test.mjs electron/preload-contract.node-test.mjs` 退出 0，三文件通过，`/tmp/r8-preload-final.log`。首次非隔离合跑因两份 preload fixture 共用 require cache 导致 13 个失败；改回测试原本要求的进程隔离后全过，没有改测试或放宽断言。
+- `docs/verification/README.md` 在当前 checkout 和 d383696 中均不存在。本轮使用隔离的内存/DOM/VM fixture，不连接用户实时应用或数据；未作服务端/真实会话端到端验收声明。
+- 最终品牌扫描、要求的 git grep 和 diff 检查结果见下方最终扫描记录。
+
+最终扫描记录：`node scripts/check-brand-residue.mjs` 检查 **8299 files，0 forbidden references**（`/tmp/r8-brand.log`）；指定 `git grep 'CONTROL_PLANE_URL\|cloud-buy\|cloudBuy\|ensureCloudAccount\|openCloudAdd' -- . ':!docs'` **零命中**（退出 1，`/tmp/r8-residue.log` 空）。另检查尚未跟踪的三个恢复测试文件，同样零命中。`git diff --check` 通过。

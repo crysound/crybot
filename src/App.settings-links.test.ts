@@ -61,3 +61,8 @@ it("main's request for the phone page opens the phone pairing, as the phone link
     expect(settingsOpened()).toEqual([{ type: "toggleAppSettings", open: true, section: "phone", phonePairing: true }]);
   } finally { linked(); }
 });
+
+it("the local store has no hosted modal state", () => {
+  expect(initialState).not.toHaveProperty("cloudAdd");
+  expect(initialState).not.toHaveProperty("cloudHowTo");
+});

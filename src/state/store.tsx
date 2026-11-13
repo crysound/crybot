@@ -568,8 +568,6 @@ export interface AppState {
   appSettingsCloudLink: number;
   appSettingsPhonePairing: number;
   shortcutsOpen: boolean;
-  cloudAdd: { source: import("@/lib/cloud-status").CloudSource; signIn?: true } | null;
-  cloudHowTo: boolean;
   welcomeOpen: boolean;
   tourOpen: boolean;
   botSettingsSection: BotSettingsSection;
@@ -774,9 +772,6 @@ export type Action =
   | { type: "unreadDividerDone"; threadId: string }
   | { type: "toggleAppSettings"; open?: boolean; section?: AppSettingsSection; cloudLink?: boolean; phonePairing?: boolean }
   | { type: "toggleShortcuts"; open?: boolean }
-  | { type: "openCloudAdd"; source: import("@/lib/cloud-status").CloudSource; signIn?: true }
-  | { type: "closeCloudAdd" }
-  | { type: "cloudHowTo"; open: boolean }
   | { type: "toggleWelcome"; open?: boolean }
   | { type: "toggleTour"; open?: boolean }
   | {
@@ -1533,12 +1528,6 @@ export function reducer(state: AppState, action: Action): AppState {
         shortcutsOpen: open,
       };
     }
-    case "openCloudAdd":
-      return { ...state, cloudAdd: state.cloudAdd ?? { source: action.source, ...(action.signIn ? { signIn: true as const } : {}) }, cloudHowTo: false };
-    case "closeCloudAdd":
-      return state.cloudAdd ? { ...state, cloudAdd: null } : state;
-    case "cloudHowTo":
-      return state.cloudHowTo === action.open ? state : { ...state, cloudHowTo: action.open };
     case "toggleTour": {
       const open = action.open ?? !state.tourOpen;
       return { ...state, tourOpen: open, appSettingsOpen: open ? false : state.appSettingsOpen };
@@ -1865,8 +1854,6 @@ export const initialState: AppState = {
   appSettingsCloudLink: 0,
   appSettingsPhonePairing: 0,
   shortcutsOpen: false,
-  cloudAdd: null,
-  cloudHowTo: false,
   welcomeOpen: false,
   tourOpen: false,
   botSettingsSection: "overview",

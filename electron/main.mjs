@@ -751,9 +751,6 @@ async function cloudOffersReady() {
 function cloudMenuOptions() {
   return {};
 }
-async function openCloudAdd() {
-  return disabledCloudAccount.state();
-}
 
 function ensureManagedDesktop() {
   if (!hostedAvailable) return disabledCloudAccount;
@@ -2315,8 +2312,8 @@ ipcMain.handle("desktop-remote:disconnect", localOnly("desktop-remote:disconnect
 
 // Auth and connector credentials never cross this boundary.
 ipcMain.handle("companion-account:state", localOnly("companion-account:state", () => ({ available: false, status: "unavailable", message: "disabled" })));
-ipcMain.handle("companion-account:request-code", localOnly("companion-account:request-code", () => ({ outcome: "unavailable" })));
-ipcMain.handle("companion-account:verify-code", localOnly("companion-account:verify-code", () => ({ outcome: "unavailable" })));
+ipcMain.handle("companion-account:request-code", localOnly("companion-account:request-code", () => hostedDisabledState));
+ipcMain.handle("companion-account:verify-code", localOnly("companion-account:verify-code", () => hostedDisabledState));
 ipcMain.handle("companion-account:retry", localOnly("companion-account:retry", () => ({ available: false, status: "unavailable", message: "disabled" })));
 ipcMain.handle("companion-account:prepare", localOnly("companion-account:prepare", () => ({ available: false, status: "unavailable", message: "disabled" })));
 ipcMain.handle("companion-account:sign-out", localOnly("companion-account:sign-out", () => ({ available: false, status: "unavailable", message: "disabled" })));
@@ -2446,13 +2443,13 @@ chromeRail.install(ipcMain);
 function railChanged() { chromeRail.refresh(); rail.changed(); }
 const accountPages = [() => (mainWindow && !mainWindow.isDestroyed() && senderIsLocal({ sender: mainWindow.webContents }) ? mainWindow.webContents : null), () => ({ send: channel => chromeRail.send(channel) })];
 const accountRing = createDesktopRing(); const accounts = installAccounts({ ipcMain, ownPage: event => chromeRail.owns(event) || cloudPageAsking(event) === "local", placePage: event => cloudPageAsking(event) !== null || ownCloudPage(event) !== null || homeWindow.homePage(event) || (Boolean(ownHome?.home()) && activeEnvironment(environmentsState)?.origin === ownHome.home().origin && workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin())), account: () => (app.isPackaged && !desktopRemoteAccess ? cloudAccount : null), client: getCloudAccount, ring: accountRing, t: nativeT, holdSheet: open => chromeRail.holdOpen(open), tellSheet: () => chromeRail.send("accounts:open-sheet"), tell: () => { for (const page of accountPages) page()?.send("accounts:changed"); } });
-const rail = installRail({ t: nativeT, ipcMain, switchAccount: id => accountRing().switchTo(id), account: () => (app.isPackaged && !desktopRemoteAccess ? cloudAccount : null),
+const rail = installRail({ t: nativeT, ipcMain, switchAccount: id => accountRing()?.switchTo(id), account: () => (app.isPackaged && !desktopRemoteAccess ? cloudAccount : null),
   guard: handler => (event, ...args) => (chromeRail.owns(event) ? handler(event, ...args) : workspaceOnly(handler)(event, ...args)),
   lists: event => chromeRail.owns(event), trusted: event => chromeRail.owns(event) || senderIsLocal(event), beside: () => chromeRail.shown(),
   targets: () => [mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null, { send: channel => chromeRail.send(channel), isDestroyed: () => false }],
   places: railList, ask: placeSwitch.ask, switching: placeSwitch.target, open: openPlace, makeHome: id => ownHome.start(id), forget: id => forgetEnvironment(id, false, true), openProfile: (id, stale = () => false) => workspaceMenuAction(async () => { await cleanWorkspace.settled(); if (stale()) return; const opened = await localProfiles.open(id); railChanged(); if (opened === false) throw new Error(nativeT("native.places.profileFailed")); }), local: localProfiles,
   add: { choices: () => ({ cloud: cloudOffersAllowed(), link: !desktopRemoteAccess, address: !desktopRemoteAccess && !homeWindow.cloudOrigin(), account: !desktopRemoteAccess && Boolean(accounts.view().active) }),
-    probe: serverConnect.probe, run: (choice, link, code) => (choice === "link" ? (link ? (code === null ? connectHostedWorkspace(link) : serverConnect.connect(link, code)) : addServerFromClipboard()) : choice === "address" ? openWorkspaceSettings() : homeWindow.cloudOrigin() ? undefined : openCloudAdd("app_menu")) } });
+    probe: serverConnect.probe, run: (choice, link, code) => (choice === "link" ? (link ? (code === null ? connectHostedWorkspace(link) : serverConnect.connect(link, code)) : addServerFromClipboard()) : choice === "address" ? openWorkspaceSettings() : undefined) } });
 const desktopNotifications = installDesktopNotifications({ ipcMain, Notification, nativeImage, fetch: (...args) => session.defaultSession.fetch(...args), window: () => mainWindow, mayNotify: (contents, url) => appPermissions?.check(contents, "notifications", url, { isMainFrame: true }) === true, reveal: revealForLink, openPlace: origin => (origin === homeWindow.cloudOrigin() ? showHome({ place: "cloud" }) : workspaceMenuAction(() => switchEnvironment(origin === rendererOrigin() ? LOCAL_ID : environmentsState.environments.find(entry => entry.origin === origin)?.id))) });
 // A place's colour (place-look.mjs): the Admin's for a Cloud, this app's for This computer and a server connected by
 // hand; changed on the place's own page or from the window's rail, whatever that server runs.
