@@ -29,7 +29,13 @@
 - 48 接续现有 `WebHostTarget`、三种 `WebEntryScope`、`WebMessageSummary` 和全屏 `WebHostScreen`，替换占位内容。网页会话注入、真实路由和容器生命周期仍归 48；05 注册身份/手表清理，48 另注册网页数据清理。
 - 05 接入 LiveTransport 时可用 03 的连接状态机替换 Store 最小策略，保留取消、退避、续传行为，避免两层重连。
 
-以上三节在第 4 轮按审核列出的缺失事项、brief 和当前代码补回。当前检出只有压平基线，`git show 9d5d38f1:docs/tasks/T-1200/T-1221-app-shell/report.md` 返回 `fatal: invalid object name '9d5d38f1'.`，且没有配置 remote；因此尚未与该提交逐字核对。协调者持有原历史时仍需核对原文，不能将本次补回描述为已从该对象精确恢复。
+以上三节在第 4 轮按审核列出的缺失事项、brief 和当前代码补回；审核已对照 9d5d38f1 原文。协调者从该提交补回下列未覆盖的原文：
+
+> 夹具的 `afterMs` 是从本次流连接开始计的绝对毫秒偏移，同一时间保持文件顺序；已知 cursor 恢复到该帧之后。socket 的字符串 data 是文本，`{"base64":"AQID"}` 是二进制，其他 JSON data 编码成文本。事件脚本结束后保持流打开，供超时/后台取消测试使用；socket 脚本结束则结束接收。请求先匹配带查询参数的响应，再匹配 `METHOD /path`，最后回退到 snapshot/threads；所有未登记请求报错，不回退联网。
+
+> **project.yml**：本任务无必须新增的行，现有递归 CryBot/CryBotTests sources 应收集新增 Swift、JSON、xcstrings 和 Color Set；请在首轮 Actions 确认两个 shell JSON 进入 App 包。工程的 PRODUCT_NAME 含空格，测试通过条件导入同时兼容 CryBot 与 Cry_Bot 模块。残留的 LiveKit、LiveKitWebRTC 仍由协调者另行删除，本任务没有导入它们。
+
+> **入口细节**：固定 28 个功能签名均保留。规格未给出部分上下文的字段明细：本轮采用 `ConversationRef.bot/group(id, thread:, focus: = nil)`、`ComposerTarget(conversation, thread, replyTo)`、`RespondAction(thread, body: RespondBody)`、`WidgetAction(action, values)`、`DesktopTarget(bot, desktopID?)`、`CallRef(bot, callID?)` 和 `McpScope.global/bot`；请协调者在冻结前与 08、16、35、48 对表。
 
 ## 第 2 轮：2026-11-14（审核第 1 轮返工）
 
@@ -237,7 +243,7 @@ App 内截图可分别使用 `WebHostGallery(scene: .screen/.menu/.summary)`，�
 1. `FrameCursor` 已按 `JSONValue.number(Decimal)` 的真实关联类型改为 `Int64("\(raw)")`，只接受 0…9_007_199_254_740_991。测试补上下边界和 Int64 溢出值，保留负数、小数、非数字、ping、未知帧等覆盖。
 2. 非续传 hello 到来时立即把 cursor 置 nil（需要快照），仅快照成功并确认连接仍有效后采用 hello.cursor；失败或取消路径不再受 connectionID 判断限制。续传 hello 保留旧 cursor，只随随后已处理帧的 seq 前进。新增挂起快照期间 pause → resume 后 since 为 nil、重新拉取并成功提交游标，以及快照失败后重新拉取的测试；另测 STREAM:5 → resumed hello STREAM:20 → 重放前断线仍以 STREAM:5 续传，再处理 seq=6 后以 STREAM:6 续传。协议依据为 `server/index.ts:14716`–`:14735`：hello 给出 lastSeq，重放在 hello 之后才发送。
 3. 快照和相关帧只调度未读数刷新，不在帧循环等待计数接口。刷新任务复用一个在途请求，期间有变化则在结束后补一次；message.patch 不触发。显式 refreshInboxCount 也复用此任务；detach / signOut 取消任务并阻止旧会话写回。原逐帧请求次数断言改为上限；新增 60 秒计数请求挂起时 10 个 patch 继续归并、持续帧不被误判超时、20 个相关帧只补一次、最大并发为 1、纯 patch 批次不补请求及退出取消测试。
-4. 补回第 1 轮「文件改动」「覆盖表对应项」「需要协调者处理」，保留已有返工记录并追加本节。指定历史对象不可用，精确原文恢复仍需协调者核对，详情见第 1 轮末尾。
+4. 补回第 1 轮「文件改动」「覆盖表对应项」「需要协调者处理」，保留已有返工记录并追加本节。审核已对照 9d5d38f1，未覆盖段落由协调者从原文补回，见第 1 轮末尾。
 5. 旧输出中的沙箱绝对工作区路径已替换为 `<worktree>`。
 6. 图片校验在缓存读取之前执行。仅允许前导 `/` 的已知接口：`/api/attachments/<文件名>`（附件、机器人及个人头像），以及 `/api/team/people/p_<22 位标识>/picture`（团队成员头像）。路由依据：`server/routes/threads.ts:452`、`shared/bot-avatar.ts:55`、`server/routes/team-owners.ts:27`、`:63`、`:99`。拒绝路径中任何 `..`、反斜线、解码后残留百分号、无前导 `/`、未知前缀及不符合路由形状的路径；覆盖编码/双重编码穿越、缓存预填绕过、未知路径及团队头像合法下载和 query 保留。
 7. 删除重复的 screen.ref 断言，改为检查继续导航后 chatsPath 的实际路由结果，仍保留一次 GroupScreen 完整引用断言。
