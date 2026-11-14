@@ -1,5 +1,9 @@
+import { localePacks, type LanguageCode as PackName } from "../../shared/languages";
 import type English from "./en.json";
 import { localeKeyCount } from "virtual:english-contracts";
+
+export { localePacks };
+export type { PackName };
 
 export type LocaleKey = keyof typeof English;
 export const en: Partial<Record<LocaleKey, string>> = {};
@@ -22,33 +26,7 @@ const packLoaders = {
   ru: () => import("./ru.json?locale"),
   it: () => import("./it.json?locale"),
   ko: () => import("./ko.json?locale"),
-} satisfies Record<string, () => Promise<{ default: LocalePack; missingKeys: string[] }>>;
-
-export type PackName = "en" | keyof typeof packLoaders;
-
-/** Every language tag the app answers to, and the pack it shows. */
-export const localePacks: Readonly<Record<string, PackName>> = {
-  en: "en",
-  de: "de",
-  es: "es",
-  fr: "fr",
-  hi: "hi",
-  ja: "ja",
-  pt: "pt-br",
-  "pt-br": "pt-br",
-  zh: "zh",
-  "zh-hant": "zh-tw",
-  "zh-hk": "zh-tw",
-  "zh-mo": "zh-tw",
-  "zh-tw": "zh-tw",
-  uk: "uk",
-  vi: "vi",
-  tr: "tr",
-  pl: "pl",
-  ru: "ru",
-  it: "it",
-  ko: "ko",
-};
+} satisfies Record<PackName, () => Promise<{ default: LocalePack; missingKeys: string[] }>>;
 
 export const locales: Record<string, LocalePack> = { en };
 const missingTranslations = new WeakMap<LocalePack, ReadonlySet<string>>();

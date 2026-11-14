@@ -56,7 +56,6 @@ const include = [
 export default defineConfig({
   plugins: [react(), tailwindcss(), railPage(), localeBundles()],
   build: {
-    manifest: true,
     rollupOptions: { input: { index: page("./index.html"), rail: page("./rail.html") }, output: { manualChunks: frontendChunk } },
   },
   define: {

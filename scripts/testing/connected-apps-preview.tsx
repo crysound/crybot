@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ConnectorCard } from "../../src/components/ConnectorCard";
@@ -5,6 +6,8 @@ import { PluginsPanel } from "../../src/components/PluginsPanel";
 import { StoreProvider, useStore, type Message } from "../../src/state/store";
 import { applySkin, readSkin } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 // Only the disposable OAuth recipe serves this entry; production components
 // stay mounted, while these controls simulate a server card update/deletion.

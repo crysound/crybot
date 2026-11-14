@@ -7,6 +7,9 @@ import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("./CloudSetup", () => ({ CloudSetup: () => null }));
+vi.mock("./cloud-welcome/CloudWelcome", () => ({ CloudWelcome: () => null }));
+
 const screens = await import("./lazy-screens");
 const { lazyScreen, preloadScreens } = screens;
 const stubPreloads = () => Object.values(screens)
@@ -39,6 +42,13 @@ afterEach(() => {
 });
 
 describe("lazyScreen", () => {
+  it.each(["CloudSetup", "CloudWelcome"] as const)("shows a loading placeholder for %s", async (name) => {
+    render(createElement(screens[name], {} as never));
+    expect(document.querySelector('[role="status"] svg.animate-spin')).not.toBeNull();
+    await settle();
+    expect(document.querySelector('[role="status"]')).toBeNull();
+  });
+
   it("renders an already fetched screen in the same commit that mounts it", async () => {
     const Screen = lazyScreen("Settings", async () => Label);
     await Screen.preload();
@@ -166,7 +176,7 @@ describe("preloadScreens", () => {
   it("a page on this machine fetches nothing ahead: each screen loads when it opens", () => {
     vi.useFakeTimers();
     const preloads = stubPreloads();
-    expect(preloads.length).toBe(33);
+    expect(preloads.length).toBe(27);
     for (const host of ["127.0.0.1", "localhost", "[::1]"]) preloadScreens(host);
     vi.runAllTimers();
     for (const preload of preloads) expect(preload).not.toHaveBeenCalled();
@@ -277,6 +287,9 @@ describe("launch bundle", () => {
     const reached = launchModules();
     expect(reached.has("App.tsx")).toBe(true);
     expect(reached.has("components/Sidebar.tsx")).toBe(true);
+    for (const name of ["LiveCallHost", "NewBotName", "conversation-share/ConversationShareDialogs", "TeamWelcome", "onboarding/FirstConversationTour", "CloudIntent"]) {
+      expect(reached.has(`components/${name}.tsx`), name).toBe(true);
+    }
     const deferred = [
       "GroupView", "ActivityPanel", "BotSettingsDialog", "CloudAddDialog", "ComputerPanel", "InspectorPanel", "KeyboardShortcutsModal",
       "LocalVmWorkspace", "NewBotDialog", "PhoneAppDialog", "PhoneSetupFlow", "PluginsPanel", "published-apps/PublishedAppsPage", "RemoteAgentSettingsPanel", "remote-desktop-panel", "RoutineCalendarPage",

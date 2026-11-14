@@ -1,5 +1,7 @@
 // Security: local files and videos load only after an explicit action, through the server's exact-message file
 // authorization.
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { windowsPathDestinations } from "../../shared/markdown-windows-paths";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Download, Film, LoaderCircle, Music, Play, X } from "lucide-react";
 import { attachmentBasename, PREVIEW_MAX_BYTES, type TranscriptFileAttachment, type TranscriptImageAttachment } from "@/lib/composer-attachments";
@@ -22,31 +24,12 @@ export interface GalleryFile extends TranscriptFileAttachment {
   linked?: boolean;
 }
 
-function markdownDestinations(text: string): string[] {
-  const definitions = new Map<string, string>();
-  const source = text
-    .replace(/(^|\n)\s*(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n\s*\2\s*(?=\n|$)/g, "$1")
-    .replace(/`+[^`\n]*`+/g, "");
-  for (const match of source.matchAll(/^\s{0,3}\[([^\]]+)\]:\s*(<[^>]*>|\S+)/gm)) {
-    const key = match[1]!.trim().toLowerCase();
-    if (!definitions.has(key)) definitions.set(key, unwrapDestination(match[2]!));
-  }
-  const destinations: string[] = [];
-  for (const match of source.matchAll(/(^|[^!])\[([^\]]+)\]\(\s*(<[^>]*>|(?:\\.|[^)\s])+)/gm)) {
-    if (match[2]!.includes("![")) continue;
-    destinations.push(unwrapDestination(match[3]!));
-  }
-  for (const match of source.matchAll(/(^|[^!])\[([^\]]+)\]\[([^\]]*)\]/gm)) {
-    const label = (match[3] || match[2]!).trim().toLowerCase();
-    const href = definitions.get(label);
-    if (href && !match[2]!.includes("![")) destinations.push(href);
-  }
-  return destinations;
-}
-
-function unwrapDestination(value: string): string {
-  return value.startsWith("<") && value.endsWith(">") ? value.slice(1, -1) : value;
-}
+type MarkdownNode = {
+  type: string;
+  url?: string;
+  identifier?: string;
+  children?: MarkdownNode[];
+};
 
 export function fileIdentity(path: string): string {
   // Presentation deduplication only, never an authorization check.
@@ -56,8 +39,22 @@ export function fileIdentity(path: string): string {
 }
 
 export function collectMessageFiles(text: string, existingPaths: readonly string[] = []): GalleryFile[] {
+  const tree: MarkdownNode = fromMarkdown(text, { mdastExtensions: [windowsPathDestinations] });
+  const definitions = new Map<string, string>();
+  const links: MarkdownNode[] = [];
+  const pending = [tree];
+  while (pending.length) {
+    const node = pending.pop()!;
+    if (node.type === "definition" && node.identifier && node.url && !definitions.has(node.identifier)) {
+      definitions.set(node.identifier, node.url);
+    } else if (node.type === "link" || node.type === "linkReference") {
+      if (!node.children?.some((child) => child.type === "image" || child.type === "imageReference")) links.push(node);
+    }
+    if (node.children) pending.push(...[...node.children].reverse());
+  }
   const seen = new Set(existingPaths.map(fileIdentity));
-  return markdownDestinations(text).flatMap((href) => {
+  return links.flatMap((node) => {
+    const href = node.url ?? (node.identifier ? definitions.get(node.identifier) : undefined);
     const path = localFilePath(href);
     if (!path || !href) return [];
     const identity = fileIdentity(href);

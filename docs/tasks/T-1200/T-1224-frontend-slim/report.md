@@ -1,14 +1,52 @@
 # T-1224 首屏瘦身报告
 
-## 第 1 轮数字有误，以下为准
+## 第 1 轮数字有误，以第 3 轮为准
 
 第 1 轮报告把入口、App 静态依赖和语言包的口径混在了一起，不能用其中的 356,837 B、628.80 KB 等数字判断本轮结果。本报告统一使用构建产物的原始字节数和 `gzip -9` 字节数；合计按去重后的入口资源、App 的静态 import 闭包和一个语言包计算。
+
+## 第 1 轮原始记录（数字有误，以第 3 轮为准）
+
+| 产物 | 改前未压缩 | 改前 gzip | 改后未压缩 | 改后 gzip |
+| --- | ---: | ---: | ---: | ---: |
+| `index` 入口 JS | 39.51 KB | 11.88 KB | 39.74 KB | 11.91 KB |
+| `styles` 共享 JS | 958.88 KB | 274.81 KB | 63.20 KB | 21.77 KB |
+| `styles` CSS | 333.89 KB | 52.47 KB | 333.89 KB | 51.53 KB |
+| `App` 业务块 | 2,647.56 KB | 817.38 KB | 2,044.41 KB | 628.80 KB |
+| `GroupView` | 合入 App | 合入 App | 47.40 KB | 14.08 KB |
+| 英文语言包 | 合入 styles | 合入 styles | 700.80 KB | 191.32 KB |
+
+## 基线最大的 20 个模块
+
+这是第一次构建中 `styles` 和 `App` 主块的 Rollup `renderedLength` 排名：
+
+| 模块 | 未压缩 |
+| --- | ---: |
+| `src/locales/en.json` | 741.2 KB |
+| `react-dom/cjs/react-dom-client.production.js` | 552.9 KB |
+| `tailwind-merge` | 102.2 KB |
+| `src/state/store.tsx` | 119.2 KB |
+| `src/components/Sidebar.tsx` | 106.2 KB |
+| `shared/carved-bodies.ts` | 86.9 KB |
+| `src/components/ChatView.tsx` | 69.5 KB |
+| `src/components/GroupView.tsx` | 64.0 KB |
+| `src/components/ModelPicker.tsx` | 54.2 KB |
+| `src/components/ProviderIcons.tsx` | 44.0 KB |
+| `src/components/Composer.tsx` | 43.3 KB |
+| `src/components/AttachmentPreview.tsx` | 40.2 KB |
+| `src/components/ChatMarkdown.tsx` | 34.7 KB |
+| `src/components/EngineSetup.tsx` | 34.2 KB |
+| `src/components/CallView.tsx` | 29.1 KB |
+| `src/components/SidebarThreadRow.tsx` | 29.0 KB |
+| `src/components/VoiceSettings.tsx` | 28.1 KB |
+| `src/components/AnimatedMascot.tsx` | 26.6 KB |
+| `src/components/ApprovalCard.tsx` | 25.3 KB |
+| `src/components/SidebarProfileMenu.tsx` | 25.0 KB |
 
 ## 第 2 轮
 
 - 恢复 `src/App.tsx` 对 `HomeLine`、`NoEngines` 的静态 import，修复登录后 `HomeLine is not defined` 导致的整页错误；`ChatView` 对 `EngineSetup` 也恢复静态 import，首帧仍显示登录按钮。
 - 删除 `LazyChatMarkdown`，`ChatView`、`CallSheet`、`DataCard`、`InboxReading`、`WidgetNodes`、`GroupView` 等全部改回静态 `ChatMarkdown`。ChatMarkdown 本身继续静态进入 App；KaTeX 保持动态 import，构建中 `katex-HP8lGamR.js`（261,313 B，77,166 B gzip）和 KaTeX CSS 是独立块。
-- 从 `vite.config.ts` 移除 `vendor-markdown` manual chunk，并删除写 `/tmp` 的 moduleStats 插件。`AttachmentGallery` 改为本地链接提取器，避免为少量附件路径判断静态引入 `mdast-util-from-markdown`；Markdown 渲染主路径仍由 ChatMarkdown 负责。
+- 从 `vite.config.ts` 移除 `vendor-markdown` manual chunk，并删除写 `/tmp` 的 moduleStats 插件。Markdown 渲染主路径仍由 ChatMarkdown 负责。
 - 撤回 `NotificationRail`、`NotificationsPanel`、`NewLocalFromMenu`、`CommandPalette`、`CryBotWelcome`、`EngineSetup` 的 lazy wrapper；保留确有独立产物的 `GroupView`，并给它保留 Loader2 占位。`src/components/lazy-screens.test.ts` 的预加载数量和 `SCREENS` 断言已与最终实现一致。
 - 新增 `scripts/locale-bundles.ts` Vite 插件：每种语言构建为“本语言翻译 + 缺失 key 的英文值”，运行时按当前语言只动态加载一个包。`main.tsx` 等待 `loadPageLanguage()` 后首次渲染；切换语言按需加载，失败回退英文。`src/locales/index.ts` 不再静态引入英文 JSON。
 - `scripts/check-frontend-budget.mjs` 现在解析 `.vite/manifest.json`，统计入口、App 静态闭包和中文语言包，去重后按 gzip -9 计算；没有匹配资源或 manifest 节点时退出报错。阈值仍是 `500 * 1024`，逻辑可被 import，`package.json` 增加 `check:bundle`。
@@ -65,3 +103,101 @@ PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec vite
 - `src/components/AttachmentGallery.test.ts`：25 passed；`src/components/AttachmentGallery.reply-group.test.ts`：9 passed
 - `scripts/check-frontend-budget.test.mjs`：3 passed
 - `src/lib/i18n.test.ts`：37 passed，保留主分支已有的 pt-br 缺 3 个 key 那 1 项失败
+
+## 第 3 轮
+
+### 冲突与修复
+
+- `src/locales/index.ts` 的语言代码类型和别名映射统一从 main 新增的 `shared/languages.ts` 引入，不再保留重复的 `localePacks`。加载器以共享 `LanguageCode` 为完整键集合，继续按需加载每种语言的一个合并包；T-1225 新增的英文和译文也进入同一合并流程。
+- `src/lib/render-page.tsx` 统一处理 `main.tsx` 和 `rail.tsx` 的启动失败。当前语言与英文都无法下载时，仍挂载最小错误页，沿用 PageBoundary 的布局、按钮样式，只有三条内置英文，不调用 `t()`。Retry 刷新页面，重新发起启动加载；整页刷新也能清除浏览器缓存的失败动态模块。新增 `render-page.test.ts` 覆盖 en/zh 全离线、错误页、点击刷新、网络恢复后正常渲染。`i18n.test.ts` 恢复对英文也失败的 mock，另保留仅目标语言失败时回退英文的测试。
+- 新增 `src/testing/preview-locale.ts`，先 `await loadLocale` 再允许预览渲染。统一接入 `src/` 的 8 个 `*-preview.tsx`、`scripts/testing/` 的 22 个 `*-preview.tsx`，以及 `src/testing/{bot-settings,mentions,avatar-providers,thread-approvals}.tsx`，共 34 个独立入口。默认英文，保留 `?lang=` 选择。`preview-locale.test.ts` 检查所有入口的 await 顺序，并覆盖英文/中文的异步等待。`createRoot` 搜索的其余结果是正式 main/rail、单测或 `modal-dialog-focus-check.ts` 中在已有页面运行的测试代码，不是遗漏的预览入口。
+- `src/components/AttachmentGallery.tsx` 恢复 `fromMarkdown(text, { mdastExtensions: [windowsPathDestinations] })`，保留 `chat-markdown-links.ts` 中的路径工具。`AttachmentGallery.markdown.test.ts` 用 15 个用例直接对比服务端 `messageFileTargets`：括号、反转义、自动链接、完整/折叠/快捷引用、引用空白归一化、嵌套方括号、缩进代码、HTML 注释、转义方括号、Windows 路径和代码围栏。只调用纯解析函数，不启动服务、不读取真实会话文件。
+- `scripts/locale-bundles.ts` 使用 `\0locale-bundle:<语言代码>` 作为虚拟 ID，构建机路径仅供插件读取输入文件。`vite.config.ts` 删除默认 `manifest: true`；`package.json` 的 `check:bundle` 改为先 `vite build --manifest` 再运行检查，`scripts/check-frontend-budget.mjs` 和测试同步识别新 ID。普通生产构建不生成 manifest，体积核查显式生成。
+- `src/components/lazy-screens.tsx` 对 LiveCallHost、NewBotNameHost、ConversationShareDialogs、TeamWelcome、FirstConversationTour 恢复静态导出。CloudIntent 的旧产物为 2,923 B gzip，也恢复静态；CloudSetup（3,808 B）和 CloudWelcome（5,501 B）保留懒加载并加 Loader2 占位。`lazy-screens.test.ts` 同步预加载数量（27）、静态依赖约定和云端主界面的占位断言。NewBotNameHost 因而在 App 首次挂载时就能注册起名回调。
+- 恢复第 1 轮的原始改前/改后表与主块 20 个模块表，明确标注数字有误、以本轮为准；删除 AttachmentGallery 避免静态引入 Markdown 解析器的不实说明。
+
+本轮未修改 `server/`、`electron/`、`mobile/`、`.github/`；工作区已有这些目录的暂存变更来自协调者合入 main。未提交、未中止合并、未 checkout。工作文件中的冲突已解决，但 Git 索引所在目录只读，`git add src/locales/index.ts` 无法创建 `index.lock`；协调者提交前需暂存这个已修复的文件。仓库当前缺少 AGENTS.md 引用的 `docs/verification/README.md`；本轮仅运行下面列出的隔离单测和构建，未对运行中的应用或数据做验证。
+
+### 单测与检查
+
+所有 Vitest 调用都一次一个文件，统一使用：
+
+```text
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run <文件> --maxWorkers=1 --configLoader runner
+```
+
+最终 30 个文件、473 项通过，仅保留 pt-br 缺少 3 个 key 导致的 1 项已有失败。预览入口检查首次运行因 TypeScript 7 不提供 AST API 失败，改用已安装的 `@typescript/typescript6` 后单独复跑通过；未加依赖。
+
+| 测试文件 | 结果 |
+| --- | --- |
+| `src/testing/preview-locale.test.ts` | 3 passed |
+| `src/components/AttachmentGallery.markdown.test.ts` | 15 passed |
+| `src/components/lazy-screens.test.ts` | 20 passed |
+| `src/lib/i18n.test.ts` | 38 passed；1 failed（已有 pt-br 完整性断言） |
+| `src/App.engine-status.test.ts` | 2 passed |
+| `src/components/ChatView.controls.test.ts` | 58 passed |
+| `src/components/CallSheet.test.ts` | 5 passed |
+| `src/components/ChatView.data-result.test.ts` | 2 passed |
+| `src/components/inbox/InboxReading.dom.test.ts` | 8 passed |
+| `src/components/ChatView.rows.test.ts` | 7 passed |
+| `src/components/ChatMarkdown.test.ts` | 140 passed |
+| `src/components/ChatMarkdown.katex-load.test.ts` | 3 passed |
+| `src/components/ChatMarkdown.renderers.test.ts` | 7 passed |
+| `src/components/ChatMarkdown.streaming.test.ts` | 5 passed |
+| `src/components/ChatMarkdown.block-actions.test.ts` | 3 passed |
+| `src/components/AttachmentGallery.test.ts` | 25 passed |
+| `src/components/AttachmentGallery.reply-group.test.ts` | 9 passed |
+| `src/components/NewBotName.test.ts` | 6 passed |
+| `src/lib/new-bot.test.ts` | 20 passed |
+| `src/lib/create-configured-bot.test.ts` | 14 passed |
+| `src/lib/language-preference.test.ts` | 12 passed |
+| `src/components/cloud-welcome/CloudWelcome.test.ts` | 29 passed |
+| `src/components/TeamWelcome.test.ts` | 11 passed |
+| `src/components/onboarding/FirstConversationTour.test.ts` | 7 passed |
+| `src/components/conversation-share/ConversationShareDialogs.dom.test.ts` | 8 passed |
+| `src/components/CloudIntent.test.ts` | 3 passed |
+| `src/components/PageBoundary.test.ts` | 2 passed |
+| `src/components/MarkdownFilePreview.dom.test.ts` | 6 passed |
+| `scripts/check-frontend-budget.test.mjs` | 3 passed |
+| `src/lib/render-page.test.ts` | 2 passed |
+
+本轮改动的 TS/TSX/MJS 文件通过 `oxlint --deny-warnings`；`git diff --check` 通过；`grep -rn '<<<<<<<\|>>>>>>>' src shared server` 无输出。没有运行全量 typecheck、完整 pnpm test 或 e2e，构建没有与 Vitest 并行。
+
+### 本轮构建与体积（gzip -9）
+
+仅构建一次，成功，耗时 57.94 秒：
+
+```text
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec vite build --manifest
+PATH=/opt/node24/bin:$PATH node scripts/check-frontend-budget.mjs dist --report-only
+```
+
+Vite 的诊断 manifest 将虚拟 ID 的开头 NUL 去掉，最终键为 `locale-bundle:zh` 等；检查脚本按这个实际格式匹配。首次体积检查发现这个差异后，只修正检查脚本并复跑其 3 项单测和 `--report-only`，没有重复构建。`grep -r "$PWD" dist` 无输出（包含本次显式生成的 `.vite/manifest.json`），产物不再包含构建机绝对路径。构建仍提示部分块较大及依赖注释标记问题，未导致失败。
+
+口径与审核一致：入口取 `index.html` 直接资源及静态依赖；登录后再加 App 全部静态 JS/CSS 依赖和当前语言的单个合并包，去重后逐文件 gzip level 9 求和。main 列使用本轮审核给出的对照值，没有额外构建 main；main 未压缩合计未提供，不推测。
+
+| 场景 | main gzip -9（B） | 第 3 轮未压缩（B） | 第 3 轮 gzip -9（B） | 相对 main | 距 500 KiB |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 入口 | 338,030 | 714,542 | 170,885 | -167,145 B（-49.4%） | 剩余 341,115 B |
+| 登录后机器人列表 + 普通聊天（英文） | 1,168,405 | 3,938,931 | 1,144,904 | -23,501 B（-2.0%） | 超出 632,904 B |
+| 登录后机器人列表 + 普通聊天（中文） | 1,325,886 | 4,028,209 | 1,186,667 | -139,219 B（-10.5%） | 超出 674,667 B |
+
+本轮主要块如下。ChatMarkdown 的首条消息路径仍静态进入 App，没有另算一个不存在的首条消息块；KaTeX 仍是独立动态块，不在以上静态合计中。
+
+| 块 | 未压缩（B） | gzip -9（B） |
+| --- | ---: | ---: |
+| 入口 JS | 39,655 | 11,868 |
+| styles 共享 JS | 82,876 | 27,018 |
+| styles CSS | 333,893 | 51,704 |
+| vendor-react | 192,646 | 60,314 |
+| vendor-icons | 65,472 | 19,981 |
+| vendor-schema | 95,766 | 26,977 |
+| vendor-url | 95,913 | 40,320 |
+| App（包含静态 ChatMarkdown） | 2,289,496 | 702,147 |
+| 英文合并包 | 700,931 | 191,267 |
+| 中文合并包 | 790,209 | 233,030 |
+| CloudSetup（动态） | 10,256 | 3,790 |
+| CloudWelcome（动态） | 17,951 | 5,483 |
+| KaTeX（动态） | 261,313 | 77,166 |
+
+恢复小组件静态加载、补齐失败页并合入 T-1225 后，英文/中文登录后合计相对第 2 轮分别增加 10,170 / 10,180 B gzip，仍低于本轮 main 对照。500 KiB 目标仍未达到，中文超出 674,667 B；`--report-only` 仅用于报告，默认预算检查仍会失败。下一步主要空间仍在 App 业务依赖（尤其 carved-bodies、ProviderIcons、AttachmentPreview、tailwind-merge）及首屏对 tldts/zod 的依赖。未额外新增语言包预加载提示。

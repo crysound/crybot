@@ -4967,6 +4967,8 @@
   "newBot.sharePreset": "Compartir como preajuste…",
   "newBot.customSettings": "Configuración personalizada",
   "newBot.randomName": "Nombre aleatorio",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.edit": "Editar",
   "newBot.loading": "Cargando la configuración…",
   "newBot.failed": "No se pudo crear el bot nuevo: {error}",

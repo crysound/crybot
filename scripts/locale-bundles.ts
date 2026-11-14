@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
 
@@ -15,7 +15,7 @@ export function localeBundles(): Plugin {
       if (source === contractsId) return `\0${contractsId}`;
       if (!source.endsWith(".json?locale") || !importer) return;
       const path = resolve(dirname(importer), source.slice(0, -"?locale".length));
-      if (dirname(path) === resolve(folder)) return `${prefix}${path}.js`;
+      if (dirname(path) === resolve(folder)) return `${prefix}${basename(path, ".json")}`;
     },
     load(id) {
       if (!id.startsWith(prefix) && id !== `\0${contractsId}`) return;
@@ -27,7 +27,7 @@ export function localeBundles(): Plugin {
           /^(?:engines\.defaultName\.|routines\.server\.|chat\.notice\.)/.test(key)));
         return `export const localeKeyCount = ${Object.keys(english).length}; export const englishContracts = ${JSON.stringify(contracts)};`;
       }
-      const path = id.slice(prefix.length, -3);
+      const path = resolve(folder, `${id.slice(prefix.length)}.json`);
       this.addWatchFile(path);
       const translated = JSON.parse(readFileSync(path, "utf8")) as Record<string, string>;
       const missing = Object.keys(english).filter((key) => !Object.hasOwn(translated, key));

@@ -11,10 +11,10 @@ const manifest = {
   shared: { file: "assets/shared.js", css: ["assets/styles.css"] },
   nested: { file: "assets/nested.js", imports: ["shared", "leaf"] },
   leaf: { file: "assets/leaf.js", imports: ["nested"] },
-  "virtual/locales/zh.json.js": { file: "assets/zh.js" },
+  "locale-bundle:zh": { file: "assets/zh.js" },
   unused: { file: "assets/unused.js" },
 };
-const entries = ["index.html", "src/App.tsx", "virtual/locales/zh.json.js"];
+const entries = ["index.html", "src/App.tsx", "locale-bundle:zh"];
 let fixture;
 afterEach(() => {
   if (fixture) rmSync(fixture, { recursive: true, force: true });

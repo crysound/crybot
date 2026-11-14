@@ -6,6 +6,7 @@ import { bootstrapBrand } from "./lib/brand";
 import { applyFont, readFont } from "./lib/fonts";
 import { settleInterfaceMode } from "./lib/new-look";
 import { loadPageLanguage } from "./lib/language-preference";
+import { renderPage } from "./lib/render-page";
 import { applySkinChoice, readSkinChoice } from "./lib/skins";
 import "./styles.css";
 
@@ -16,8 +17,9 @@ if (window.cry?.rail?.expand) {
   applySkinChoice(readSkinChoice());
   applyFont(readFont());
   document.documentElement.style.background = document.body.style.background = "transparent";
-  void Promise.all([bootstrapBrand(), loadPageLanguage()]).then(() => {
-    createRoot(document.getElementById("root")!).render(<StrictMode><PageBoundary><ChromeRail /></PageBoundary></StrictMode>);
+  void renderPage(createRoot(document.getElementById("root")!), async () => {
+    await Promise.all([bootstrapBrand(), loadPageLanguage()]);
+    return <StrictMode><PageBoundary><ChromeRail /></PageBoundary></StrictMode>;
   });
 } else {
   location.replace(`/${location.search}${location.hash}`);

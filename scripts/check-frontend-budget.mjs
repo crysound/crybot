@@ -26,7 +26,7 @@ export function staticAssets(manifest, entries) {
 
 export function localeEntry(manifest, language) {
   const matches = Object.keys(manifest).filter((key) =>
-    key.endsWith(`/locales/${language}.json`) || key.endsWith(`/locales/${language}.json.js`) ||
+    key === `locale-bundle:${language}` || key.endsWith(`/locales/${language}.json`) || key.endsWith(`/locales/${language}.json.js`) ||
     manifest[key]?.src?.includes(`/locales/${language}.json`));
   if (matches.length !== 1) throw new Error(`Expected one ${language} locale, found ${matches.length}`);
   return matches[0];

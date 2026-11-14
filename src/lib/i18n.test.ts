@@ -251,16 +251,27 @@ describe("loading a language", () => {
     expect(page.activePackComplete()).toBe(false);
   });
 
-  it("falls back to English when a pack can't be loaded, and tries again next time", async () => {
+  it("falls back to the merged English pack when only the requested pack fails", async () => {
     vi.resetModules();
-    let offline = true;
     vi.doMock("@/locales", async (original) => {
       const real = await original<typeof import("@/locales")>();
-      return { ...real, loadLocalePack: (tag: string) => offline && tag !== "en" ? Promise.reject(new Error("offline")) : real.loadLocalePack(tag) };
+      return { ...real, loadLocalePack: (tag: string) => tag === "fr" ? Promise.reject(new Error("offline")) : real.loadLocalePack(tag) };
     });
     const page = await import("./i18n");
     expect(await page.loadLocale("fr")).toBe("en");
     expect(page.t("rail.thisComputer")).toBe("This computer");
+  });
+
+  it("rejects when even English is offline, and tries again next time", async () => {
+    vi.resetModules();
+    let offline = true;
+    vi.doMock("@/locales", async (original) => {
+      const real = await original<typeof import("@/locales")>();
+      return { ...real, loadLocalePack: (tag: string) => offline ? Promise.reject(new Error("offline")) : real.loadLocalePack(tag) };
+    });
+    const page = await import("./i18n");
+    await expect(page.loadLocale("fr")).rejects.toThrow("offline");
+    await expect(page.loadLocale("en")).rejects.toThrow("offline");
     offline = false;
     expect(await page.loadLocale("fr")).toBe("fr");
     expect(page.t("rail.thisComputer")).toBe("Cet ordinateur");

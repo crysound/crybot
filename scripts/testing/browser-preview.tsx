@@ -1,8 +1,11 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { createRoot } from "react-dom/client";
 import { BrowserPanel } from "../../src/components/BrowserPanel";
 import { StoreProvider, useStore } from "../../src/state/store";
 import { applySkin } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 function Fixture() {
   const { state } = useStore();

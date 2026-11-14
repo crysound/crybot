@@ -1299,7 +1299,7 @@ export class Store {
       >
     > = {},
     opts: {
-      seedMessages?: boolean; id?: string; threadId?: string; beforeShown?: (bot: BotRecord) => void;
+      seedMessages?: boolean; language?: string; id?: string; threadId?: string; beforeShown?: (bot: BotRecord) => void;
     } = {},
   ): BotRecord {
     const toolScope = parseToolScope(profile.toolScope);
@@ -1351,7 +1351,7 @@ export class Store {
     // Before its transcript: clients need the bot/thread mapping to place either message.
     opts.beforeShown?.(bot); this.emit({ type: "bot", botId: bot.id });
     if (opts.seedMessages !== false) {
-      this.appendMessage(bot.threadId, initialGreetingMessage(name, this.initialLanguage, !bot.soul?.trim() && !bot.description.trim(), this.personName()));
+      this.appendMessage(bot.threadId, initialGreetingMessage(name, opts.language ?? this.initialLanguage, !bot.soul?.trim() && !bot.description.trim(), this.personName()));
     }
     return bot;
   }
