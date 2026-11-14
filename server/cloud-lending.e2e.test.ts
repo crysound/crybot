@@ -67,7 +67,8 @@ async function leftBehind(of: { threadIds?: string[]; routineIds?: string[] }) {
 type Turn = { argv: string[]; cwd: string; systemPrompt?: string; mcpConfig: { mcpServers: { agents: { command: string; args: string[]; env: Record<string, string> } } } };
 /** The latest turn `agentsFor` found. */
 let turn: Turn;
-const readTurns = () => new Map(fixtureOutputs(home, "turns").flatMap((directory) => readdirSync(directory)
+const customWorkspace = () => join(home, "hook-project");
+const readTurns = () => new Map([...fixtureOutputs(home, "turns"), join(customWorkspace(), ".fixture-output", "turns")].filter(existsSync).flatMap((directory) => readdirSync(directory)
   .filter((name) => name.endsWith(".json")).flatMap((name) => {
     const file = join(directory, name);
     try { return [[file, readFileSync(file, "utf8")] as const]; } catch { return []; }
@@ -128,11 +129,13 @@ process.env.FAKE_CLAUDE_VERSION = "2.1.284";
 // One-shot runs (a new chat's title) dump elsewhere, so they never take the place of the turn a test is waiting for.
 if (process.argv[2] !== "--version") {
   const { engineOutput } = await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fixture-state.ts")).href)});
-  const { mkdirSync } = await import("node:fs");
-  const turns = engineOutput(${JSON.stringify(home)}, process.cwd(), "turns");
+  const { existsSync, mkdirSync, realpathSync } = await import("node:fs");
+  const customWorkspace = ${JSON.stringify(customWorkspace())};
+  const inCustomWorkspace = existsSync(customWorkspace) && realpathSync(process.cwd()) === realpathSync(customWorkspace);
+  const turns = inCustomWorkspace ? customWorkspace + "/.fixture-output/turns" : engineOutput(${JSON.stringify(home)}, process.cwd(), "turns");
   mkdirSync(turns, { recursive: true });
   process.env.FAKE_CLAUDE_DUMP = turns + "/" + crypto.randomUUID() + ".json";
-  process.env.FAKE_CLAUDE_TEXT_DUMP = engineOutput(${JSON.stringify(home)}, process.cwd(), "one-shot.json");
+  process.env.FAKE_CLAUDE_TEXT_DUMP = inCustomWorkspace ? customWorkspace + "/.fixture-output/one-shot.json" : engineOutput(${JSON.stringify(home)}, process.cwd(), "one-shot.json");
   process.env.FAKE_CLAUDE_MODE = "hang";
 }
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
@@ -317,7 +320,7 @@ it("the person's Mac, lent by itself through the real connector, is usable by th
   const hookBot = await newBot("Hook bot");
   // Under the test's home, removed once the server has stopped: the held
   // engine keeps working in it, and Windows will not delete a process's cwd.
-  const project = join(home, "hook-project");
+  const project = customWorkspace();
   mkdirSync(project, { recursive: true });
   expect((await api("PATCH", `/api/bots/${hookBot.id}`, { token: owner, body: { cwd: project, approvalMode: "auto" } })).status).toBe(200);
   const hook = await newHook(hookBot.id);

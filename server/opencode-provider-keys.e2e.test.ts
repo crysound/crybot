@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { createServer, request, type Server } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ChildProcess } from "node:child_process";
@@ -9,6 +10,8 @@ import { spawnWithSecrets } from "./cloud-home-start.ts";
 import { cloudPairingSignature } from "./cloud-home.ts";
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { freePortBlock } from "./testing/ports.ts";
+import { detectBox } from "./bot-box/detect.ts";
+import { BOX_BROKER_PORT } from "./bot-box/box.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
 const HOST = "cry-t-0123456789ab.example.test";
@@ -23,6 +26,25 @@ let base = "";
 let child: ChildProcess;
 let log = "";
 let owner = "";
+let upstream: Server | undefined;
+let upstreamBase = "";
+const modelCalls: Array<{ path: string | undefined; key: string | string[] | undefined }> = [];
+const boxed = detectBox({ env: { PATH: process.env.PATH, CRYBOT_CLOUD_ROLE: "home" } }).box === "bwrap";
+
+function modelCall(url: string, key: string, socketPath?: string): Promise<{ status: number; body: unknown }> {
+  return new Promise((resolve, reject) => {
+    const target = new URL(`${url}/messages`);
+    const req = request({ hostname: target.hostname, port: target.port, path: target.pathname, socketPath,
+      method: "POST", headers: { "x-api-key": key, "content-type": "application/json" } }, (res) => {
+      let body = "";
+      res.on("data", (chunk) => { body += chunk; });
+      res.on("end", () => resolve({ status: res.statusCode!, body: JSON.parse(body) }));
+    });
+    req.on("error", reject);
+    req.setTimeout(5_000, () => req.destroy(new Error("model fixture timed out")));
+    req.end(JSON.stringify({ model: "fixture/warm", messages: [] }));
+  });
+}
 
 async function api(method: string, path: string, body?: unknown) {
   const response = await fetch(`${base}${path}`, {
@@ -64,13 +86,21 @@ beforeAll(async () => {
   dataDir = join(home, ".crybot");
   mkdirSync(dataDir, { recursive: true });
   dump = join(home, "opencode.json");
+  upstream = createServer((req, res) => {
+    modelCalls.push({ path: req.url, key: req.headers["x-api-key"] });
+    req.resume();
+    res.writeHead(req.headers["x-api-key"] === OWNER_ANTHROPIC ? 200 : 401, { "content-type": "application/json" });
+    res.end(JSON.stringify({ answer: "fixture model" }));
+  });
+  await new Promise<void>((resolve, reject) => { upstream!.once("error", reject); upstream!.listen(0, "127.0.0.1", resolve); });
+  upstreamBase = `http://127.0.0.1:${(upstream.address() as { port: number }).port}/v1`;
   // Only OpenCode: nothing probes a CLI installed on this machine.
   writeFileSync(join(dataDir, "config.json"), JSON.stringify({
     instances: {
       opencodeGo: {
         driver: "opencodeGo", displayName: "OpenCode",
         config: { cli: join(SERVER_DIR, "testing", "fake-acp-cli.ts") },
-        environment: { FAKE_ACP_MODELS: "fixture/warm", FAKE_ACP_DUMP: dump },
+        environment: { FAKE_ACP_MODELS: "fixture/warm", FAKE_ACP_DUMP: dump, ANTHROPIC_BASE_URL: upstreamBase },
       },
     },
   }));
@@ -99,7 +129,20 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (child) await waitForExit(child, { signal: "SIGTERM" });
+  if (upstream?.listening) await new Promise<void>((resolve) => upstream!.close(() => resolve()));
   if (home) await removeTempDir(home);
+});
+
+it("refuses a name CryBot keeps, in one plain line, and saves nothing", async () => {
+  const before = readFileSync(join(dataDir, "config.json"), "utf8");
+  const refused = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { CRYBOT_CLOUD_BOAT_TOKEN: "x-token", VENICE_API_KEY: VENICE } } });
+  expect(refused.status).toBe(400);
+  expect(refused.body.error).toBe("Cry Bot keeps CRYBOT_CLOUD_BOAT_TOKEN for itself, so OpenCode can't be given it here. Put this key in opencode.json instead.");
+  expect(readFileSync(join(dataDir, "config.json"), "utf8")).toBe(before);
+  const opencodeKey = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { OPENCODE_API_KEY: "zen" } } });
+  expect(opencodeKey.status).toBe(400);
+  expect(opencodeKey.body.error).toBe("Save the OpenCode key in the OpenCode API key box instead.");
+  expect(readFileSync(join(dataDir, "config.json"), "utf8")).toBe(before);
 });
 
 it("saves keys for any OpenCode provider on a Cloud, shows only their names, and hands them to OpenCode alone", async () => {
@@ -136,7 +179,26 @@ it("saves keys for any OpenCode provider on a Cloud, shows only their names, and
   const turnPid = JSON.parse(readFileSync(prompts, "utf8").trim().split("\n").at(-1)!).pid as number;
   expect(started().pid).toBe(turnPid);
   expect(started().env.VENICE_API_KEY).toBe(VENICE);
-  expect(started().env.ANTHROPIC_API_KEY).toBe(OWNER_ANTHROPIC);
+  const turnEnv = started().env;
+  if (boxed) {
+    expect(turnEnv.ANTHROPIC_API_KEY).toMatch(/^cry_t0_[a-f0-9]{48}$/);
+    expect(turnEnv.ANTHROPIC_BASE_URL).toBe(`http://127.0.0.1:${BOX_BROKER_PORT}/b/${turnEnv.ANTHROPIC_API_KEY}/anthropic`);
+    expect(readFileSync(dump, "utf8")).not.toContain(OWNER_ANTHROPIC);
+  } else {
+    expect(turnEnv.ANTHROPIC_API_KEY).toBe(OWNER_ANTHROPIC);
+    expect(turnEnv.ANTHROPIC_BASE_URL).toBe(upstreamBase);
+  }
+  const socketPath = boxed ? join(dataDir, "box", "broker.sock") : undefined;
+  expect(await modelCall(turnEnv.ANTHROPIC_BASE_URL!, turnEnv.ANTHROPIC_API_KEY!, socketPath))
+    .toEqual({ status: 200, body: { answer: "fixture model" } });
+  expect(modelCalls).toEqual([{ path: "/v1/messages", key: OWNER_ANTHROPIC }]);
+  if (boxed) {
+    expect(await modelCall(`http://127.0.0.1:${BOX_BROKER_PORT}/b/cry_t0_${"0".repeat(48)}/anthropic`, turnEnv.ANTHROPIC_API_KEY!, socketPath))
+      .toEqual({ status: 401, body: { error: "unknown_token" } });
+    expect(await modelCall(`http://127.0.0.1:${BOX_BROKER_PORT}/b/${turnEnv.ANTHROPIC_API_KEY}/openai`, turnEnv.ANTHROPIC_API_KEY!, socketPath))
+      .toEqual({ status: 403, body: { error: "not_granted" } });
+    expect(modelCalls).toHaveLength(1);
+  }
   expect(started().env.OPENAI_API_KEY).toBeUndefined();
   await expect.poll(async () => (await api("GET", "/api/bots")).body.bots.find((entry: any) => entry.id === bot.id)
     ?.tasks.find((task: any) => task.threadId === thread)?.busy, { timeout: 15_000 }).toBe(false);
@@ -149,14 +211,3 @@ it("saves keys for any OpenCode provider on a Cloud, shows only their names, and
   expect(started().env.VENICE_API_KEY).toBeUndefined();
   expect(started().env.ANTHROPIC_API_KEY).toBe(OWNER_ANTHROPIC);
 }, 90_000);
-
-it("refuses a name CryBot keeps, in one plain line, and saves nothing", async () => {
-  const before = readFileSync(join(dataDir, "config.json"), "utf8");
-  const refused = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { CRYBOT_CLOUD_BOAT_TOKEN: "x-token", VENICE_API_KEY: VENICE } } });
-  expect(refused.status).toBe(400);
-  expect(refused.body.error).toBe("Cry Bot keeps CRYBOT_CLOUD_BOAT_TOKEN for itself, so OpenCode can't be given it here. Put this key in opencode.json instead.");
-  expect(readFileSync(join(dataDir, "config.json"), "utf8")).toBe(before);
-  const opencodeKey = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { OPENCODE_API_KEY: "zen" } } });
-  expect(opencodeKey.status).toBe(400);
-  expect(opencodeKey.body.error).toBe("Save the OpenCode key in the OpenCode API key box instead.");
-});
