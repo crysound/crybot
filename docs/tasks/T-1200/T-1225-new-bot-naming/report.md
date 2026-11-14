@@ -154,3 +154,14 @@ PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vite
 仓库仍缺少 `docs/verification/README.md`。服务端测试使用测试初始化器创建的临时数据目录、真实 Store 和可见性模块，通过无监听端口的隔离请求 fixture 调用路由，未访问用户应用或数据。上述结果只证明组件和隔离路由行为，未进行完整服务启动、真实浏览器或实机验证。
 
 本轮未运行 typecheck、完整 `pnpm test` 或 e2e，未联网或新增依赖，未修改 `electron/`、`mobile/`、`.github/`，未做 git 提交。
+
+## 第 3 轮
+
+- 修正 `server/routes/bots-create.test.ts` 中客户端和管理员会话夹具的两处 `RequestAuth` 强转，改用同文件已有的 `as unknown as RequestAuth` 写法，未改变被测代码或测试行为。
+- 检查本分支改过的其他测试文件，未发现会触发同类 TS2352 的 `RequestAuth` 强转。
+
+验证结果：
+
+- `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run server/routes/bots-create.test.ts --maxWorkers=1 --configLoader runner`：24 项通过。
+- `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc --noEmit -p tsconfig.server.json`：通过，无输出。
+- 未提交 git；未联网、未加依赖，仅修改测试文件及本报告。

@@ -171,7 +171,7 @@ it("offers another unused name to clients without exposing defaults", async () =
 
 it("ignores names of bots the caller cannot see while excluding visible and current names", async () => {
   deps.store.createBot({ name: "Scout" });
-  auth = { kind: "session", scopes: ["client"], session: {} } as RequestAuth;
+  auth = { kind: "session", scopes: ["client"], session: {} } as unknown as RequestAuth;
   const random = vi.spyOn(Math, "random").mockReturnValue(0);
   try {
     const before = await call("/api/bot-name?exclude=Pixel");
@@ -179,7 +179,7 @@ it("ignores names of bots the caller cannot see while excluding visible and curr
     const privateBot = deps.store.createBot({ name: "Atlas" });
     deps.store.patchBot(privateBot.id, { visibility: "admins" });
     expect(await call("/api/bot-name?exclude=Pixel")).toEqual(before);
-    auth = { kind: "session", scopes: ["admin"], session: {} } as RequestAuth;
+    auth = { kind: "session", scopes: ["admin"], session: {} } as unknown as RequestAuth;
     expect(await call("/api/bot-name?exclude=Pixel")).toEqual({ status: 200, data: { suggestedName: "Nova" } });
   } finally {
     random.mockRestore();
