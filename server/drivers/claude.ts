@@ -1,7 +1,7 @@
 // Claude Code over stream-json both ways: prompt on stdin, one retained CLI process per thread,
 // each turn settled by the CLI's own `result` frame.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { claudeTurnLaunch } from "./claude-turn-launch.ts";
+import { claudeTurnLaunch, maySteerClaudeTurn } from "./claude-turn-launch.ts";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { createServer as createNetServer } from "node:net";
 import { homedir, tmpdir } from "node:os";
@@ -1240,7 +1240,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
         return { turnId };
       }
       if (live) closeSession(threadId, turn.sessionReset ? "context reset" : "spawn contract changed");
-      const { halves, launchSystem, environment: launchEnvironment, rememberWarmContract } = await claudeTurnLaunch(turn, env);
+      const { halves, launchSystem, environment: launchEnvironment, box: launchBox, rememberWarmContract } = await claudeTurnLaunch(turn, env);
 
       // Until sessions.set() below, this turn owns every launch resource and must release it on failure.
       const cleanupUnownedLaunch = () => {
@@ -1347,7 +1347,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
           emit({ ...base(threadId, turnId), type: "turn.completed", ok: false, stopReason: "interrupted", cost: null });
           return { turnId };
         }
-        child = spawnCli(cliToLaunch(config.cli, launchCli), args, { cwd, env: launchEnvironment(), stdio: ["pipe", "pipe", "pipe"], box: { ...(broker ? { rw: [broker.socketPath] } : {}), ...(hookTokenPath ? { ro: [dirname(hookTokenPath)] } : {}) } }, "bot");
+        child = spawnCli(cliToLaunch(config.cli, launchCli), args, { cwd, env: launchEnvironment(), stdio: ["pipe", "pipe", "pipe"], box: launchBox({ ...(broker ? { rw: [broker.socketPath] } : {}), ...(hookTokenPath ? { ro: [dirname(hookTokenPath)] } : {}) }) }, "bot");
       } catch (error) {
         cleanupUnownedLaunch();
         throw error;
@@ -1881,9 +1881,9 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
       return { turnId };
     };
 
-    const steer = async (threadId: string, text: string, images?: readonly ClaudeImage[]): Promise<SteerOutcome> => {
+    const steer = async (threadId: string, text: string, images?: readonly ClaudeImage[], person?: string): Promise<SteerOutcome> => {
       const s = sessions.get(threadId);
-      if (!s || !s.turn || s.turn.settled || s.closing || s.child.exitCode !== null) return "refused";
+      if (!s || !s.turn || s.turn.settled || s.closing || s.child.exitCode !== null || !maySteerClaudeTurn(s.turn.input, person)) return "refused";
       const turn = s.turn;
       let message: ClaudeUserMessage;
       try {

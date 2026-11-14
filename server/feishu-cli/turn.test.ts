@@ -9,10 +9,13 @@ import { personKey } from "../person-key.ts";
 import { resetFeishuLoginWarningsForTests } from "../feishu-login.ts";
 import { stripWorkspaceCredentialEnv } from "../credential-env.ts";
 import { boxEnvironment } from "../bot-box/env.ts";
-import { claudeTurnLaunch } from "../drivers/claude-turn-launch.ts";
+import { botBox, BoxRunner } from "../bot-box/box.ts";
+import { visibleInBox } from "../bot-box/plan.ts";
+import { claudeTurnLaunch, maySteerClaudeTurn } from "../drivers/claude-turn-launch.ts";
 import type { KeepWarmContract } from "../drivers/claude-keepwarm.ts";
 import { feishuCliAccess, feishuCliPrompt, directFeishuCliAccess } from "./turn.ts";
 import { brokerToken, BrokerAuthorizationError } from "./protocol.ts";
+import { feishuCliUser } from "./config.ts";
 
 vi.mock("./protocol.ts", async original => ({ ...await original<typeof import("./protocol.ts")>(), brokerToken: vi.fn() }));
 let directory: string;
@@ -23,8 +26,11 @@ beforeEach(async () => {
   directory = await mkdtemp(join(tmpdir(), "feishu-turn-"));
   sessions = new SessionRegistry({ file: join(directory, "sessions.json") });
   env = { CRYBOT_FEISHU_CLI_USERS: " test_union, test_union ", CRYBOT_FEISHU_BROKER_SOCKET: "/fixture/token.sock" };
+  vi.spyOn(botBox, "startOptions").mockReturnValue({ dataDir: join(directory, "data"), home: directory, port: 0, denyEnv: new Set(), codeRoots: [], engineRoots: [] });
   vi.mocked(brokerToken).mockResolvedValue({ user_access_token: short, app_id: "fixture-app", expires_at: 9_000_000_000 });
   resetFeishuLoginWarningsForTests();
+  vi.spyOn(botBox, "enabled").mockReturnValue(true);
+  vi.spyOn(botBox, "report").mockReturnValue({ ...botBox.report(), box: "bwrap" });
 });
 afterEach(async () => { sessions.close(); vi.restoreAllMocks(); vi.mocked(brokerToken).mockReset(); await rm(directory, { recursive: true, force: true }); });
 
@@ -46,6 +52,47 @@ it("does not enable another user, anonymous or ordinary non-Feishu sessions", ()
   const ordinary = sessions.issue({ label: "Fixture", scopes: ["client"] }).session;
   expect(sessions.feishuUnionIdForPerson(personKey(ordinary))).toBeUndefined();
   expect(feishuCliAccess(undefined, env)).toBeUndefined();
+  expect(brokerToken).not.toHaveBeenCalled();
+});
+
+it.each(["off", "gvisor", "user"] as const)("fails closed at boot and launch when sandbox detection is %s", async box => {
+  vi.mocked(botBox.report).mockReturnValue({ ...botBox.report(), box });
+  vi.mocked(botBox.enabled).mockReturnValue(false);
+  env.CRYBOT_BOT_BOX = "on";
+  const warn = vi.fn();
+  expect(feishuCliUser(env, warn)).toBeUndefined();
+  expect(warn.mock.calls).toEqual([["飞书代领需要开启智能体沙箱，当前未开启，已停用"]]);
+  const launch = await claudeTurnLaunch({ threadId: "thread", text: "Fixture", feishuCli: feishuCliAccess("test_union", env) }, env);
+  expect(launch.environment()).not.toHaveProperty("CRYBOT_FEISHU_USER_TOKEN");
+  expect(launch.box({})).toEqual({ rw: [], allowEnv: [] });
+  expect(launch.launchSystem).not.toContain("lark-cli");
+  expect(brokerToken).not.toHaveBeenCalled();
+});
+
+it("requires a running sandbox as well as successful detection", () => {
+  vi.mocked(botBox.enabled).mockReturnValue(false);
+  expect(feishuCliAccess("test_union", env)).toBeUndefined();
+  expect(brokerToken).not.toHaveBeenCalled();
+});
+
+it("rejects a socket visible in a read-only host mount", () => {
+  env.CRYBOT_FEISHU_BROKER_SOCKET = "/opt/x/token.sock";
+  const warn = vi.fn();
+  expect(feishuCliUser(env, warn)).toBeUndefined();
+  expect(warn).toHaveBeenCalledWith("飞书代领套接字路径对非授权盒子可见，已停用");
+});
+
+it("allows a socket in the private runtime mount", () => {
+  env.CRYBOT_FEISHU_BROKER_SOCKET = "/run/crybot-feishu-broker/token.sock";
+  expect(feishuCliUser(env)).toBe("test_union");
+});
+
+it("rejects multiple distinct users with a fixed boot warning", () => {
+  env.CRYBOT_FEISHU_CLI_USERS = " test_union,other_union,test_union ";
+  const warn = vi.fn();
+  expect(feishuCliUser(env, warn)).toBeUndefined();
+  expect(warn.mock.calls).toEqual([["飞书代领只支持一位用户，当前名单超过一人，已停用"]]);
+  for (const user of ["test_union", "other_union"]) expect(feishuCliAccess(user, env)).toBeUndefined();
   expect(brokerToken).not.toHaveBeenCalled();
 });
 
@@ -147,6 +194,40 @@ it("grants only the proven current request generation", async () => {
   expect(directFeishuCliAccess(undefined, "generation", personOf, unionOf, env)).toBeUndefined();
   const access = directFeishuCliAccess(request, "generation", personOf, unionOf, env)!;
   expect((await access.environment()).CRYBOT_FEISHU_USER_TOKEN).toBe(short);
+  const turn = { threadId: "thread", text: "Fixture", feishuCli: access };
+  expect(maySteerClaudeTurn(turn, personOf())).toBe(true);
+  expect(maySteerClaudeTurn(turn, "other-person")).toBe(false);
+  expect(maySteerClaudeTurn(turn, undefined)).toBe(false);
+  expect(maySteerClaudeTurn({ threadId: "thread", text: "Fixture" }, undefined)).toBe(true);
+});
+
+it.skipIf(process.platform === "win32")("mounts the token socket and grants environment names only to the authorized turn's box", async () => {
+  env.CRYBOT_FEISHU_BROKER_SOCKET = "/run/crybot-feishu-broker/token.sock";
+  env.CRYBOT_LARK_CLI_EXECUTABLE = "/opt/fixture/lark-cli";
+  env.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://example.invalid/authorize";
+  const runner = new BoxRunner({
+    bwrap: "/usr/bin/bwrap", denyEnv: new Set(),
+    bridge: { socat: null, bridgeScript: "/app/bridge.js", node: "/usr/bin/node" },
+    setup: { home: directory, dataDir: join(directory, "data"), codeRoots: ["/app"], engineRoots: [], bridges: [] },
+  });
+  for (const user of ["test_union", "other_union", undefined]) {
+    const launch = await claudeTurnLaunch({ threadId: "thread", text: "Fixture", feishuCli: feishuCliAccess(user, env) }, { ...env, CRYBOT_FEISHU_USER_TOKEN: "inherited" });
+    const wrapped = runner.wrap({ command: "/usr/bin/node", args: [], env: launch.environment(), ...launch.box({ rw: ["/run/fixture-permission.sock"], ro: ["/app/hooks"] }) });
+    expect(visibleInBox(wrapped.plan, env.CRYBOT_FEISHU_BROKER_SOCKET)).toBe(user === "test_union" ? "rw" : "none");
+    expect(visibleInBox(wrapped.plan, "/run/crybot-feishu-broker/other.sock")).toBe("none");
+    expect(visibleInBox(wrapped.plan, "/run/fixture-permission.sock")).toBe("rw");
+    expect(wrapped.env.CRYBOT_FEISHU_USER_TOKEN).toBe(user === "test_union" ? short : undefined);
+    expect(wrapped.env.CRYBOT_LARK_CLI_EXECUTABLE).toBe(user === "test_union" ? env.CRYBOT_LARK_CLI_EXECUTABLE : undefined);
+    expect(wrapped.env.CRYBOT_FEISHU_CLI_USERS).toBeUndefined();
+    if (user === "test_union") {
+      expect(wrapped.env.CRYBOT_FEISHU_APP_ID).toBe("fixture-app");
+      expect(wrapped.env.CRYBOT_FEISHU_EXPIRES_AT).toBe("9000000000");
+      expect(wrapped.env.CRYBOT_FEISHU_AUTHORIZATION_URL).toBe(env.CRYBOT_FEISHU_AUTHORIZATION_URL);
+      expect(wrapped.args).toContain("--unshare-pid");
+    }
+    wrapped.release();
+  }
+  expect(brokerToken).toHaveBeenCalledTimes(1);
 });
 
 it("isolates launch credentials from other users, boxes and warm contracts", async () => {
@@ -171,6 +252,7 @@ it("builds the launch prompt after a failed token request and cannot retain a wa
   vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", "https://example.invalid/authorize"));
   const launch = await claudeTurnLaunch({ threadId: "thread", text: "Fixture", system: "Stable", feishuCli: feishuCliAccess("test_union", env) }, env);
   expect(launch.environment()).toEqual({});
+  expect(launch.box({})).toEqual({ rw: [], allowEnv: [] });
   expect(launch.launchSystem).toContain("https://example.invalid/authorize");
   expect(launch.launchSystem).not.toContain("lark-cli");
   const contracts = new Map<string, KeepWarmContract>();

@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,11 +20,15 @@ it("isolates turn tokens, disables warm forks and drops credentials when the sam
     if (owner === "bot") launches.push({ ...opts.env });
     return spawn(cli, args, opts, owner);
   });
-  const instance = await ClaudeDriver.create({ instanceId: "feishu-fixture", displayName: "Fixture", enabled: true, environment: { FAKE_CLAUDE_MODE: "happy", CRYBOT_FEISHU_USER_TOKEN: "inherited-invalid", LARKSUITE_CLI_APP_SECRET: "inherited-invalid" }, config: { cli: fileURLToPath(new URL("../testing/fake-claude-cli.ts", import.meta.url)), permissionMode: "acceptEdits" } });
+  const instance = await ClaudeDriver.create({ instanceId: "feishu-fixture", displayName: "Fixture", enabled: true, environment: { FAKE_CLAUDE_MODE: "hang", FAKE_CLAUDE_RELEASE: join(directory, "release"), CRYBOT_FEISHU_USER_TOKEN: "inherited-invalid", LARKSUITE_CLI_APP_SECRET: "inherited-invalid" }, config: { cli: fileURLToPath(new URL("../testing/fake-claude-cli.ts", import.meta.url)), permissionMode: "acceptEdits" } });
   const events = recordEvents(instance.adapter);
-  const access = { prompt: () => feishuCliPrompt("zh"), environment: vi.fn(async () => ({ CRYBOT_FEISHU_USER_TOKEN: short, CRYBOT_FEISHU_APP_ID: "fixture-app", CRYBOT_FEISHU_EXPIRES_AT: "9000000000", CRYBOT_FEISHU_BROKER_SOCKET: "/fixture/token.sock" })) };
+  const access = { maySteer: (person: string | undefined) => person === "fixture-initiator", prompt: () => feishuCliPrompt("zh"), environment: vi.fn(async () => ({ CRYBOT_FEISHU_USER_TOKEN: short, CRYBOT_FEISHU_APP_ID: "fixture-app", CRYBOT_FEISHU_EXPIRES_AT: "9000000000", CRYBOT_FEISHU_BROKER_SOCKET: "/fixture/token.sock" })) };
   try {
     const first = await instance.adapter.sendTurn({ threadId: "feishu-turn", text: "Fixture", cwd: directory, system: "Fixture", feishuCli: access });
+    expect(await instance.adapter.steer!("feishu-turn", "Foreign message", undefined, "fixture-other")).toBe("refused");
+    expect(await instance.adapter.steer!("feishu-turn", "Unattributed message")).toBe("refused");
+    expect(await instance.adapter.steer!("feishu-turn", "Own follow-up", undefined, "fixture-initiator")).toBe("steered");
+    await writeFile(join(directory, "release"), "ready");
     await events.until(event => event.type === "turn.completed" && event.turnId === first.turnId);
     expect(launches[0].CRYBOT_FEISHU_USER_TOKEN).toBe(short);
     expect(launches[0].LARKSUITE_CLI_APP_SECRET).toBeUndefined();

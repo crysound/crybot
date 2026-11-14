@@ -1,5 +1,5 @@
-## 运行环境（InstaBox 云沙箱，必读）
-- 开工先在 worktree 根目录运行 `crybot-link-deps`（镜像自带，把预装依赖链进 node_modules），之后 `pnpm exec vitest` / `pnpm exec tsc` 才可用。
+## 运行环境（云沙箱，必读）
+- 开工先在 worktree 根目录运行 依赖准备脚本（镜像自带，把预装依赖链进 node_modules），之后 `pnpm exec vitest` / `pnpm exec tsc` 才可用。
 - 这里**没有** systemd，说明里出现的 `systemd-run --scope ... --` 前缀一律去掉直接运行；本机 8G/4 核，一次只跑一个测试文件。
 - 沙箱禁止监听端口的 e2e 跑不了，就在报告里写明，以 Actions 为准。
 
@@ -10,7 +10,7 @@
 ## 背景（现状）
 
 - 服务端和所有智能体进程都以同一个 Linux 用户运行，没开沙箱（`box: off`）。
-- 现在给智能体用的飞书命令 `lark-cli` 是一个包装器：每次调用读一个**长期凭证文件**（持有者凭它向公司的令牌接口 `tokenUrl` POST，带 `Authorization: Bearer <长期凭证>`，换回短期飞书用户令牌），再把短期令牌交给真正的 `@larksuite/cli`。包装器源码在下面附录，仓库里没有。
+- 现在给智能体用的飞书命令由包装器转交；服务端向配置的令牌接口换取短期令牌后再提供给它。旧包装器不在仓库内。
 - 问题：长期凭证对同用户的所有智能体都可读，而它的权限远大于飞书（能代表该员工访问其他内部系统）。已临时停用。
 
 ## 目标
@@ -21,7 +21,7 @@
 4. **只给指定用户的对话**：Cry Bot 服务端新增配置（例如 `CRYBOT_FEISHU_CLI_USERS`，取值为飞书 union_id 列表，复用 `server/feishu-login.ts` 里现有的 union_id 名单解析方式，`*` 不允许）。只有会话归属用户在名单里时，该轮智能体进程才拿到使用飞书命令的能力：服务端在启动该轮时向 broker 取短期令牌，经环境变量（例如 `CRYBOT_FEISHU_USER_TOKEN`、`CRYBOT_FEISHU_APP_ID`、`CRYBOT_FEISHU_EXPIRES_AT`）注入；长任务里令牌可能过期，包装器发现快过期时可以自己经 broker 套接字重取（套接字路径也经环境变量给）该轮进程；名单外用户的轮次不注入，也不在系统提示里提飞书。不在名单里的轮次调用 `lark-cli` 时得到清楚的中文提示「当前对话未开通飞书」。
    - 弄清会话归属用户怎么定（`server/sessions.ts`、`server/feishu-login.ts`、驱动 `server/drivers/claude.ts` 等），用已有的来源，不另存一份。
    - 令牌注入只在轮次进程环境里，不写盘，不进日志、事件流、会话记录或前端接口。
-5. **新的包装器**进仓库（建议 `packages/` 或 `scripts/` 下合适位置，以仓库现有结构为准），行为同附录包装器，但令牌来源改为：优先读 `CRYBOT_FEISHU_USER_TOKEN`（快过期则经套接字重取），交给真 CLI 时设 `LARKSUITE_CLI_APP_ID` 和 `LARKSUITE_CLI_USER_ACCESS_TOKEN`；没有就报「当前对话未开通飞书」退出 1。保留附录里的这些安全做法：清掉继承的 `LARKSUITE_CLI_*`/`MEEGLE_*` 环境变量、`STRICT_MODE=user`、`DEFAULT_AS=user`、`BRAND=feishu`、`--help`/`version` 不要令牌、`config` 子命令拒绝、`auth status` 只回 `{"authorized":true,"identity":"user"}`、其他 `auth` 子命令提示去授权页、高风险确认退出码 10 原样返回、Windows `.cmd` 走固定 JS 入口。**拦截 `update` 子命令**（`lark-cli update` 直接拒绝，提示由管理员升级）。
+5. **新的包装器**进仓库（建议 `packages/` 或 `scripts/` 下合适位置，以仓库现有结构为准），令牌来源为：优先读 `CRYBOT_FEISHU_USER_TOKEN`（快过期则经套接字重取），交给真 CLI 时设 `LARKSUITE_CLI_APP_ID` 和 `LARKSUITE_CLI_USER_ACCESS_TOKEN`；没有就报「当前对话未开通飞书」退出 1。遵循这些安全做法：清掉继承的 `LARKSUITE_CLI_*`/`MEEGLE_*` 环境变量、`STRICT_MODE=user`、`DEFAULT_AS=user`、`BRAND=feishu`、`--help`/`version` 不要令牌、`config` 子命令拒绝、`auth status` 只回 `{"authorized":true,"identity":"user"}`、其他 `auth` 子命令提示去授权页、高风险确认退出码 10 原样返回、Windows `.cmd` 走固定 JS 入口。**拦截 `update` 子命令**（`lark-cli update` 直接拒绝，提示由管理员升级）。
 6. **系统提示**：在名单内用户的轮次里，给智能体加一段简短说明（中英文都走现有 locales 或现有系统提示拼接方式，看 `server/drivers/claude.ts`、`server/team-memory.ts` 现有做法）：
    - 可以用 `lark-cli` 读写这位用户的飞书（日程、文档、消息、多维表格等），身份是用户本人；先 `lark-cli --help` 或子命令 `--help` 查用法。
    - **写操作和发消息之前必须先问用户确认**，用户明确同意后才执行。
@@ -29,11 +29,11 @@
    - 不要运行 `lark-cli update`，不要尝试读取或寻找任何凭证文件。
 7. broker 的部署件：仓库里给出 systemd 单元模板和安装说明（`DynamicUser` 或指定独立用户均可，`ProtectSystem=strict`、`NoNewPrivileges=yes`、`PrivateTmp=yes`、`RuntimeDirectory`、只读挂载凭证文件；凭证文件路径和 tokenUrl 走配置文件），文档里地址用占位符。真实安装由协调者做，你不要动系统。
 
-另：附录包装器还处理 `meegle`（飞书项目）命令，本任务只做 `lark-cli`，`meegle` 不接入。
+另：旧包装器还处理 `meegle`（飞书项目）命令，本任务只做 `lark-cli`，`meegle` 不接入。
 
-## 已知局限（报告里写清，不用解决）
+## 上线前置条件
 
-没开沙箱时，名单外用户的智能体和名单内用户的智能体是同一个系统用户，理论上能直接连 broker 套接字拿到短期令牌。本任务保证的是**长期凭证拿不到**、**短期令牌不落盘**；名单控制在开沙箱后才是硬隔离。报告里说明开沙箱后套接字只挂进名单用户的沙箱即可收紧。
+必须开启智能体沙箱（`CRYBOT_BOT_BOX=on`），且实际检测为 `bwrap`。否则代领能力失败关闭，不注入令牌、不挂载 socket，并在启动时输出固定告警。只有名单内唯一用户本人发起的单聊轮次可以获得能力；socket 逐轮挂载，其他轮次不得可见。管理员须确保名单身份与 broker 的单份员工凭证一致。
 
 ## 测试（写成仓库里可重复跑的测试）
 
@@ -46,35 +46,3 @@
 ## 报告
 
 `docs/tasks/T-1200/T-1232-feishu-broker/report.md` 写中文报告：改了哪些文件、配置项清单（名称、含义、示例占位值）、安装步骤（给协调者照做）、怎么跑测试、已知局限。
-
-## 附录：现有包装器（只供参考行为，仓库里没有，不要把路径写进仓库）
-
-```js
-export async function runCli(name, args, configFile) {
-  const config = JSON.parse(fs.readFileSync(process.env.WORKPARTNER_IDENTITY_CONFIG || configFile, "utf8"));
-  const executable = resolveCli(name, config);
-  const environment = { ...process.env };
-  for (const key of Object.keys(environment)) if (key.startsWith("LARKSUITE_CLI_") || key.startsWith("MEEGLE_")) delete environment[key];
-  // invoke(argv, capture): spawn executable；Windows .cmd 走 node_modules/@larksuite/cli/scripts/run.js，ELECTRON_RUN_AS_NODE=1
-  if (name === "lark-cli") {
-    environment.LARKSUITE_CLI_STRICT_MODE = "user";
-    environment.LARKSUITE_CLI_DEFAULT_AS = "user";
-    environment.LARKSUITE_CLI_BRAND = "feishu";
-    const help = args.includes("--help") || args.includes("-h") || args[0] === "version";
-    if (help) return invoke(args);
-    const identity = JSON.parse(fs.readFileSync(config.identityFile, "utf8")).token;
-    const response = await fetch(config.tokenUrl, { method: "POST", redirect: "error", headers: { authorization: `Bearer ${identity}` }, signal: AbortSignal.timeout(20000) });
-    const result = await response.json();
-    if (!response.ok) { console.error(`${result.message || "需要授权飞书"}\n${result.authorization_url || config.authorizationUrl}`); return 1; }
-    if (args[0] === "auth") {
-      if (args[1] === "status") { console.log(JSON.stringify({ authorized: true, identity: "user" })); return 0; }
-      console.error(`请在飞书授权页面连接或断开：${config.authorizationUrl}`); return 1;
-    }
-    if (args[0] === "config") { console.error("公司飞书命令只使用本人身份，请在飞书授权页面管理连接"); return 1; }
-    // 校验 result.user_access_token / result.app_id 为非空字符串、result.expires_at 为未过期的 Unix 秒
-    environment.LARKSUITE_CLI_APP_ID = result.app_id;
-    environment.LARKSUITE_CLI_USER_ACCESS_TOKEN = result.user_access_token;
-    return invoke(args);
-  }
-}
-```

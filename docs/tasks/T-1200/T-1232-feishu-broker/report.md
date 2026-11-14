@@ -6,7 +6,7 @@
 
 当前其他驱动不注入飞书能力，也不添加飞书提示。它们包含共享进程和不同的环境/会话快照机制，不能直接套用 Claude 的注入逻辑。本次按任务指向的 Claude 启动链路实现；若部署需要其他驱动，应先补齐相应的进程隔离与不落盘验证，再启用。
 
-当前工作区实际分支为 `master`，`.git` 为只读文件系统，创建 `T-1232-feishu-broker` 分支失败；未提交或推送。协调者需将工作区改动带到基于 `main` 的目标分支。
+前几轮的工作记录保留在下文；当前部署要求及安全边界以第 5 轮为准。本轮不提交或推送。
 
 ## 文件与行为
 
@@ -38,15 +38,16 @@ broker 的 JSON 配置只由 broker 系统用户读取：
 
 | 名称 | 含义 | 占位示例 |
 | --- | --- | --- |
-| `tokenUrl` | 代领接口完整 URL；生产使用 HTTPS | `https://example.invalid/token` |
+| `tokenUrl` | 代领接口完整 URL；强制 HTTPS，仅本地回环主机允许 HTTP | `https://example.invalid/token` |
 | `credentialFile` | 长期凭证 JSON 的绝对路径，内容格式为带字符串 token 字段的对象 | `/etc/crybot-feishu-broker/credential.json` |
 | `socketPath` | broker Unix socket 绝对路径，目录由独立用户拥有 | `/run/crybot-feishu-broker/token.sock` |
 
-Cry Bot 服务的环境变量：
+Cry Bot 服务的环境变量（上线必须开启沙箱）：
 
 | 名称 | 含义 | 占位示例 |
 | --- | --- | --- |
-| `CRYBOT_FEISHU_CLI_USERS` | 逗号分隔的飞书 union_id；去空白、去重；禁止 `*`，忽略并告警；未配置则关闭 | `union_example` |
+| `CRYBOT_BOT_BOX` | 必须为 on，且启动检测为 bwrap，沙箱成功运行 | `on` |
+| `CRYBOT_FEISHU_CLI_USERS` | 飞书 union_id；去空白、去重后只允许一人，超过一人失败关闭并告警；禁止 `*`；未配置则关闭 | `union_example` |
 | `CRYBOT_FEISHU_BROKER_SOCKET` | 与 broker 配置一致的 socket 路径 | `/run/crybot-feishu-broker/token.sock` |
 | `CRYBOT_LARK_CLI_EXECUTABLE` | 真正的 @larksuite/cli 可执行文件绝对路径，不能指回包装器 | `/opt/crybot-lark/node_modules/.bin/lark-cli` |
 | `CRYBOT_FEISHU_AUTHORIZATION_URL` | 可选，其他 auth 子命令提示的授权页；未配置则提示找管理员 | `https://example.invalid/authorize` |
@@ -64,6 +65,8 @@ Cry Bot 服务的环境变量：
 一个 broker 对应一份员工长期凭证，白名单应由管理员核对为该凭证所属的飞书身份。上游只返回规定的三字段，无法据此自行核验 union_id；不要将不同员工误配到同一个凭证。多员工各自身份需要独立 broker 和相应路由，当前配置为单 broker。
 
 ## 协调者安装步骤
+
+**上线前置条件：必须设置 `CRYBOT_BOT_BOX=on`，安装可用的 bubblewrap 并确认启动检测为 `bwrap`。检测失败时飞书代领自动停用；不得以关闭沙箱替代修复。broker socket 必须位于专用 `/run/crybot-feishu-broker/` 目录，不可放入 HOME、代码目录或智能体共享挂载。**
 
 以下操作只用于真实 Linux 主机上的协调者；本云沙箱没有 systemd，不在本任务中执行。示例假设 Cry Bot 运行用户及组叫 `crybot`，代码部署在 `/opt/crybot`，Node 24 在 `/opt/node24/bin/node`。按现场情况修改用户组和绝对路径。
 
@@ -90,14 +93,14 @@ Cry Bot 服务的环境变量：
 
    如已有同名命令，由管理员检查后替换，不能继续保留旧的读长期凭证包装器。确认 `/usr/local/bin` 在智能体 PATH 中。Windows 的真实 CLI 路径应指向 npm 全局 `.cmd` shim（相邻 `node_modules/@larksuite/cli/scripts/run.js`）；包装器使用 Node 固定入口，不通过 cmd 拼接用户参数。broker 部署仍为 Linux Unix socket。
 
-5. 在 Cry Bot 服务的现有环境配置中填写上表四项服务变量，重启 Cry Bot。不要填写任何短期令牌。配置缺失或名单为空时不会授予能力。模板使用独立 User、Cry Bot Group、RuntimeDirectory、ProtectSystem=strict、NoNewPrivileges=yes、PrivateTmp=yes、只读绑定配置/凭证目录及禁用 core dump；broker 仅向上游发起网络请求，不开 TCP 监听。
+5. 在 Cry Bot 服务的现有环境配置中填写上表服务变量，包括 `CRYBOT_BOT_BOX=on`，并确认启动检测为 `bwrap`，再上线 broker 和 Cry Bot。不要填写任何短期令牌。配置缺失或名单为空时不会授予能力。模板使用独立 User、Cry Bot Group、RuntimeDirectory、ProtectSystem=strict、NoNewPrivileges=yes、PrivateTmp=yes、只读绑定配置/凭证目录及禁用 core dump；broker 仅向上游发起网络请求，不开 TCP 监听。
 6. 检查 `systemctl status crybot-feishu-broker`，用 `stat` 核对 runtime 目录 owner/group/mode 和 socket 的 group/mode；用 Cry Bot 系统用户执行 `test ! -r /etc/crybot-feishu-broker/credential.json` 应成功。不要用 curl 打印真实令牌做验收。先运行下述全套隔离测试，再由协调者在获准对话中做不回显令牌的 `lark-cli auth status` 与只读业务验收。
 
 停止服务会清理 RuntimeDirectory。异常残留 socket 由管理员确认无活跃 broker 后处理；服务不会擅自覆盖现有路径。
 
 ## 可重复测试与验证结果
 
-先在 worktree 根目录运行 `crybot-link-deps`。下列命令每次只跑一个测试文件，不加 systemd-run 前缀：
+先在 worktree 根目录运行 依赖准备脚本。下列命令每次只跑一个测试文件，不加 systemd-run 前缀：
 
 ```sh
 pnpm exec vitest run server/feishu-cli/broker.test.ts
@@ -119,7 +122,7 @@ broker 单测覆盖并发合并、POST/redirect/超时信号、缓存、5 分钟
 
 检查了本机 Claude Code 2.1.288 的 shell snapshot 生成逻辑：保存函数、别名、shell 选项和 PATH，不全量序列化继承的进程环境；本实现不把飞书令牌写入这些字段。这是静态核查，尚未在真实 CLI 执行工具的隔离测试中验证，协调者更换原生 CLI 版本时需用合成凭证重新检查。
 
-本机实际为 **Node v24.22.3**，并非任务环境说明中预期的 Node 22。已执行 `crybot-link-deps`；本次没有遇到 TS 直接运行版本不兼容。Node 22 环境若无法运行 TS 或 fixture，仍以仓库 Node 24 Actions 为准。
+本机实际为 **Node v24.22.3**，并非任务环境说明中预期的 Node 22。已执行 依赖准备脚本；本次没有遇到 TS 直接运行版本不兼容。Node 22 环境若无法运行 TS 或 fixture，仍以仓库 Node 24 Actions 为准。
 
 本机通过：broker 15 项、包装器 11 项、轮次 7 项、飞书登录回归 13 项、凭证环境回归 2 项、session 回归 75 项，共 123 项；服务端 TypeScript 检查、改动文件 oxlint、git diff --check 通过。公开内容检查使用仓库 scanDiff 扫描工作区 diff（包含未跟踪的新文件）；无真实地址或凭证写入。
 
@@ -127,8 +130,7 @@ broker 单测覆盖并发合并、POST/redirect/超时信号、缓存、5 分钟
 
 ## 已知局限
 
-- `box: off` 时，名单外和名单内智能体仍以相同 Linux 用户运行。它们理论上可以直接连接 broker 获取短期令牌，也可能读取同用户进程环境。名单是服务端正常派发的能力控制，尚不是 OS 硬隔离。本任务保证长期凭证在独立系统用户边界内，以及正常令牌传递链路不落盘；无法阻止获准智能体主动输出或写入其环境中的短期令牌。
-- 开沙箱后，应只将 broker socket、包装器和必要的轮次环境变量挂入名单用户的沙箱，并阻止沙箱访问其他进程。当前没有自动开放沙箱挂载或扩大沙箱环境白名单。
+- 必须开启沙箱是上线前置条件；非 bwrap 或沙箱未成功运行时自动停用。获准智能体仍能主动输出或写入自己持有的短期令牌；进程隔离不能阻止它泄漏自身权限内的内容。
 - 写操作/发消息前确认由系统提示要求；包装器保留真实 CLI 的高风险退出码 10，不自动绕过。提示不是所有 CLI 写 API 的强制授权网关。
 - 单 broker 对应单凭证身份；其他驱动及多员工路由的范围见上文。没有接入 meegle，没有 refresh token，也不会自行刷新 OAuth 凭证。
 - 同一机器人线程若有其他登录用户进入，飞书轮次读到的内容会留在该线程历史里；当前飞书直登只开放给一个人，所以不构成问题，放开多人前要另行处理。
@@ -149,7 +151,7 @@ broker 单测覆盖并发合并、POST/redirect/超时信号、缓存、5 分钟
 
 ### 本轮验证
 
-已先运行 `crybot-link-deps`，全部命令使用 PATH 中的 **Node v24.22.3**，每次仅运行一个测试文件，没有使用 systemd-run。
+已先运行 依赖准备脚本，全部命令使用 PATH 中的 **Node v24.22.3**，每次仅运行一个测试文件，没有使用 systemd-run。
 
 先红后绿：新增的 60 秒复用用例在旧逻辑下观测到重复上游请求；断连降级用例在旧逻辑下抛出「飞书授权暂不可用」；严格请求身份的新测试在接入入口尚未实现时失败。入口测试另以返工前入口复跑，确认旧入口没有拒绝低版本、已知权限错误仍被笼统启动错误掩盖，恢复修复后通过。包装器新增断言用于补强已有行为。监听限制使完整服务器的新场景无法在本机完成红绿验证，不宣称端到端已通过。
 
@@ -182,7 +184,7 @@ broker 单测覆盖并发合并、POST/redirect/超时信号、缓存、5 分钟
 
 ### 本轮验证
 
-先运行 `crybot-link-deps`，测试逐文件执行，使用 PATH 中的 Node 24；没有使用 `systemd-run`。
+先运行 依赖准备脚本，测试逐文件执行，使用 PATH 中的 Node 24；没有使用 `systemd-run`。
 
 | 检查 | 本轮结果 |
 | --- | --- |
@@ -199,6 +201,8 @@ broker 单测覆盖并发合并、POST/redirect/超时信号、缓存、5 分钟
 
 
 ## 第 4 轮小修
+
+以下记录描述第 4 轮当时的实现与验证；其中未装箱注入及不开放盒内能力的状态，已由第 5 轮的失败关闭和逐轮盒内授权替代，不作为安装指引。
 
 本轮只修文件行数和环境变量归属两个 CI 失败。未提交 git，未安装系统服务或访问真实凭证、live app/data。
 
@@ -236,7 +240,7 @@ broker 单测覆盖并发合并、POST/redirect/超时信号、缓存、5 分钟
 
 ### 本轮验证与输出
 
-开工先执行 `crybot-link-deps`，输出 `linked 73 entries`；Node `v24.22.3`。Vitest 全程逐文件串行执行，没有使用 systemd-run。测试 setup 给每个文件创建临时 HOME，业务测试使用合成身份/凭证和临时目录。
+开工先执行 依赖准备脚本，输出 `linked 73 entries`；Node `v24.22.3`。Vitest 全程逐文件串行执行，没有使用 systemd-run。测试 setup 给每个文件创建临时 HOME，业务测试使用合成身份/凭证和临时目录。
 
 以下为实际命令输出摘录（省略时间和工作目录）；7 个测试文件合计 **68 项通过**：
 
@@ -332,3 +336,182 @@ exit 1
 首次集成验证发现抽取函数返回的 `environment` 名称遮蔽了驱动已有函数；已改成局部别名 `launchEnvironment`，重新执行 TypeScript 和 Claude fixture，前者通过，后者推进到上述 Unix socket 监听限制。这里列出的均为最终代码结果。
 
 AGENTS.md 指向的 `docs/verification/README.md` 仍不在仓库中；沿用现有测试的隔离夹具，不访问用户 live 数据。未运行 Actions；完整端到端及 CI 是否还有分支独有失败，以协调者推分支后的 Actions 为准。
+
+## 第 5 轮安全修复
+
+本轮处理 1 项中危和 4 项低危；未提交 git，未安装服务、读取真实凭证或访问用户 live app/data。开工运行依赖准备脚本，输出 `linked 73 entries`；运行时为 Node `v24.22.3`。以下为当前实现，替代前几轮关于未装箱注入的说明。
+
+### 改动与上线条件
+
+1. **必须开启沙箱**：`server/feishu-cli/config.ts` 每次组装轮次时刷新 bot-box 报告并检查运行时是否启用，只在实际 bwrap 盒子中返回名单用户。仅设置环境变量不足以通过检查。启动时还按默认盒子的挂载计划检查 broker socket；若路径在所有盒子可见的只读挂载中，输出固定文字「飞书代领套接字路径对非授权盒子可见，已停用」并关闭。关闭时不请求 broker、不注入令牌、不添加飞书用法或 socket 挂载。
+2. **逐轮盒内授权**：`claude-turn-launch.ts` 只将本轮成功代领所得的 socket 加入该次 spawn 的 `box.rw`，并将相应变量名传入 `allowEnv`。`bot-box/env.ts` 仅允许六个明确的飞书能力名字被逐轮授予，未扩大盒子的全局白名单；名单、登录密钥等配置继续留在服务端。broker 失败时环境授权和 socket 挂载均为空。测试调用实际 `BoxRunner.wrap`，核对授权用户可见 socket，其他用户和无身份轮次不可见，旁边的其他 socket 也不可见；短期令牌只出现在授权盒子的环境中，PID 隔离参数仍存在。
+3. **名单仅一人**：复用 union_id 解析器，去空白、去重后超过一人立即关闭；启动时固定告警「飞书代领只支持一位用户，当前名单超过一人，已停用」。重复填写同一个人仍按一人处理。一个 broker 仍只对应一份员工凭证，管理员须核对唯一名单身份与凭证归属。
+4. **追加消息身份隔离**：`directFeishuCliAccess` 捕获本轮已证明的发起人；驱动接口新增可选的认证 `person` 参数。`index.ts` 只为认证真人追加消息传入该身份；Claude 的 steer 在写入 stdin 前调用 `maySteerClaudeTurn`。其他身份或身份缺失返回 `refused`，走既有排队逻辑；原发起人可以继续 steer。身份通过独立参数传递，不解析提示中的名字。保温禁用及轮次结束后释放进程的规则继续生效。`claude.ts` 保持 **2087 行**，未修改 ratchet 上限。
+5. **上游传输安全**：broker 启动只接受 HTTPS；HTTP 仅接受主机 `127.0.0.1`、`::1`、`localhost`。外部 HTTP、近似本地域名、其他协议、带用户名密码的 URL 均拒绝并返回固定配置错误。测试保留本地假上游所需的回环 HTTP。
+6. **公开文档清理**：仅清理本任务目录的 brief、r2–r5、report；删除旧包装器附录及其引用，内部产品、环境变量和命令改为中性表述。指定的递归内部标识扫描无匹配。安装说明及 brief 已将 `CRYBOT_BOT_BOX=on` 和实际 `bwrap` 检测写成上线前置条件。
+
+部署时应使用安装说明中的专用 `/run/crybot-feishu-broker/token.sock`，不能把 socket 放入智能体已有的共享挂载。包装器、真实 CLI 及 Node 24 安装在盒内可见的管理员只读程序目录。不开沙箱的主机不得上线此能力；停用注入不能替代在部署层停止可被同用户直接访问的 broker。
+
+### 本轮环境变量归属
+
+下面六项仍不允许全局继承，仅在本轮成功代领后显式放行；`SERVER_ONLY_CRYBOT` 表示默认服务端保留，`allowEnv` 是受限的逐轮例外。
+
+| 名字 | 来源与读者 | 放行范围 |
+| --- | --- | --- |
+| `CRYBOT_FEISHU_USER_TOKEN` | `turn.ts:44` 生成，`wrapper.ts` 读取 | 获准轮次的短期令牌 |
+| `CRYBOT_FEISHU_APP_ID` | `turn.ts:45` 从 broker 返回体取值，`wrapper.ts` 读取 | 不继承服务端登录配置 |
+| `CRYBOT_FEISHU_EXPIRES_AT` | `turn.ts:46` 生成，`wrapper.ts` 判断重取 | 获准轮次 |
+| `CRYBOT_FEISHU_BROKER_SOCKET` | `turn.ts:47` 提供，包装器重取；`claude-turn-launch.ts:20` 构造挂载 | 仅绑定该 socket，不绑定整个目录 |
+| `CRYBOT_FEISHU_AUTHORIZATION_URL` | `turn.ts:49` 提供，包装器授权提示 | 获准轮次；代领失败时只通过校验后的系统提示给出链接 |
+| `CRYBOT_LARK_CLI_EXECUTABLE` | `turn.ts:48` 提供，包装器启动固定 CLI | 获准轮次 |
+
+`CRYBOT_FEISHU_CLI_USERS`、登录密钥及其文件路径不在逐轮例外中。所有继承的飞书凭证仍先清除；普通轮次不会因为父环境留有短期令牌而获得能力。
+
+### 验证输出
+
+Vitest 全程逐文件串行执行，不使用 systemd-run。以下七个文件共 **83 项通过**；输出摘录省略时间和工作目录。
+
+```text
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+exit 0
+
+$ pnpm exec vitest run server/bot-box/env.test.ts
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+exit 0
+
+$ pnpm exec vitest run server/feishu-cli/broker.test.ts
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+exit 0
+
+$ pnpm exec vitest run server/feishu-cli/wrapper.test.ts
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+exit 0
+
+$ pnpm exec vitest run server/feishu-cli/turn.test.ts
+ Test Files  1 passed (1)
+      Tests  26 passed (26)
+exit 0
+
+$ pnpm exec vitest run scripts/feishu-broker/entrypoints.test.mjs
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+exit 0
+
+$ pnpm exec vitest run server/feishu-cli/protocol.test.ts
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+exit 0
+```
+
+新增轮次测试覆盖非 bwrap 的三种结果、检测成功但运行时未启用、多人名单拒绝、socket 路径挂载可见性、原发起人与其他身份的 steer 判定，以及授权/非授权盒子的实际挂载计划和过滤后环境。broker 增加 9 项协议及主机校验。Claude 隔离 fixture 增加外人/缺失身份拒绝、本人可 steer；服务器 fixture 的 `sandbox=true` 场景用与服务进程相同的 PATH 调用 `detectBox`，只有检测到可用 bwrap 才执行，否则打印原因并跳过。假 CLI 放在代码根测试临时目录，转储写入轮次工作目录；授权盒子实际连接 socket，名单外盒子没有 socket 路径。
+
+已实际尝试启动隔离 fixture。本执行沙箱除禁止 TCP 外，Unix socket 监听也报 `EPERM`；这些端到端用例没有宣称通过，完整结果以 Actions 为准：
+
+```text
+$ pnpm exec vitest run server/feishu-cli/claude.e2e.test.ts
+permission broker unavailable ... listen EPERM: operation not permitted ...sock
+Error: claude: permission broker could not bind a local socket
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+exit 1
+
+$ pnpm exec vitest run server/feishu-cli/socket.e2e.test.ts
+Error: listen EPERM: operation not permitted 127.0.0.1
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+exit 1
+
+$ pnpm exec vitest run server/feishu-cli/server.e2e.test.ts
+Error: listen EPERM: operation not permitted .../broker.sock
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 skipped (2)
+exit 1
+```
+
+AGENTS.md 所指的 `docs/verification/README.md` 仍缺失，验证沿用现有隔离 fixture，全部使用临时目录和合成身份/凭证，没有接触 live 数据。未运行 Actions。历史中关于共享线程可保留飞书内容、提示确认不等于 API 强制审批等边界仍适用。
+
+最终静态检查和文档扫描输出：
+
+```text
+$ pnpm exec tsc -p tsconfig.server.json --pretty false
+（无输出）
+exit 0
+
+$ pnpm exec oxlint --deny-warnings server/bot-box/env.ts server/bot-box/env.test.ts server/contracts.ts server/drivers/claude.ts server/drivers/claude-turn-launch.ts server/feishu-cli/config.ts server/feishu-cli/turn.ts server/feishu-cli/turn.test.ts server/feishu-cli/broker.ts server/feishu-cli/broker.test.ts server/feishu-cli/claude.e2e.test.ts server/feishu-cli/server.e2e.test.ts server/index.ts
+（无输出）
+exit 0
+
+$ pnpm exec oxlint --deny-warnings server/feishu-cli/server.e2e.test.ts
+（最终测试声明调整后复查，无输出）
+exit 0
+
+$ wc -l server/drivers/claude.ts
+2087 server/drivers/claude.ts
+
+$ git diff --check
+（无输出）
+exit 0
+
+任务目录指定内部标识 grep 扫描：
+（无输出，无匹配）
+exit 1
+```
+
+服务器 fixture 参数化时曾发现测试上下文/超时签名类型错误，已修正并重新运行 TypeScript 及该 fixture；以上记录均为最终结果。
+
+## 第 6 轮沙箱端到端修复
+
+本轮未提交 git，也没有安装服务、读取真实凭证或接触用户 live app/data。`server/feishu-cli/server.e2e.test.ts` 的 `sandbox=true` 场景现在把 bwrap 所在目录加入传给服务子进程的 PATH，并用同一份环境调用 `detectBox`；只有检测结果为 `bwrap` 才执行，其他情况打印固定的跳过原因。假 CLI 放在代码根下的测试临时目录，转储仍写入轮次工作目录。授权轮次的假 CLI 实际连接传入的 Unix socket，名单外轮次没有 socket 路径且探测结果为 `missing`。
+
+`server/feishu-cli/config.ts` 启动校验使用默认盒子的挂载计划：`/run/crybot-feishu-broker/token.sock` 对非授权盒子不可见，可以通过；`/opt/x/token.sock` 落在只读挂载中，输出「飞书代领套接字路径对非授权盒子可见，已停用」并关闭。每次组装轮次仍调用 `botBox.report()`，同步刷新 `/proc/mounts`，运行时能力由 `botBox.enabled()` 判定。第 5 轮文档的重复运行环境段已删除，背景流程改为中性描述。
+
+### 本轮验收
+
+已先运行依赖准备脚本，Vitest 每次只跑一个文件，没有使用 systemd-run。Node 为 `v24.22.3`。
+
+| 检查 | 结果 |
+| --- | --- |
+| `pnpm exec vitest run server/feishu-cli/server.e2e.test.ts` | 2 项跳过；本沙箱禁止 Unix socket，输出「跳过 server.e2e：当前沙箱禁止监听 Unix socket」；未在本沙箱执行 bwrap 场景，以 Actions 为准 |
+| `pnpm exec vitest run server/feishu-cli/turn.test.ts` | 28 项通过 |
+| `pnpm exec vitest run server/feishu-cli/broker.test.ts` | 29 项通过 |
+| `pnpm exec vitest run server/feishu-cli/claude.e2e.test.ts` | 1 项因 permission broker 监听 Unix socket 报 `listen EPERM`，未宣称通过，以 Actions 为准 |
+| `pnpm exec vitest run server/bot-box/env.test.ts` | 10 项通过 |
+| `pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts` | 1 项通过；`claude.ts` 仍为 2087 行 |
+| `pnpm exec tsc -p tsconfig.server.json --pretty false` | 通过 |
+| 改动代码和测试 `pnpm exec oxlint --deny-warnings ...` | 通过，无告警 |
+
+实际输出摘要：
+
+```text
+$ pnpm exec vitest run server/feishu-cli/server.e2e.test.ts
+ Test Files  1 passed (1)
+      Tests  2 skipped (2)
+
+$ pnpm exec vitest run server/feishu-cli/turn.test.ts
+ Test Files  1 passed (1)
+      Tests  28 passed (28)
+$ pnpm exec vitest run server/feishu-cli/broker.test.ts
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+$ pnpm exec vitest run server/feishu-cli/claude.e2e.test.ts
+permission broker unavailable ... listen EPERM: operation not permitted ...sock
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+$ pnpm exec vitest run server/bot-box/env.test.ts
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+$ pnpm exec tsc -p tsconfig.server.json --pretty false
+（无输出，exit 0）
+$ pnpm exec oxlint --deny-warnings server/feishu-cli/config.ts server/feishu-cli/server.e2e.test.ts server/feishu-cli/turn.test.ts
+（无输出，exit 0）
+```
+
+所有新临时文件在测试结束清理，令牌和 socket 路径不进入事件流、会话记录或日志断言。完整端到端结果需在允许 Unix socket、具备 bwrap 的 Actions 主机复核。

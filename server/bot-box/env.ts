@@ -54,12 +54,18 @@ export const BOX_ENV_NEVER: ReadonlySet<string> = new Set([
 ]);
 export const BOX_ENV_NEVER_PREFIXES: readonly string[] = ["CRYBOT_CLOUD_"];
 
+// Security: these credentials pass only when the server explicitly grants them to this spawn.
+const TURN_CRYBOT_NAMES: ReadonlySet<string> = new Set([
+  "CRYBOT_FEISHU_USER_TOKEN", "CRYBOT_FEISHU_APP_ID", "CRYBOT_FEISHU_EXPIRES_AT",
+  "CRYBOT_FEISHU_BROKER_SOCKET", "CRYBOT_FEISHU_AUTHORIZATION_URL", "CRYBOT_LARK_CLI_EXECUTABLE",
+]);
+
 /** `allow` is what one spawn vouches for: the keys the person saved for its engine, under whatever name that engine reads
  * (NANO_GPT_API_KEY, OPENCODE_API_KEY). Security: it lifts the allow-list and `deny` for that process only, and never for
- * a name of CryBot's own (`CRYBOT_`) or one on the never-list. */
+ * a name of CryBot's own (`CRYBOT_`, except explicit per-turn capabilities) or one on the never-list. */
 export function boxEnvironmentAllows(name: string, deny: ReadonlySet<string> = new Set(), allow: ReadonlySet<string> = new Set()): boolean {
   if (BOX_ENV_NEVER.has(name) || BOX_ENV_NEVER_PREFIXES.some((prefix) => name.startsWith(prefix))) return false;
-  if (allow.has(name) && !name.startsWith("CRYBOT_")) return true;
+  if (allow.has(name) && (!name.startsWith("CRYBOT_") || TURN_CRYBOT_NAMES.has(name))) return true;
   if (deny.has(name)) return false;
   if (name.startsWith("CRYBOT_")) return BOX_ENV_CRYBOT_NAMES.has(name) || BOX_ENV_CRYBOT_PREFIXES.some((prefix) => name.startsWith(prefix));
   return BOX_ENV_NAMES.has(name) || BOX_ENV_PREFIXES.some((prefix) => name.startsWith(prefix));

@@ -62,7 +62,8 @@ export class BrokerStartupError extends Error {
 export async function startBroker(config: BrokerConfig) {
   let url: URL;
   try { url = new URL(config.tokenUrl); } catch { throw new BrokerStartupError("飞书代领服务配置无效"); }
-  if (!["https:", "http:"].includes(url.protocol) || url.username || url.password || !isAbsolute(config.socketPath) || !isAbsolute(config.credentialFile)) throw new BrokerStartupError("飞书代领服务配置无效");
+  const secure = url.protocol === "https:" || (url.protocol === "http:" && ["127.0.0.1", "[::1]", "localhost"].includes(url.hostname));
+  if (!secure || url.username || url.password || !isAbsolute(config.socketPath) || !isAbsolute(config.credentialFile)) throw new BrokerStartupError("飞书代领服务配置无效");
   let credential;
   try { credential = await lstat(config.credentialFile); } catch { throw new BrokerStartupError("凭证文件必须仅 broker 用户可读"); }
   if (!credential.isFile() || credential.uid !== process.getuid?.() || (credential.mode & 0o077) !== 0) throw new BrokerStartupError("凭证文件必须仅 broker 用户可读");

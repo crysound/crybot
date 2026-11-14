@@ -96,6 +96,14 @@ it("maps invalid token URLs to the fixed configuration error", async () => {
   await expect(startBroker({ credentialFile: join(directory, "credential.json"), tokenUrl: "not a URL", socketPath: join(directory, "runtime", "token.sock") })).rejects.toThrow("飞书代领服务配置无效");
 });
 
+it.each(["http://example.com/token", "http://localhost.example.invalid/token", "http://127.0.0.2/token", "ftp://localhost/token", "https://user:password@example.invalid/token"])("rejects an insecure token URL: %s", async tokenUrl => {
+  await expect(startBroker({ credentialFile: join(directory, "missing.json"), tokenUrl, socketPath: join(directory, "token.sock") })).rejects.toThrow("飞书代领服务配置无效");
+});
+
+it.each(["https://example.invalid/token", "http://127.0.0.1:1234/token", "http://[::1]:1234/token", "http://localhost:1234/token"])("accepts a secure or loopback URL before checking credentials: %s", async tokenUrl => {
+  await expect(startBroker({ credentialFile: join(directory, "missing.json"), tokenUrl, socketPath: join(directory, "token.sock") })).rejects.toThrow("凭证文件必须仅 broker 用户可读");
+});
+
 it("maps a missing credential file to the fixed credential error", async () => {
   await expect(startBroker({ credentialFile: join(directory, "missing.json"), tokenUrl: "https://example.invalid/token", socketPath: join(directory, "runtime", "token.sock") })).rejects.toThrow("凭证文件必须仅 broker 用户可读");
 });

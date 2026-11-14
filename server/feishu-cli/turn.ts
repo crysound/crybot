@@ -1,11 +1,12 @@
 import { provenRequestPerson } from "../shared-computers.ts";
-import { identityList } from "../feishu-login.ts";
+import { feishuCliUser } from "./config.ts";
 import { brokerToken, BrokerAuthorizationError } from "./protocol.ts";
 import { cleanFeishuEnvironment } from "./wrapper.ts";
 
 export interface FeishuCliAccess {
   environment(): Promise<NodeJS.ProcessEnv>;
   prompt(): string;
+  maySteer(person: string | undefined): boolean;
 }
 
 function validAuthorizationUrl(value: string | undefined): value is string {
@@ -22,15 +23,18 @@ export function directFeishuCliAccess(
   unionIdForPerson: (person: string | undefined) => string | undefined,
   env: NodeJS.ProcessEnv = process.env, language = "en",
 ): FeishuCliAccess | undefined {
-  return feishuCliAccess(unionIdForPerson(provenRequestPerson(request, generation, personOf) ?? undefined), env, language);
+  const initiator = provenRequestPerson(request, generation, personOf) ?? undefined;
+  const access = feishuCliAccess(unionIdForPerson(initiator), env, language);
+  return access && { ...access, maySteer: person => Boolean(initiator && person === initiator) };
 }
 
 export function feishuCliAccess(unionId: string | undefined, env: NodeJS.ProcessEnv = process.env, language = "en"): FeishuCliAccess | undefined {
-  const users = identityList(env.CRYBOT_FEISHU_CLI_USERS, "CRYBOT_FEISHU_CLI_USERS", false);
+  const user = feishuCliUser(env);
   const socket = env.CRYBOT_FEISHU_BROKER_SOCKET;
-  if (!unionId || !users.includes(unionId) || !socket) return undefined;
+  if (!unionId || user !== unionId || !socket) return undefined;
   let unavailable: string | undefined;
   return {
+    maySteer: () => false,
     prompt: () => unavailable ?? feishuCliPrompt(language),
     async environment() {
       try {
@@ -41,6 +45,7 @@ export function feishuCliAccess(unionId: string | undefined, env: NodeJS.Process
           CRYBOT_FEISHU_APP_ID: token.app_id,
           CRYBOT_FEISHU_EXPIRES_AT: String(token.expires_at),
           CRYBOT_FEISHU_BROKER_SOCKET: socket,
+          ...(env.CRYBOT_LARK_CLI_EXECUTABLE ? { CRYBOT_LARK_CLI_EXECUTABLE: env.CRYBOT_LARK_CLI_EXECUTABLE } : {}),
           ...(env.CRYBOT_FEISHU_AUTHORIZATION_URL ? { CRYBOT_FEISHU_AUTHORIZATION_URL: env.CRYBOT_FEISHU_AUTHORIZATION_URL } : {}),
         };
       } catch (error) {

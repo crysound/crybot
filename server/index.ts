@@ -1,6 +1,7 @@
 // Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
 import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
 import { directFeishuCliAccess } from "./feishu-cli/turn.ts";
+import { feishuCliUser } from "./feishu-cli/config.ts";
 import { requestedBotFields } from "./admin-audit-request-fields.ts";
 import { createSessionNames } from "./host/session-names.ts";
 import { createDataDirLeaseExit } from "./host/data-dir-lease-exit.ts";
@@ -743,7 +744,8 @@ if (CLOUD_HOME) {
 }
 holdIncludedServices(CLOUD_ENV);
 for (const key of CLOUD_HOME_SECRET_KEYS) delete process.env[key];
-await startBotBoxAtBoot({ dataDir: DATA_DIR, port: PORT }); // The bot box (server/bot-box): on a Cloud home every bot turn runs in it, decided before any engine starts.
+await startBotBoxAtBoot({ dataDir: DATA_DIR, port: PORT });
+feishuCliUser(process.env, console.warn);
 if (CLOUD_HOME && Object.keys(CLOUD_SECRETS).length === 0) {
   console.warn("cloud home: its secrets came in this process's environment, which anything running as the same user can read in /proc; start it with cloud-home-start");
 }
@@ -7264,8 +7266,8 @@ async function acceptDirectSend(
         if (busyAdmission.action === "steer" && instance?.adapter.steer) {
           const prompt = (app?.context ?? "") + personPrompt(threadId, sender, promptWithReply(promptWithDataContext(steerInput.text, dataContext), replyTo, userNameFor(threadId)));
           steered = await (steerInput.images.length > 0
-            ? instance.adapter.steer(threadId, prompt, steerInput.images)
-            : instance.adapter.steer(threadId, prompt))
+            ? instance.adapter.steer(threadId, prompt, steerInput.images, personsOwn ? sender?.id : undefined)
+            : instance.adapter.steer(threadId, prompt, undefined, personsOwn ? sender?.id : undefined))
             .catch((): SteerOutcome => "indeterminate");
         }
         // steer() awaits the adapter: re-check ownership before appending, or a late acknowledgement writes into a task the bot no longer owns.
