@@ -102,7 +102,7 @@ async function waitForReadyScreens() {
 }
 
 const rfbCheck = String.raw`
-import ctypes, ctypes.util, json, socket, struct, sys
+import base64, ctypes, ctypes.util, json, os, socket, struct, sys
 passwords = json.load(sys.stdin)
 crypto = ctypes.CDLL(ctypes.util.find_library('crypto'))
 crypto.DES_set_key_unchecked.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
@@ -114,29 +114,68 @@ def read(sock, count):
         if not more: raise RuntimeError('RFB disconnected')
         data += more
     return data
+def read_until(sock, marker):
+    data = b''
+    while marker not in data:
+        more = sock.recv(4096)
+        if not more: raise RuntimeError('websocket handshake disconnected')
+        data += more
+    return data
+def websocket_read(sock):
+    first, second = read(sock, 2)
+    length = second & 0x7f
+    if length == 126: length = struct.unpack('!H', read(sock, 2))[0]
+    elif length == 127: length = struct.unpack('!Q', read(sock, 8))[0]
+    mask = read(sock, 4) if second & 0x80 else b''
+    payload = bytearray(read(sock, length))
+    if mask:
+        for index in range(length): payload[index] ^= mask[index % 4]
+    if first & 0x0f == 8: raise RuntimeError('websocket closed during RFB')
+    return bytes(payload)
+def websocket_write(sock, payload):
+    mask = b'CBOT'
+    length = len(payload)
+    if length < 126: header = bytes([0x82, 0x80 | length])
+    elif length < 65536: header = bytes([0x82, 0xfe]) + struct.pack('!H', length)
+    else: header = bytes([0x82, 0xff]) + struct.pack('!Q', length)
+    sock.sendall(header + mask + bytes(value ^ mask[index % 4] for index, value in enumerate(payload)))
+def rfb_authenticate(sock, password, read_packet=read, write_packet=lambda s, data: s.sendall(data)):
+    assert read_packet(sock, 12) == b'RFB 003.008\n'
+    write_packet(sock, b'RFB 003.008\n')
+    number = read_packet(sock, 1)[0]
+    types = read_packet(sock, number)
+    assert 2 in types and 1 not in types, 'VNC password auth required'
+    write_packet(sock, b'\x02')
+    challenge = read_packet(sock, 16)
+    key = bytes(int(f'{b:08b}'[::-1], 2) for b in password.encode()[:8].ljust(8, b'\0'))
+    schedule = (ctypes.c_ulong * 32)()
+    crypto.DES_set_key_unchecked(ctypes.create_string_buffer(key), schedule)
+    response = b''
+    for offset in (0, 8):
+        block = ctypes.create_string_buffer(8)
+        crypto.DES_ecb_encrypt(ctypes.create_string_buffer(challenge[offset:offset+8]), block, schedule, 1)
+        response += block.raw
+    write_packet(sock, response)
+    return struct.unpack('!I', read_packet(sock, 4))[0] == 0
 def authenticate(port, password):
     with socket.create_connection(('127.0.0.1', port), 10) as sock:
         sock.settimeout(10)
-        assert read(sock, 12) == b'RFB 003.008\n'
-        sock.sendall(b'RFB 003.008\n')
-        types = read(sock, read(sock, 1)[0])
-        assert 2 in types and 1 not in types, 'VNC password auth required'
-        sock.sendall(b'\x02')
-        challenge = read(sock, 16)
-        key = bytes(int(f'{b:08b}'[::-1], 2) for b in password.encode()[:8].ljust(8, b'\0'))
-        schedule = (ctypes.c_ulong * 32)()
-        crypto.DES_set_key_unchecked(ctypes.create_string_buffer(key), schedule)
-        response = b''
-        for offset in (0, 8):
-            block = ctypes.create_string_buffer(8)
-            crypto.DES_ecb_encrypt(ctypes.create_string_buffer(challenge[offset:offset+8]), block, schedule, 1)
-            response += block.raw
-        sock.sendall(response)
-        return struct.unpack('!I', read(sock, 4))[0] == 0
+        return rfb_authenticate(sock, password)
+def authenticate_token(token, password):
+    with socket.create_connection(('127.0.0.1', 6901), 10) as sock:
+        sock.settimeout(10)
+        key = base64.b64encode(os.urandom(16)).decode()
+        sock.sendall((f'GET /websockify?token={token} HTTP/1.1\r\nHost: 127.0.0.1:6901\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Protocol: binary\r\n\r\n').encode())
+        headers = read_until(sock, b'\r\n\r\n')
+        assert b' 101 ' in headers, f'token {token} did not upgrade: {headers.splitlines()[0]!r}'
+        return rfb_authenticate(sock, password, websocket_read, websocket_write)
 for n, password in enumerate(passwords, 1):
     assert authenticate(5900+n, password), f's{n} correct password refused'
     assert not authenticate(5900+n, 'wrong-pw'), f's{n} wrong password accepted'
-print('RFB authentication passed for s1 and s2 (correct and wrong passwords)')
+    assert authenticate_token(f's{n}', password), f'token s{n} correct password refused'
+    assert not authenticate_token(f's{n}', 'wrong-pw'), f'token s{n} wrong password accepted'
+assert not authenticate_token('s2', passwords[0]), 's1 password authenticated through token s2'
+print('RFB authentication passed for direct and token routes (correct, wrong, and cross-screen passwords)')
 `;
 
 async function tokenHandshake(port, n) {
@@ -178,6 +217,17 @@ async function tokenHandshake(port, n) {
     }
   }
   throw new Error(`s${n} websockify failed after 30s; last HTTP status: ${lastHttpStatus}; ${lastError?.message}`);
+}
+
+async function expectCommandFailure(label, args) {
+  try {
+    await docker(args);
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith(`${label}: unexpectedly succeeded`)) throw error;
+    console.log(`${label}: denied as expected`);
+    return;
+  }
+  throw new Error(`${label}: unexpectedly succeeded`);
 }
 
 try {
@@ -234,6 +284,12 @@ try {
     assert.equal((await docker(root(["stat", "-c", "%u:%a:%s", `/run/crybot/screens/s${n}/passwd`]))).stdout.trim(), `${61000 + n}:400:8`);
   }
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "! test -r /home/crybot-s1 && ! test -r /home/cua/workspace/screens/s1 && ! test -r /run/user/61001/crybot-cua.sock"]));
+  await expectCommandFailure("crybot-s1 cannot query s2 display", screenIdentityArgs(screen(1), ["sh", "-c", "DISPLAY=:2 xset q"]));
+  await expectCommandFailure("crybot-s1 cannot connect to s2 cua socket", screenIdentityArgs(screen(1), ["/usr/bin/python3", "-c", "import socket; s=socket.socket(socket.AF_UNIX); s.settimeout(2); s.connect('/run/user/61002/crybot-cua.sock')"]));
+  for (const [label, args] of [
+    ["crybot-s1 sudo", screenIdentityArgs(screen(1), ["sudo", "-n", "true"])],
+    ["crybot-s2 sudo", screenIdentityArgs(screen(2), ["sudo", "-n", "true"])],
+  ]) await expectCommandFailure(label, args);
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "sleep 300 >/dev/null 2>&1 &"]));
   await checkUsercustomize(args => screenIdentityArgs(screen(2), args), "/home/crybot-s2", "61002", async marker => {
     await docker(root(["env", "-u", "PYTHONNOUSERSITE", "HOME=/home/crybot-s2",
@@ -250,6 +306,7 @@ try {
     await assertNotRootMarker(marker);
   });
   const cua = args => ["exec", "-u", "cua", name, "env", "-u", "VNC_PW", "HOME=/home/cua", ...args];
+  await expectCommandFailure("cua sudo", cua(["sudo", "-n", "true"]));
   const cuaUid = (await docker(cua(["id", "-u"]))).stdout.trim();
   await checkUsercustomize(cua, "/home/cua", cuaUid, async marker => {
     await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "status", "crybot-websockify"]));
@@ -262,7 +319,7 @@ try {
   }
   await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "start", "crybot-websockify"]));
   await tokenHandshake(port, 1);
-  await docker(root(["sh", "-c", "mkdir -p /root/crybot-runtime-target; chown 0:0 /root/crybot-runtime-target; stat -c %u:%g /root/crybot-runtime-target"]));
+  const runtimeTargetStat = (await docker(root(["sh", "-c", "mkdir -p /root/crybot-runtime-target; chown 0:0 /root/crybot-runtime-target; stat -c %u:%g:%a /root/crybot-runtime-target"]))).stdout.trim();
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "rm -rf \"$XDG_RUNTIME_DIR/tmp\"; ln -s /root/crybot-runtime-target \"$XDG_RUNTIME_DIR/tmp\""]));
   await docker(["restart", name], { timeout: 60_000 });
   const restartedPort = (await docker(["port", name, "6901/tcp"])).stdout.trim().split(":").at(-1);
@@ -275,7 +332,8 @@ try {
       await delay(1000);
     }
   }
-  await docker(root(["sh", "-c", "test \"$(stat -c %u:%g /root/crybot-runtime-target)\" = 0:0"]));
+  const restartedRuntimeTargetStat = (await docker(root(["stat", "-c", "%u:%g:%a", "/root/crybot-runtime-target"]))).stdout.trim();
+  assert.equal(restartedRuntimeTargetStat, runtimeTargetStat, `runtime tmp symlink target ownership/mode changed: ${runtimeTargetStat} -> ${restartedRuntimeTargetStat}`);
   await startScreen("docker", screen(1), passwords[0]);
   await startScreen("docker", screen(2), passwords[1]);
   await waitForReadyScreens();

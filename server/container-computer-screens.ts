@@ -61,6 +61,7 @@ export function screenIdentityArgs(
     ...Object.entries(env).flatMap(([key, value]) => ["-e", `${key}=${value}`]),
     target.containerName,
     "env", "-u", "VNC_PW", "prlimit", "--nproc=1500", "--",
+    "/usr/local/libexec/crybot/screen-program",
     "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
     ...args,
   ];
@@ -112,12 +113,24 @@ export function createContainerScreens({ sh, containerRuntimeStatus }: {
 }) {
   async function stopScreen(runtime: Runtime, target: LocalVmTarget, runner: CommandRunner = sh): Promise<void> {
     if (!isScreenTarget(target)) throw new Error("stopScreen requires a screen target");
+    let stopError: unknown;
+    let cleanupError: unknown;
     try {
       await runner(runtime, rootContainerExecArgs(target.containerName, ["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "stop", `screen-s${target.screen}:*`]), 30_000);
-    } finally {
+    } catch (error) {
+      stopError = error;
+    }
+    try {
       await runner(runtime, rootContainerExecArgs(target.containerName, ["sh", "-c",
         `setpriv --reuid=${screenUid(target.screen)} --regid=${screenUid(target.screen)} --clear-groups pkill -KILL -u ${screenUser(target.screen)} || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }`]), 30_000);
+    } catch (error) {
+      cleanupError = error;
     }
+    if (stopError && cleanupError) {
+      throw new AggregateError([stopError, cleanupError], `stopScreen failed: supervisor stop: ${String(stopError)}; process cleanup: ${String(cleanupError)}`, { cause: stopError });
+    }
+    if (stopError) throw stopError;
+    if (cleanupError) throw cleanupError;
   }
 
   async function screenStates(runtime: Runtime, containerName: string, runner: CommandRunner = sh): Promise<Record<number, ContainerScreenState>> {

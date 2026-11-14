@@ -104,9 +104,19 @@ done
 umask 077
 install -d -o root -g root -m 0700 /var/log/crybot
 log=/var/log/crybot/packages.log
-result=0
-env -u VNC_PW ${ROOT_PYTHON_ENV.join(" ")} apt-get install -y --no-install-recommends -- "$@" || result=$?
-printf '%s screen=%s packages=%s result=%s\\n' "$(date -u +%FT%TZ)" "$CRYBOT_PACKAGE_SCREEN" "$*" "$result" >> "$log"
+if env -u VNC_PW ${ROOT_PYTHON_ENV.join(" ")} apt-get update; then
+  printf '%s operation=update screen=%s result=0\\n' "$(date -u +%FT%TZ)" "$CRYBOT_PACKAGE_SCREEN" >> "$log"
+else
+  result=$?
+  printf '%s operation=update screen=%s result=%s\\n' "$(date -u +%FT%TZ)" "$CRYBOT_PACKAGE_SCREEN" "$result" >> "$log"
+  exit "$result"
+fi
+if env -u VNC_PW ${ROOT_PYTHON_ENV.join(" ")} apt-get install -y --no-install-recommends -- "$@"; then
+  result=0
+else
+  result=$?
+fi
+printf '%s operation=install screen=%s packages=%s result=%s\\n' "$(date -u +%FT%TZ)" "$CRYBOT_PACKAGE_SCREEN" "$*" "$result" >> "$log"
 exit "$result"
 `;
 }
@@ -194,6 +204,9 @@ if ! command -v useradd >/dev/null 2>&1 || ! command -v supervisorctl >/dev/null
   exec env ${ROOT_PYTHON_ENV.join(" ")} /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
 fi
 rm -f ${SCREENS_FALLBACK_FILE}
+for path in /home/cua /home/cua/workspace /home/cua/workspace/screens /home/cua/.vnc; do
+  if [ -L "$path" ]; then echo "refusing symlink path: $path" >&2; exit 1; fi
+done
 mkdir -p /home/cua/workspace/screens
 chmod 0711 /home/cua /home/cua/workspace /home/cua/workspace/screens
 if [ -d /home/cua/.vnc ]; then chmod 0700 /home/cua/.vnc; fi

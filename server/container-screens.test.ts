@@ -39,7 +39,7 @@ describe("container screen layout", () => {
       "-e", "XDG_RUNTIME_DIR=/run/user/61002", "-e", "TMPDIR=/run/user/61002/tmp",
       "-e", "CUA_DRIVER_INSTALL_CHANNEL=python_package", "-e", "CUA_DRIVER_RS_TELEMETRY_ENABLED=0",
       "crybot-computer", "env", "-u", "VNC_PW", "prlimit", "--nproc=1500", "--",
-      "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
+      "/usr/local/libexec/crybot/screen-program", "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
       "/usr/local/libexec/crybot/cua-driver", "mcp", "--socket", "/run/user/61002/crybot-cua.sock",
     ]);
   });
@@ -89,10 +89,18 @@ describe("container screen layout", () => {
     for (const setting of ["CUA_DRIVER_WINDOW_CHANGE_TIMEOUT_MS=200", "NO_COLOR=1", "--cursor-reduced-motion on"]) expect(conf).toContain(setting);
   });
 
+  it("does not put screen user environment in supervisor program sections", () => {
+    const conf = screensSupervisorConf(4);
+    for (const section of conf.split(/(?=\[program:screen-s\d-)/).filter(part => part.startsWith("[program:screen-s"))) {
+      expect(section).not.toMatch(/^environment=/m);
+    }
+  });
+
   it("keeps signal supervision at root and permanently drops the desktop child identity", () => {
     const script = screenProcessScript();
     expect(script.startsWith("#!/usr/bin/python3 -I\n")).toBe(true);
     expect(script).toContain("os.setgroups([])\n    os.setgid(user.pw_gid)\n    os.setuid(user.pw_uid)");
+    expect(script.indexOf("os.setuid(user.pw_uid)")).toBeLessThan(script.indexOf('os.environ.update({'));
     expect(script).toContain("os.seteuid(user.pw_uid)\n        os.killpg(pid, signum)");
     expect(script).toContain("finally:\n        os.seteuid(0)");
     expect(screenSupervisorConf(2)).toContain("screen-process crybot-s2 /usr/bin/Xvnc");
@@ -112,6 +120,8 @@ describe("container screen layout", () => {
     expect(script).not.toContain("/proc/$(id");
     expect(script).toContain("choom -n 500 --");
     expect(script).toContain("echo 500 > /proc/self/oom_score_adj\nexec env -u VNC_PW");
+    expect(script).toContain("for path in /home/cua /home/cua/workspace /home/cua/workspace/screens /home/cua/.vnc;");
+    expect(script).toContain('if [ -L "$path" ]; then echo "refusing symlink path: $path" >&2; exit 1; fi');
     for (let n = 1; n <= 4; n++) {
       expect(script).toContain(`groupadd -g ${61000 + n} crybot-s${n}`);
       expect(script).toContain(`useradd -u ${61000 + n} -g ${61000 + n}`);
@@ -214,10 +224,34 @@ for failure in [ProcessLookupError(), PermissionError("denied"), OSError("failed
     }).status).toBe(0);
   });
 
+  it("updates apt before installing and records update and install separately", () => {
+    const script = crybotPkgScript();
+    expect(script.indexOf("apt-get update")).toBeLessThan(script.indexOf("apt-get install"));
+    expect(script).toContain("operation=update");
+    expect(script).toContain("operation=install");
+  });
+
+  it("does not install when apt update fails", () => {
+    const dir = mkdtempSync(join(tmpdir(), "crybot-package-update-"));
+    try {
+      writeFileSync(join(dir, "apt-get"), '#!/bin/sh\n[ "$1" = update ] && exit 9\nexit 99\n', { mode: 0o700 });
+      const script = crybotPkgScript().replace('[ "$(id -u)" = 0 ]', '[ 0 = 0 ]')
+        .replaceAll("/var/log/crybot", join(dir, "audit")).replace("install -d -o root -g root ", "install -d ");
+      const result = spawnSync("sh", ["-c", script, "fixture", "python3-pip"], {
+        stdio: "ignore", env: { ...process.env, HOME: dir, PATH: `${dir}:${process.env.PATH}`, CRYBOT_PACKAGE_SCREEN: "s1" }, timeout: 3000,
+      });
+      expect(result.status).toBe(9);
+      expect(readFileSync(join(dir, "audit/packages.log"), "utf8")).toMatch(/operation=update/);
+      expect(readFileSync(join(dir, "audit/packages.log"), "utf8")).not.toMatch(/operation=install/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("records failed installations in a protected audit file", () => {
     const dir = mkdtempSync(join(tmpdir(), "crybot-package-audit-"));
     try {
-      writeFileSync(join(dir, "apt-get"), '#!/bin/sh\n[ "$HOME" = /root ] && [ "$PYTHONNOUSERSITE" = 1 ] && [ -z "${VNC_PW+x}" ] || exit 99\nexit 7\n', { mode: 0o700 });
+      writeFileSync(join(dir, "apt-get"), '#!/bin/sh\n[ "$HOME" = /root ] && [ "$PYTHONNOUSERSITE" = 1 ] && [ -z "${VNC_PW+x}" ] || exit 99\ncase "$1" in update) exit 0;; install) exit 7;; *) exit 98;; esac\n', { mode: 0o700 });
       const script = crybotPkgScript()
         .replace('[ "$(id -u)" = 0 ]', '[ 0 = 0 ]')
         .replaceAll("/var/log/crybot", join(dir, "audit"))
@@ -226,7 +260,7 @@ for failure in [ProcessLookupError(), PermissionError("denied"), OSError("failed
         stdio: "ignore", env: { ...process.env, HOME: dir, PYTHONNOUSERSITE: "", VNC_PW: "fixture", PATH: `${dir}:${process.env.PATH}`, CRYBOT_PACKAGE_SCREEN: "s2" }, timeout: 3000,
       });
       expect(result.status).toBe(7);
-      expect(readFileSync(join(dir, "audit/packages.log"), "utf8")).toMatch(/^\d{4}-.*Z screen=s2 packages=python3-pip g\+\+ result=7\n$/);
+      expect(readFileSync(join(dir, "audit/packages.log"), "utf8")).toMatch(/^\d{4}-.*Z operation=update screen=s2 result=0\n\d{4}-.*Z operation=install screen=s2 packages=python3-pip g\+\+ result=7\n$/);
       expect(statSync(join(dir, "audit")).mode & 0o777).toBe(0o700);
       expect(statSync(join(dir, "audit/packages.log")).mode & 0o777).toBe(0o600);
     } finally {
@@ -239,6 +273,6 @@ for failure in [ProcessLookupError(), PermissionError("denied"), OSError("failed
     expect(() => validateScreenPackages([])).toThrow();
     expect(() => validateScreenPackages(Array(21).fill("vim"))).toThrow();
     expect(crybotPkgScript()).toContain('install -d -o root -g root -m 0700 /var/log/crybot');
-    expect(crybotPkgScript()).toContain('screen=%s packages=%s result=%s');
+    expect(crybotPkgScript()).toContain('operation=install screen=%s packages=%s result=%s');
   });
 });
