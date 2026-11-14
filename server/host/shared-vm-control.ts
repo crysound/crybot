@@ -10,6 +10,31 @@ import { teamComputerOwner } from "../team-computers.ts";
 export const SHARED_VM_CONTROL_KEY = "desktop:local/shared";
 const SHARED_VM_RESOURCE = `computer:vm:${SHARED_LOCAL_VM_TARGET.key}`;
 const SHARED_VM_VIEWER = viewerTargetId(SHARED_LOCAL_VM_TARGET);
+const SCREEN_KEY = /^shared:s([1-4])$/;
+
+function screenNumber(key: string): number | null {
+  const match = SCREEN_KEY.exec(key);
+  return match ? Number(match[1]) : null;
+}
+
+function sharedControlKey(key: string): boolean {
+  return key === SHARED_VM_CONTROL_KEY || /^desktop:local\/shared-s[1-4]$/.test(key);
+}
+
+export function screenControlKey(n: number): string {
+  if (!Number.isInteger(n) || n < 1 || n > 4) throw new RangeError("screen must be between 1 and 4");
+  return `desktop:local/shared-s${n}`;
+}
+
+export function screenResource(n: number): string {
+  if (!Number.isInteger(n) || n < 1 || n > 4) throw new RangeError("screen must be between 1 and 4");
+  return `computer:vm:shared:s${n}`;
+}
+
+export function screenViewer(n: number): string {
+  if (!Number.isInteger(n) || n < 1 || n > 4) throw new RangeError("screen must be between 1 and 4");
+  return `local/shared-s${n}`;
+}
 
 export interface SharedVmControlDeps {
   control: Pick<ComputerControl, "snapshot" | "release" | "releaseLease" | "ownsLease" | "heldBy" | "beat" | "forgetBot">;
@@ -42,7 +67,10 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
   const onLocalVm = (bot: BotRecord, threadId?: string): boolean => {
     const place = threadId ? deps.place(bot, threadId) : undefined;
     if (place !== undefined) return place === "vm";
-    if (threadId && deps.turnVmTargets.get(threadId)?.key === SHARED_LOCAL_VM_TARGET.key) return true;
+    if (threadId) {
+      const target = deps.turnVmTargets.get(threadId);
+      if (target?.key === SHARED_LOCAL_VM_TARGET.key || screenNumber(target?.key ?? "") !== null) return true;
+    }
     return bot.computer === "vm" || (bot.computer === undefined && bot.cloudBackend !== "vps");
   };
   /** The team cloud computer a conversation's hold lands on: its running team turn's, else the one the bot inherits. */
@@ -54,8 +82,12 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
   };
   /** The team's cloud computer, the shared Local VM, or the bot's own key. Without a conversation it follows the bot's
    * default place. */
-  const keyFor = (bot: BotRecord, threadId?: string): string =>
-    teamKey(bot, threadId) ?? (sharedDesk() && onLocalVm(bot, threadId) ? SHARED_VM_CONTROL_KEY : bot.id);
+  const keyFor = (bot: BotRecord, threadId?: string): string => {
+    const screen = threadId ? screenNumber(deps.turnVmTargets.get(threadId)?.key ?? "") : null;
+    return teamKey(bot, threadId) ?? (sharedDesk() && onLocalVm(bot, threadId)
+      ? (screen === null ? SHARED_VM_CONTROL_KEY : screenControlKey(screen))
+      : bot.id);
+  };
 
   /** Its own key first, then every key a take through its panels or a gate of its turns can land on, so no panel is told less
    * than its own hold; read from stored pins (Off overrides them), as every broadcast asks it of every bot. */
@@ -81,7 +113,9 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
    * on the shared VM waits for its hold whatever its bot is set to now. */
   const snapshot = (botId: string, threadId?: string): ControlSnapshot => {
     const bot = threadId ? deps.botForThread(botId, threadId) : store.bot(botId);
-    const mounted = threadId && sharedDesk() && deps.turnVmTargets.get(threadId)?.key === SHARED_LOCAL_VM_TARGET.key ? [SHARED_VM_CONTROL_KEY] : [];
+    const target = threadId && sharedDesk() ? deps.turnVmTargets.get(threadId) : undefined;
+    const screen = screenNumber(target?.key ?? "");
+    const mounted = screen !== null ? [screenControlKey(screen)] : target?.key === SHARED_LOCAL_VM_TARGET.key ? [SHARED_VM_CONTROL_KEY] : [];
     return merged([...new Set([botId, ...(bot ? [keyFor(bot, threadId), keyFor(bot)] : []), ...mounted])]);
   };
 
@@ -93,12 +127,16 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
 
   /** A team cloud computer or the shared Local VM serves several bots, so one bot's sign-in card must not hand it back
    * from under another. */
-  const sharedKey = (key: string): boolean => key === SHARED_VM_CONTROL_KEY || key.startsWith(teamComputerOwner(""));
+  const sharedKey = (key: string): boolean => sharedControlKey(key) || key.startsWith(teamComputerOwner(""));
   /** Outside shared mode no bot's keys name the shared desktop, yet panels paused on it before the change must hear it ended. */
   const membersOf = (key: string): string[] => key === SHARED_VM_CONTROL_KEY && !sharedDesk() ? store.bots.map(bot => bot.id)
     : sharedKey(key) ? store.bots.filter(bot => botKeys(bot).includes(key)).map(bot => bot.id) : [key];
 
-  const personHolds = (resource: string): boolean => resource === SHARED_VM_RESOURCE && control.snapshot(SHARED_VM_CONTROL_KEY).held;
+  const personHolds = (resource: string): boolean => {
+    if (resource === SHARED_VM_RESOURCE) return control.snapshot(SHARED_VM_CONTROL_KEY).held;
+    const match = /^computer:vm:shared:s([1-4])$/.exec(resource);
+    return match ? control.snapshot(screenControlKey(Number(match[1]))).held : false;
+  };
 
   /** The hold this lease owns: the key a take resolved may differ now, as places, pins and team turns change. */
   const leaseHolder = (bot: BotRecord, threadId: string | undefined, lease: string): string => {
@@ -112,6 +150,15 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
      * shared VM names more than the bot's own key, so only it is checked: null when this conversation cannot show it. */
     holdKey: (bot: BotRecord, threadId: string | undefined, target?: string): string | null => {
       if (target === undefined) return keyFor(bot, threadId);
+      const screen = /^local\/shared-s([1-4])$/.exec(target)?.[1];
+      if (screen !== undefined) {
+        const n = Number(screen);
+        if (!threadId) return sharedDesk() && !teamKey(bot) && onLocalVm(bot) ? screenControlKey(n) : null;
+        const assigned = screenNumber(deps.turnVmTargets.get(threadId)?.key ?? "");
+        if (assigned === n) return screenControlKey(n);
+        const place = deps.place(bot, threadId);
+        return sharedDesk() && !teamKey(bot, threadId) && place === "vm" && assigned === null ? screenControlKey(n) : null;
+      }
       if (target !== SHARED_VM_VIEWER) return bot.id;
       if (!threadId) return keyFor(bot) === SHARED_VM_CONTROL_KEY ? SHARED_VM_CONTROL_KEY : null;
       const place = deps.place(bot, threadId);
@@ -131,8 +178,14 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
     deletionRefusal: (botId: string): string | null =>
       botSnapshot(botId).held ? "Hand back control of this bot's computer before deleting it" : null,
     /** The key a phone's lease must own to open this conversation's Local VM: the shared desktop's in shared mode. */
-    leaseKey: (bot: BotRecord, threadId?: string): string => sharedDesk() ? SHARED_VM_CONTROL_KEY : keyFor(bot, threadId),
+    leaseKey: (bot: BotRecord, threadId?: string): string => {
+      if (!sharedDesk()) return keyFor(bot, threadId);
+      const screen = threadId ? screenNumber(deps.turnVmTargets.get(threadId)?.key ?? "") : null;
+      return screen === null ? SHARED_VM_CONTROL_KEY : screenControlKey(screen);
+    },
     heldOnTarget: (target: LocalVmTarget): boolean => {
+      const screen = screenNumber(target.key);
+      if (screen !== null) return control.snapshot(screenControlKey(screen)).held;
       if (target.key === SHARED_LOCAL_VM_TARGET.key) return control.snapshot(SHARED_VM_CONTROL_KEY).held;
       return store.bots.some(bot => perBotLocalVmTarget(bot.id).key === target.key && control.snapshot(bot.id).held);
     },
@@ -143,12 +196,12 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
     keyMovesWhileHeld: (before: BotRecord, after: BotRecord): boolean =>
       keyFor(before) !== keyFor(after) && snapshot(before.id).held,
     takeRefusal: (key: string): string | null =>
-      key === SHARED_VM_CONTROL_KEY && deps.busy() ? "The Local VM is being updated or changed — wait before taking control" : null,
+      sharedControlKey(key) && deps.busy() ? "The Local VM is being updated or changed — wait before taking control" : null,
     /** A phone's take of a Local VM starts the expiry clock at once: nothing else may ever beat for it. A take naming a VPS
      * desktop is not one, though it lands on the key a per-bot VM shares. */
     armed: (auth: RequestAuth, bot: BotRecord, threadId: string | undefined, key: string, target?: string): boolean => {
       const phone = auth.kind === "loopback" ? Boolean(auth.companionDevice) : auth.via === "bearer";
-      return phone && !(target?.startsWith("vps/") && bot.cloudBackend === "vps") && (key === SHARED_VM_CONTROL_KEY ||
+      return phone && !(target?.startsWith("vps/") && bot.cloudBackend === "vps") && (sharedControlKey(key) ||
         (key === bot.id && deps.mode() === "per-bot" && onLocalVm(bot, threadId)));
     },
     release: (bot: BotRecord, threadId: string | undefined, lease: string) =>
@@ -167,6 +220,7 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
       return () => {
         for (const bot of store.bots) if (before.has(bot.id) && before.get(bot.id) !== keyFor(bot)) control.release(before.get(bot.id)!);
         control.release(SHARED_VM_CONTROL_KEY);
+        for (let n = 1; n <= 4; n++) control.release(screenControlKey(n));
       };
     },
   };

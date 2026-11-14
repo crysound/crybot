@@ -6,9 +6,10 @@ import type { Socket } from "node:net";
 import type { Duplex } from "node:stream";
 import { isSameOrigin, type RequestAuth } from "../request-auth.ts";
 import { PASS, type RouteHandler } from "./table.ts";
+import { screenOfViewerTarget } from "../../shared/desktop-viewer.ts";
 import { createUpgrades, type Upgrades } from "./upgrades.ts";
 
-const ROUTE = /^\/api\/desktop-viewer\/(local\/(?:shared|bot-[a-f0-9]{64}|pool-\d+)|vps\/[\w-]+)(\/websockify)?$/;
+const ROUTE = /^\/api\/desktop-viewer\/(local\/(?:shared(?:-s[1-4])?|bot-[a-f0-9]{64}|pool-\d+)|vps\/[\w-]+)(\/websockify)?$/;
 const HANDSHAKE_MS = 10_000;
 const RECHECK_MS = 5_000;
 const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -19,10 +20,12 @@ const CONTROL_LEASE = /^[A-Za-z0-9_-]{16,120}$/;
 export interface DesktopConnection {
   port: number;
   password: string | null;
-  live?: () => boolean;
+  live?: boolean | (() => boolean);
   touch?: () => void;
   /** Acquired only by WebSockets; release must not close other viewers. */
   retain?: () => () => void;
+  /** The managed proxy path. Screen targets include their websockify token. */
+  path?: string;
 }
 export interface DesktopTarget {
   key: string;
@@ -99,10 +102,12 @@ export function createDesktopViewer(deps: {
     }
     // Inspection may outlive a closed tab or the handshake deadline.
     if (res.destroyed || upgrade?.socket.destroyed) return;
-    const live = () => deps.live(auth) && deps.target(match[1])?.key === target.key && (connection.live?.() ?? true);
+    const live = () => deps.live(auth) && deps.target(match[1])?.key === target.key &&
+      (typeof connection.live === "function" ? connection.live() : (connection.live ?? true));
     if (!live()) return json(res, 401, { error: "Viewer access expired" });
     if (!holds()) return json(res, 409, { error: "Take control of this computer first" });
-    if (!Number.isInteger(connection.port) || connection.port < 1 || connection.port > 65535) {
+    if (!Number.isInteger(connection.port) || connection.port < 1 || connection.port > 65535
+      || (screenOfViewerTarget(match[1]) !== null && connection.password === null)) {
       return json(res, 409, { error: "The desktop viewer is not available." });
     }
     if (!match[2]) return json(res, 200, { password: connection.password });
@@ -112,9 +117,9 @@ export function createDesktopViewer(deps: {
       || typeof key !== "string" || !/^[A-Za-z0-9+/]{22}==$/.test(key)) {
       return json(res, 400, { error: "Invalid WebSocket handshake" });
     }
-    // Fixed host and path, port from an inspected managed container. Never forward cookies, bearer tokens, query parameters or forwarded headers.
+    // Fixed host and provider path, with the port from an inspected managed container. Never forward cookies, bearer tokens, or client headers.
     const upstream = request({
-      hostname: "127.0.0.1", port: connection.port, path: "/websockify",
+      hostname: "127.0.0.1", port: connection.port, path: connection.path ?? "/websockify",
       headers: { Upgrade: "websocket", Connection: "Upgrade", "Sec-WebSocket-Key": key, "Sec-WebSocket-Version": "13" },
     });
     const { socket } = upgrade;
