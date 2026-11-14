@@ -131,20 +131,45 @@ final class LoginTests: NetworkTestCase {
     }
     func testPairingErrorDoesNotExposeCode() async throws {
         let store = MemorySessionStore()
-        NetworkFixture.install { _ in FixtureReply(status: 400, body: #"{"error":"Invalid code custom-pair-code","code":"custom-pair-code","errorKey":"custom-pair-code"}"#) }
-        do { _ = try await PairingLogin(client: client(store)).login(code: "custom-pair-code", label: "Phone"); XCTFail("Expected failure") }
+        NetworkFixture.install { _ in FixtureReply(status: 400, body: #"{"error":"Invalid code 123456","code":"123456","errorKey":"123456"}"#) }
+        do { _ = try await PairingLogin(client: client(store)).login(code: "123456", label: "Phone"); XCTFail("Expected failure") }
         catch {
             guard case CryNetError.api(let api) = error else { return XCTFail("Wrong error") }
             XCTAssertEqual(api.code, "[redacted]")
             XCTAssertEqual(api.errorKey, "[redacted]")
+            XCTAssertEqual(api.error, "Invalid code [redacted]")
             for text in [api.error, String(describing: error), String(reflecting: error), error.localizedDescription] {
-                XCTAssertFalse(text.contains("custom-pair-code"))
+                XCTAssertFalse(text.contains("123456"))
             }
         }
         XCTAssertNil(store.read())
     }
+    func testErrorIdentifiersPreserveCodesAndRedactSecretShapes() async throws {
+        let jwt = "eyJhbGciOiJIUzI1NiJ9.payload.signature"
+        let cases: [(String, String, String?, String?)] = [
+            ("changed-since", "auth.code.wrong", "changed-since", "auth.code.wrong"),
+            ("cry_sess_fixture", "cry_sess_fixture", "[redacted]", "[redacted]"),
+            ("cry_pair_fixture", "cry_pair_fixture", "[redacted]", "[redacted]"),
+            ("cry_tick_fixture", "cry_tick_fixture", "[redacted]", "[redacted]"),
+            (jwt, jwt, "[redacted]", "[redacted]")
+        ]
+        for (code, errorKey, expectedCode, expectedErrorKey) in cases {
+            let store = MemorySessionStore()
+            NetworkFixture.install { _ in
+                FixtureReply(status: 400, body: "{\"error\":\"Rejected\",\"code\":\"\(code)\",\"errorKey\":\"\(errorKey)\"}")
+            }
+            do {
+                _ = try await PairingLogin(client: client(store)).login(code: "code", label: "Phone")
+                XCTFail("Expected failure")
+            } catch {
+                guard case CryNetError.api(let api) = error else { return XCTFail("Wrong error") }
+                XCTAssertEqual(api.code, expectedCode)
+                XCTAssertEqual(api.errorKey, expectedErrorKey)
+            }
+        }
+    }
     func testShortPairingCodeDoesNotRedactErrorIdentifiers() async throws {
-        for code in ["code", "serverError.pair.codeWrong", "auth.code.wrong"] {
+        for code in ["code", "changed-since", "serverError.pair.codeWrong", "auth.code.wrong"] {
             let store = try store()
             let previous = store.read()
             NetworkFixture.install { _ in

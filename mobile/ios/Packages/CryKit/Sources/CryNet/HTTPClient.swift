@@ -150,7 +150,7 @@ public final class HTTPClient {
         func scrub(_ value: String?) -> String? {
             guard var value else { return nil }
             for secret in secrets where !secret.isEmpty { value = value.replacingOccurrences(of: secret, with: "[redacted]") }
-            for pattern in ["cry_(?:sess|pair)_[A-Za-z0-9_-]+", "(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{9,}\\.[A-Za-z0-9_-]{12,}\\.[A-Za-z0-9_-]{16,}(?![A-Za-z0-9_-])", "\\b[0-9]{6,8}\\b"] {
+            for pattern in ["cry_(?:sess|pair|tick)_[A-Za-z0-9_-]+", "(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{9,}\\.[A-Za-z0-9_-]{12,}\\.[A-Za-z0-9_-]{16,}(?![A-Za-z0-9_-])", "\\b[0-9]{6,8}\\b"] {
                 value = value.replacingOccurrences(of: pattern, with: "[redacted]", options: .regularExpression)
             }
             return value
@@ -165,7 +165,21 @@ public final class HTTPClient {
         }
         func identifier(_ value: String?) -> String? {
             guard let value else { return nil }
-            return value.range(of: "^[A-Za-z0-9_.]+$", options: .regularExpression) == value.startIndex..<value.endIndex ? value : "[redacted]"
+            if value == prepared.record?.sessionToken || value == prepared.record?.cfAuthorization {
+                return "[redacted]"
+            }
+            let matchesAllowedCharacters = value.range(of: "^[A-Za-z0-9_.-]+$", options: .regularExpression) == value.startIndex..<value.endIndex
+            guard matchesAllowedCharacters else { return "[redacted]" }
+            if value.hasPrefix("cry_sess_") || value.hasPrefix("cry_pair_") || value.hasPrefix("cry_tick_") {
+                return "[redacted]"
+            }
+            if value.hasPrefix("eyJ") && value.filter({ $0 == "." }).count == 2 {
+                return "[redacted]"
+            }
+            if value.range(of: "^\\d{6,8}$", options: .regularExpression) != nil {
+                return "[redacted]"
+            }
+            return value
         }
         return APIError(error: scrub(error.error) ?? "Request refused", code: identifier(error.code), errorKey: identifier(error.errorKey), errorParams: params)
     }

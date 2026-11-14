@@ -617,3 +617,21 @@ CallbackRouter 对畸形参数、错误 state 及 AppHandoff 无 pending 的回�
 覆盖表交付范围没有新增：网络层消费 hello 的 resumed/cursor、ping 的活动时间与退避复位，其余 ServerFrame 按 SSE id 更新 cursor 后透传；不登记 UI/业务归并完成，不改覆盖表。未发现 CryCore 缺口或需要越界修改 Package.swift 的事项。
 
 协调者需提供可用 Swift 工具链后复跑本轮 Linux 测试与 parse，并推分支核对 Mobile builds ios 作业的完整 swift test（包括 SessionStoreTests 和两条上传进度测试）。补齐 Actions 链接、实际执行数和 Public scan 结果；上传端口测试、Apple 框架集成以及真实 TLS/WebSocket 往返不能在当前沙箱完成。
+
+## 第 4 轮（2026-11-14）
+
+本轮修复 `HTTPClient` 错误标识脱敏的回退：合法服务端 code/errorKey 现在接受短横线；以 `cry_sess_`、`cry_pair_`、`cry_tick_` 开头的值、`eyJ` 开头且含两个点的 JWT 形状、6–8 位纯数字，以及当前会话或 CF 凭据会替换为 `[redacted]`。请求体里的用户输入没有参与标识字段的整值比较，因此 `changed-since` 和 `auth.code.wrong` 保持原样。配对错误测试改用真实的 6 位配对码，并增加合法标识、会话令牌和 JWT 形状的回归覆盖；第 3 轮短配对码用例继续保留。
+
+本轮改动的 Swift 文件（逐个列出）：
+
+- `mobile/ios/Packages/CryKit/Sources/CryNet/HTTPClient.swift`
+- `mobile/ios/Packages/CryKit/Tests/CryNetTests/LoginTests.swift`
+
+验证记录：开工已运行 `crybot-link-deps`，链接 73 个预装依赖条目；`git diff --check` 通过。按任务要求尝试 Linux 测试，当前沙箱没有 Swift 工具链，未在沙箱编译：
+
+```text
+$ timeout 1200 swift test --jobs 2 --package-path mobile/ios/Packages/CryKit --filter CryNetLogicTests
+timeout: failed to run command ‘swift’: No such file or directory
+```
+
+因此本轮 Swift 测试实际执行数为 0；Swift 文件需由协调者在有 Swift 6.3 的机器上运行 `swift test --filter CryNetLogicTests` 和 `swiftc -parse`，完整 CryKit 测试以 Actions「Mobile builds」为准。沙箱禁止监听端口，未运行需要监听端口的 e2e。未提交 git。
