@@ -23,6 +23,7 @@ import { localizeComputerProblem } from "@/lib/computer-messages";
 import { computerInventoryRequest, jsonPostRequest, type ComputerApiRequest } from "@/lib/computer-requests";
 import { useStore } from "@/state/store";
 import { VpsComputersCard } from "./VpsComputersCard"; import { KeysLink } from "./keys/KeysLink";
+import { localVmSetupStep4Title } from "./local-vm-setup-step";
 
 type Action = "pull" | "run" | "start" | "stop" | "remove" | "recreate";
 
@@ -625,18 +626,6 @@ function Step({ n, title, done, children }: { n: number; title: string; done: bo
       </div>
     </div>
   );
-}
-
-export function localVmSetupStep4Title({
-  mode,
-  container,
-  resumable,
-  needsRecreate,
-}: Pick<Status, "mode" | "container" | "resumable"> & { needsRecreate: boolean }): LocaleKey {
-  if (mode === "per-bot") return "vm.setup.step4PerBot";
-  if (needsRecreate) return "vm.setup.step4Recreate";
-  if (container === "stopped" && resumable) return "vm.setup.step4Wake";
-  return "vm.setup.step4";
 }
 
 function ActionButton({

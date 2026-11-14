@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { setLocale, t } from "@/lib/i18n";
+import { setLocale } from "@/lib/i18n";
 
 const storeFixture = vi.hoisted(() => ({ config: null as unknown }));
 vi.mock("@/state/store", async (importOriginal) => {
@@ -26,7 +26,6 @@ import {
   vpsComputerRemovePlan,
   vpsComputerInventoryState,
   vpsComputerShortId,
-  localVmSetupStep4Title,
   type CloudComputerInventoryInstance,
   type LocalVmInventoryInstance,
   type VpsComputerInventoryInstance,
@@ -590,13 +589,6 @@ describe("Settings → Computers on an CRY Cloud home", () => {
     expect(titles).toEqual(expect.arrayContaining(["Private desktops", "Setup"]));
     expect(titles).not.toContain("Cloud desktops");
     expect(markup).not.toContain("Self-hosted VPS computers");
-  });
-
-  it("calls a stopped resumable shared desktop Wake and a missing desktop Create", () => {
-    expect(t(localVmSetupStep4Title({ mode: "shared", container: "stopped", resumable: true, needsRecreate: false })))
-      .toBe("Wake the private desktop");
-    expect(t(localVmSetupStep4Title({ mode: "shared", container: "missing", resumable: false, needsRecreate: false })))
-      .toBe("Create and start the private desktop");
   });
 });
 

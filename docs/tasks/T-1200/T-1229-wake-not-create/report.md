@@ -38,3 +38,11 @@
 ## 尚未完全把握
 
 没有在本机运行真实 Podman 休眠/唤醒流程，也没有运行 e2e；服务端路由权限仍由既有路由校验负责，前端只根据已返回的可恢复状态改变按钮展示。
+
+## 第 2 轮：文件大小棘轮超限
+
+- 将 `localVmSetupStep4Title` 及其输入类型移至 `src/components/local-vm-setup-step.ts`，`LocalComputerSection.tsx` 从新模块导入；中文「唤醒私有桌面」等文案未改动。
+- 将对应标题用例移至 `src/components/local-vm-setup-step.test.ts`。
+- `wc -l src/components/LocalComputerSection.tsx`：1430 行（不超过 1437）。
+- `git diff --check`：通过。
+- 按要求执行的三个 `systemd-run --scope -q -p MemoryMax=4G -- ...` 命令均因当前沙箱无法连接 system scope bus（`Operation not permitted`）未启动；直接执行时工作区缺少 `vitest` 和 `tsc` 二进制，分别报 `Command "vitest" not found`、`Command "tsc" not found`。
