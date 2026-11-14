@@ -344,7 +344,7 @@ AGENTS.md 指向的 `docs/verification/README.md` 仍不在仓库中；沿用现
 ### 改动与上线条件
 
 1. **必须开启沙箱**：`server/feishu-cli/config.ts` 每次组装轮次时刷新 bot-box 报告并检查运行时是否启用，只在实际 bwrap 盒子中返回名单用户。仅设置环境变量不足以通过检查。启动时还按默认盒子的挂载计划检查 broker socket；若路径在所有盒子可见的只读挂载中，输出固定文字「飞书代领套接字路径对非授权盒子可见，已停用」并关闭。关闭时不请求 broker、不注入令牌、不添加飞书用法或 socket 挂载。
-2. **逐轮盒内授权**：`claude-turn-launch.ts` 只将本轮成功代领所得的 socket 加入该次 spawn 的 `box.rw`，并将相应变量名传入 `allowEnv`。`bot-box/env.ts` 仅允许六个明确的飞书能力名字被逐轮授予，未扩大盒子的全局白名单；名单、登录密钥等配置继续留在服务端。broker 失败时环境授权和 socket 挂载均为空。测试调用实际 `BoxRunner.wrap`，核对授权用户可见 socket，其他用户和无身份轮次不可见，旁边的其他 socket 也不可见；短期令牌只出现在授权盒子的环境中，PID 隔离参数仍存在。
+2. **逐轮盒内授权**：`claude-turn-launch.ts` 只将本轮成功代领所得的 socket 加入该次 spawn 的 `box.rw`，并将相应变量名传入 `allowEnv`。`bot-box/env.ts` 仅允许六个明确的飞书能力名字被逐轮授予，未扩大盒子的全局白名单；名单、登录密钥等配置继续留在服务端。broker 失败时环境授权和 socket 挂载均为空。测试调用实际 `BoxRunner.wrap`，核对授权用户可见 socket，其他用户和无身份轮次不可见，旁边的其他 socket 也不可见；短期令牌只出现在授权盒子的环境中，PID 隔离参数仍存在。 <!-- public-scan: allow domain -->
 3. **名单仅一人**：复用 union_id 解析器，去空白、去重后超过一人立即关闭；启动时固定告警「飞书代领只支持一位用户，当前名单超过一人，已停用」。重复填写同一个人仍按一人处理。一个 broker 仍只对应一份员工凭证，管理员须核对唯一名单身份与凭证归属。
 4. **追加消息身份隔离**：`directFeishuCliAccess` 捕获本轮已证明的发起人；驱动接口新增可选的认证 `person` 参数。`index.ts` 只为认证真人追加消息传入该身份；Claude 的 steer 在写入 stdin 前调用 `maySteerClaudeTurn`。其他身份或身份缺失返回 `refused`，走既有排队逻辑；原发起人可以继续 steer。身份通过独立参数传递，不解析提示中的名字。保温禁用及轮次结束后释放进程的规则继续生效。`claude.ts` 保持 **2087 行**，未修改 ratchet 上限。
 5. **上游传输安全**：broker 启动只接受 HTTPS；HTTP 仅接受主机 `127.0.0.1`、`::1`、`localhost`。外部 HTTP、近似本地域名、其他协议、带用户名密码的 URL 均拒绝并返回固定配置错误。测试保留本地假上游所需的回环 HTTP。
@@ -547,7 +547,7 @@ $ pnpm exec oxlint --deny-warnings server/feishu-cli/server.e2e.test.ts
 - 套接字父目录先做 realpath；父目录不存在时回退到原字面路径，其他解析错误失败关闭。真实路径位于服务数据目录或 HOME 内时直接拒绝，两个根目录也解析真实路径。其余路径按默认盒子的挂载计划判断可见性，计划请求携带服务进程 `process.env` 中全部 `PATH_ENV_NAMES` 变量（包括 TMPDIR）。拒绝只输出固定文字，不包含路径。
 - 新增 `server/feishu-cli/config.test.ts`：覆盖指向 `/opt` 的父目录符号链接、数据目录 `workspaces/fixture/`、HOME、指向数据目录/HOME 的符号链接、父目录不存在时的拒绝/放行、`/tmp` 独立目录放行，以及每个路径环境变量引入的共享挂载。修复前 18 项中 14 项失败、4 项通过，修复后 18 项全部通过。
 - `server.e2e.test.ts` 的开盒假 CLI 直接写入套接字真实路径，不依赖是否注入路径环境变量；授权轮次仍断言 `connected`，名单外、群聊及降级轮次实际尝试连接并断言 `ENOENT`、`EACCES` 或 `EPERM`。测试进程临时目录的真实路径不在 `/tmp` 下时，开盒场景打印原因并跳过。
-- `.gitignore` 增加 `.tmp-feishu-host-*/`。`r6.md`、`r7.md` 的运行环境产品名和依赖命令改为中性表述；更正第 6 轮的 report 调用说明及第 7 轮的执行主机条件。
+- `.gitignore` 增加 `.tmp-feishu-host-*/`。`r6.md`、`r7.md` 的运行环境产品名和依赖命令改为中性表述；更正第 6 轮的 report 调用说明及第 7 轮的执行主机条件。 <!-- public-scan: allow domain -->
 
 ### 验收输出
 

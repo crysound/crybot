@@ -96,7 +96,7 @@ it("maps invalid token URLs to the fixed configuration error", async () => {
   await expect(startBroker({ credentialFile: join(directory, "credential.json"), tokenUrl: "not a URL", socketPath: join(directory, "runtime", "token.sock") })).rejects.toThrow("飞书代领服务配置无效");
 });
 
-it.each(["http://example.com/token", "http://localhost.example.invalid/token", "http://127.0.0.2/token", "ftp://localhost/token", "https://user:password@example.invalid/token"])("rejects an insecure token URL: %s", async tokenUrl => {
+it.each(["http://example.com/token", "http://localhost.example.invalid/token", "http://127.0.0.2/token", "ftp://localhost/token", "https://user:password@example.invalid/token"])("rejects an insecure token URL: %s", async tokenUrl => { // public-scan: allow ip
   await expect(startBroker({ credentialFile: join(directory, "missing.json"), tokenUrl, socketPath: join(directory, "token.sock") })).rejects.toThrow("飞书代领服务配置无效");
 });
 
