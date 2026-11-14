@@ -1654,6 +1654,7 @@ describe("screen execution regressions", () => {
       .mockResolvedValueOnce({ stdout: "" });
     await expect(stopScreen("docker", sharedScreenTarget(2), run)).rejects.toBe(stopError);
     expect(run).toHaveBeenCalledTimes(2);
+    expect(run).toHaveBeenNthCalledWith(2, "docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000);
   });
 
   it("throws cleanup failure when supervisor stop succeeds", async () => {
@@ -1663,6 +1664,7 @@ describe("screen execution regressions", () => {
       .mockRejectedValueOnce(cleanupError);
     await expect(stopScreen("docker", sharedScreenTarget(2), run)).rejects.toBe(cleanupError);
     expect(run).toHaveBeenCalledTimes(2);
+    expect(run).toHaveBeenNthCalledWith(2, "docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000);
   });
 
   it("retains both stop errors with the supervisor error as cause", async () => {
@@ -1682,6 +1684,27 @@ describe("screen execution regressions", () => {
     expect(aggregate.errors).toEqual([stopError, cleanupError]);
     expect(aggregate.message).toContain("supervisor stop failed");
     expect(aggregate.message).toContain("process cleanup failed");
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run).toHaveBeenNthCalledWith(2, "docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000);
+  });
+
+  it.each(["stop", "cleanup", "both"])("preserves undefined rejection from %s", async step => {
+    const run = vi.fn();
+    if (step === "cleanup") run.mockResolvedValueOnce({ stdout: "" });
+    else run.mockRejectedValueOnce(undefined);
+    if (step === "stop") run.mockResolvedValueOnce({ stdout: "" });
+    else run.mockRejectedValueOnce(undefined);
+    const result = stopScreen("docker", sharedScreenTarget(2), run);
+    if (step === "both") {
+      await expect(result).rejects.toMatchObject({
+        name: "AggregateError", cause: undefined, errors: [undefined, undefined],
+        message: "stopScreen failed: supervisor stop: undefined; process cleanup: undefined",
+      });
+    } else {
+      await expect(result).rejects.toBeUndefined();
+    }
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run).toHaveBeenNthCalledWith(2, "docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000);
   });
 
   it.each(["-o", ".", "+x", "sudo-", "vim+"])("rejects package %s before runtime execution", async name => {

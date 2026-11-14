@@ -91,7 +91,9 @@ describe("container screen layout", () => {
 
   it("does not put screen user environment in supervisor program sections", () => {
     const conf = screensSupervisorConf(4);
-    for (const section of conf.split(/(?=\[program:screen-s\d-)/).filter(part => part.startsWith("[program:screen-s"))) {
+    const sections = conf.split(/(?=\[program:screen-s\d-)/).filter(part => part.startsWith("[program:screen-s"));
+    expect(sections).toHaveLength(16);
+    for (const section of sections) {
       expect(section).not.toMatch(/^environment=/m);
     }
   });
@@ -120,8 +122,9 @@ describe("container screen layout", () => {
     expect(script).not.toContain("/proc/$(id");
     expect(script).toContain("choom -n 500 --");
     expect(script).toContain("echo 500 > /proc/self/oom_score_adj\nexec env -u VNC_PW");
-    expect(script).toContain("for path in /home/cua /home/cua/workspace /home/cua/workspace/screens /home/cua/.vnc;");
+    expect(script).toContain("for path in /home/cua /home/cua/workspace /home/cua/.vnc;");
     expect(script).toContain('if [ -L "$path" ]; then echo "refusing symlink path: $path" >&2; exit 1; fi');
+    expect(script).toContain("if [ -L /home/cua/workspace/screens ]; then rm -f /home/cua/workspace/screens; fi\ninstall -d -o root -g root -m 0711 /home/cua/workspace/screens\nchmod 0711 /home/cua /home/cua/workspace");
     for (let n = 1; n <= 4; n++) {
       expect(script).toContain(`groupadd -g ${61000 + n} crybot-s${n}`);
       expect(script).toContain(`useradd -u ${61000 + n} -g ${61000 + n}`);

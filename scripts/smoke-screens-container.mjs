@@ -33,7 +33,7 @@ function docker(args, { input, timeout = 60_000, inherit = false } = {}) {
     child.on("close", code => {
       clearTimeout(timer);
       if (code === 0) resolve({ stdout });
-      else reject(Object.assign(new Error(`docker exited ${code}: ${stderr}`), { code, stdout }));
+      else reject(Object.assign(new Error(`docker exited ${code}: ${stderr}`), { code, stdout, stderr }));
     });
     child.stdin.end(input);
   });
@@ -132,6 +132,7 @@ def websocket_frame(read_raw):
     if mask:
         for index in range(length): payload[index] ^= mask[index % 4]
     if first & 0x0f == 8: raise RuntimeError('websocket closed during RFB')
+    if first & 0x0f in (9, 10): return b''
     return bytes(payload)
 # RFB reads fixed byte counts, but websockify frames do not line up with them,
 # and the handshake read may already hold the first frame.
@@ -239,11 +240,13 @@ async function tokenHandshake(port, n) {
   throw new Error(`s${n} websockify failed after 30s; last HTTP status: ${lastHttpStatus}; ${lastError?.message}`);
 }
 
-async function expectCommandFailure(label, args) {
+async function expectCommandFailure(label, args, expectedDiagnostic) {
   try {
     await docker(args);
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith(`${label}: unexpectedly succeeded`)) throw error;
+    if (error.code !== 1 || typeof error.stderr !== "string" || !expectedDiagnostic.test(error.stderr)) {
+      throw new Error(`${label}: failed for an unexpected reason: ${error.message}`, { cause: error });
+    }
     console.log(`${label}: denied as expected`);
     return;
   }
@@ -292,6 +295,7 @@ try {
   assert.doesNotMatch(environment, /^VNC_PW=/m);
   assert.match(environment, /^DISPLAY=:2$/m);
   assert.equal((await docker(screenIdentityArgs(screen(2), ["id", "-u"]))).stdout.trim(), "61002");
+  assert.equal((await docker(screenIdentityArgs(screen(1), ["cat", "/proc/self/oom_score_adj"]))).stdout.trim(), "500");
   assert.equal((await docker(screenIdentityArgs(screen(2), ["sh", "-c", "umask; prlimit --pid $$ --nproc --noheadings --output SOFT,HARD"]))).stdout.trim().replace(/\s+/g, " "), "0007 1500 1500");
   for (const n of [1, 2]) {
     const programs = (await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "status", `screen-s${n}:*`]))).stdout;
@@ -304,12 +308,17 @@ try {
     assert.equal((await docker(root(["stat", "-c", "%u:%a:%s", `/run/crybot/screens/s${n}/passwd`]))).stdout.trim(), `${61000 + n}:400:8`);
   }
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "! test -r /home/crybot-s1 && ! test -r /home/cua/workspace/screens/s1 && ! test -r /run/user/61001/crybot-cua.sock"]));
-  await expectCommandFailure("crybot-s1 cannot query s2 display", screenIdentityArgs(screen(1), ["sh", "-c", "DISPLAY=:2 xset q"]));
-  await expectCommandFailure("crybot-s1 cannot connect to s2 cua socket", screenIdentityArgs(screen(1), ["/usr/bin/python3", "-c", "import socket; s=socket.socket(socket.AF_UNIX); s.settimeout(2); s.connect('/run/user/61002/crybot-cua.sock')"]));
+  const queryS2Display = ["sh", "-c", "DISPLAY=:2 xset q"];
+  const connectS2Socket = ["/usr/bin/python3", "-c", "import socket; s=socket.socket(socket.AF_UNIX); s.settimeout(2); s.connect('/run/user/61002/crybot-cua.sock'); s.close()"];
+  await docker(screenIdentityArgs(screen(2), queryS2Display));
+  await docker(screenIdentityArgs(screen(2), connectS2Socket));
+  await expectCommandFailure("crybot-s1 cannot query s2 display", screenIdentityArgs(screen(1), queryS2Display), /unable to open display/i);
+  await expectCommandFailure("crybot-s1 cannot connect to s2 cua socket", screenIdentityArgs(screen(1), connectS2Socket), /^PermissionError:.*Permission denied/m);
+  const sudoDenied = /password is required|not in (?:the )?sudoers|may not run sudo/i;
   for (const [label, args] of [
     ["crybot-s1 sudo", screenIdentityArgs(screen(1), ["sudo", "-n", "true"])],
     ["crybot-s2 sudo", screenIdentityArgs(screen(2), ["sudo", "-n", "true"])],
-  ]) await expectCommandFailure(label, args);
+  ]) await expectCommandFailure(label, args, sudoDenied);
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "sleep 300 >/dev/null 2>&1 &"]));
   await checkUsercustomize(args => screenIdentityArgs(screen(2), args), "/home/crybot-s2", "61002", async marker => {
     await docker(root(["env", "-u", "PYTHONNOUSERSITE", "HOME=/home/crybot-s2",
@@ -326,7 +335,7 @@ try {
     await assertNotRootMarker(marker);
   });
   const cua = args => ["exec", "-u", "cua", name, "env", "-u", "VNC_PW", "HOME=/home/cua", ...args];
-  await expectCommandFailure("cua sudo", cua(["sudo", "-n", "true"]));
+  await expectCommandFailure("cua sudo", cua(["sudo", "-n", "true"]), sudoDenied);
   const cuaUid = (await docker(cua(["id", "-u"]))).stdout.trim();
   await checkUsercustomize(cua, "/home/cua", cuaUid, async marker => {
     await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "status", "crybot-websockify"]));

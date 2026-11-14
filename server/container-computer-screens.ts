@@ -115,22 +115,26 @@ export function createContainerScreens({ sh, containerRuntimeStatus }: {
     if (!isScreenTarget(target)) throw new Error("stopScreen requires a screen target");
     let stopError: unknown;
     let cleanupError: unknown;
+    let stopFailed = false;
+    let cleanupFailed = false;
     try {
       await runner(runtime, rootContainerExecArgs(target.containerName, ["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "stop", `screen-s${target.screen}:*`]), 30_000);
     } catch (error) {
+      stopFailed = true;
       stopError = error;
     }
     try {
       await runner(runtime, rootContainerExecArgs(target.containerName, ["sh", "-c",
         `setpriv --reuid=${screenUid(target.screen)} --regid=${screenUid(target.screen)} --clear-groups pkill -KILL -u ${screenUser(target.screen)} || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }`]), 30_000);
     } catch (error) {
+      cleanupFailed = true;
       cleanupError = error;
     }
-    if (stopError && cleanupError) {
+    if (stopFailed && cleanupFailed) {
       throw new AggregateError([stopError, cleanupError], `stopScreen failed: supervisor stop: ${String(stopError)}; process cleanup: ${String(cleanupError)}`, { cause: stopError });
     }
-    if (stopError) throw stopError;
-    if (cleanupError) throw cleanupError;
+    if (stopFailed) throw stopError;
+    if (cleanupFailed) throw cleanupError;
   }
 
   async function screenStates(runtime: Runtime, containerName: string, runner: CommandRunner = sh): Promise<Record<number, ContainerScreenState>> {

@@ -204,11 +204,12 @@ if ! command -v useradd >/dev/null 2>&1 || ! command -v supervisorctl >/dev/null
   exec env ${ROOT_PYTHON_ENV.join(" ")} /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
 fi
 rm -f ${SCREENS_FALLBACK_FILE}
-for path in /home/cua /home/cua/workspace /home/cua/workspace/screens /home/cua/.vnc; do
+for path in /home/cua /home/cua/workspace /home/cua/.vnc; do
   if [ -L "$path" ]; then echo "refusing symlink path: $path" >&2; exit 1; fi
 done
-mkdir -p /home/cua/workspace/screens
-chmod 0711 /home/cua /home/cua/workspace /home/cua/workspace/screens
+if [ -L /home/cua/workspace/screens ]; then rm -f /home/cua/workspace/screens; fi
+install -d -o root -g root -m 0711 /home/cua/workspace/screens
+chmod 0711 /home/cua /home/cua/workspace
 if [ -d /home/cua/.vnc ]; then chmod 0700 /home/cua/.vnc; fi
 rm -f /etc/sudoers.d/cua
 install -d -m 0755 /usr/local/sbin /usr/local/libexec/crybot /run/crybot/screens /etc/crybot /var/log/supervisor
