@@ -264,3 +264,13 @@ describe("the Admin's limit, read and told to the bot", () => {
     expect(told(undefined, "box did not become ready within 90s")).toBeNull();
   });
 });
+
+it("omits Boat setup and team desktop hints under provider lock while retaining VPS and VM views", () => {
+  expect(placeView(facts({ boat: "none", server: "linux" })).action?.id).toBe("add-boat-key");
+  expect(placeView(facts({ providerLock: true, boat: "none", server: "linux" }))).toMatchObject({ state: "off", action: null });
+  const auto = placeView(facts({ providerLock: true, place: "auto", teamComputer: "Shared desktop" }));
+  expect(auto.state).toBe("auto");
+  expect(auto.line).not.toMatch(/cloud desktop|Shared desktop|Boat/i);
+  expect(placeView(facts({ providerLock: true, backend: "vps" })).state).toBe("vps");
+  expect(placeView(facts({ providerLock: true, place: "vm" })).state).toBe("vm");
+});

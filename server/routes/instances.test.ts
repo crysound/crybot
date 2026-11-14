@@ -358,3 +358,23 @@ describe("looking for Ollama", () => {
     expect((await fetch(`${hosted.base}/api/instances/ollama`)).status).toBe(403);
   });
 });
+
+it.each([true, false])("exposes endpoint addresses only to the owner or admin (admin: %s)", async (admin) => {
+  const cfg: AppConfig = { instances: { gateway: {
+    driver: "claudeAgent", access: "custom", config: { endpointModels: ["claude-sonnet-5"] },
+    environment: { ANTHROPIC_BASE_URL: "https://gateway.example", ANTHROPIC_AUTH_TOKEN: "fixture-token" },
+  } } };
+  const auth: RequestAuth = admin ? { kind: "loopback", scopes: ["admin"] } : { kind: "session", via: "bearer", scopes: ["client"], session: { id: "fixture-member", tokenHash: "fixture-hash", label: "Fixture member", scopes: ["client"], createdAt: 0, lastSeenAt: 0, expiresAt: 1 } };
+  const { call } = await serve({ cfg, describeInstances: async () => [{ instanceId: "gateway", driverKind: "claudeAgent" }] }, auth);
+  const { instances } = await call("GET", "/api/instances");
+  expect(instances[0].claudeEndpoint.models).toEqual(["claude-sonnet-5"]);
+  expect(JSON.stringify(instances)).not.toContain("fixture-token");
+  if (admin) {
+    expect(instances[0].url).toBe("https://gateway.example");
+    expect(instances[0].claudeEndpoint.baseUrl).toBe("https://gateway.example");
+  } else {
+    expect(instances[0]).not.toHaveProperty("url");
+    expect(instances[0].claudeEndpoint).not.toHaveProperty("baseUrl");
+    expect(JSON.stringify(instances)).not.toContain("gateway.example");
+  }
+});

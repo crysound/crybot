@@ -227,6 +227,7 @@ export function ProviderMark({ driverKind, size, className }: IconProps & { driv
  * are from Simple Icons (CC0 1.0). The Cohere path is from Lobe Icons (MIT). */
 export function PresetProviderMark({ preset, size = 16, className }: IconProps & { preset: ProviderIconPreset }) {
   switch (preset) {
+    case "crybot": return <img src="/app-icon.svg" alt="" width={size} height={size} className={className} />;
     case "openai": return <CodexMark size={size} className={className} />;
     case "anthropic": return <ClaudeMark size={size} className={className} />;
     case "xai": return <GrokMark size={size} className={className} />;

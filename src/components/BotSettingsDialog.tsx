@@ -112,6 +112,7 @@ export function BotSettingsDialog({ bot, overlay = false }: {
             refreshError={overview !== null && overviewError}
             prompt={prompt}
             promptError={promptError}
+            providerLock={state.config?.providerLock === true}
             onOpen={(target) => dispatch({ type: "toggleSettings", open: true, section: target })}
             onSetup={derived.canCoordinate && !bot.busy ? () => {
               dispatch({ type: "toggleSettings", open: false });

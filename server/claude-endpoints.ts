@@ -2,6 +2,8 @@
 // so the Claude Code on this computer keeps its own sign-in. The token lives in the instance
 // environment like every other provider key, and the entry is never read by ~/.claude.
 import { randomUUID } from "node:crypto";
+import { isClaudeEndpoint } from "./claude-endpoint-kind.ts";
+export { isClaudeEndpoint };
 import { join } from "node:path";
 import { z } from "zod";
 
@@ -55,11 +57,6 @@ const TIERS = [
 function rawConfig(entry: InstanceConfig): Record<string, unknown> {
   return entry.config && typeof entry.config === "object" && !Array.isArray(entry.config)
     ? entry.config as Record<string, unknown> : {};
-}
-
-/** A Claude instance the person pointed at another host, rather than a named Claude account or Bedrock. */
-export function isClaudeEndpoint(entry: InstanceConfig | undefined): boolean {
-  return entry?.driver === "claudeAgent" && Array.isArray(rawConfig(entry).endpointModels) && rawConfig(entry).bedrock !== true;
 }
 
 export type { ClaudeEndpointInfo };

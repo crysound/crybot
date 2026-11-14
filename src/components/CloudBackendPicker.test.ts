@@ -26,6 +26,11 @@ describe("CloudBackendPicker", () => {
     expect(picker()).toBe("");
   });
 
+  it("hides the Boat switch while provider-locked", () => {
+    fixture.config = { providerLock: true };
+    expect(picker("vps")).toBe("");
+  });
+
   it.each(["box", "vps"] as const)("offers both backends whichever is chosen (%s)", (value) => {
     const markup = picker(value);
     expect(markup).toContain("Boat");

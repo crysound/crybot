@@ -52,6 +52,19 @@ beforeEach(() => {
 });
 
 describe("J11: a failed place's row", () => {
+  it.each([false, true])("hides a stored Boat connection prompt only while locked: %s", (providerLock) => {
+    fixture.config = { providerLock };
+    const row: PlaceRow = { state: "cc-needs-key", params: { bot: "Scout" }, source: "works-on" };
+    expect(show(stored(row)).html.includes("Boat")).toBe(!providerLock);
+  });
+
+  it("preserves model guidance for VPS computers while locked", () => {
+    const view = placeRowViewFor({ state: "cc-cannot", params: { bot: "Scout", model: "fixture" }, source: "works-on" },
+      { providerLock: true, server: "linux", plan: false, role: "admin", mode: "simple" });
+    expect(view.state).toBe("cc-cannot");
+    expect(view.action?.id).toBe("choose-model");
+  });
+
   it("says no hours are left in one line, with one button: See your plan", () => {
     const { html, buttons } = show(stored(hours), vi.fn());
     expect(html).toContain("This month&#x27;s 50 cloud desktop hours are used up. They come back on 1 November.");

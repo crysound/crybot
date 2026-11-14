@@ -185,6 +185,38 @@ describe("the places a conversation can be pinned to", () => {
   });
 });
 
+describe("provider-locked place menus", () => {
+  afterEach(() => { fixture.config = null; fixture.menuOpen = false; });
+
+  it.each([false, true])("hides Boat in desktop and phone menus only while locked: %s", (providerLock) => {
+    fixture.config = { providerLock, box: { configured: false } };
+    fixture.menuOpen = true;
+    const cloudBot = { ...bot, computer: "cloud" as const, cloudBackend: "box" as const };
+    const html = renderToStaticMarkup(createElement(PlaceChip, { bot: cloudBot, live: false, onPin: vi.fn() }));
+    expect(html.includes("Cloud desktop")).toBe(!providerLock);
+    expect(html.includes("Connect Boat first")).toBe(!providerLock);
+    expect(html).toContain("Private desktop");
+    expect(html).toContain("This computer");
+    let item: ReturnType<typeof usePlaceMenuItem> | undefined;
+    function Probe() { item = usePlaceMenuItem({ bot: cloudBot, onPin: vi.fn() }); return null; }
+    renderToStaticMarkup(createElement(Probe));
+    expect(item!.submenu!.some((row) => row.key === "place:cloud")).toBe(!providerLock);
+    if (providerLock) expect(JSON.stringify(item)).not.toMatch(/Boat|Cloud desktop/);
+  });
+
+  it("keeps a configured VPS reachable while locked", () => {
+    fixture.config = { providerLock: true };
+    let item: ReturnType<typeof usePlaceMenuItem> | undefined;
+    const onPin = vi.fn();
+    function Probe() { item = usePlaceMenuItem({ bot: { ...bot, cloudBackend: "vps" }, onPin }); return null; }
+    renderToStaticMarkup(createElement(Probe));
+    const cloud = item!.submenu!.find((row) => row.key === "place:cloud")!;
+    expect(cloud.disabled).toBe(false);
+    cloud.onSelect();
+    expect(onPin).toHaveBeenCalledWith("cloud");
+  });
+});
+
 describe("J11: the chip names a place's problem in the panel's words", () => {
   afterEach(() => { fixture.menuOpen = false; fixture.computerMcp = true; });
 

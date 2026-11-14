@@ -27,7 +27,7 @@ import {
   withClaudeBedrockInfo,
 } from "../claude-bedrock.ts";
 import { updateClaudeCli } from "../claude-update.ts";
-import { persistableInstanceConfigs, saveConfig, withInstanceCli, type AppConfig } from "../config.ts";
+import { instanceConfigs, persistableInstanceConfigs, saveConfig, withInstanceCli, type AppConfig } from "../config.ts";
 import { addEndpoint, addEndpointSchema, endpointBaseUrl, isAddedEndpoint, withEndpointUrls } from "../openai-compat-endpoints.ts";
 import { findOllama, probeOllama } from "../drivers/ollama.ts";
 import type { InstanceConfigMap, ModelSelection, ProviderInstance } from "../contracts.ts";
@@ -44,6 +44,21 @@ import type { SessionRegistry } from "../sessions.ts";
 import type { Store } from "../store.ts";
 import type { BusyFlag, ConfigStatus } from "./config.ts";
 import { PASS, type RouteHandler } from "./table.ts";
+import { providerLockEnabled } from "../provider-lock.ts";
+
+function instancesForAccess(described: unknown, admin: boolean): unknown {
+  if (admin || !Array.isArray(described)) return described;
+  return described.map((instance) => {
+    const safe = { ...instance };
+    delete safe.url;
+    for (const key of ["claudeEndpoint", "codexEndpoint"]) {
+      if (!safe[key]) continue;
+      safe[key] = { ...safe[key] };
+      delete safe[key].baseUrl;
+    }
+    return safe;
+  });
+}
 
 export interface InstanceRouteDeps {
   store: Pick<Store, "bots" | "tasks">;
@@ -109,6 +124,7 @@ export function createInstanceRoutes(deps: InstanceRouteDeps): RouteHandler {
   const claudeUpdatesInFlight = new Set<string>();
   return async ({ req, res, url, path, method, auth, json, readBody }) => {
     if (method === "GET" && path === "/api/instances/hidden") {
+      if (providerLockEnabled()) return json(res, 200, { instances: [] });
       const hidden = Object.entries(persistableInstanceConfigs(cfg)).filter(([, entry]) => entry.hidden === true);
       return json(res, 200, { instances: hidden.map(([instanceId, entry]) => ({ instanceId, driverKind: entry.driver, displayName: entry.displayName ?? BUILT_IN_DRIVERS.find((driver) => driver.driverKind === entry.driver)?.metadata.displayName ?? instanceId })) });
     }
@@ -118,7 +134,7 @@ export function createInstanceRoutes(deps: InstanceRouteDeps): RouteHandler {
       if (url.searchParams.get("fresh") === "1") registry.forgetSnapshots();
       // Whatever this download brings shows on the next open; the answer does not wait for it.
       void modelManifest().refreshOnDemand().catch(() => {});
-      return json(res, 200, { instances: await describeInstances() });
+      return json(res, 200, { instances: instancesForAccess(await describeInstances(), ownerOrAdmin(auth)) });
     }
     if (method === "GET" && path === "/api/instances/ollama") {
       if (hostedModels || !ownerOrAdmin(auth)) return json(res, 403, { error: "Only the owner of this server can look for Ollama." });
@@ -135,6 +151,13 @@ export function createInstanceRoutes(deps: InstanceRouteDeps): RouteHandler {
       return json(res, 200, { app: "crybot", engines: available });
     }
     const companyMutation = /^\/api\/instances\/(company\.[\w.-]+)(?:\/|$)/.exec(path);
+    if (providerLockEnabled() && path.startsWith("/api/instances/") && method !== "GET") {
+      const firstEndpoint = method === "POST" && path === "/api/instances/claude-endpoint" && Object.keys(instanceConfigs(cfg)).length === 0;
+      const check = method === "POST" && /^\/api\/instances\/[\w.-]+\/(check|refresh-models)$/.test(path);
+      if (firstEndpoint) {
+        if (!ownerOrAdmin(auth)) return json(res, 403, { error: "Only the owner or an admin can change the locked endpoint." });
+      } else if (!check) return json(res, 403, { error: "Provider settings are locked by the server." });
+    }
     if (hostedModels && path.startsWith("/api/instances/") && method !== "GET") return json(res, 403, { error: HOSTED_PROVIDER_SETTINGS_ERROR });
     if (companyMutation && method !== "GET") return json(res, 403, { error: "Company accounts are read-only here. Manage this connection in desktop Settings." });
 
@@ -206,6 +229,7 @@ export function createInstanceRoutes(deps: InstanceRouteDeps): RouteHandler {
       const parsed = (codex ? codexEndpointSchema : claudeEndpointSchema).safeParse(await readBody(req, 16384));
       if (!parsed.success) return json(res, 400, { error: codex ? parsed.error.issues[0]?.message ?? "Check the endpoint settings." : "Enter a name, an http(s) base URL, an API key." });
       if (providerConfigBusy.get()) return json(res, 409, { error: "provider settings are already being updated" });
+      if (providerLockEnabled() && Object.keys(instanceConfigs(cfg)).length > 0) return json(res, 403, { error: "Provider settings are locked by the server." });
       providerConfigBusy.set(true);
       try {
         const { instanceId, instances } = (codex ? newCodexEndpoint : newClaudeEndpoint)(cfg, parsed.data);

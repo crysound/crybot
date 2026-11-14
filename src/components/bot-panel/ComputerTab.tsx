@@ -59,7 +59,7 @@ function usePlaceChoices(bot: Bot) {
   const current: PlaceChoice = bot.computer ?? "auto";
   const myChrome = state.config?.browserEngine?.myChrome === true
     && (state.config?.browserProfiles ?? []).some((profile) => profile.id === bot.browserProfile && profile.browser === "chrome");
-  const placeLabel = (place: Place) => (place === "browser" && myChrome ? t("settings.profiles.myChrome") : worksOnSimpleLabel(place, platform));
+  const placeLabel = (place: Place) => (place === "cloud" && state.config?.providerLock ? t("botAccess.cloud.selfHostedVps") : place === "browser" && myChrome ? t("settings.profiles.myChrome") : worksOnSimpleLabel(place, platform));
   const choice = (place: Place): PlaceOption => {
     const { view, reachable } = placeViews[place];
     return { value: place, label: placeLabel(place), disabled: !reachable, hint: !reachable || placeHasIssue(view) ? view.line : undefined };

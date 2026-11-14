@@ -208,6 +208,6 @@ it("a server of the person's own has Share this computer with the maintainer fla
 it("shows local environment controls in Simplified Chinese", async () => {
   stubEnvironments(); setLocale("zh"); await mount();
   const { html } = render();
-  expect(html).toContain("每个环境都有自己的机器人、会话和数据文件夹");
+  expect(html).toContain("每个环境都有自己的智能体、会话和数据文件夹");
   expect(html).not.toContain("Separate setups on this computer");
 });

@@ -10548,5 +10548,7 @@
   "computer.recovery.restartTitle": "Para e inicia de novo este computador na nuvem. Os programas abertos são fechados; os arquivos continuam lá.",
   "computer.recovery.replace": "Substituir computador",
   "computer.recovery.replaceTitle": "Exclui este computador na nuvem e dá um novo ao bot. Os arquivos que estão só nele são perdidos.",
-  "mascot.body.dome": "Dome"
+  "mascot.body.dome": "Dome",
+  "native.remoteOnly.unreachable": "Não foi possível conectar ao servidor",
+  "native.remoteOnly.retry": "Tentar novamente"
 }

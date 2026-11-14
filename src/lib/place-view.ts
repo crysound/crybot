@@ -29,6 +29,7 @@ export function panelCloudRefusal(error: unknown, message: string, included: boo
 
 export interface PlaceSeat {
   server: ServerKind;
+  providerLock?: boolean;
   plan: boolean;
   role: "admin" | "user";
   mode: "simple" | "advanced";
@@ -56,7 +57,7 @@ export function placeFacts(input: {
   bot: Pick<Bot, "name" | "modelSelection" | "toolScope" | "cloudBackend">;
   place: PlaceFacts["place"];
   seat: PlaceSeat;
-  config: (FeatureFlagConfig & Pick<ConfigStatus, "box">) | null | undefined;
+  config: (FeatureFlagConfig & Pick<ConfigStatus, "box" | "providerLock">) | null | undefined;
   instances: InstanceInfo[];
   local?: PlaceFacts["local"];
   computer?: PlaceFacts["computer"];
@@ -66,6 +67,7 @@ export function placeFacts(input: {
   const instance = input.instances.find((candidate) => candidate.instanceId === bot.modelSelection.instanceId);
   return {
     place: input.place,
+    providerLock: config?.providerLock,
     server: seat.server,
     bot: bot.name,
     plan: seat.plan,
@@ -87,6 +89,7 @@ export function placeViewFor(facts: PlaceFacts): PlaceView {
 }
 
 export function placeRowViewFor(row: PlaceRow, seat: PlaceSeat, worksOnLabel?: string): PlaceView {
+  if (seat.providerLock && ((row.state.startsWith("cc-") && !["cc-cannot", "cc-tools-off", "cc-sign-in"].includes(row.state)) || row.state === "auto-team")) return placeRowView({ ...row, state: "off" }, { server: seat.server, role: seat.role, translate: placeTranslate });
   const read = row.state === "cc-needs-key" && seat.plan && seat.server !== "my-cloud" ? { ...row, state: "cc-on-my-cloud" as const } : row;
   return placeRowView(read, { server: seat.server, role: seat.role, mode: seat.mode, worksOnLabel, translate: placeTranslate, locale: activeLocale() });
 }
@@ -114,11 +117,11 @@ export function useCloudPlanPaid(): boolean {
   return Boolean(bridge) && cloudPlanView(account).kind === "paid";
 }
 
-export function usePlaceSeat(config: Pick<ConfigStatus, "cloudHome"> | null | undefined, capabilities: DesktopCapabilities): PlaceSeat {
+export function usePlaceSeat(config: Pick<ConfigStatus, "cloudHome" | "providerLock"> | null | undefined, capabilities: DesktopCapabilities): PlaceSeat {
   const plan = useCloudPlanPaid();
   const ownerOrAdmin = useOwnerOrAdmin();
   const advanced = useAdvancedMode();
-  return { server: serverKind(config, capabilities), plan, role: ownerOrAdmin === false ? "user" : "admin", mode: advanced ? "advanced" : "simple" };
+  return { server: serverKind(config, capabilities), providerLock: config?.providerLock, plan, role: ownerOrAdmin === false ? "user" : "admin", mode: advanced ? "advanced" : "simple" };
 }
 
 export function openPlaceAction(

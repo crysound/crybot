@@ -55,3 +55,17 @@ node scripts/smoke-selfhost-login.mjs
 ```
 
 冒烟脚本要求 Node 24、curl 和监听本机临时端口的权限。脚本生成临时密钥、启动本机假 JWKS，将构建服务端的 JWKS fetch 映射到该服务，使用临时数据目录及假引擎，并阻断其他外部 fetch；生产代码没有跳过 JWT 校验或替换 JWKS 地址的环境开关。脚本打印 curl 命令及响应，验证 JWT、cookie、健康接口和公开下载后清理 fixture。
+
+### Lock AI providers to Cry Bot
+
+Set `CRYBOT_PROVIDER_LOCK=1` on the server and restart to show only configured Claude custom endpoints, all named **Cry Bot**. Built-in providers, additional provider controls, hidden providers, and the AI key section are omitted; other service settings remain available. Endpoints without a custom icon use the Cry Bot mark. Only the owner or an admin can see endpoint addresses in `/api/instances`.
+
+Configure a Claude endpoint with the existing settings form (for example, `https://gateway.example`). If none exists, the locked provider list is empty and Settings → AI shows that form. On startup, references to missing providers in bots, tasks, routines, defaults, and backup models move to the first endpoint; no migration runs without an endpoint. Model IDs are preserved, so configure models supported by the endpoint. Existing provider configurations are retained: unset the variable or use `0` and restart to restore the normal provider list; migrated references are not rolled back.
+
+For desktop builds, set the same variable to `1` when building. The generated `desktop-config.json` contains `"providerLock": true`, which makes local mode start its server with the lock enabled. The release workflow reads the repository variable `CRYBOT_PROVIDER_LOCK`. A desktop connected to a remote server follows that server's setting.
+
+### Desktop builds that only connect to your server
+
+Set `CRYBOT_DESKTOP_REMOTE_ONLY=1` together with `CRYBOT_DEFAULT_SERVER_URL=https://gateway.example` when building the desktop app. The generated `desktop-config.json` enables `remoteOnly` only when a valid default server URL is present. The release workflow reads the repository variable `CRYBOT_DESKTOP_REMOTE_ONLY`. It is off by default; without it, existing desktop environment choices and startup behavior are unchanged.
+
+With `remoteOnly` enabled, every launch selects the default server, including installations with an existing `environments.json`. Saved environments are retained, but environment switching, local mode, and adding other servers are hidden. Failed connections show a retry page; retry and Reload open the configured server without selecting local mode. Set `CRYBOT_LOGIN_HOSTS` to the exact login hostnames that must open within the window; their login pages do not receive local IPC privileges. The local background service still runs for desktop computer control, IPC, and updater idle checks, but its interface is never shown in the main window.
