@@ -49,7 +49,7 @@ export const CONTROL_PLANE_ENV_PREFIX = "CRYBOT_CLOUD_";
 export function stripControlPlaneEnv(env: Record<string, string | undefined>): void {
   for (const key of Object.keys(env)) {
     const name = key.toUpperCase();
-    if (name.startsWith(CONTROL_PLANE_ENV_PREFIX) || (CONTROL_PLANE_ENV as readonly string[]).includes(name)) delete env[key];
+    if (/^(CRYBOT_FEISHU_|LARKSUITE_CLI_|MEEGLE_)/.test(name) || name.startsWith(CONTROL_PLANE_ENV_PREFIX) || (CONTROL_PLANE_ENV as readonly string[]).includes(name)) delete env[key];
   }
 }
 

@@ -122,6 +122,8 @@ export type RequestOutcome = "allowed-once" | "rejected" | "answered" | "unavail
 
 // Sessions start implicitly on the first turn; resumeCursor carries the provider-native continuation (e.g. a Claude session id).
 export interface SendTurnInput {
+  /** Server-only capability; resolves credentials immediately before a dedicated turn process starts. Never serialize the result. */
+  feishuCli?: import("./feishu-cli/turn.ts").FeishuCliAccess;
   threadId: ThreadId;
   /** Drivers namespace process-level resources (broker socket, CLI session) by botId too: threadIds may coincide across bots. */
   botId?: string;
