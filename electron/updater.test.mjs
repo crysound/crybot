@@ -15,7 +15,9 @@ const CLOUD = "https://home-7f3k2.example.test";
 const OTHER = "https://bots.example.test";
 const OWN = "https://cry-c-a.example.test";
 
-const fixture = vi.hoisted(() => ({ autoUpdater: null, handlers: new Map(), home: "" }));
+const fixture = vi.hoisted(() => ({ autoUpdater: null, handlers: new Map(), home: "", feed: "https://example.com/desktop-updates/" }));
+
+vi.mock("./desktop-build-config.mjs", () => ({ readDesktopBuildConfig: () => ({ updateFeedUrl: fixture.feed }) }));
 
 vi.mock("electron", () => ({
   app: { isPackaged: true, getPath: () => fixture.home, getVersion: () => "1.0.0", hide: vi.fn() },
@@ -81,6 +83,7 @@ async function load(pageAllowed, serverPage = undefined, confirmRestart = undefi
     return ["/unused-staged-update.zip"];
   });
   autoUpdater.quitAndInstall = vi.fn();
+  autoUpdater.setFeedURL = vi.fn();
   fixture.autoUpdater = autoUpdater;
   const updater = await import("./updater.mjs");
   updater.registerUpdaterIpc({ pageAllowed, ...(serverPage ? { serverPage, confirmRestart } : {}) });
@@ -92,6 +95,7 @@ const settle = async () => {
 };
 
 beforeEach(() => {
+  fixture.feed = "https://example.com/desktop-updates/";
   fixture.home = mkdtempSync(join(tmpdir(), "cry-updater-home-"));
   localOriginModule.setLocalOrigin(LOCAL);
   vi.useFakeTimers();
@@ -343,4 +347,21 @@ it("a server's page the window shows may ask for the app's own update: it learns
   expect(await ask(other.event)).toBe("installing");
   expect(confirmRestart).toHaveBeenLastCalledWith("2.0.0", OTHER);
   expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1);
+});
+
+it("never loads or checks an updater without a build-time feed", async () => {
+  fixture.feed = null;
+  const { updater, autoUpdater, handlers } = await load(() => true);
+  updater.startUpdater();
+  await handlers.get("update:check")({});
+  await vi.advanceTimersByTimeAsync(2 * 60 * 60 * 1000);
+  expect(autoUpdater.setFeedURL).not.toHaveBeenCalled();
+  expect(autoUpdater.checkForUpdates).not.toHaveBeenCalled();
+  expect(handlers.get("update:get-state")({})).toEqual({ status: "idle" });
+  expect(await updater.updateForServerPage(vi.fn())).toBe("unavailable");
+});
+it("pins all update checks to the configured generic feed", async () => {
+  const { updater, autoUpdater } = await load(() => true);
+  updater.startUpdater();
+  expect(autoUpdater.setFeedURL).toHaveBeenCalledWith({ provider: "generic", url: fixture.feed, useMultipleRangeRequest: false });
 });

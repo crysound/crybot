@@ -3,6 +3,13 @@
 import { ServerResponse, type IncomingMessage, type Server } from "node:http";
 import { Socket } from "node:net";
 
+const responses = new WeakMap<IncomingMessage, ServerResponse>();
+
+export function appendUpgradeCookies(headers: string[], req: IncomingMessage): void {
+  const cookies = responses.get(req)?.getHeader("set-cookie");
+  for (const cookie of Array.isArray(cookies) ? cookies : cookies ? [String(cookies)] : []) headers.push(`Set-Cookie: ${cookie}`);
+}
+
 const HANDSHAKE_MS = 10_000;
 const EARLY_BYTES = 64 * 1024;
 
@@ -36,6 +43,7 @@ export function createUpgrades(): Upgrades {
       server.on("upgrade", (req: IncomingMessage, socket, head: Buffer) => {
         if (stopped || !(socket instanceof Socket)) { socket.destroy(); return; }
         const res = new ServerResponse(req);
+        responses.set(req, res);
         res.assignSocket(socket);
         // Rejected upgrades end this socket; do not let HTTP clients pool it.
         res.setHeader("connection", "close");

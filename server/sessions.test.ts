@@ -828,3 +828,37 @@ describe("a member's own phone on a Team Cloud", () => {
     expect(registry.memberPhones(), "an ended phone is not listed").toEqual([]);
   });
 });
+
+describe("Access session reuse", () => {
+  it("persists identity without raw tokens and evicts the oldest after five restarts", () => {
+    const unrelated = registry.issue({ label: "paired", scopes: ["admin"] });
+    const other = registry.issueAccess("other", "Access");
+    const issued = [];
+    for (let i = 0; i < 7; i++) {
+      const current = registry.issueAccess("owner", "Access");
+      issued.push(current);
+      expect(registry.issueAccess("owner", "Access").token).toBe(current.token);
+      const persisted = readFileSync(file(), "utf8");
+      expect(persisted).not.toContain(current.token);
+      expect(JSON.parse(persisted).sessions.filter((s: { accessIdentity?: string }) => s.accessIdentity === "owner")).toHaveLength(Math.min(i + 1, 5));
+      registry.close();
+      clock++;
+      registry = new SessionRegistry({ file: file(), now: () => clock });
+    }
+    expect(registry.authenticate(issued[0]!.token)).toBeNull();
+    expect(registry.authenticate(issued[1]!.token)).toBeNull();
+    for (const current of issued.slice(2)) expect(registry.authenticate(current.token)?.accessIdentity).toBe("owner");
+    expect(registry.authenticate(unrelated.token)).not.toBeNull();
+    expect(registry.authenticate(other.token)?.accessIdentity).toBe("other");
+  });
+  it("does not reuse revoked or expired sessions", () => {
+    const first = registry.issueAccess("owner", "Access");
+    registry.revoke(first.session.id);
+    const second = registry.issueAccess("owner", "Access");
+    expect(second.token).not.toBe(first.token);
+    clock = second.session.expiresAt;
+    const third = registry.issueAccess("owner", "Access");
+    expect(third.token).not.toBe(second.token);
+    expect(registry.list()).toHaveLength(1);
+  });
+});

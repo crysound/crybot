@@ -1,3 +1,4 @@
+import { readDesktopBuildConfig, defaultServerEnvironment, loginNavigationAllowed } from "./desktop-build-config.mjs";
 import { app, autoUpdater as nativeAutoUpdater, BrowserWindow, Tray, WebContentsView, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, net, powerMonitor, powerSaveBlocker, safeStorage, screen, session, shell, systemPreferences, utilityProcess, nativeTheme } from "electron";
 import { createRequire } from "node:module";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -1287,7 +1288,8 @@ ipcMain.on("desktop:unread-count", (event, value) => {
   applyUnreadBadge(sender);
 });
 
-const { LOCAL_ID, activeEnvironment, activeRemote, allowedOrigins, bootEnvironmentDir, otherPlaces, savedPlace, startupEnvironmentDir, withActive, withEnvironment, withLocalEnvironment, withMicrophone, withPlaceColor, withoutEnvironment, withOwnCloud, withTeam, placesMenuOptions, workspaceMenuTemplate, workspaceNavigationAllowed, workspaceSenderAllowed, workspaceSummary, workspaceWindowTitle } = environmentsModule;
+const { LOCAL_ID, activeEnvironment, activeRemote, allowedOrigins, bootEnvironmentDir, otherPlaces, savedPlace, startupEnvironmentDir, withActive, withEnvironment, withEnvironmentLook, withLocalEnvironment, withMicrophone, withPlaceColor, withoutEnvironment, withOwnCloud, withTeam, placesMenuOptions, workspaceMenuTemplate, workspaceNavigationAllowed, workspaceSenderAllowed, workspaceSummary, workspaceWindowTitle } = environmentsModule;
+const desktopBuild = readDesktopBuildConfig(app.isPackaged ? process.resourcesPath : "");
 let environmentsState = { environments: [], activeId: LOCAL_ID };
 let computerSharing;
 
@@ -1859,13 +1861,23 @@ function createWindow({ deferNavigation = false } = {}) {
     if (mainWindow === win) mainWindow = null;
   });
 
-  win.webContents.setWindowOpenHandler(({ url }) => {
+  const loginAllowed = (url, options) => loginNavigationAllowed(url, activeRemote(environmentsState), desktopBuild.loginHosts, options);
+  const externalOpenedAt = new Map();
+  const openNavigationExternal = url => {
     try {
-      void shell.openExternal(externalLinkUrl(url)).catch(() => {
+      const external = externalLinkUrl(url);
+      const now = Date.now();
+      for (const [target, at] of externalOpenedAt) if (now - at >= 2_000) externalOpenedAt.delete(target);
+      if (externalOpenedAt.has(external)) return;
+      externalOpenedAt.set(external, now);
+      void shell.openExternal(external).catch(() => {
         console.warn("The external web link could not be opened");
       });
-    } catch {
-    }
+    } catch {}
+  };
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (loginAllowed(url, { popup: true })) { void win.loadURL(url).catch(() => {}); return { action: "deny" }; }
+    openNavigationExternal(url);
     return { action: "deny" };
   });
   const guardNavigation = (event, url) => {
@@ -1873,9 +1885,10 @@ function createWindow({ deferNavigation = false } = {}) {
     try {
       origin = new URL(url).origin;
     } catch {}
-    if (workspaceNavigationAllowed(url, environmentsState, rendererOrigin())) return;
+    if (workspaceNavigationAllowed(url, environmentsState, rendererOrigin()) || loginAllowed(url)) return;
     event.preventDefault();
     slog(`blocked navigation to ${origin ?? "an invalid address"}`);
+    openNavigationExternal(url);
   };
   win.webContents.on("will-navigate", guardNavigation);
   win.webContents.on("will-redirect", guardNavigation);
@@ -2655,6 +2668,8 @@ app.whenReady().then(async () => {
   });
   // Registry before lease: the lease and the child's CRYBOT_DATA_DIR both follow a named environment.
   environmentsState = environmentsStore.read();
+  const initialEnvironments = defaultServerEnvironment(environmentsState, desktopBuild, fs.existsSync(environmentsFile()), randomUUID);
+  if (initialEnvironments !== environmentsState) persistEnvironments(initialEnvironments);
   let bootDataDir = desktopDataDir();
   if (app.isPackaged) {
     const boot = bootEnvironmentDir(environmentsState, desktopDataDir());
@@ -2866,7 +2881,13 @@ app.whenReady().then(async () => {
   // A cold-start action owns its first navigation; a default load started first would be aborted by it.
   const deliveredOrganizationEntry = await deliverOrganizationEntry();
   const deliveredCloudEntry = await cloudEntry.ready();
-  if (!hiddenStart && !restoredOrganizationEntry && !deliveredOrganizationEntry && !deliveredCloudEntry) await showStartPlace(); if (hostedAvailable) void cloudAccountRestored().then(() => teamLinks.ready());
+  if (!hiddenStart && !restoredOrganizationEntry && !deliveredOrganizationEntry && !deliveredCloudEntry) {
+    const remote = activeRemote(environmentsState);
+    if (remote && handSaved(remote)) {
+      if (!mainWindow || mainWindow.isDestroyed()) createWindow({ deferNavigation: true });
+      await navigateMainWindow(remote.origin);
+    } else await showStartPlace();
+  } if (hostedAvailable) void cloudAccountRestored().then(() => teamLinks.ready());
   // Registering from an unreadable store would mint a second installation identity.
   if (credentialStoreUnavailable) {
     slog("skipping connected-apps registration: the credential store was unreadable this launch");
