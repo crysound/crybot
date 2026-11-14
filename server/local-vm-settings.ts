@@ -40,9 +40,9 @@ export const localVmConfigSchema = z.object({
     .max(MAX_LOCAL_VM_IDLE_TIMEOUT_MINUTES)
     .optional(),
   preserveInstalledApps: z.boolean().optional(),
-  /** Memory limit in GiB, with no swap beyond it; shared defaults reserve 2 GiB when engine resources are supplied. On Docker and Podman, stopped containers apply changes on their next start. */
+  /** Memory limit in GiB, with no swap beyond it; in shared mode with engine resources supplied, the 8 GiB default is capped at engine memory minus 2 GiB where possible, explicit values at engine memory. On Docker and Podman, stopped containers apply changes on their next start. */
   memoryGb: z.number().int().min(MIN_DESKTOP_MEMORY_GB).max(MAX_DESKTOP_MEMORY_GB).optional(),
-  /** CPU limit; Docker refuses more CPUs than its engine has. Defaults to 3 in shared mode with engine resources supplied and 2 otherwise. Stopped containers apply changes on their next start. */
+  /** CPU limit; Docker and Podman reject limits above their engine's CPU count. In shared mode with engine resources supplied, the default of 3 and explicit values are capped at engine CPUs; otherwise defaults to 2 without engine clamping. On Docker and Podman, stopped containers apply changes on their next start. */
   cpus: z.number().int().min(MIN_DESKTOP_CPUS).max(MAX_DESKTOP_CPUS).optional(),
 });
 
