@@ -5,6 +5,7 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
+import WebSocket from "ws";
 
 const fixture = await mkdtemp(join(tmpdir(), "crybot-screens-smoke-"));
 process.env.CRYBOT_DATA_DIR = join(fixture, "data");
@@ -50,6 +51,21 @@ async function waitForScreens(expected) {
   throw new Error(`screen startup timed out: ${JSON.stringify(last)}`);
 }
 
+async function waitForReadyScreens() {
+  await waitForScreens({ 1: "running", 2: "running" });
+  for (const n of [1, 2]) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await docker(screenExecArgs(screen(n), ["status", "--socket", screenSocket(n)]), { timeout: 10_000 });
+        break;
+      } catch (error) {
+        if (attempt >= 45) throw error;
+        await delay(1000);
+      }
+    }
+  }
+}
+
 const rfbCheck = String.raw`
 import ctypes, ctypes.util, json, socket, struct, sys
 passwords = json.load(sys.stdin)
@@ -89,20 +105,44 @@ print('RFB authentication passed for s1 and s2 (correct and wrong passwords)')
 `;
 
 async function tokenHandshake(port, n) {
-  await new Promise((resolve, reject) => {
-    const socket = new WebSocket(`ws://127.0.0.1:${port}/websockify?token=s${n}`, ["binary"]);
-    const timer = setTimeout(() => { socket.close(); reject(new Error(`s${n} websockify timed out`)); }, 10_000);
-    socket.binaryType = "arraybuffer";
-    socket.onmessage = event => {
-      try {
-        assert.equal(Buffer.from(event.data).toString(), "RFB 003.008\n");
-        clearTimeout(timer);
-        socket.close();
-        resolve();
-      } catch (error) { clearTimeout(timer); socket.close(); reject(error); }
-    };
-    socket.onerror = () => { clearTimeout(timer); reject(new Error(`s${n} websockify failed`)); };
-  });
+  const deadline = Date.now() + 30_000;
+  let lastError;
+  let lastHttpStatus = "none (no HTTP response)";
+  while (Date.now() < deadline) {
+    try {
+      await new Promise((resolve, reject) => {
+        const socket = new WebSocket(`ws://127.0.0.1:${port}/websockify?token=s${n}`, ["binary"]);
+        let finished = false;
+        const timer = setTimeout(() => finish(new Error("handshake/RFB greeting timed out")), Math.min(5000, deadline - Date.now()));
+        function finish(error) {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          if (error) { socket.terminate(); reject(error); }
+          else { socket.close(); resolve(); }
+        }
+        socket.on("upgrade", response => { lastHttpStatus = response.statusCode; });
+        socket.on("unexpected-response", (request, response) => {
+          lastHttpStatus = response.statusCode;
+          response.resume();
+          finish(new Error(`HTTP ${response.statusCode}`));
+        });
+        socket.on("message", data => {
+          try {
+            assert.equal(data.toString(), "RFB 003.008\n");
+            finish();
+          } catch (error) { finish(error); }
+        });
+        socket.on("error", finish);
+        socket.on("close", () => finish(new Error("closed before RFB greeting")));
+      });
+      return;
+    } catch (error) {
+      lastError = error;
+      await delay(Math.min(1000, Math.max(0, deadline - Date.now())));
+    }
+  }
+  throw new Error(`s${n} websockify failed after 30s; last HTTP status: ${lastHttpStatus}; ${lastError?.message}`);
 }
 
 try {
@@ -130,18 +170,7 @@ try {
   await docker(root(["python3", "-c", 'import socket; s = socket.socket(); s.settimeout(2); assert s.connect_ex(("127.0.0.1", 5901)) != 0; s.close()']));
   await startScreen("docker", screen(1), passwords[0]);
   await startScreen("docker", screen(2), passwords[1]);
-  await waitForScreens({ 1: "running", 2: "running" });
-  for (const n of [1, 2]) {
-    for (let attempt = 0; ; attempt++) {
-      try {
-        await docker(screenExecArgs(screen(n), ["status", "--socket", screenSocket(n)]), { timeout: 10_000 });
-        break;
-      } catch (error) {
-        if (attempt >= 45) throw error;
-        await delay(1000);
-      }
-    }
-  }
+  await waitForReadyScreens();
   const supervisor = await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "status", "crybot-websockify"]));
   assert.match(supervisor.stdout, /RUNNING/);
   const port = (await docker(["port", name, "6901/tcp"])).stdout.trim().split(":").at(-1);
@@ -150,6 +179,8 @@ try {
   console.log((await docker(["exec", "-i", "-u", "0", name, "env", "-u", "VNC_PW", "python3", "-c", rfbCheck], { input: JSON.stringify(passwords) })).stdout.trim());
   const processes = (await docker(root(["ps", "-eo", "user:20,args"]))).stdout;
   assert.doesNotMatch(processes, /(?:start-vnc\.sh|start-novnc\.sh|start-crybot-cua-driver\.sh)/);
+  assert.match(processes, /^cua\s+.*\/usr\/bin\/websockify\b/m);
+  assert.match(processes, /^root\s+.*\/screen-process cua \/usr\/bin\/websockify\b/m);
   assert.equal(processes.split("\n").filter(line => /^crybot-s1\s+.*Xvnc :1\b/.test(line)).length, 1);
   assert.match(processes, /crybot-s1\s+.*Xvnc :1\b/);
   const environment = (await docker(screenIdentityArgs(screen(2), ["env"]))).stdout;
@@ -170,7 +201,11 @@ try {
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "! test -r /home/crybot-s1 && ! test -r /home/cua/workspace/screens/s1 && ! test -r /run/user/61001/crybot-cua.sock"]));
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "sleep 300 >/dev/null 2>&1 &"]));
   await docker(root(["rm", "-f", "/tmp/crybot-usercustomize-s2"]));
-  await docker(screenIdentityArgs(screen(2), ["sh", "-c", "printf '%s\\n' 'open(\"/tmp/crybot-usercustomize-s2\", \"w\").write(\"injected\\n\")' > \"$HOME/usercustomize.py\""]));
+  const userSite = (await docker(screenIdentityArgs(screen(2), ["python3", "-c", "import site; print(site.getusersitepackages())"]))).stdout.trim();
+  await docker(screenIdentityArgs(screen(2), ["sh", "-c", "mkdir -p -- \"$1\"; printf '%s\\n' 'open(\"/tmp/crybot-usercustomize-s2\", \"w\").write(\"injected\\n\")' > \"$1/usercustomize.py\"", "usercustomize-fixture", userSite]));
+  await docker(screenIdentityArgs(screen(2), ["python3", "-c", "pass"]));
+  assert.equal((await docker(root(["stat", "-c", "%u", "/tmp/crybot-usercustomize-s2"]))).stdout.trim(), "61002");
+  await docker(root(["rm", "-f", "/tmp/crybot-usercustomize-s2"]));
   await stopScreen("docker", screen(2));
   await waitForScreens({ 1: "running", 2: "off" });
   for (let attempt = 0; ; attempt++) {
@@ -180,9 +215,14 @@ try {
   await startScreen("docker", screen(2), passwords[1]);
   await waitForScreens({ 1: "running", 2: "running" });
   await docker(root(["sh", "-c", "test ! -e /tmp/crybot-usercustomize-s2 || [ \"$(stat -c %u /tmp/crybot-usercustomize-s2)\" -ne 0"]));
+  await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "stop", "crybot-websockify"]));
+  await docker(root(["sh", "-c", "! pgrep -u cua -f /usr/bin/websockify"]));
+  await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "start", "crybot-websockify"]));
+  await tokenHandshake(port, 1);
   await docker(root(["sh", "-c", "mkdir -p /root/crybot-runtime-target; chown 0:0 /root/crybot-runtime-target; stat -c %u:%g /root/crybot-runtime-target"]));
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "rm -rf \"$XDG_RUNTIME_DIR/tmp\"; ln -s /root/crybot-runtime-target \"$XDG_RUNTIME_DIR/tmp\""]));
   await docker(["restart", name], { timeout: 60_000 });
+  const restartedPort = (await docker(["port", name, "6901/tcp"])).stdout.trim().split(":").at(-1);
   for (let attempt = 0; ; attempt++) {
     try {
       await docker(root(["test", "-S", "/run/crybot/supervisor.sock"]));
@@ -194,8 +234,11 @@ try {
   }
   await docker(root(["sh", "-c", "test \"$(stat -c %u:%g /root/crybot-runtime-target)\" = 0:0"]));
   await startScreen("docker", screen(1), passwords[0]);
-  await waitForScreens({ 1: "running", 2: "off" });
-  await tokenHandshake(port, 1);
+  await startScreen("docker", screen(2), passwords[1]);
+  await waitForReadyScreens();
+  await tokenHandshake(restartedPort, 1);
+  await tokenHandshake(restartedPort, 2);
+  assert.doesNotMatch((await docker(root(["cat", "/var/log/supervisor/screens.log"]))).stdout, /unknown problem killing crybot-websockify|PermissionError/);
   console.log("Multi-screen smoke passed: isolated supervisor, VNC auth, token routing, UID/env/limits, stop cleanup");
 } catch (error) {
   await docker(["logs", name], { inherit: true }).catch(() => {});

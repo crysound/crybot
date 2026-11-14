@@ -701,7 +701,7 @@ async function probeContainerComputerStatus(
   } catch {
   }
 
-  if (options.probeDesktop !== false && status.runtime === "docker" && status.screens_layout === "multi" && status.container === "running") {
+  if (options.probeDesktop !== false && status.runtime !== "container" && status.screens_layout === "multi" && status.container === "running") {
     try {
       const fallback = await runner(status.runtime, ["exec", "-u", "0", target.containerName,
         "env", "-u", "VNC_PW", "sh", "-c", `if [ -f ${SCREENS_FALLBACK_FILE} ]; then echo single; else echo multi; fi`], 8000);

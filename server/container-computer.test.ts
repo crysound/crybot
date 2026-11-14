@@ -1708,6 +1708,31 @@ describe("shared container probes for screen targets", () => {
     expect(fake.calls).toContain(statusProbe);
   });
 
+  it("reads the podman fallback marker and probes the single desktop", async () => {
+    const detail = JSON.parse(readyInspect())[0];
+    detail.Config.Labels[SCREENS_LAYOUT_LABEL] = "multi";
+    detail.EffectiveCaps = [...PACKAGE_INSTALL_CAPS, "CAP_SYS_CHROOT"];
+    detail.BoundingCaps = detail.EffectiveCaps;
+    const markerProbe = `podman exec -u 0 ${CONTAINER} env -u VNC_PW sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`;
+    const fake = runner({
+      "/usr/bin/which docker": new Error("missing"),
+      "/usr/bin/which podman": "podman\n",
+      "podman info --format json": '{"host":{"arch":"amd64"}}\n',
+      [`podman image inspect ${IMAGE}`]: preparedImageInspect(),
+      [`podman inspect ${CONTAINER}`]: JSON.stringify([detail]),
+      [markerProbe]: "single\n",
+      [versionProbe.replace(/^docker /, "podman ")]: `cua-driver ${CUA_DRIVER_VERSION}`,
+      [statusProbe.replace(/^docker /, "podman ")]: "ready",
+      [healthProbe.replace(/^docker /, "podman ")]: JSON.stringify({ schema_version: "1", overall: "ok", checks: [] }),
+    });
+    const status = await containerComputerStatus(fake.run, "linux");
+    expect(status.runtime).toBe("podman");
+    expect(status.screens_layout).toBe("single");
+    expect(status.ready).toBe(true);
+    expect(fake.calls).toContain(markerProbe);
+    expect(fake.calls).toContain(statusProbe.replace(/^docker /, "podman "));
+  });
+
   it("keeps container health fields when the screen layout marker probe fails", async () => {
     const detail = JSON.parse(readyInspect())[0];
     detail.Config.Labels[SCREENS_LAYOUT_LABEL] = "multi";

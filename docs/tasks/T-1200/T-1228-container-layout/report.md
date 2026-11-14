@@ -85,3 +85,28 @@
 - 本轮改动文件 `oxlint --deny-warnings`、冒烟脚本语法检查、`git diff --check`：通过。
 - `pnpm lint` 仍只报仓库已有的 `server/lazy-container-mcp.ts:122` 与 `scripts/public-scan/scan.mjs:297` 两条 warning，在 `--deny-warnings` 下退出失败；本轮改动文件没有 warning。
 - 当前沙箱没有 Docker daemon，且禁止端口型 e2e；真实镜像 usercustomize、运行目录链接和收尾流程以 Actions「Real VM screens」为准。
+
+## 第 4 轮返工（2026-11-14）
+
+### 三项修复
+
+- 真实镜像冒烟在 `docker restart` 后重新执行 `docker port <name> 6901/tcp`，使用新的临时映射端口。重新启动 s1/s2 后复用首次启动的就绪检查：两屏 supervisor 为 running，且各屏 cua-driver status 成功，再检查两屏 token 路由。WebSocket 使用已有的 `ws` 依赖获取握手 HTTP 状态；30 秒内失败后每秒重试，单次握手及 RFB greeting 最多等待 5 秒，最终失败包含最后收到的 HTTP 状态和最后错误。
+- `PermissionError killing crybot-websockify` 属于进程身份配置问题：此前 supervisor 为 root，websockify 直接以 cua 运行；固定能力白名单没有 CAP_KILL，Linux 不允许该 root 跨 UID 发信号。websockify 改用现有 `screen-process` root 监护脚本：子进程清空附加组、setgid/setuid 后仍以 cua 执行 websockify，监护进程仅转发信号时切换有效 UID。保留 Python `-I`，用户 HOME/USER/LOGNAME 仍在降权之后设置，屏幕专属环境仅用于 crybot-sN。没有添加能力或放宽权限。冒烟增加实际进程身份、websockify 停启后无残留进程、重启后日志无该 PermissionError 的断言；真实镜像效果仍待 Actions 确认。
+- usercustomize 冒烟以 s2 执行 `python3 -c 'import site; print(site.getusersitepackages())'` 获取真实 user site，创建目录并写入钩子。先以 s2 不带 `-I` 执行 Python，断言 /tmp 标记存在且 uid 为 61002；删除标记后停启 s2，再断言标记不存在或不属 root。
+- 布局标记探测条件改为 `status.runtime !== "container"`，覆盖共用初始化脚本的 Docker 和 Podman。新增 Podman 回退用例同时检查读取标记、返回 single、执行单屏 status 探测并达到 ready。
+
+### 第 4 轮验证
+
+已首先执行 `crybot-link-deps`；测试文件逐个运行，未使用 systemd。`docs/verification/README.md` 在当前 worktree 仍不存在；本轮仅使用 mock、临时目录和隔离脚本 fixture，没有访问用户 live app/data。
+
+- 新 Podman 用例先红后绿：改生产代码前 `expected 'multi' to be 'single'`，改条件后单独运行通过。
+- `pnpm exec vitest run server/container-screens.test.ts`：22/22 通过，含 108 组单屏参数完整相等断言。
+- `pnpm exec vitest run server/container-computer.test.ts`：149/149 通过。
+- `pnpm exec vitest run server/container-mcp.test.ts`：9/13 通过，原有 4 项子进程桥接测试仍因 stdout 为空失败，未修改或跳过测试。独立最小复现 `spawnSync(process.execPath, ['-e', 'console.log(123)'])` 返回 `error.code=EPERM`、status=0、空 stdout/stderr，与第 2、3 轮的沙箱限制一致；本地三文件合计 180/184 通过，不能声称全绿，完整桥接结果以 Actions 为准。
+- `pnpm exec tsc -b`、`pnpm exec tsc -p tsconfig.server.json`：通过。
+- 5 个改动 TS/MJS 文件的 `pnpm exec oxlint --deny-warnings`、`node --check scripts/smoke-screens-container.mjs`、`git diff --check`：通过。
+- 无端口的隔离 WebSocket 模拟：503/连接失败后重试成功、连续 HTTP 失败保留最后 503 状态、连接失败诊断、无响应时 30 秒总超时及定时器/连接清理均通过。临时 HOME 下的真实 Python user site 正向对照和 `-I` 禁止加载对照通过；这不替代容器内 s2/root 隔离验收。
+
+本沙箱无法运行容器或监听端口型 E2E，无法本地验证真实镜像冒烟。本条必须由协调者推分支后看 Actions「Real VM screens」全绿结果，目前未作该结论。
+
+单屏 fixture、`server/index.ts`、`server/vps-computer.ts`、`IMAGE_LAYER_VERSION`、端口安全判定均未改动；`scripts/public-scan/allow-domains.txt` 末尾协调者添加的两行保留。没有提交 git 或推送分支。

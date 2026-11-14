@@ -74,7 +74,7 @@ describe("container screen layout", () => {
     for (const section of ["supervisord", "unix_http_server", "rpcinterface:supervisor", "supervisorctl"]) expect(conf).toContain(`[${section}]`);
     for (const program of ["vncserver", "novnc", "dbus", "crybot-cua-driver"]) expect(conf).not.toContain(`[program:${program}]`);
     expect(conf).not.toContain("[include]");
-    expect(conf).toContain("--token-source /etc/crybot/vnc-tokens 6901\nuser=cua");
+    expect(conf).toContain("[program:crybot-websockify]\ncommand=/usr/local/libexec/crybot/screen-process cua /usr/bin/websockify --web /usr/share/novnc --token-plugin TokenFile --token-source /etc/crybot/vnc-tokens 6901\nuser=root");
     expect(conf).not.toContain("127.0.0.1:5901");
     expect(vncTokenFile(2)).toBe("s1: 127.0.0.1:5901\ns2: 127.0.0.1:5902\n");
   });

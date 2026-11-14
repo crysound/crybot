@@ -58,8 +58,8 @@ serverurl=unix:///run/crybot/supervisor.sock
 
 ${Array.from({ length: maxScreens }, (_, i) => screenSupervisorConf(i + 1)).join("\n")}
 [program:crybot-websockify]
-command=/usr/bin/websockify --web /usr/share/novnc --token-plugin TokenFile --token-source /etc/crybot/vnc-tokens 6901
-user=cua
+command=/usr/local/libexec/crybot/screen-process cua /usr/bin/websockify --web /usr/share/novnc --token-plugin TokenFile --token-source /etc/crybot/vnc-tokens 6901
+user=root
 stdout_logfile=/var/log/supervisor/websockify.log
 stderr_logfile=/var/log/supervisor/websockify.error.log
 autostart=true
@@ -123,17 +123,20 @@ if pid == 0:
     os.setgroups([])
     os.setgid(user.pw_gid)
     os.setuid(user.pw_uid)
-    suffix = user.pw_name.rsplit("-s", 1)[-1]
-    runtime = f"/run/user/{user.pw_uid}"
     os.environ.update({
         "HOME": user.pw_dir,
         "USER": user.pw_name,
         "LOGNAME": user.pw_name,
-        "DISPLAY": f":{suffix}",
-        "XDG_RUNTIME_DIR": runtime,
-        "TMPDIR": f"{runtime}/tmp",
-        "DBUS_SESSION_BUS_ADDRESS": f"unix:path={runtime}/bus",
     })
+    if user.pw_name.startswith("crybot-s"):
+        suffix = user.pw_name.rsplit("-s", 1)[-1]
+        runtime = f"/run/user/{user.pw_uid}"
+        os.environ.update({
+            "DISPLAY": f":{suffix}",
+            "XDG_RUNTIME_DIR": runtime,
+            "TMPDIR": f"{runtime}/tmp",
+            "DBUS_SESSION_BUS_ADDRESS": f"unix:path={runtime}/bus",
+        })
     os.write(ready_write, b"1")
     os.close(ready_write)
     os.execvp(sys.argv[2], sys.argv[2:])
