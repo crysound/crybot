@@ -1,3 +1,4 @@
+import type { ScreenFileAccess } from "../screen-files.ts";
 // The internal call behind the agents server's publish_app and check_app_hosting tools.
 //
 // The handler runs inside index.ts's /api/internal/ block, after the capability bearer is checked: the bot comes from
@@ -13,6 +14,7 @@ import type { BotFolders } from "../pages/bundle.ts";
 import { PASS } from "./table.ts";
 
 export interface AppHostingContext {
+  access?: ScreenFileAccess;
   method: string;
   path: string;
   res: ServerResponse;
@@ -32,10 +34,11 @@ export function createAppHostingInternalRoutes(publisher: AppPublisher) {
     if (ctx.method !== "POST" || ctx.path !== ROUTE) return PASS;
     const parsed = body.safeParse(await ctx.readBody() ?? {});
     if (!parsed.success) return void ctx.json(ctx.res, 400, { error: "publish_app takes action (publish or delete), path, project and title, all text." });
-    const { roots, vmWorkspace } = await ctx.folders();
-    const hostPath = (path: string | undefined) => (path && vmWorkspace ? guestWorkspaceToHost(path, VM_WORKSPACE_GUEST, vmWorkspace) ?? path : path);
+    const { roots, vmWorkspace, access: folderAccess } = await ctx.folders();
+    const access = ctx.access ?? folderAccess;
+    const hostPath = (path: string | undefined) => (path && vmWorkspace && !access ? guestWorkspaceToHost(path, VM_WORKSPACE_GUEST, vmWorkspace) ?? path : path);
     const { action = "publish", title } = parsed.data, path = hostPath(parsed.data.path), project = hostPath(parsed.data.project);
-    const input = { botId: ctx.botId, roots: vmWorkspace ? [vmWorkspace, ...roots] : roots, ...(project ? { project } : {}) };
+    const input = { ...(access ? { access, vmWorkspace } : {}), botId: ctx.botId, roots: vmWorkspace ? [vmWorkspace, ...roots] : roots, ...(project ? { project } : {}) };
     if (action !== "status" && !path?.trim()) return void ctx.json(ctx.res, 400, { error: `publish_app ${action} needs path: the folder to ${action}.` });
     const answer = action === "status" ? await publisher.status({ ...input, ...(path ? { path } : {}) })
       : action === "delete" ? await publisher.remove({ ...input, path: path! })
