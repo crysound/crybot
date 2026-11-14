@@ -80,3 +80,82 @@ git diff --check
 1. 在允许子进程和本机监听的隔离环境，按上述单文件命令补跑“未跑通的测试及原因”中的 9 个文件。尤其确认 `server/provider-lock.fixture.test.ts` 的互斥启动报错，以及既有端点/无端点两种服务器启动行为。当前沙箱结果不能证明完整服务器 HTTP 验收通过。
 2. 补齐或修正 `AGENTS.md` 引用的 `docs/verification/README.md`。
 3. 本轮未启动真实 Electron GUI；后续桌面验收可检查主窗口、设置窗口、登录弹窗的普通/强制刷新，以及 remoteOnly 关闭时的原生菜单行为。无需前端配合或新增配置。
+
+## 第 2 轮
+
+### 修改
+
+1. **Boat 文件行数**：新增 `server/boat-access.ts`，承接 `boatAccount`、`boatConfigured`、`boatOffered`、`assertBoatAllowed` 和 `describeBoatAccount`；`server/boat.ts` 保留调用和原有导出兼容。锁定状态统一调用 `providerLockEnabled`。`boat.ts` 从 1263 行降至 **1252 行**，低于登记上限 1253；未修改 ratchet 登记值。
+2. **Store 不增长**：只改 `server/store.ts` 的 `renameInstances`，把丢弃已映射游标的选项并入现有重命名辅助函数，默认重命名与 handed-message 行为保留。删除上一轮新增的两行独立辅助函数；当前 **2295 行**，与 `040c83c0:server/store.ts` 完全相同。未修改此函数以外的 Store 代码。
+3. **旧 bot 缺字段**：`server/provider-lock.ts` 使用 `Object.keys(bot.resumeCursors ?? {})`。`server/provider-lock.test.ts` 新增缺少该字段的 bot 回归测试，验证迁移成功、task 外来游标丢弃、端点游标保留、重载及幂等。
+4. **补齐 workspaces IPC**：`electron/rail.mjs`、`electron/place-look.mjs` 在统一注册入口包裹同一个 `workspaceHandler`；`electron/main.mjs` 将真实 `desktopBuild` 传入两个安装函数，同步 `place-look.d.mts` 配置类型。覆盖 places/open/add/probe/remove/make-home/local-new/local-edit/local-remove/look/color/recolor。新增 `electron/workspace-ipc.node-test.mjs`，26 项行为测试覆盖两种开关状态（含 local-edit 名称和颜色分支）：开启时读取、原处理器和副作用均未执行；关闭时参数、返回值、修改效果及 sender 守卫保留。已有 `place-look.node-test.mjs` 的 main 接线 fixture 增加对应配置。
+5. **文档**：`docs/self-hosting.md` 明确任一托管模型变量存在即视为启用托管策略，与提供方锁定互斥并拒绝启动，Cloud home 亦然。
+
+### 验证方式
+
+使用现有隔离测试 home、假网络响应和 IPC fixture；完整服务器仅通过 `provider-lock.fixture.test.ts` 尝试启动隔离实例，未访问用户真实应用或数据。`docs/verification/README.md` 仍缺失。没有安装依赖、改前端、发布配置或 CI，没有提交。
+
+所有命令均串行执行，Vitest 一次一个文件、一个 worker；测试命令外层设 75 秒超时。日志及退出码在 `/tmp/T-1219-r2-checks/`，测试汇总 `results.json`，静态检查汇总 `static-results.json`。
+
+```bash
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm exec vitest run <文件> --maxWorkers=1
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 node --test --test-isolation=none <文件>
+```
+
+### 测试结果
+
+| 完整通过的文件 | 结果 |
+| --- | --- |
+| `server/provider-lock.test.ts` | 11 通过，含缺字段回归 |
+| `server/store-rename-instances.test.ts` | 3 通过 |
+| `server/store.test.ts` | 158 通过 |
+| `server/boat-availability.test.ts` | 5 通过 |
+| `electron/workspace-ipc.node-test.mjs` | 26 通过 |
+| `electron/place-look.node-test.mjs` | 7 通过 |
+| `electron/rail-accounts.node-test.mjs` | 18 通过 |
+| `electron/hosted-disabled.node-test.mjs` | 6 通过 |
+| `electron/remote-only.node-test.mjs` | 12 通过 |
+
+| 受沙箱限制未完整通过的文件 | 结果与原因 |
+| --- | --- |
+| `server/boat-auto-sleep.test.ts` | `listen EPERM`，beforeAll 超时；7 项未执行 |
+| `server/boat-inventory.test.ts` | `listen EPERM`，beforeAll 超时；32 项未执行 |
+| `server/boat-lifecycle.test.ts` | `listen EPERM`，beforeAll 超时；3 项未执行 |
+| `server/boat-provision.test.ts` | `listen EPERM`，beforeAll 超时；6 项未执行 |
+| `server/config.test.ts` | 230 通过、1 跳过、3 项因 `spawnSync /opt/node24/bin/node EPERM` 失败 |
+| `server/routes/instances.test.ts` | 外层 75 秒超时，退出码 124，未取得测试通过结果 |
+| `server/provider-lock.fixture.test.ts` | 3 项均在 `freePortBlock` 阶段报 `no free port block`，未进入服务器启动 |
+| `scripts/testing/file-size-ratchet.test.ts` | `execFileSync("git", ...)` 报 `spawnSync git EPERM`，未进入行数断言 |
+
+共尝试 17 个测试文件，9 个完整通过，8 个因上述限制未完整通过。没有删除断言、主动跳过测试或改用真实服务；无法据此声称完整服务器 HTTP 或真实 Electron GUI 验证通过。
+
+### 行数验收
+
+另外通过 shell/Python 按 ratchet 的文件筛选规则和换行计数核对所有受检文件，并对比合入 main 的父提交 `d455d576^2`，结果保存于 `/tmp/T-1219-r2-checks/line-counts.json`。两个新增文件均不足 1000 行。
+
+| 文件 | 当前行数 | 上限 | main 基线行数 |
+| --- | --- | --- | --- |
+| `server/boat.ts` | **1252** | 1253 | 1253 |
+| `server/store.ts` | **2295** | 2291 | 2295（`040c83c0` 亦为 2295） |
+| `server/index.ts` | 15559 | 15515 | 15559 |
+| `server/config.ts` | 1251 | 1245 | 1251 |
+| `src/components/ChatView.tsx` | 1295 | 1293 | 1295 |
+| `src/components/ComputerPanel.tsx` | 1785 | 1782 | 1785 |
+| `src/components/GroupView.tsx` | 1222 | 1220 | 1222 |
+| `src/components/LocalComputerSection.tsx` | 1439 | 1437 | 1439 |
+
+Boat 已低于上限，Store 本 PR 净增长为 0；其余超限项和 main 一致，未改登记值或无关代码。完整 ratchet 测试仍需协调者在允许子进程的环境补跑，届时已有 main 超限项仍会报告失败。
+
+### 串行检查与协调事项
+
+以下命令按列出顺序逐一执行，全部退出码 0；补完报告后再次执行 `git diff --check`。
+
+```bash
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm typecheck
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm lint
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm i18n:check
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm check:brand
+git diff --check
+```
+
+请协调者在允许监听及子进程的隔离环境，按上述单文件命令补跑受限表中的 8 个文件；既有 Store 超限仍交由 T-1215 处理。验证说明文档缺失问题仍待修复。本轮未提交；原有未跟踪的任务说明 `r2.md` 保持原样。

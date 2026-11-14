@@ -6,7 +6,9 @@ import { createHash } from "node:crypto";
 
 import { DATA_DIR, type AppConfig } from "./config.ts";
 import { loadEnvironmentId } from "./environment.ts";
-import { boatCredential, boatProviderApi, type ServiceCredential } from "./included-services.ts";
+import { boatProviderApi } from "./included-services.ts";
+import { assertBoatAllowed, boatAccount, boatConfigured, boatOffered } from "./boat-access.ts";
+export { boatAccount, boatConfigured, boatOffered, describeBoatAccount } from "./boat-access.ts";
 import { relayBody, relayPath } from "./boat-relay.ts";
 import { boatHealth, DEAD_COMPUTER, unansweredStatus } from "./boat-health.ts";
 import { CLOUD_COMPUTER_NO_ANSWER } from "../shared/cloud-computer-recovery.ts";
@@ -888,20 +890,7 @@ export async function readyBoat(cfg: AppConfig, botId: string, budgetMs = 60_000
   return waitReady(cfg, boat.id, budgetMs);
 }
 
-export const boatAccount = (cfg: AppConfig): ServiceCredential | null => boatCredential(cfg.box?.token);
-
-export const boatConfigured = (cfg: AppConfig) => Boolean(boatAccount(cfg));
-export const boatOffered = (cfg: AppConfig) => process.env.CRYBOT_PROVIDER_LOCK !== "1" && boatConfigured(cfg);
-
-function assertBoatAllowed(): void {
-  if (process.env.CRYBOT_PROVIDER_LOCK === "1") throw Object.assign(new Error("Boat is unavailable while CRYBOT_PROVIDER_LOCK=1"), { status: 403 });
-}
-
 const usesIncludedBoat = (cfg: AppConfig): boolean => boatAccount(cfg)?.included === true;
-
-/** Configured-or-not for Settings, never the token. */
-export const describeBoatAccount = (cfg: AppConfig): { configured: boolean; included?: true } => {
-  const account = boatAccount(cfg); return { configured: Boolean(account), ...(account?.included ? { included: true as const } : {}) }; };
 
 export async function verifyToken(token: string): Promise<{ ok: true } | { ok: false; message: string; rejected?: true }> {
   try {

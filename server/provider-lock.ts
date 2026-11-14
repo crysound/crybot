@@ -48,7 +48,7 @@ export function migrateLockedProviderReferences(store: Pick<Store, "bots" | "ren
   };
   for (const bot of store.bots) {
     add(bot.modelSelection.instanceId);
-    for (const id of Object.keys(bot.resumeCursors)) add(id);
+    for (const id of Object.keys(bot.resumeCursors ?? {})) add(id);
     for (const candidate of bot.fallback ?? []) add(candidate.instanceId);
     for (const task of bot.tasks ?? []) {
       add(task.modelSelection?.instanceId);

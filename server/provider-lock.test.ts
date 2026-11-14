@@ -54,6 +54,21 @@ it("persists the default, bot template, recovery and helper selections", () => {
   expect(providerLockConfigPatch(saved, instanceConfigs(saved))).toEqual({});
 });
 
+it("migrates a legacy bot without a resumeCursors field", () => {
+  vi.stubEnv("CRYBOT_PROVIDER_LOCK", "1");
+  const store = new Store(() => ({ instanceId: "removed", model: "claude-sonnet-5" }));
+  const bot = store.createBot({}, { seedMessages: false });
+  const task = store.createTask(bot.id, "Legacy cursor fixture")!;
+  store.patchTask(bot.id, task.threadId, { resumeCursors: { removed: "foreign-session", gateway: "endpoint-session" } });
+  Reflect.deleteProperty(bot, "resumeCursors");
+  expect(Object.hasOwn(bot, "resumeCursors")).toBe(false);
+  expect(migrateLockedProviderReferences(store, instanceConfigs(endpoints))).toBe(1);
+  const reloaded = new Store(() => ({ instanceId: "", model: "" }));
+  expect(reloaded.bot(bot.id)?.modelSelection.instanceId).toBe("gateway");
+  expect(reloaded.taskByThread(bot.id, task.threadId)?.resumeCursors).toEqual({ gateway: "endpoint-session" });
+  expect(migrateLockedProviderReferences(reloaded, instanceConfigs(endpoints))).toBe(0);
+});
+
 it.each(["0", "1"])("leaves references alone with no endpoint (lock %s)", (lock) => {
   vi.stubEnv("CRYBOT_PROVIDER_LOCK", lock);
   const store = new Store(() => ({ instanceId: "removed", model: "fixture-model" }));

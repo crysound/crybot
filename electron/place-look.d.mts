@@ -18,6 +18,7 @@ export declare function listedLook(cloud: import("./cloud-list.mjs").CloudListEn
 export declare function railPaint(look: PlaceLook | null, color: unknown): { swatch: import("./cloud-list.mjs").CloudSwatch | null; locked?: "member" | "signed-out" } | null;
 export declare function pageLook(look: (PlaceLook & { cloudId?: string }) | null): PlaceLook | null;
 export declare function installPlaceLook(deps: {
+  config?: { remoteOnly?: boolean };
   ipcMain: { handle(channel: string, handler: (...args: any[]) => unknown): void };
   guard: (handler: (...args: any[]) => unknown) => (...args: any[]) => unknown;
   place: () => any;

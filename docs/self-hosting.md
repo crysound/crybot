@@ -62,7 +62,7 @@ Set `CRYBOT_PROVIDER_LOCK=1` on the server and restart to show only configured C
 
 Configure a Claude endpoint with the existing settings form (for example, `https://gateway.example`). If none exists, the locked provider list is empty and Settings → AI shows that form. On startup, references to missing providers in bots, tasks, routines, defaults, and backup models move to the first endpoint; no migration runs without an endpoint. Model IDs are preserved, so configure models supported by the endpoint. Existing provider configurations are retained: unset the variable or use `0` and restart to restore the normal provider list; migrated references are not rolled back.
 
-Provider lock and hosted model policy (`CRYBOT_HOSTED_MODELS` / `CRYBOT_HOSTED_MODEL_TOKEN`) cannot be enabled together. The server refuses to start with both configured; disable one before restarting. Existing Boat computers can still be put to sleep or reclaimed during cleanup while provider lock is enabled.
+Provider lock and hosted model policy (`CRYBOT_HOSTED_MODELS` / `CRYBOT_HOSTED_MODEL_TOKEN`) cannot be enabled together. The presence of either hosted model variable counts as enabling hosted policy, including on a Cloud home. The server refuses to start with both configured; disable one before restarting. Existing Boat computers can still be put to sleep or reclaimed during cleanup while provider lock is enabled.
 
 For desktop builds, set the same variable to `1` when building. The generated `desktop-config.json` contains `"providerLock": true`, which makes local mode start its server with the lock enabled. The release workflow reads the repository variable `CRYBOT_PROVIDER_LOCK`. A desktop connected to a remote server follows that server's setting.
 
