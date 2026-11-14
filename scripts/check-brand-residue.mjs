@@ -26,9 +26,10 @@ for (const path of [...files].sort()) {
   const bytes = readFileSync(path);
   if (bytes.includes(0)) continue;
   for (const [index, line] of bytes.toString("utf8").split("\n").entries()) {
-    // OpenMailBox is a third-party nodemailer provider alias shipped in the build catalog.
-    const buildProviderAlias = (path.startsWith("dist/") || path.startsWith("dist-server/")) && /openmailbox\.org/i.test(line);
-    if (!pattern.test(line) || buildProviderAlias) continue;
+    // OpenMailBox is a third-party nodemailer provider alias shipped in the build catalog; minified output
+    // can split it from its openmailbox.org alias, so drop the quoted alias itself before matching.
+    const built = path.startsWith("dist/") || path.startsWith("dist-server/");
+    if (!pattern.test(built ? line.replace(/(["'])\u004fMB\1/g, "") : line)) continue;
     console.error(`${path}:${index + 1}: ${line.trim().slice(0, 180)}`);
     hits++;
   }
