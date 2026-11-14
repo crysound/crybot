@@ -8,6 +8,9 @@ import { linePersonKey } from "../host/thread-person.ts";
 import { personKey } from "../person-key.ts";
 import { resetFeishuLoginWarningsForTests } from "../feishu-login.ts";
 import { stripWorkspaceCredentialEnv } from "../credential-env.ts";
+import { boxEnvironment } from "../bot-box/env.ts";
+import { claudeTurnLaunch } from "../drivers/claude-turn-launch.ts";
+import type { KeepWarmContract } from "../drivers/claude-keepwarm.ts";
 import { feishuCliAccess, feishuCliPrompt, directFeishuCliAccess } from "./turn.ts";
 import { brokerToken, BrokerAuthorizationError } from "./protocol.ts";
 
@@ -144,4 +147,49 @@ it("grants only the proven current request generation", async () => {
   expect(directFeishuCliAccess(undefined, "generation", personOf, unionOf, env)).toBeUndefined();
   const access = directFeishuCliAccess(request, "generation", personOf, unionOf, env)!;
   expect((await access.environment()).CRYBOT_FEISHU_USER_TOKEN).toBe(short);
+});
+
+it("isolates launch credentials from other users, boxes and warm contracts", async () => {
+  const inherited = { ...env, PATH: "/fixture/bin", CRYBOT_FEISHU_USER_TOKEN: "inherited-token" };
+  const contracts = new Map<string, KeepWarmContract>();
+  const ordinary = await claudeTurnLaunch({ threadId: "thread", text: "Fixture", system: "Stable" }, inherited);
+  ordinary.rememberWarmContract(contracts, "thread", [], directory, null, null);
+  expect(contracts.has("thread")).toBe(true);
+  const granted = await claudeTurnLaunch({ threadId: "thread", text: "Fixture", system: "Stable", feishuCli: feishuCliAccess("test_union", env) }, inherited);
+  expect(granted.environment().CRYBOT_FEISHU_USER_TOKEN).toBe(short);
+  expect(granted.launchSystem).toContain("lark-cli --help");
+  expect(boxEnvironment(granted.environment())).toEqual({ PATH: "/fixture/bin" });
+  granted.rememberWarmContract(contracts, "thread", [], directory, null, null);
+  expect(contracts.has("thread")).toBe(false);
+  const denied = await claudeTurnLaunch({ threadId: "thread", text: "Fixture", system: "Stable", feishuCli: feishuCliAccess("other_union", env) }, inherited);
+  expect(denied.environment()).toEqual({ PATH: "/fixture/bin" });
+  expect(denied.launchSystem).toBe("Stable");
+  expect(brokerToken).toHaveBeenCalledTimes(1);
+});
+
+it("builds the launch prompt after a failed token request and cannot retain a warm contract", async () => {
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", "https://example.invalid/authorize"));
+  const launch = await claudeTurnLaunch({ threadId: "thread", text: "Fixture", system: "Stable", feishuCli: feishuCliAccess("test_union", env) }, env);
+  expect(launch.environment()).toEqual({});
+  expect(launch.launchSystem).toContain("https://example.invalid/authorize");
+  expect(launch.launchSystem).not.toContain("lark-cli");
+  const contracts = new Map<string, KeepWarmContract>();
+  launch.rememberWarmContract(contracts, "thread", [], directory, null, null);
+  expect(contracts.size).toBe(0);
+});
+
+it("copies ordinary launch contracts and excludes confined guests", async () => {
+  const source = { PATH: "/fixture/bin" };
+  const launch = await claudeTurnLaunch({ threadId: "thread", text: "Fixture", systemStable: "Stable", systemVolatile: "Volatile" }, source);
+  const contracts = new Map<string, KeepWarmContract>();
+  const args = ["--fixture"];
+  const config = { nested: { value: "original" } };
+  launch.rememberWarmContract(contracts, "thread", args, directory, config, config);
+  args.push("changed");
+  config.nested.value = "changed";
+  source.PATH = "/changed";
+  expect(contracts.get("thread")).toEqual({ args: ["--fixture"], env: { PATH: "/fixture/bin" }, cwd: directory, system: "Stable", mcpServers: { nested: { value: "original" } }, settings: { nested: { value: "original" } } });
+  const guest = await claudeTurnLaunch({ threadId: "thread", text: "Fixture", guestConfined: true }, source);
+  guest.rememberWarmContract(contracts, "thread", [], directory, null, null);
+  expect(contracts.size).toBe(0);
 });

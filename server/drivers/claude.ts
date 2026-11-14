@@ -1,7 +1,7 @@
 // Claude Code over stream-json both ways: prompt on stdin, one retained CLI process per thread,
 // each turn settled by the CLI's own `result` frame.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { cleanFeishuEnvironment } from "../feishu-cli/turn.ts";
+import { claudeTurnLaunch } from "./claude-turn-launch.ts";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { createServer as createNetServer } from "node:net";
 import { homedir, tmpdir } from "node:os";
@@ -47,7 +47,7 @@ import { createOrgModelBlocks, modelSwapNotice, withOrgBlocks } from "./claude-m
 import { engineHomes } from "../engine-homes/engine-homes.ts";
 import { TEAM_TOOLS_FAILED, failedCustomMcp, teamToolsFailed } from "./team-tools.ts";
 import { armIdleClose, engineIdleMs, sessionIdlePolicy, stopIdleClose } from "./session-idle.ts";
-import { promptHalves, withVolatileNote } from "./prompt-split.ts"; import { CLAUDE_OWN_MEMORY_OFF } from "./claude-own-memory.ts";
+import { withVolatileNote } from "./prompt-split.ts"; import { CLAUDE_OWN_MEMORY_OFF } from "./claude-own-memory.ts";
 import { parseVersionTriple, versionAtLeast } from "./acp/version-probe.ts";
 import {
   applyClaudeInject,
@@ -1240,10 +1240,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
         return { turnId };
       }
       if (live) closeSession(threadId, turn.sessionReset ? "context reset" : "spawn contract changed");
-      // A new process gets the stable half only; the volatile half rides its first message, so a relaunch reuses the cached prefix.
-      const halves = promptHalves(turn);
-      const feishuEnvironment = turn.feishuCli ? await turn.feishuCli.environment() : undefined;
-      const launchSystem = [halves.stable ?? turn.system, turn.feishuCli?.prompt()].filter(Boolean).join("\n\n");
+      const { halves, launchSystem, environment: launchEnvironment, rememberWarmContract } = await claudeTurnLaunch(turn, env);
 
       // Until sessions.set() below, this turn owns every launch resource and must release it on failure.
       const cleanupUnownedLaunch = () => {
@@ -1350,19 +1347,12 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
           emit({ ...base(threadId, turnId), type: "turn.completed", ok: false, stopReason: "interrupted", cost: null });
           return { turnId };
         }
-        child = spawnCli(cliToLaunch(config.cli, launchCli), args, { cwd, env: { ...cleanFeishuEnvironment(env), ...feishuEnvironment }, stdio: ["pipe", "pipe", "pipe"], box: { ...(broker ? { rw: [broker.socketPath] } : {}), ...(hookTokenPath ? { ro: [dirname(hookTokenPath)] } : {}) } }, "bot");
+        child = spawnCli(cliToLaunch(config.cli, launchCli), args, { cwd, env: launchEnvironment(), stdio: ["pipe", "pipe", "pipe"], box: { ...(broker ? { rw: [broker.socketPath] } : {}), ...(hookTokenPath ? { ro: [dirname(hookTokenPath)] } : {}) } }, "bot");
       } catch (error) {
         cleanupUnownedLaunch();
         throw error;
       }
-      if (turn.guestConfined || turn.feishuCli) warmContracts.delete(threadId);
-      else {
-        warmContracts.set(threadId, {
-          args: [...args], env: { ...env }, cwd, system: launchSystem ?? null,
-          mcpServers: mcpConfigPath ? JSON.parse(JSON.stringify(mcpServers)) : null,
-          settings: authSettingsPath ? JSON.parse(JSON.stringify(settings)) : null,
-        });
-      }
+      rememberWarmContract(warmContracts, threadId, args, cwd, mcpConfigPath ? mcpServers : null, authSettingsPath ? settings : null);
       let markClosed!: () => void;
       const session: Session = {
         closed: new Promise<void>((resolve) => { markClosed = resolve; }),

@@ -196,3 +196,139 @@ broker 单测覆盖并发合并、POST/redirect/超时信号、缓存、5 分钟
 | `pnpm exec oxlint --deny-warnings`（本轮改动代码和测试） | 通过 |
 
 本轮新增测试均使用临时目录、`example.invalid` 和合成凭证。端到端测试没有在禁止监听的沙箱内宣称通过；Actions 负责完整监听环境验证。
+
+
+## 第 4 轮小修
+
+本轮只修文件行数和环境变量归属两个 CI 失败。未提交 git，未安装系统服务或访问真实凭证、live app/data。
+
+### 改动与边界
+
+- 新增 `server/drivers/claude-turn-launch.ts`，承接飞书取令牌、取令牌后拼接系统提示、启动环境清理/合并，以及保温合同的保存/清除。`claude.ts:1243` 用一行调用准备启动，spawn 时调用返回的环境函数，`claude.ts:1355` 用一行调用处理保温合同。取令牌和提示的先后顺序、spawn 时才合并环境、获准飞书轮次及受限轮次不保温的行为保持不变。
+- `server/drivers/claude.ts` 从 **2097 行降到 2087 行**，没有修改 ratchet 上限，也没有通过压行隐藏逻辑。
+- `server/bot-box/env.test.ts` 补齐服务端配置及本期按轮次注入的变量归属。**没有扩大 `BOX_ENV_CRYBOT_NAMES`**。当前设计的包装器用于未装箱的 Claude 进程；装箱后 `box.ts:106` 仍用 `boxEnvironment` 过滤飞书配置与令牌，也没有新增 broker socket 挂载。此处 SERVER_ONLY 表示不经盒子全局白名单放行，不表示包装器从来不读该名字。
+- 正常注入链路仍是 `index.ts:8411` → `directFeishuCliAccess` / `provenRequestPerson` → `feishuCliAccess` 检查 union_id 名单 → `claudeTurnLaunch` → 本轮 spawn 环境。群聊、无可证明发起人和名单外用户均无此能力。继承的飞书变量先清掉，再合并本轮授权结果；其他智能体的盒子拿不到这些名字。没有绕过盒子过滤的额外注入路径。未来要启用盒内飞书，需要另外实现按用户挂载 socket/包装器和环境授权，本轮不将配置或令牌升级为全局可继承变量。
+- `CRYBOT_FEISHU_` 是整族清理正则的前缀，并非通过拼接生成某个变量名。现有读取位置已经使用完整名字；将清理正则改为有限枚举会漏掉未来或未知的凭证变量，削弱安全边界。因此沿用测试已有的尾下划线族登记方式，登记到 SERVER_ONLY，并说明原因。
+- `turn.test.ts` 新增 3 个行为测试：获准令牌与其他用户/盒子/保温合同隔离；取令牌失败后才生成授权提示且不保温；普通启动合同仍复制参数、环境和嵌套配置，受限轮次清除合同。
+
+### CRYBOT_FEISHU 名字归属
+
+下表覆盖代码中的全部飞书名字，并补列扫描同样发现的包装器路径变量。所有 SERVER_ONLY 均登记在 `server/bot-box/env.test.ts`；本轮无 BOX 新增。
+
+| 名字 | 归属 | 读它的文件:行 | 理由 |
+| --- | --- | --- | --- |
+| `CRYBOT_FEISHU_CLI_USERS` | SERVER_ONLY（新增） | `server/feishu-cli/turn.ts:29` | 服务端解析 union_id 名单，禁用通配符；不向智能体传名单。 |
+| `CRYBOT_FEISHU_AUTHORIZATION_URL` | SERVER_ONLY（新增） | `server/feishu-cli/turn.ts:44`、`:50`；`server/feishu-cli/wrapper.ts:36` | 服务端配置用于失败提示回退；成功时只随获准未装箱轮次提供给包装器的 auth 提示，不全局放行。 |
+| `CRYBOT_FEISHU_BROKER_SOCKET` | SERVER_ONLY（新增） | `server/feishu-cli/turn.ts:30`；`server/feishu-cli/wrapper.ts:30`、`:31` | 服务端代领，以及获准未装箱轮次的包装器重取；不向盒子透传路径或新增挂载。 |
+| `CRYBOT_FEISHU_USER_TOKEN` | SERVER_ONLY（新增） | `server/feishu-cli/wrapper.ts:27`、`:28` | `turn.ts:40` 生成，`claude-turn-launch.ts:8`、`:13` 按获准轮次注入；包装器读取短期令牌，不通过盒子全局白名单。 |
+| `CRYBOT_FEISHU_EXPIRES_AT` | SERVER_ONLY（新增） | `server/feishu-cli/wrapper.ts:28` | `turn.ts:42` 随短期令牌逐次注入，包装器判断过期和重取；盒子继续拒绝。 |
+| `CRYBOT_FEISHU_APP_ID` | SERVER_ONLY（既有） | `server/feishu-login.ts:66`；`server/app-links.ts:104`；`server/feishu-cli/wrapper.ts:28` | 服务端登录配置；包装器所用同名值来自 `turn.ts:41` 的 broker 结果，继承登录值被清掉，不全局放行。 |
+| `CRYBOT_FEISHU_APP_SECRET` | SERVER_ONLY（既有） | `server/feishu-login.ts:73` | 登录服务端密钥，智能体不需要。 |
+| `CRYBOT_FEISHU_APP_SECRET_FILE` | SERVER_ONLY（既有） | `server/feishu-login.ts:74` | 登录密钥文件路径，只由服务端读取。 |
+| `CRYBOT_FEISHU_TENANTS` | SERVER_ONLY（既有） | `server/feishu-login.ts:68` | 登录租户限制。 |
+| `CRYBOT_FEISHU_ALLOW` | SERVER_ONLY（既有） | `server/feishu-login.ts:95` | 登录允许名单，不等同于 CLI 能力名单。 |
+| `CRYBOT_FEISHU_ADMINS` | SERVER_ONLY（既有） | `server/feishu-login.ts:96` | 服务端管理员身份判定。 |
+| `CRYBOT_FEISHU_SESSION_MAX_DAYS` | SERVER_ONLY（既有） | `server/feishu-login.ts:98` | 登录会话有效期。 |
+| `CRYBOT_FEISHU_TOKEN_ENDPOINT` | SERVER_ONLY（既有） | `server/feishu-login.ts:109` | 登录服务端的令牌接口覆盖。 |
+| `CRYBOT_FEISHU_USER_INFO_ENDPOINT` | SERVER_ONLY（既有） | `server/feishu-login.ts:110` | 登录服务端的用户信息接口覆盖。 |
+| `CRYBOT_FEISHU_`（前缀，非变量） | SERVER_ONLY（新增族登记） | `server/credential-env.ts:52`；`server/feishu-cli/wrapper.ts:6` | 扫描命中安全清理正则；整族剥离必须覆盖未知名字，不能缩成有限枚举。 |
+| `CRYBOT_LARK_CLI_EXECUTABLE` | SERVER_ONLY（新增） | `server/feishu-cli/wrapper.ts:42` | 当前未装箱包装器读取真实 CLI 路径；本轮未提供盒内 CLI 安装/挂载，不扩大盒子权限。 |
+
+### 本轮验证与输出
+
+开工先执行 `crybot-link-deps`，输出 `linked 73 entries`；Node `v24.22.3`。Vitest 全程逐文件串行执行，没有使用 systemd-run。测试 setup 给每个文件创建临时 HOME，业务测试使用合成身份/凭证和临时目录。
+
+以下为实际命令输出摘录（省略时间和工作目录）；7 个测试文件合计 **68 项通过**：
+
+```text
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+exit 0
+```
+
+```text
+$ pnpm exec vitest run server/bot-box/env.test.ts
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+exit 0
+```
+
+```text
+$ pnpm exec vitest run server/feishu-cli/broker.test.ts
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+exit 0
+```
+
+```text
+$ pnpm exec vitest run server/feishu-cli/wrapper.test.ts
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+exit 0
+```
+
+```text
+$ pnpm exec vitest run server/feishu-cli/turn.test.ts
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+exit 0
+```
+
+```text
+$ pnpm exec vitest run scripts/feishu-broker/entrypoints.test.mjs
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+exit 0
+```
+
+```text
+$ pnpm exec vitest run server/feishu-cli/protocol.test.ts
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+exit 0
+```
+
+```text
+$ pnpm exec tsc -p tsconfig.server.json --noEmit --pretty false
+（无输出）
+exit 0
+
+$ pnpm exec oxlint --deny-warnings server/drivers/claude.ts server/drivers/claude-turn-launch.ts server/bot-box/env.test.ts server/feishu-cli/turn.test.ts
+（无输出）
+exit 0
+
+$ wc -l server/drivers/claude.ts
+2087 server/drivers/claude.ts
+
+$ git diff --check
+（无输出）
+exit 0
+```
+
+已尝试启动现有 Claude 与完整服务器隔离 fixture；监听限制下未宣称端到端通过。本轮实际 Unix socket 也被执行沙箱拒绝，与运行环境说明中“Unix 套接字可以”不同：
+
+```text
+$ pnpm exec vitest run server/feishu-cli/claude.e2e.test.ts
+permission broker unavailable ... listen EPERM: operation not permitted ...sock
+Error: claude: permission broker could not bind a local socket
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+exit 1
+
+$ pnpm exec vitest run server/feishu-cli/socket.e2e.test.ts
+Error: listen EPERM: operation not permitted 127.0.0.1
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+exit 1
+
+$ pnpm exec vitest run server/feishu-cli/server.e2e.test.ts
+Error: listen EPERM: operation not permitted .../broker.sock
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+exit 1
+```
+
+首次集成验证发现抽取函数返回的 `environment` 名称遮蔽了驱动已有函数；已改成局部别名 `launchEnvironment`，重新执行 TypeScript 和 Claude fixture，前者通过，后者推进到上述 Unix socket 监听限制。这里列出的均为最终代码结果。
+
+AGENTS.md 指向的 `docs/verification/README.md` 仍不在仓库中；沿用现有测试的隔离夹具，不访问用户 live 数据。未运行 Actions；完整端到端及 CI 是否还有分支独有失败，以协调者推分支后的 Actions 为准。
