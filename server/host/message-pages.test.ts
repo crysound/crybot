@@ -53,4 +53,11 @@ describe("pageMessage", () => {
     const screen = { id: "s1", role: "bot", kind: "screen", at: 1, text: "", png: "iVBOR" } as Message;
     expect(pageMessage(screen)).toEqual({ id: "s1", role: "bot", kind: "screen", at: 1, text: "", hasImage: true });
   });
+
+  it("refreshes a historical sender name only in the wire copy", () => {
+    const message = { id: "m2", role: "user", kind: "text", at: 1, text: "hi", sender: { id: "p1", name: "Chrome on Mac" } } as Message;
+    const paged = pageMessage(message, (sender) => sender.id === "p1" ? "张三" : sender.name) as Message;
+    expect(paged.sender?.name).toBe("张三");
+    expect(message.sender?.name).toBe("Chrome on Mac");
+  });
 });

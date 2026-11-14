@@ -861,4 +861,40 @@ describe("Access session reuse", () => {
     expect(third.token).not.toBe(second.token);
     expect(registry.list()).toHaveLength(1);
   });
+  it("counts distinct Access identities using private records even without email", () => {
+    registry.issue({ label: "Desktop", scopes: ["admin"] });
+    registry.issue({ label: "Phone", scopes: ["admin"] });
+    registry.issueAccess("alex", "Browser");
+    expect(registry.hasMultiplePeople()).toBe(false);
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock });
+    registry.issueAccess("alex", "Second browser");
+    expect(registry.list()).toHaveLength(4);
+    expect(registry.hasMultiplePeople()).toBe(false);
+    registry.issueAccess("zhang", "Another browser");
+    expect(registry.hasMultiplePeople()).toBe(true);
+  });
+  it("persists 64 code points and keeps Access outside email membership without a new authority value", () => {
+    const name = "😀".repeat(64);
+    const issued = registry.issueAccess("owner", "Safari on iPhone", { email: "alex@example.test", displayName: name + "X" });
+    expect(issued.session.displayName).toBe(name);
+    expect(JSON.parse(readFileSync(file(), "utf8")).sessions[0].membershipAuthority).toBeUndefined();
+    registry.revalidateEmailSessions();
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock, emailScopes: () => null });
+    expect(registry.authenticate(issued.token)?.displayName).toBe(name);
+    registry.refreshAccessDetails(issued.session.id, { displayName: " \u200bAlex\u2028\u2029\ufeff " });
+    expect(registry.authenticate(issued.token)).toMatchObject({ displayName: "Alex" });
+    expect(registry.authenticate(issued.token)?.email).toBeUndefined();
+    registry.refreshAccessDetails(issued.session.id, {});
+    expect(registry.authenticate(issued.token)?.displayName).toBeUndefined();
+    expect(registry.list()).toHaveLength(1);
+  });
+  it("stores and refreshes Access identity details without changing the token", () => {
+    const first = registry.issueAccess("owner", "Chrome on Mac", { email: "a@example.test", displayName: "张三" });
+    const second = registry.issueAccess("owner", "Safari on iPhone", { email: "A@EXAMPLE.TEST", displayName: "Alex" });
+    expect(second.token).toBe(first.token);
+    expect(second.session).toMatchObject({ email: "a@example.test", displayName: "Alex", label: "Chrome on Mac" });
+    expect(registry.list()[0]).toMatchObject({ email: "a@example.test", displayName: "Alex" });
+  });
 });

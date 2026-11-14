@@ -9,6 +9,7 @@ import { AboutMeSettings } from "./AboutMeSettings";
 import { EveryBotRules } from "./EveryBotRules";
 import { SETTINGS_INPUT, SettingsField } from "./SettingsPrimitives";
 import { profileInitials } from "./SidebarProfileMenu";
+import { useSessionDisplayName } from "@/lib/session-profile";
 import { User } from "lucide-react";
 
 const PHOTO_MIN_SIDE = 64;
@@ -156,6 +157,8 @@ export function ProfileFields() {
   const { state, dispatch } = useStore();
   const [name, setName] = useState(state.config?.profile?.name ?? "");
   const [email, setEmail] = useState(state.config?.profile?.email ?? "");
+  const accessName = useSessionDisplayName();
+  const accessSession = Boolean(accessName);
   useEffect(() => {
     setName(state.config?.profile?.name ?? "");
     setEmail(state.config?.profile?.email ?? "");
@@ -183,9 +186,10 @@ export function ProfileFields() {
 
   return (
     <div className="flex flex-col gap-4">
-      <ProfilePhoto initials={profileInitials({ name, email })} />
+      <ProfilePhoto initials={profileInitials({ name: accessName ?? name, email })} />
       <SettingsField label={t("settings.profile.name")}>
-        <input id="profile-name" aria-label={t("settings.profile.name")} value={name} onChange={(e) => setName(e.target.value)} onBlur={save} placeholder={t("settings.profile.name")} className={SETTINGS_INPUT} />
+        <input id="profile-name" aria-label={t("settings.profile.name")} value={accessSession ? (accessName ?? "") : name} onChange={(e) => setName(e.target.value)} onBlur={accessSession ? undefined : save} readOnly={accessSession} placeholder={t("settings.profile.name")} className={SETTINGS_INPUT} />
+        {accessSession && <div className="text-[11px] text-ink-tertiary">{t("settings.profile.nameFromLogin")}</div>}
       </SettingsField>
       <SettingsField label={t("phone.signIn.email")}>
         <input
@@ -220,7 +224,8 @@ function ProfileAvatar({ profile }: { profile?: { name?: string; email?: string;
 export function ProfileSummaryRow() {
   const { state } = useStore();
   const [editing, setEditing] = useState(false);
-  const profile = state.config?.profile;
+  const displayName = useSessionDisplayName();
+  const profile = displayName ? { ...state.config?.profile, name: displayName } : state.config?.profile;
   const name = profile?.name?.trim() ?? "";
   const email = profile?.email?.trim() ?? "";
   const fieldsId = useId();

@@ -3,6 +3,8 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypt
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
+import { hasMultipleSessionPeople } from "./person-name.ts";
+import { cleanIdentityClaim } from "./access-claims.ts";
 import { writeFileAtomic } from "./atomic.ts";
 import { teamSessionExpiresAt, type TeamMember, type TeamRole } from "./cloud-team.ts";
 import {
@@ -71,6 +73,7 @@ const sessionSchema = z.object({
   accessIdentity: z.string().min(1).optional(),
   userId: z.string().max(256).optional(),
   email: z.string().max(320).optional(),
+  displayName: z.string().refine((name) => Array.from(name).length <= 64).optional(),
   /** `portal`: set only by the internal verified-portal issuance path. `team`: the Admin's signed member claim on a
    * Team Cloud. Never by email or pairing input. */
   membershipAuthority: z.enum(["portal", "team"]).optional(),
@@ -104,6 +107,7 @@ export interface PublicSession {
   lastSeenAt: number;
   expiresAt: number;
   email?: string;
+  displayName?: string;
   owner?: string;
   teamRole?: TeamRole;
   token?: true;
@@ -187,6 +191,7 @@ function publicSession(record: SessionRecord): PublicSession {
     expiresAt: record.expiresAt,
   };
   if (record.email) view.email = record.email;
+  if (record.displayName) view.displayName = record.displayName;
   if (record.owner) view.owner = record.owner;
   if (record.teamRole) view.teamRole = record.teamRole;
   if (record.token) view.token = true;
@@ -547,15 +552,33 @@ export class SessionRegistry {
     return this.issueAccount(input);
   }
 
-  issueAccess(identity: string, label: string): { token: string; session: PublicSession } {
+  refreshAccessDetails(id: string, input: { email?: string; displayName?: string }): void {
     this.prune();
+    const session = this.sessions.find((candidate) => candidate.id === id && candidate.accessIdentity !== undefined);
+    if (!session) return;
+    const email = input.email?.trim().toLowerCase() || undefined;
+    const displayName = cleanIdentityClaim(input.displayName);
+    if (session.email === email && session.displayName === displayName) return;
+    if (email) session.email = email; else delete session.email;
+    if (displayName) session.displayName = displayName; else delete session.displayName;
+    this.persist();
+  }
+
+  issueAccess(identity: string, label: string, input: { email?: string; displayName?: string } = {}): { token: string; session: PublicSession } {
+    this.prune();
+    const email = input.email?.trim().toLowerCase();
+    const displayName = cleanIdentityClaim(input.displayName);
+    const details = { ...(email ? { email } : {}), ...(displayName ? { displayName } : {}) };
     const matching = this.sessions.filter(session => session.accessIdentity === identity).sort((a, b) => a.createdAt - b.createdAt);
     for (const session of matching) {
       const token = this.accessTokens.get(session.id);
-      if (token && this.authenticate(token)) return { token, session: publicSession(session) };
+      if (token && this.authenticate(token)) {
+        this.refreshAccessDetails(session.id, input);
+        return { token, session: publicSession(session) };
+      }
     }
     for (const session of matching.slice(0, Math.max(0, matching.length - (MAX_ACCESS_SESSIONS_PER_IDENTITY - 1)))) this.revoke(session.id);
-    const issued = this.issueAccount({ label, scopes: ["admin", "client"], accessIdentity: identity });
+    const issued = this.issueAccount({ label, scopes: ["admin", "client"], accessIdentity: identity, ...details });
     // Only hashes reach disk; after a restart, new Access tokens remain bounded per identity.
     this.accessTokens.set(issued.session.id, issued.token);
     return issued;
@@ -595,7 +618,7 @@ export class SessionRegistry {
     return this.issueAccount({ label: "Hosted workspace", email: input.email, userId: `portal:${input.grant}`, scopes: input.scopes }, "portal");
   }
 
-  private issueAccount(input: { label: string; scopes: Scope[]; userId?: string; email?: string; accessIdentity?: string }, membershipAuthority?: "portal"): { token: string; session: PublicSession } {
+  private issueAccount(input: { label: string; scopes: Scope[]; userId?: string; email?: string; displayName?: string; accessIdentity?: string }, membershipAuthority?: "portal"): { token: string; session: PublicSession } {
     this.refusePersonal(input.scopes);
     this.prune();
     const now = this.now();
@@ -612,6 +635,8 @@ export class SessionRegistry {
     if (input.accessIdentity) record.accessIdentity = input.accessIdentity;
     if (input.userId) record.userId = input.userId;
     if (input.email) record.email = input.email;
+    const displayName = cleanIdentityClaim(input.displayName);
+    if (displayName) record.displayName = displayName;
     if (membershipAuthority) record.membershipAuthority = membershipAuthority;
     this.sessions.push(record);
     this.lastSeenWrites.set(record.id, now);
@@ -649,7 +674,7 @@ export class SessionRegistry {
     if (this.closed) throw new Error("Session registry is closed.");
     this.membershipCheckedAt = this.now();
     // A team session's membership is the Admin's signed claim, checked at each pairing (cloud-team.ts), never the sign-in list.
-    const eligible = this.sessions.filter(session => session.email !== undefined && session.membershipAuthority !== "team" && !(this.options.portalMembership && session.membershipAuthority === "portal"));
+    const eligible = this.sessions.filter(session => session.email !== undefined && session.membershipAuthority !== "team" && session.accessIdentity === undefined && !(this.options.portalMembership && session.membershipAuthority === "portal"));
     if (!eligible.length) return;
     let resolveScopes = this.options.emailScopes;
     try {
@@ -713,6 +738,11 @@ export class SessionRegistry {
   isLive(sessionId: string): boolean {
     this.prune();
     return this.sessions.some((s) => s.id === sessionId && !this.personal(s.scopes));
+  }
+
+  hasMultiplePeople(): boolean {
+    this.prune();
+    return hasMultipleSessionPeople(this.sessions);
   }
 
   list(): PublicSession[] {

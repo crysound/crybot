@@ -1494,6 +1494,7 @@
   "settings.profile.subtitle": "显示在侧栏，边输入边保存。",
   "settings.profile.sharedSubtitle": "你的个人信息和共享上下文，随时自动保存。",
   "settings.profile.name": "你的名字",
+  "settings.profile.nameFromLogin": "来自登录账号",
   "settings.profile.avatar.choose": "选择照片",
   "settings.profile.avatar.uploading": "正在上传…",
   "settings.profile.avatar.remove": "移除照片",
