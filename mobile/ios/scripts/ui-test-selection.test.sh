@@ -1,13 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../../.." && pwd)"
-script="$root/mobile/ios/scripts/ui-test-selection.sh"
-run() { printf '%s\n' "$@" | "$script"; }
-assert_eq() { [[ "$1" == "$2" ]] || { echo "expected [$2], got [$1]" >&2; exit 1; }; }
-out=$(run mobile/ios/CryBot/Features/Inbox/View.swift); assert_eq "$(sed -n '1p' <<<"$out")" Inbox; assert_eq "$(sed -n '2p' <<<"$out")" ""
-out=$(run mobile/ios/CryBotTests/Inbox/InboxSnapshotTests.swift); assert_eq "$(sed -n '1p' <<<"$out")" Inbox
-out=$(run mobile/ios/CryBot/App/App.swift); assert_eq "$(sed -n '1p' <<<"$out")" all; assert_eq "$(sed -n '2p' <<<"$out")" ""
-out=$(run mobile/ios/CryBotTests/Support/SnapshotCase.swift); assert_eq "$(sed -n '1p' <<<"$out")" all
-out=$(run docs/readme.md); assert_eq "$(sed -n '1p' <<<"$out")" ""; assert_eq "$(sed -n '2p' <<<"$out")" ""
-out=$(run mobile/ios/CryBot/Features/Inbox/View.swift mobile/ios/CryBotUITests/Inbox/InboxFlowTests.swift); assert_eq "$(sed -n '1p' <<<"$out")" Inbox
-echo "ui-test-selection: ok"
+fixture=$(mktemp -d)
+trap 'rm -rf "$fixture"' EXIT
+mkdir -p "$fixture/mobile/ios/scripts" "$fixture/mobile/ios/CryBotUITests/Chat"
+cp "$root/mobile/ios/scripts/ui-test-selection.sh" "$fixture/mobile/ios/scripts/"
+script="$fixture/mobile/ios/scripts/ui-test-selection.sh"
+assert_scope() {
+  expected=$1
+  shift
+  "$script" "$@" > "$fixture/actual"
+  printf '%s\n' "$expected" > "$fixture/expected"
+  diff -u "$fixture/expected" "$fixture/actual"
+}
+assert_scope $'Inbox\n' mobile/ios/CryBot/Features/Inbox/View.swift
+assert_scope $'Inbox\n' mobile/ios/CryBotTests/Inbox/InboxSnapshotTests.swift
+assert_scope $'Inbox\n' mobile/ios/CryBotUITests/Inbox/InboxFlowTests.swift
+assert_scope $'Chat\n-only-testing:CryBotUITests/ChatFlowTests' mobile/ios/CryBotUITests/Chat/ChatFlowTests.swift
+assert_scope $'Chat,Inbox\n-only-testing:CryBotUITests/ChatFlowTests' mobile/ios/CryBot/Features/Inbox/View.swift mobile/ios/CryBot/Features/Chat/View.swift mobile/ios/CryBotTests/Chat/Tests.swift
+for path in CryBot/App/App.swift CryBot/Store/Store.swift CryBot/Design/Theme.swift CryBot/Strings/ServerText.swift \
+  CryBot/AppDelegate.swift CryBot/Assets.xcassets/Icon.imageset/Contents.json CryBot/en.lproj/Localizable.strings \
+  CryBot/zh-Hant.lproj/InfoPlist.strings CryBot/ViewController.swift CryBot/WatchSync.swift Shared/WatchContract.swift \
+  CryBotTests/Support/SnapshotCase.swift CryBotTests/Shell/Tests.swift CryBotUITests/Support/ScreenshotCase.swift \
+  CryBotUITests/Shell/Tests.swift CryBotTests/Placeholder.swift CryBotUITests/Placeholder.swift \
+  CryBotWatch/App.swift CryBotWatchTests/Test.swift Packages/CryKit/Package.swift project.yml Package.resolved; do
+  assert_scope $'all\n' "mobile/ios/$path"
+done
+assert_scope $'all\n' mobile/ios/CryBot/Features/Inbox/View.swift mobile/ios/Shared/WatchContract.swift
+assert_scope $'\n' docs/readme.md mobile/ios/scripts/README.md
+printf 'mobile/ios/CryBot/Features/Inbox/View.swift\n' | "$script" > "$fixture/actual"
+printf 'Inbox\n\n' > "$fixture/expected"
+diff -u "$fixture/expected" "$fixture/actual"
+printf '' | "$script" > "$fixture/actual"
+printf '\n\n' > "$fixture/expected"
+diff -u "$fixture/expected" "$fixture/actual"
+"$script" --help > "$fixture/help"
+for text in Usage stdin 'two lines' 'only-testing' 'all' 'Examples'; do
+  grep -q "$text" "$fixture/help"
+done
+echo 'ui-test-selection: ok (isolated paths, feature flow directory, shared files, stdin, help)'

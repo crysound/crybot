@@ -8,12 +8,14 @@ export const LANGUAGE_CODES = {
   pl: 'pl', 'pt-br': 'pt-BR', ru: 'ru', tr: 'tr', uk: 'uk', vi: 'vi', zh: 'zh-Hans', 'zh-tw': 'zh-Hant',
 };
 
-export function interpolate(value) {
-  if (typeof value !== 'string') return value;
-  const matches = [...value.matchAll(/\{\{?([A-Za-z0-9_.-]+)\}?\}/g)];
-  const names = [...new Set(matches.map(match => match[1]))];
-  return value.replace(/\{\{?([A-Za-z0-9_.-]+)\}?\}/g, (_, name) =>
-    matches.length === 1 ? '%@' : `%${names.indexOf(name) + 1}$@`);
+const placeholder = /\{\{?([A-Za-z0-9_.-]+)\}?\}/g;
+
+export function interpolate(value, english = value) {
+  const names = [...new Set([...english.matchAll(placeholder)].map(match => match[1]))];
+  return value.replaceAll('%', '%%').replace(placeholder, (_, name) => {
+    if (!names.includes(name)) throw new Error(`Unknown placeholder ${name} in ${value}`);
+    return `%${names.indexOf(name) + 1}$@`;
+  });
 }
 
 function readJson(file) { return JSON.parse(fs.readFileSync(file, 'utf8')); }
@@ -45,19 +47,22 @@ function featureKeys(root) {
 function serverKeys(root, catalogs) {
   const file = path.join(root, 'shared/server-text.ts');
   const source = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-  const candidates = new Set(['chat.notice', 'routines.server']);
+  const candidates = new Set(['chat.notice', 'routines.server', 'serverError']);
   for (const match of source.matchAll(/["'`]([A-Za-z][A-Za-z0-9_.-]*\.[A-Za-z0-9_.-]+)["'`]/g)) candidates.add(match[1]);
   const english = catalogs.get('en') ?? {};
   return Object.keys(english).filter(key => [...candidates].some(prefix => key === prefix || key.startsWith(`${prefix}.`)));
 }
 
-export function makeCatalog(keys, catalogs) {
+export function makeCatalog(keys, catalogs, { named = false } = {}) {
   const strings = {};
   for (const key of [...new Set(keys)].sort()) {
+    const english = catalogs.get('en')?.[key];
+    if (typeof english !== 'string') throw new Error(`Missing English key: ${key}`);
     const localizations = {};
     for (const [stem, catalog] of catalogs) {
       if (!Object.hasOwn(catalog, key) || typeof catalog[key] !== 'string') continue;
-      localizations[LANGUAGE_CODES[stem]] = { stringUnit: { state: 'translated', value: interpolate(catalog[key]) } };
+      const value = named ? catalog[key].replace(placeholder, '{$1}') : interpolate(catalog[key], english);
+      localizations[LANGUAGE_CODES[stem]] = { stringUnit: { state: 'translated', value } };
     }
     strings[key] = { extractionState: 'manual', localizations };
   }
@@ -71,7 +76,7 @@ export function generate(root) {
   for (const feature of featureKeys(root)) {
     outputs.push([path.join(root, 'mobile/ios/CryBot/Features', feature.name, `Web${feature.name}.xcstrings`), encode(makeCatalog(feature.keys, catalogs))]);
   }
-  outputs.push([path.join(root, 'mobile/ios/CryBot/Strings/ServerText.xcstrings'), encode(makeCatalog(serverKeys(root, catalogs), catalogs))]);
+  outputs.push([path.join(root, 'mobile/ios/CryBot/Strings/ServerText.xcstrings'), encode(makeCatalog(serverKeys(root, catalogs), catalogs, { named: true }))]);
   return outputs;
 }
 
@@ -81,7 +86,19 @@ export function main(argv) {
   const rootArg = rootIndex >= 0 ? argv[rootIndex + 1] : undefined;
   const root = path.resolve(rootArg ?? path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..'));
   let changed = false;
-  for (const [file, content] of generate(root)) {
+  const outputs = generate(root);
+  const expected = new Set(outputs.map(([file]) => file));
+  const featuresDir = path.join(root, 'mobile/ios/CryBot/Features');
+  if (fs.existsSync(featuresDir)) {
+    for (const entry of fs.readdirSync(featuresDir, { recursive: true })) {
+      const file = path.join(featuresDir, entry);
+      if (!/^Web.*\.xcstrings$/.test(path.basename(file)) || expected.has(file)) continue;
+      changed = true;
+      if (check) console.error(`Stale output: ${path.relative(root, file)}; run node mobile/ios/scripts/gen-strings.mjs to update.`);
+      else fs.unlinkSync(file);
+    }
+  }
+  for (const [file, content] of outputs) {
     const existing = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
     if (existing !== content) {
       changed = true;
