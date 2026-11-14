@@ -7,7 +7,6 @@ import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("./CloudSetup", () => ({ CloudSetup: () => null }));
 vi.mock("./cloud-welcome/CloudWelcome", () => ({ CloudWelcome: () => null }));
 
 const screens = await import("./lazy-screens");
@@ -42,7 +41,8 @@ afterEach(() => {
 });
 
 describe("lazyScreen", () => {
-  it.each(["CloudSetup", "CloudWelcome"] as const)("shows a loading placeholder for %s", async (name) => {
+  it("shows a loading placeholder for CloudWelcome", async () => {
+    const name = "CloudWelcome" as const;
     render(createElement(screens[name], {} as never));
     expect(document.querySelector('[role="status"] svg.animate-spin')).not.toBeNull();
     await settle();
@@ -176,7 +176,7 @@ describe("preloadScreens", () => {
   it("a page on this machine fetches nothing ahead: each screen loads when it opens", () => {
     vi.useFakeTimers();
     const preloads = stubPreloads();
-    expect(preloads.length).toBe(27);
+    expect(preloads.length).toBe(23);
     for (const host of ["127.0.0.1", "localhost", "[::1]"]) preloadScreens(host);
     vi.runAllTimers();
     for (const preload of preloads) expect(preload).not.toHaveBeenCalled();
@@ -287,7 +287,7 @@ describe("launch bundle", () => {
     const reached = launchModules();
     expect(reached.has("App.tsx")).toBe(true);
     expect(reached.has("components/Sidebar.tsx")).toBe(true);
-    for (const name of ["LiveCallHost", "NewBotName", "conversation-share/ConversationShareDialogs", "TeamWelcome", "onboarding/FirstConversationTour", "CloudIntent"]) {
+    for (const name of ["LiveCallHost", "NewBotName", "conversation-share/ConversationShareDialogs", "TeamWelcome", "onboarding/FirstConversationTour", "CloudIntent", "CloudSetup", "CloudEngineSignIn", "MemberApps", "onboarding/GuidedTour"]) {
       expect(reached.has(`components/${name}.tsx`), name).toBe(true);
     }
     const deferred = [

@@ -12,12 +12,16 @@ import { parseComputerHelp } from "@/lib/computer-control";
 import { viewerClosedRelease } from "@/components/computer-takeover";
 import { Sidebar } from "@/components/Sidebar";
 import { ChatView } from "@/components/ChatView";
+import { CloudEngineSignIn } from "@/components/CloudEngineSignIn";
+import { CloudSetup } from "@/components/CloudSetup";
+import { GuidedTour } from "@/components/onboarding/GuidedTour";
+import { MemberApps } from "@/components/MemberApps";
 import { SIDEBAR_AND_PANEL_FIT, SIDEBAR_INLINE, TWO_SIDE_PANELS_FIT, useMediaQuery } from "@/lib/use-media-query";
 import { preloadConnectedApps } from "@/lib/connected-apps";
 import {
-  ActivityPanel, BotSettingsDialog, CloudEngineSignIn, CloudIntent, CloudSetup, CloudWelcome, ComputerPanel, ConversationShareDialogs,
-  FirstConversationTour, FilesView, GuidedTour, GroupView, InboxPanel, InspectorPanel, KeyboardShortcutsModal, LiveCallHost, LocalVmWorkspace,
-  MemberApps, NewBotNameHost, PluginsPanel, preloadScreens, PublishedAppsPage, RemoteAgentSettingsPanel,
+  ActivityPanel, BotSettingsDialog, CloudIntent, CloudWelcome, ComputerPanel, ConversationShareDialogs,
+  FirstConversationTour, FilesView, GroupView, InboxPanel, InspectorPanel, KeyboardShortcutsModal, LiveCallHost, LocalVmWorkspace,
+  NewBotNameHost, PluginsPanel, preloadScreens, PublishedAppsPage, RemoteAgentSettingsPanel,
   RemoteDesktopPanel, RoomPanel, SettingsModal, TeamMapPage, TeamWelcome, TriggersPage,
 } from "@/components/lazy-screens";
 import { HomeLine } from "@/components/HomeLine";

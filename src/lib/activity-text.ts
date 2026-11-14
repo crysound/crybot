@@ -16,7 +16,7 @@ function wordedParams(params: ServerTextParams | undefined): ServerTextParams | 
   const worded: ServerTextParams = {};
   for (const [name, value] of Object.entries(params)) {
     if (!isReferenceParam(name, value)) worded[name] = value;
-    else if (hasLocaleKey(value)) worded[name] = t(value as LocaleKey);
+    else if (typeof value === "string" && hasLocaleKey(value)) worded[name] = t(value);
     else throw new Error(`unknown notice part ${value}`);
   }
   if (typeof params.resetsAt === "number" && typeof params.timeZone === "string") {
@@ -53,7 +53,7 @@ const LINE_PREFIXES = ["routines.server.", "chat.notice."];
 
 function englishParams(params: ServerTextParams | undefined): ServerTextParams {
   return Object.fromEntries(Object.entries(params ?? {}).map(([name, value]) =>
-    [name, isReferenceParam(name, value) && hasLocaleKey(value) ? englishContracts[value as LocaleKey] ?? value : value]));
+    [name, isReferenceParam(name, value) && typeof value === "string" && hasLocaleKey(value) ? englishContracts[value] ?? value : value]));
 }
 
 /** A routine's stored line (`checkTroubleCode`, a run's `outputCode`, `errorCode`, `attentionCode`) in the reader's

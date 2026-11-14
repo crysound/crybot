@@ -86,20 +86,14 @@ export const PublishedAppsPage = lazyScreen("PublishedAppsPage", async () => (aw
 export const GroupView = lazyScreen("GroupView", async () => (await import("./GroupView")).GroupView,
   <div role="status" className="flex flex-1 items-center justify-center text-ink-tertiary"><Loader2 size={20} className="animate-spin" /></div>,
 );
-export const CloudSetup = lazyScreen("CloudSetup", async () => (await import("./CloudSetup")).CloudSetup,
-  <div role="status" className="flex flex-1 items-center justify-center text-ink-tertiary"><Loader2 size={20} className="animate-spin" /></div>,
-);
 export const CloudWelcome = lazyScreen("CloudWelcome", async () => (await import("./cloud-welcome/CloudWelcome")).CloudWelcome,
   <div role="status" className="flex flex-1 items-center justify-center text-ink-tertiary"><Loader2 size={20} className="animate-spin" /></div>,
 );
 export { CloudIntent } from "./CloudIntent";
-export const CloudEngineSignIn = lazyScreen("CloudEngineSignIn", async () => (await import("./CloudEngineSignIn")).CloudEngineSignIn);
 export { TeamWelcome } from "./TeamWelcome";
 export { ConversationShareDialogs } from "./conversation-share/ConversationShareDialogs";
-export const MemberApps = lazyScreen("MemberApps", async () => (await import("./MemberApps")).MemberApps);
 export { NewBotNameHost } from "./NewBotName";
 export { LiveCallHost } from "./LiveCallHost";
-export const GuidedTour = lazyScreen("GuidedTour", async () => (await import("./onboarding/GuidedTour")).GuidedTour);
 export { FirstConversationTour } from "./onboarding/FirstConversationTour";
 export const InboxPanel = lazyScreen("InboxPanel", async () => (await import("./inbox/InboxPanel")).InboxPanel);
 

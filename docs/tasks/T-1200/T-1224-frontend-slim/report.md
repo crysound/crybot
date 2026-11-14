@@ -201,3 +201,128 @@ Vite 的诊断 manifest 将虚拟 ID 的开头 NUL 去掉，最终键为 `locale
 | KaTeX（动态） | 261,313 | 77,166 |
 
 恢复小组件静态加载、补齐失败页并合入 T-1225 后，英文/中文登录后合计相对第 2 轮分别增加 10,170 / 10,180 B gzip，仍低于本轮 main 对照。500 KiB 目标仍未达到，中文超出 674,667 B；`--report-only` 仅用于报告，默认预算检查仍会失败。下一步主要空间仍在 App 业务依赖（尤其 carved-bodies、ProviderIcons、AttachmentPreview、tailwind-merge）及首屏对 tldts/zod 的依赖。未额外新增语言包预加载提示。
+
+## 第 4 轮
+
+### 改动
+
+- `src/components/CloudSetup.tsx` 改为 `src/App.tsx` 的静态 import，移除 `lazy-screens.tsx` 中会占满 `flex` 主布局的 Loader2 占位和失败提示。CloudWelcome 仍保留懒加载及主内容区占位。`src/components/lazy-screens.test.ts` 删除 CloudSetup 的懒加载断言，预加载数量从 27 调整为 23，并把 CloudSetup、CloudEngineSignIn、MemberApps、GuidedTour 加入启动静态依赖断言。
+- `CloudEngineSignIn`、`MemberApps`、`GuidedTour` 同样恢复为 `src/App.tsx` 静态 import；它们分别是云端首次主内容、插件面板和所有用户常驻挂载，避免首帧空白或块加载失败提示。
+- `src/lib/language-preference.ts` 的 `usePageLanguage` 在异步加载后补 `.catch(() => {})`，失败时不改变当前语言，也不产生未处理 rejection。新增单测覆盖离线加载；去掉 catch 的改前运行结果是 Vitest 报 `Unhandled Rejection: Error: offline`（测试断言本身通过但进程以 1 退出），加回后 13 项全部通过。
+- 三个独立 Vite fixture（`scripts/verify-server-connection.mjs`、`scripts/verify-company-backups.mjs`、`scripts/verify-organization-settings.mjs`）均加入 `localeBundles()`，内联入口改为 `loadLocale('en').then(() => { ... createRoot(...); })`，确保 `virtual:english-contracts` 在渲染前可解析。用不监听端口的 `vite.createServer(...).transformRequest('/src/locales/index.ts')` 逐一验证，三个配置都输出 `transformed (2777 chars)`。
+- 全仓入口扫描使用：
+
+  ```text
+  rg -n 'createRoot\(|createServer\(' --glob '*.ts' --glob '*.tsx' --glob '*.mjs' --glob '*.cjs' --glob '*.js' --glob '!node_modules/**'
+  ```
+
+  扫描共 818 行；其中浏览器预览入口由现有 `src/testing/preview-locale.test.ts` 扫描 `src/`、`src/testing/`、`scripts/testing/` 下的 34 个 `.tsx` 入口并全部检查 `preparePreviewLocale` 在 `createRoot` 前；`scripts/` 根目录没有独立的 `.tsx` 预览入口，只有本轮单独处理的三个 `.mjs` Vite fixture。`scripts/verify-engines-ui.ts` 和 `scripts/testing/preview-fixture.ts` 使用仓库默认 Vite 配置（包含 `localeBundles()`），其余 `createServer` 命中是 HTTP/测试服务器，不是前端 Vite 入口。
+
+### 第 4 轮构建体积（gzip -9）
+
+构建前确认内存可用 7.0 GiB；只执行一次：
+
+```text
+free -h
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec vite build --manifest
+PATH=/opt/node24/bin:$PATH node scripts/check-frontend-budget.mjs dist --report-only
+```
+
+构建成功（1m 2s）。产物中 `rg -n -F "$PWD" dist` 无输出。入口和登录后合计使用 manifest 静态 import 闭包去重后逐文件 gzip -9 求和；main 对照沿用复核值。
+
+| 场景 | main gzip -9（B） | 第 4 轮未压缩（B） | 第 4 轮 gzip -9（B） | 相对 main | 距 500 KiB |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 入口 | 338,030 | 714,556 | 170,885 | -167,145 B（-49.4%） | 剩余 341,115 B |
+| 登录后机器人列表 + 普通聊天（英文） | 1,168,405 | 3,968,512 | 1,152,905 | -15,500 B（-1.3%） | 超出 640,905 B |
+| 登录后机器人列表 + 普通聊天（中文） | 1,325,886 | 4,057,790 | 1,194,668 | -131,218 B（-9.9%） | 超出 682,668 B |
+
+主要块如下：
+
+| 块 | 未压缩（B） | gzip -9（B） |
+| --- | ---: | ---: |
+| 入口 JS | 39,655 | 11,866 |
+| styles 共享 JS | 82,890 | 27,020 |
+| styles CSS | 333,893 | 51,704 |
+| vendor-react | 192,646 | 60,314 |
+| vendor-icons | 65,472 | 19,981 |
+| vendor-schema | 95,766 | 26,977 |
+| vendor-url | 95,913 | 40,320 |
+| App（包含四个恢复的静态组件） | 2,319,063 | 710,153 |
+| 英文合并包 | 700,931 | 191,267 |
+| 中文合并包 | 790,209 | 233,030 |
+| CloudWelcome 动态块 | 17,919 | 5,474 |
+| KaTeX 动态块 | 261,313 | 77,166 |
+
+500 KiB 目标仍未达到；`--report-only` 仅用于输出，默认预算检查仍会以超预算退出。恢复四个小组件后 App 增加约 8 KiB gzip，英文和中文仍分别低于 main 对照；下一步空间仍在 App 业务依赖（`carved-bodies`、`ProviderIcons`、`AttachmentPreview`、`tailwind-merge`）及首屏是否需要 tldts/zod。
+
+### 测试与检查
+
+所有 Vitest 均按单文件、`--maxWorkers=2` 运行。通过结果：
+
+- `src/components/lazy-screens.test.ts`：19 passed。
+- `src/testing/preview-locale.test.ts`：3 passed；`src/lib/render-page.test.ts`：2 passed。
+- `src/lib/language-preference.test.ts`：13 passed。
+- `src/components/AttachmentGallery.test.ts`：25、`AttachmentGallery.reply-group.test.ts`：9、`AttachmentGallery.markdown.test.ts`：15 passed。
+- `src/components/NewBotName.test.ts`：6、`src/lib/new-bot.test.ts`：20、`src/components/CloudIntent.test.ts`：3、`scripts/check-frontend-budget.test.mjs`：3、`src/App.engine-status.test.ts`：2 passed。
+- `src/lib/i18n.test.ts`：38 passed、1 failed；唯一失败仍是 main 已有的 pt-br 缺少 3 个 key 完整性断言。
+- `oxlint --deny-warnings` 对本轮改动的 8 个源码/脚本文件通过，`git diff --check` 通过。
+
+前端 `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc -b --pretty false` 未通过，报错均在本轮未修改的既有文件：`src/components/SettingsModal.i18n.test.ts:54` 的 possibly undefined，以及 `src/lib/activity-text.ts:19,56` 的 `string | number` 类型不匹配。
+
+## 第 5 轮
+
+### 归因与修复
+
+更正第 4 轮的归因：上述三处类型错误都是本任务引入的，不能因为文件在第 4 轮未修改就视为 main 已有问题。本轮只修改 `src/lib/activity-text.ts`、`src/components/SettingsModal.i18n.test.ts` 和本报告；保留已有工作区改动，未提交、未联网。
+
+- `activity-text.ts`：两处 `hasLocaleKey(value)` 前增加 `typeof value === "string"`，让 `string | number` 先收窄为 string。`isReferenceParam` 的返回类型是 boolean，虽然内部已检查 string，但不会向调用方传递类型收窄。数字参数仍按原值处理，与 main 一致；通过 `hasLocaleKey` 后已得到 `LocaleKey`，同时移除这两处多余的类型断言。
+- `SettingsModal.i18n.test.ts`：保存 `en[key]` 为局部变量，缺失时抛出带 key 的错误，确认存在后再调用 `replaceAll`。保持测试对英文文案的严格检查，不使用非空断言或类型检查屏蔽，也不把尚未加载的 `en` 声明成完整包。
+
+### main 对照证据
+
+在 worktree 外的仓库主目录读取本地 `origin/main`（`0048d386`），未 fetch：
+
+```sh
+git show origin/main:src/lib/activity-text.ts
+git show origin/main:src/components/SettingsModal.i18n.test.ts
+git show origin/main:src/locales/index.ts
+git show origin/main:src/locales/en.json
+git show origin/main:tsconfig.json
+```
+
+main 的两处调用为 `Object.hasOwn(en, value)`，接受 `string | number`；本任务替换后的 `hasLocaleKey` 仅接受 string。SettingsModal 测试在本轮修复前与 main 完全相同，但 main 的 `src/locales/index.ts` 静态导入并导出 `en.json`，所测 10 个 key 均存在，`en[key]` 为 string。本任务将导出改为 `en: Partial<Record<LocaleKey, string>> = {}`，使同一表达式变为 `string | undefined`，因此该报错也是本任务造成的。
+
+另外用 `git archive origin/main` 导出独立快照到 `/tmp/t1224-r5-main-c6z62wq4`，仅将其 `node_modules` 链接到本 worktree 已安装的依赖。快照不含历史 `tsconfig.tsbuildinfo`，在该目录执行下列前端类型检查，退出 **0**、无诊断，实证 main 没有 SettingsModal 那处报错。未操作用户应用或数据。
+
+### 命令与结果
+
+两次 tsc 前均检查 `free -m` 和进程占用：main 快照检查前可用约 7,132 MiB，当前 worktree 检查前约 7,166 MiB；没有并行构建或测试进程。按本轮 4 GiB 限额串行执行，tsc 的 Node 堆上限设为 3,072 MiB。
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc -b --pretty false
+```
+
+- main 独立快照：退出 **0**，无报错。
+- 当前 worktree 修复后：退出 **0**，三处错误全部消除。
+
+以下 Vitest 命令逐条执行，一次一个文件：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run src/lib/activity-text.test.ts --maxWorkers=2 --configLoader runner
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run src/lib/i18n.test.ts --maxWorkers=2 --configLoader runner
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run src/components/lazy-screens.test.ts --maxWorkers=2 --configLoader runner
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run src/components/SettingsModal.i18n.test.ts --maxWorkers=2 --configLoader runner
+PATH=/opt/node24/bin:$PATH pnpm exec oxlint --deny-warnings src/lib/activity-text.ts src/components/SettingsModal.i18n.test.ts
+git diff --check
+```
+
+| 检查 | 结果 |
+| --- | --- |
+| activity-text | 14 passed，退出 0 |
+| i18n | 38 passed、1 failed，退出 1；仅允许的 pt-br 完整性断言失败 |
+| lazy-screens | 19 passed，退出 0 |
+| SettingsModal.i18n | 3 passed，退出 0 |
+| oxlint（本轮两个代码文件） | 退出 0，无警告 |
+| git diff --check | 退出 0 |
+
+i18n 唯一失败为 `activePackComplete > is true only for a pack other than English that has every English key`，pt-br 返回 false、断言期待 true。通过 `git show origin/main:src/locales/{en,pt-br}.json` 读取两份语言包并比较 key，main 与当前分支都恰好缺少 `botOverview.preference.cloud.locked`、`keys.section.computers.purpose.locked`、`settings.profile.nameFromLogin`，没有新增缺失项。
