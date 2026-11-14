@@ -30,9 +30,9 @@ it("keeps initial, saved and removed provider environments separate when every b
   expect(new Set([initial, saved, removed]).size).toBe(3);
   expect(beforeRemove.filter(name => !beforeSave.includes(name))).toEqual([`opencode.json.${saved}.provider-env.json`]);
   expect(readdirSync(home).filter(name => !beforeRemove.includes(name))).toEqual([`opencode.json.${removed}.provider-env.json`]);
-  expect(read(initial)).toEqual({ startId: initial, pid: 2, env: {} });
-  expect(read(saved)).toEqual({ startId: saved, pid: 2, env: { VENICE_API_KEY: "fixture-venice", ANTHROPIC_API_KEY: "fixture-anthropic" } });
-  expect(read(removed)).toEqual({ startId: removed, pid: 2, env: { ANTHROPIC_API_KEY: "fixture-anthropic" } });
+  expect(read(initial)).toEqual({ startId: initial, startedAt: expect.any(Number), pid: 2, env: {} });
+  expect(read(saved)).toEqual({ startId: saved, startedAt: expect.any(Number), pid: 2, env: { VENICE_API_KEY: "fixture-venice", ANTHROPIC_API_KEY: "fixture-anthropic" } });
+  expect(read(removed)).toEqual({ startId: removed, startedAt: expect.any(Number), pid: 2, env: { ANTHROPIC_API_KEY: "fixture-anthropic" } });
 });
 
 it("ignores version and model commands and missing dump destinations", () => {
