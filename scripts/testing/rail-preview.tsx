@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { createRoot } from "react-dom/client";
 import type { CloudSwatch } from "../../electron/cloud-list.mjs";
 import type { RailPlace, RailState } from "../../electron/rail.mjs";
@@ -12,6 +13,8 @@ import { GROK_MOVE_NOTICE } from "../../src/lib/notices";
 import { markSimpleModePromptSeen } from "../../src/lib/simple-mode-prompt";
 import { applySkin, type SkinId } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 // Served only by scripts/verify-cloud-rail.ts: the real app, as a Cloud's page in the desktop window sees it, with the
 // desktop bridge a hosted Cloud's page gets (its rail and add-a-Cloud sheet answered here). ?skin= picks the skin,

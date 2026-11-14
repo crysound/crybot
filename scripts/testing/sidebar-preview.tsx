@@ -1,9 +1,12 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Sidebar } from "../../src/components/Sidebar";
 import { StoreProvider } from "../../src/state/store";
 import { applySkin, readSkin } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 function Fixture() {
   const [open, setOpen] = useState(true);

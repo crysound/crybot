@@ -1,5 +1,5 @@
-import { en, type LocaleKey } from "@/locales";
-import { activeLocale, intlLocale, t } from "@/lib/i18n";
+import type { LocaleKey } from "@/locales";
+import { hasLocaleKey, activeLocale, intlLocale, t } from "@/lib/i18n";
 import { noticeWords } from "@/lib/activity-text";
 import type { ServerTextParams } from "../../shared/server-text";
 import type { WidgetNode, WidgetPayload } from "../../shared/widget";
@@ -29,7 +29,7 @@ function wordsOf(text: WidgetText): string {
     if (Object.values(text.params ?? {}).some((value) => typeof value === "object")) throw new Error(`notice ${text.key} takes flat params`);
     return noticeWords(text.key, text.params as ServerTextParams | undefined);
   }
-  if (!text.key.startsWith("brief.") || !Object.hasOwn(en, text.key)) throw new Error(`unknown card text ${text.key}`);
+  if (!text.key.startsWith("brief.") || !hasLocaleKey(text.key)) throw new Error(`unknown card text ${text.key}`);
   const params = Object.fromEntries(Object.entries(text.params ?? {}).map(([name, value]) => [name, paramText(value)]));
   if (text.key.startsWith("brief.inbox.") && typeof params.amountValue === "string" && Number.isFinite(Number(params.amountValue))) {
     params.amount = new Intl.NumberFormat(intlLocale()).format(Number(params.amountValue));

@@ -1,7 +1,10 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { createRoot } from "react-dom/client";
 import { ChatMarkdown } from "../../src/components/ChatMarkdown";
 import { applySkin } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 
 applySkin(new URLSearchParams(location.search).get("skin") === "atelier" ? "atelier" : "midnight");

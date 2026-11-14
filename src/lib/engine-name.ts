@@ -1,4 +1,5 @@
-import { en, type LocaleKey } from "@/locales";
+import { englishContracts } from "virtual:english-contracts";
+import type { LocaleKey } from "@/locales";
 import { t } from "@/lib/i18n";
 
 const DEFAULT_NAME_KEY: Readonly<Record<string, LocaleKey>> = {
@@ -9,5 +10,5 @@ const DEFAULT_NAME_KEY: Readonly<Record<string, LocaleKey>> = {
 
 export function engineDisplayName(instance: { instanceId: string; displayName: string }): string {
   const key = Object.hasOwn(DEFAULT_NAME_KEY, instance.instanceId) ? DEFAULT_NAME_KEY[instance.instanceId] : undefined;
-  return key && instance.displayName === en[key] ? t(key) : instance.displayName;
+  return key && instance.displayName === englishContracts[key] ? t(key) : instance.displayName;
 }
