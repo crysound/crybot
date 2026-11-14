@@ -75,7 +75,7 @@ async function main(): Promise<void> {
       console.log(`Updated ${fixtureRoot}`);
       return;
     }
-    const changed = await compareDirectories(fixtureRoot, temp);
+    const changed = await compareDirectories(fixtureRoot, temp, { typedOnly: process.argv.includes("--typed-only") });
     if (changed.length) {
       console.error(`Contract fixtures differ: ${changed.join(", ")}`);
       console.error("Run pnpm contract:ios --update to refresh them.");

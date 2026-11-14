@@ -5,6 +5,15 @@ import type { ContractSample } from "./fixtures.ts";
 type JsonObject = Record<string, unknown>;
 export type LiveCapture = { samples: ContractSample[]; statuses: Record<string, number>; frames: JsonObject[] };
 
+export function createdBotConversation(value: unknown): { botId: string; threadId: string } {
+  assert(value && typeof value === "object" && "bot" in value, "new-bot: expected response.bot");
+  const bot = value.bot;
+  assert(bot && typeof bot === "object" && !Array.isArray(bot), "new-bot: expected response.bot to be an object");
+  assert("id" in bot && typeof bot.id === "string" && bot.id.trim(), "new-bot: expected bot.id to be a non-empty string");
+  assert("activeTaskId" in bot && typeof bot.activeTaskId === "string" && bot.activeTaskId.trim(), "new-bot: expected bot.activeTaskId to be a non-empty conversation id");
+  return { botId: bot.id, threadId: bot.activeTaskId };
+}
+
 export async function captureLiveContract(server: VerificationServer): Promise<LiveCapture> {
   const { url } = server.info;
   const statuses: Record<string, number> = {};
@@ -28,9 +37,8 @@ export async function captureLiveContract(server: VerificationServer): Promise<L
   const session = await request("/api/auth/session");
   assert.equal(session.kind, "session");
   assert.equal(session.via, "bearer");
-  const created = await runControlCry(["new-bot", "--name", "Contract Bot", "--url", url]) as { bot: { id: string; threadId: string } };
-  const { id: botId, threadId } = created.bot;
-  assert(botId && threadId);
+  const created = await runControlCry(["new-bot", "--name", "Contract Bot", "--url", url]);
+  const { botId, threadId } = createdBotConversation(created);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);
   const frames: JsonObject[] = [];

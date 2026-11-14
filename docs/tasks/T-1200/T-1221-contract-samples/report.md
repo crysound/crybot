@@ -261,3 +261,91 @@ EXIT=1
 本任务的样本扫描确认现有 JSON 没有真实邮箱、IP、UUID、主机名或 token。另调用仓库 `scanDiff` 扫工作区 diff（含未跟踪文件），发现其 domain 规则会把合法协议判别值当域名，例如运行记录 kind、通知已读帧 kind、实时通话 kind、文本增量 type；这些值直接由服务端协议决定，不能为了扫描改写 wire JSON。类型演示里人为的新成员已改为不含点的名字。该扫描器误报需由 45/协调者处理，不能把当前 Public scan 写成绿色；没有在样本里加入豁免字段，也没有改扫描器或 allowlist。私有 denylist 无 key，未执行。
 
 后续必要步骤：在可监听的隔离环境运行完整 `pnpm contract:ios --update`、再次 `pnpm contract:ios`，审查/扫描新生成的 15 个 live 文件及稳定性；运行已开启的 e2e；在 Actions 运行 Swift 契约测试，记录实际解码及往返失败原文。CI 与 PR 演示链接由协调者补。本轮没有提交 git。
+
+## 第 3 轮返工（2026-11-14）
+
+### 修改内容
+
+- `server/testing/ios-contract/live.ts`：`new-bot` 返回值保持 `unknown`，逐层校验 `bot`、非空字符串 `bot.id` 和 `bot.activeTaskId`，用后者作为会话 ID；缺字段或类型不符时错误指出 `new-bot` 及具体字段，不再强转猜测 `threadId`。
+- `server/testing/ios-contract/live.test.ts`：新增无网络单元测试，检查真实响应字段以及缺失、null、错误类型、空白字符串；只有 `threadId` 而缺少 `activeTaskId` 也必须报错。
+- `server/testing/ios-contract/normalize.ts`：不再仅因父键名为 `threads`、`queues` 等就把所有子键登记为 ID。UUID 及从 ID 字段登记的原始 ID 保留引用映射，普通配置键不变；已登记的非 UUID 引用仅完整匹配，不替换其子串。机器人对象（含 `id`、`name`）的颜色统一为 `green`，环境描述（含 `environmentId`）的字符串版本统一为 `0.0.0`，其他协议版本保留。
+- 同一归一化文件：主机名只匹配完整值，明确的 hostname 类字段用固定值；短主机名和常见词跳过通用匹配。家目录仅匹配完整值或带分隔符的路径前缀，不再做任意子串替换。
+- `server/testing/ios-contract/normalize.test.ts`：增加 `threads.maxConcurrentPerBot` 保留、UUID map 键、未登记键保留、引用完整匹配、同一输入重复归一化、不同颜色/时间/环境版本一致，以及主机名 `app`/常见词和家目录边界用例。
+- `server/testing/ios-contract/fixtures.test.ts`：扫描主机名时使用完整 JSON 字符串值，跳过短名/常见词，家目录按完整值或路径前缀扫描；测试保证 `kind: app` 和 `cry.example.com` 不误报，真实家目录及可区分的主机名仍被拦截。
+- `server/testing/ios-contract/compare.ts`、`scripts/ios-contract.ts`：`--typed-only` 同时跳过 `live-*` 文件及两侧 index 中的 live 条目，默认完整比对保持原行为。
+- `server/testing/ios-contract/compare.test.ts`：临时目录模拟含 live 的完整库与 typed 子集；默认模式列出缺失 live 和 index 差异，typed-only 通过，同时仍能检出 typed 内容、文件缺失及 swiftType 差异，结束清理目录。
+- `scripts/ios-web-drift.test.mjs` 改名为 `scripts/ios-web-drift.node-test.mjs`；`.github/workflows/ci.yml` 的 ios-contract job 同步替换命令（本轮 CI 仅改这一行）。改名是因为该文件使用 `node:test`，不应被 Vitest 的 `scripts/**/*.test.mjs` 收集；否则会报 `No test suite found`，且 Node 的临时仓库清理钩子不能可靠执行。
+- `server/testing/ios-contract/README.md`：同步 Node 测试命令及改名原因、typed-only 的过滤规则和子集更新限制、颜色/版本占位值；明确跨文件同一实体的占位值不保证一致，「受影响样本」只按顶层键名粗略定位。
+
+另外静态检查了环境描述、机器人创建和快照的来源：`freshLook()` 的随机项是颜色，mascotBody 使用固定默认值；UUID、`createdAt`/`lastThreadOrderAt` 等时间、消息 `at`、SSE cursor、端口和耗时沿用归一化规则；假引擎版本仍由隔离启动参数固定。此检查不等于 live 稳定性验收，仍需下面的连续五次比对。
+
+本轮没有修改样本 JSON，也没有修改 `scripts/public-scan/allow-domains.txt`（保留协调者追加内容），没有提交 git。覆盖表和前轮统计未变。未新增依赖。
+
+### 沙箱执行结果
+
+开工先在 worktree 根目录运行 `crybot-link-deps`，成功链接 73 项预装依赖。按要求一次只运行一个 Vitest 文件，不使用 systemd 前缀。以下命令均退出 0：
+
+```text
+pnpm exec vitest run --maxWorkers=2 server/testing/ios-contract/normalize.test.ts
+Test Files 1 passed; Tests 8 passed
+pnpm exec vitest run --maxWorkers=2 server/testing/ios-contract/compare.test.ts
+Test Files 1 passed; Tests 2 passed
+pnpm exec vitest run --maxWorkers=2 server/testing/ios-contract/fixtures.test.ts
+Test Files 1 passed; Tests 5 passed
+pnpm exec vitest run --maxWorkers=2 server/testing/ios-contract/live.test.ts
+Test Files 1 passed; Tests 2 passed
+pnpm exec vitest run --maxWorkers=2 server/testing/ios-contract/coverage.test.ts
+Test Files 1 passed; Tests 2 passed
+
+node --test scripts/ios-web-drift.node-test.mjs
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+
+pnpm exec tsc -p tsconfig.ios-contract.json
+# 无诊断，exit 0
+pnpm exec tsc -p tsconfig.server.json
+# 无诊断，exit 0
+pnpm exec oxlint --deny-warnings scripts/ios-contract.ts scripts/ios-web-drift.node-test.mjs server/testing/ios-contract/compare.ts server/testing/ios-contract/compare.test.ts server/testing/ios-contract/fixtures.test.ts server/testing/ios-contract/live.ts server/testing/ios-contract/live.test.ts server/testing/ios-contract/normalize.ts server/testing/ios-contract/normalize.test.ts
+# 无诊断，exit 0
+```
+
+`pnpm contract:ios --typed-only` 实际输出（仅将工作区绝对路径省略）：
+
+```text
+> crybot@1.0.3 contract:ios <worktree>
+> node --experimental-strip-types scripts/ios-contract.ts --typed-only
+
+Typed fixtures only: live capture and full contract verification are NOT performed.
+```
+
+退出码 0，当前已落盘的 226 条 typed 样本无需更新。含 live 的完整库过滤行为由上述临时目录比对测试覆盖；本沙箱没有 live 样本落盘，不能据此声称完整契约通过。
+
+`AGENTS.md` 引用的 `docs/verification/README.md` 在当前 worktree 不存在，读取返回 `No such file or directory`，检索 docs 也没有找到。按本轮明确环境限制，**live 抓取、e2e、`pnpm contract:ios --update` 均「未在沙箱运行」**；没有连接用户的 live app 或数据。Swift 解码/逐键往返本轮也未在沙箱运行，以协调者及 Actions 结果为准；上一轮复审结果不是本轮执行结果。
+
+### 协调者后续命令
+
+在能监听端口的 Linux 环境、仓库根目录运行。完整生成入口每次自行启动并关闭 `launchVerificationServer` 隔离夹具，不指向用户服务。先落盘一次，再连续比对五次，任意失败即停止：
+
+```bash
+set -e
+pnpm contract:ios --update
+for attempt in 1 2 3 4 5; do
+  printf 'Contract comparison %s/5\n' "$attempt"
+  pnpm contract:ios
+done
+CRYBOT_RUN_IOS_CONTRACT_E2E=1 pnpm exec vitest run --maxWorkers=2 server/ios-contract.e2e.test.ts
+```
+
+随后复核落盘 live 文件及 index，运行样本扫描，并在具备 Swift 工具链的环境执行 CryCore 契约解码/逐键往返（Linux 构建条件或依赖不支持时交 Mobile builds）：
+
+```bash
+pnpm exec vitest run --maxWorkers=2 server/testing/ios-contract/fixtures.test.ts
+swift test --jobs 2 --package-path mobile/ios/Packages/CryKit --filter CryCoreTests
+```
+
+协调者将新 live 样本落盘，并补充五次比对、e2e、Swift 与 CI/Actions 链接；此处不预先声明通过。

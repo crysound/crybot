@@ -1,12 +1,18 @@
 import { hostname, homedir } from "node:os";
 
 const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+const FULL_UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 export const PLACEHOLDERS = {
   address: "https://cry.example.com",
   token: "cry_sess_placeholder",
   cookieName: "cry_session_cookie_name",
   uuidPrefix: "00000000-0000-4000-8000-",
+  botColor: "green",
+  version: "0.0.0",
 } as const;
+export function isDistinctHostname(host: string): boolean {
+  return host.length >= 4 && !["app", "application", "server", "host", "localhost", "example", "test", "development", "production", "home", "user", "node", "cry.example.com"].includes(host.toLowerCase());
+}
 export const codepointOrder = (a: string, b: string): number => {
   const left = Array.from(a, c => c.codePointAt(0)!);
   const right = Array.from(b, c => c.codePointAt(0)!);
@@ -14,15 +20,20 @@ export const codepointOrder = (a: string, b: string): number => {
   return left.length - right.length;
 };
 
-export function normalizeFixture(value: unknown): unknown {
+export function normalizeFixture(value: unknown, machine = { hostname: hostname(), homedir: homedir() }): unknown {
   const ids = new Map<string, string>();
   const cursors = new Map<string, string>();
   const identifier = (input: string): string => {
-    const raw = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(input) ? input.toLowerCase() : input;
+    const raw = FULL_UUID.test(input) ? input.toLowerCase() : input;
     if (!ids.has(raw)) ids.set(raw, `${PLACEHOLDERS.uuidPrefix}${String(ids.size).padStart(12, "0")}`);
     return ids.get(raw)!;
   };
-  const string = (raw: string): string => raw
+  const localValue = (raw: string): string => {
+    if (isDistinctHostname(machine.hostname) && raw === machine.hostname) return "fixture-host";
+    if (machine.homedir && (raw === machine.homedir || raw.startsWith(`${machine.homedir}/`))) return `/fixture/home${raw.slice(machine.homedir.length)}`;
+    return raw;
+  };
+  const string = (raw: string): string => localValue(raw)
     .replace(/cry_session_[0-9]+_[A-Za-z0-9]+/g, PLACEHOLDERS.cookieName)
     .replace(/cry_sess_[A-Za-z0-9._~-]+/g, PLACEHOLDERS.token)
     .replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "jwt_placeholder")
@@ -31,8 +42,6 @@ export function normalizeFixture(value: unknown): unknown {
     .replace(/\b(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?\b/g, "cry.example.com")
     .replace(UUID, rawId => identifier(rawId.toLowerCase()))
     .replace(/\b\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z\b/g, "2026-01-01T00:00:00.000Z")
-    .replaceAll(hostname(), "fixture-host")
-    .replaceAll(homedir(), "/fixture/home")
     .replace(/(?:\/[^\s"']*)?\/crybot-verify-data-[^/\s"']+/g, "/fixture/data");
   function visit(item: unknown, key = ""): unknown {
     if (item === null || item === undefined) return item;
@@ -55,7 +64,12 @@ export function normalizeFixture(value: unknown): unknown {
       return item;
     }
     if (Array.isArray(item)) return item.map(entry => visit(entry, key));
-    if (typeof item === "object") return Object.fromEntries(Object.entries(item).sort(([a], [b]) => codepointOrder(a, b)).map(([k, v]) => [string(k), k === "label" && "environmentId" in item ? "Example device" : visit(v, k)]).sort(([a], [b]) => codepointOrder(String(a), String(b))));
+    if (typeof item === "object") return Object.fromEntries(Object.entries(item).sort(([a], [b]) => codepointOrder(a, b)).map(([k, v]) => {
+      if (k === "label" && "environmentId" in item) return [k, "Example device"];
+      if (k === "version" && "environmentId" in item && typeof v === "string") return [k, PLACEHOLDERS.version];
+      if (k === "color" && "id" in item && "name" in item && typeof v === "string") return [k, PLACEHOLDERS.botColor];
+      return [string(k), visit(v, k)];
+    }).sort(([a], [b]) => codepointOrder(String(a), String(b))));
     return item;
   }
   function register(item: unknown, key = ""): void {
@@ -64,8 +78,7 @@ export function normalizeFixture(value: unknown): unknown {
       else for (const match of item.matchAll(UUID)) identifier(match[0].toLowerCase());
     } else if (Array.isArray(item)) item.forEach(v => register(v, key));
     else if (item && typeof item === "object") Object.entries(item).forEach(([k, v]) => {
-      if (["queues", "threads", "byId", "memberContext", "holds", "heldMessages"].includes(key)) identifier(k);
-      else register(k);
+      register(k);
       register(v, k);
     });
   }

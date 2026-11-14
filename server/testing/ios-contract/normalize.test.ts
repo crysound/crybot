@@ -24,8 +24,33 @@ it("preserves distinct UUID references, including map keys and embedded text", (
   const a = `${PLACEHOLDERS.uuidPrefix}000000000000`, b = `${PLACEHOLDERS.uuidPrefix}000000000001`;
   expect(normalizeFixture({ text: `${first} then ${second}`, id: second, byId: { [first]: { replyToId: second } } })).toEqual({ text: `${a} then ${b}`, id: b, byId: { [a]: { replyToId: b } } });
   expect(normalizeFixture({ id: first.toUpperCase(), reference: first })).toEqual({ id: a, reference: a });
-  expect(normalizeFixture({ queues: { "arbitrary-id": [] } })).toEqual({ queues: { [a]: [] } });
+  expect(normalizeFixture({ queues: { [first]: [] } })).toEqual({ queues: { [a]: [] } });
   expect(normalizeFixture({ id: "arbitrary-id", map: { "arbitrary-id": "arbitrary-id" } })).toEqual({ id: a, map: { [a]: a } });
+});
+it("preserves config fields and maps only complete registered references", () => {
+  const id = randomUUID();
+  const mapped = `${PLACEHOLDERS.uuidPrefix}000000000000`;
+  expect(normalizeFixture({ threads: { maxConcurrentPerBot: 8 } })).toEqual({ threads: { maxConcurrentPerBot: 8 } });
+  expect(normalizeFixture({ queues: { "not-an-id": [] }, threads: { maxConcurrentPerBot: 8 }, computerControl: { [id]: { enabled: true } } })).toEqual({ queues: { "not-an-id": [] }, threads: { maxConcurrentPerBot: 8 }, computerControl: { [mapped]: { enabled: true } } });
+  expect(normalizeFixture({ map: { "arbitrary-id": "arbitrary-id", "prefix-arbitrary-id": "prefix-arbitrary-id" }, id: "arbitrary-id" })).toEqual({ map: { [mapped]: mapped, "prefix-arbitrary-id": "prefix-arbitrary-id" }, id: mapped });
+});
+it("stabilizes bot colors and environment versions without changing protocol versions", () => {
+  const bot = { id: randomUUID(), name: "Contract Bot", color: "cyan", createdAt: Date.now() };
+  const first = normalizeFixture({ bots: [bot] });
+  expect(normalizeFixture({ bots: [bot] })).toEqual(first);
+  expect(normalizeFixture({ bots: [{ ...bot, color: "orange", createdAt: bot.createdAt + 1000 }] })).toEqual(first);
+  expect(first).toMatchObject({ bots: [{ color: PLACEHOLDERS.botColor }] });
+  const environment = { environmentId: randomUUID(), version: "1.2.3", protocol: { version: 2 } };
+  expect(normalizeFixture(environment)).toEqual(normalizeFixture({ ...environment, version: "4.5.6" }));
+  expect(normalizeFixture(environment)).toMatchObject({ version: PLACEHOLDERS.version, protocol: { version: 2 } });
+});
+it("does not replace short or common hostnames inside protocol values or addresses", () => {
+  for (const host of ["app", "example", "server"]) {
+    const machine = { hostname: host, homedir: "/home/app" };
+    expect(normalizeFixture({ kind: "app", hostName: host, address: "cry.example.com", url: PLACEHOLDERS.address, note: "application server example", pathText: "see /home/application" }, machine)).toEqual({ kind: "app", hostName: "Example device", address: "cry.example.com", url: PLACEHOLDERS.address, note: "application server example", pathText: "see /home/application" });
+  }
+  const machine = { hostname: "private-machine", homedir: "/home/app" };
+  expect(normalizeFixture({ device: machine.hostname, note: "private-machine-suffix", path: "/home/app/file", notePath: "prefix/home/app/file" }, machine)).toEqual({ device: "fixture-host", note: "private-machine-suffix", path: "/fixture/path", notePath: "prefix/home/app/file" });
 });
 it("normalizes HTTP, plain email/IP, timestamps, ports, cursors and environment labels", () => {
   expect(normalizeFixture({ cwd: "/tmp/private-workspace", durationMs: 3742 })).toEqual({ cwd: "/fixture/path", durationMs: 1000 });

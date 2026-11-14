@@ -1,0 +1,249 @@
+{
+  "botQueuedMessages": {},
+  "bots": [
+    {
+      "activeLeafId": "00000000-0000-4000-8000-000000000011",
+      "activity": "idle",
+      "approvalMode": "full",
+      "autoApprove": false,
+      "avatarUrl": null,
+      "busy": false,
+      "color": "green",
+      "createdAt": 1767225600000,
+      "description": "",
+      "hasMore": false,
+      "id": "00000000-0000-4000-8000-000000000000",
+      "mainThreadId": "00000000-0000-4000-8000-000000000001",
+      "mascotBody": "dome",
+      "messages": [
+        {
+          "at": 1767225600000,
+          "id": "00000000-0000-4000-8000-000000000003",
+          "kind": "text",
+          "parentId": null,
+          "role": "bot",
+          "setupChoices": [
+            "Research and digging into topics",
+            "Keeping an eye on things for me",
+            "Email, calendar and messages",
+            "Bookings, shopping and errands",
+            "Data, spreadsheets and reports"
+          ],
+          "setupOffer": true,
+          "text": "Hi, I'm Contract Bot. What would you like me to do?"
+        },
+        {
+          "at": 1767225600000,
+          "id": "00000000-0000-4000-8000-000000000004",
+          "kind": "text",
+          "parentId": "00000000-0000-4000-8000-000000000003",
+          "requestPending": false,
+          "role": "user",
+          "sender": {
+            "id": "00000000-0000-4000-8000-000000000005",
+            "name": "Member"
+          },
+          "text": "Contract message"
+        },
+        {
+          "at": 1767225600000,
+          "id": "00000000-0000-4000-8000-000000000006",
+          "itemId": "00000000-0000-4000-8000-000000000008",
+          "kind": "text",
+          "parentId": "00000000-0000-4000-8000-000000000004",
+          "requestMessageId": "00000000-0000-4000-8000-000000000004",
+          "role": "bot",
+          "text": "hello from fake claude",
+          "turnCompletedAt": 1767225600000,
+          "turnId": "00000000-0000-4000-8000-000000000007",
+          "turnSucceeded": true,
+          "turnTerminal": true
+        },
+        {
+          "at": 1767225600000,
+          "id": "00000000-0000-4000-8000-000000000009",
+          "kind": "activity",
+          "parentId": "00000000-0000-4000-8000-000000000006",
+          "requestMessageId": "00000000-0000-4000-8000-000000000004",
+          "role": "bot",
+          "tool": {
+            "input": "{\n  \"command\": \"echo hi\"\n}",
+            "itemId": "00000000-0000-4000-8000-000000000010",
+            "name": "Bash",
+            "ok": true,
+            "output": "[\n  {\n    \"type\": \"text\",\n    \"text\": \"hi\"\n  }\n]",
+            "spoken": "running a command",
+            "step": {
+              "activity": "command",
+              "target": "echo hi"
+            },
+            "summary": "echo hi"
+          },
+          "turnId": "00000000-0000-4000-8000-000000000007"
+        },
+        {
+          "at": 1767225600000,
+          "digest": {
+            "at": 1767225600000,
+            "botId": "00000000-0000-4000-8000-000000000000",
+            "durationMs": 1000,
+            "hookCoverage": "preview",
+            "memory": [],
+            "reply": "hello from fake claude",
+            "threadId": "00000000-0000-4000-8000-000000000001",
+            "toolCalls": 1,
+            "tools": [
+              {
+                "count": 1,
+                "failed": 0,
+                "name": "Bash",
+                "sample": "echo hi"
+              }
+            ],
+            "turnId": "00000000-0000-4000-8000-000000000007",
+            "usage": {
+              "cachedInput": 2,
+              "costUsd": 0.01,
+              "input": 12,
+              "output": 5
+            }
+          },
+          "id": "00000000-0000-4000-8000-000000000011",
+          "kind": "digest",
+          "parentId": "00000000-0000-4000-8000-000000000009",
+          "requestMessageId": "00000000-0000-4000-8000-000000000004",
+          "role": "bot",
+          "text": "[digest] · tools: Bash ×1 (from tool previews) · reply: hello from fake claude",
+          "turnId": "00000000-0000-4000-8000-000000000007",
+          "turnSucceeded": true
+        }
+      ],
+      "modelSelection": {
+        "instanceId": "00000000-0000-4000-8000-000000000002",
+        "model": "claude-sonnet-5"
+      },
+      "name": "Contract Bot",
+      "notifications": true,
+      "soul": "",
+      "soulHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tasks": [
+        {
+          "activity": "idle",
+          "busy": false,
+          "createdAt": 1767225600000,
+          "cwd": "/fixture/path",
+          "followsBotModel": true,
+          "lastThreadOrderAt": 1767225600000,
+          "modelSelection": {
+            "instanceId": "00000000-0000-4000-8000-000000000002",
+            "model": "claude-sonnet-5"
+          },
+          "threadId": "00000000-0000-4000-8000-000000000001",
+          "title": "Contract message",
+          "titleFromFirstMessage": true,
+          "unread": true,
+          "updatedAt": 1767225600000,
+          "usage": {
+            "cachedInput": 2,
+            "context": {
+              "tokens": 12,
+              "window": 200000
+            },
+            "costUsd": 0.01,
+            "input": 12,
+            "lastTurn": {
+              "cachedInput": 2,
+              "costUsd": 0.01,
+              "input": 12,
+              "output": 5
+            },
+            "output": 5,
+            "turns": 1
+          },
+          "waitingForTeammates": false
+        }
+      ],
+      "threadId": "00000000-0000-4000-8000-000000000001",
+      "title": "",
+      "unread": true,
+      "waitingForTeammates": false
+    },
+    {
+      "activeLeafId": "00000000-0000-4000-8000-000000000014",
+      "approvalMode": "full",
+      "avatarUrl": null,
+      "chiefOfStaff": true,
+      "color": "green",
+      "createdAt": 1767225600000,
+      "defaultBot": {},
+      "description": "",
+      "hasMore": false,
+      "hidden": false,
+      "id": "00000000-0000-4000-8000-000000000012",
+      "mainThreadId": "00000000-0000-4000-8000-000000000013",
+      "messages": [
+        {
+          "at": 1767225600000,
+          "card": {
+            "fixedOptions": true,
+            "options": [
+              "What are my bots up to?",
+              "Set up a bot for my inbox",
+              "Make me a morning routine",
+              "How do I connect my email?"
+            ],
+            "subtitle": "I'm here to be your Chief of Staff. I can manage your other bots. Task me with anything. I'll make sure it gets to the right bot. I'm taking a look around to see if there's anything I can pick up for you. I'll follow up in a moment.",
+            "title": "Hey! I'm Cry Bot. I'm new here."
+          },
+          "helperIntro": true,
+          "id": "00000000-0000-4000-8000-000000000014",
+          "kind": "options",
+          "parentId": null,
+          "role": "bot",
+          "text": "Hey! I'm Cry Bot. I'm new here. I'm here to be your Chief of Staff. I can manage your other bots. Task me with anything. I'll make sure it gets to the right bot. I'm taking a look around to see if there's anything I can pick up for you. I'll follow up in a moment."
+        }
+      ],
+      "modelSelection": {
+        "instanceId": "00000000-0000-4000-8000-000000000002",
+        "model": "claude-sonnet-5"
+      },
+      "name": "Fixture Starter",
+      "notifications": true,
+      "soul": "",
+      "soulHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tasks": [
+        {
+          "activity": "idle",
+          "busy": false,
+          "createdAt": 1767225600000,
+          "followsBotModel": true,
+          "modelSelection": {
+            "instanceId": "00000000-0000-4000-8000-000000000002",
+            "model": "claude-sonnet-5"
+          },
+          "threadId": "00000000-0000-4000-8000-000000000013",
+          "title": "New thread",
+          "unread": false,
+          "updatedAt": 1767225600000,
+          "waitingForTeammates": false
+        }
+      ],
+      "threadId": "00000000-0000-4000-8000-000000000013",
+      "title": "",
+      "unread": false,
+      "waitingForTeammates": false
+    }
+  ],
+  "computerControl": {
+    "00000000-0000-4000-8000-000000000000": {
+      "held": false,
+      "helpReason": null
+    },
+    "00000000-0000-4000-8000-000000000012": {
+      "held": false,
+      "helpReason": null
+    }
+  },
+  "groups": [],
+  "sections": []
+}

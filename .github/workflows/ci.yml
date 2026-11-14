@@ -55,5 +55,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm vitest run --maxWorkers=2 server/testing/ios-contract server/ios-contract.e2e.test.ts
-      - run: node --test scripts/ios-web-drift.test.mjs
+      - run: node --test scripts/ios-web-drift.node-test.mjs
       - run: pnpm contract:ios

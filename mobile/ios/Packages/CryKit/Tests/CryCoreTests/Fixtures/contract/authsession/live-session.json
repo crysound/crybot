@@ -1,0 +1,21 @@
+{
+  "environmentId": "00000000-0000-4000-8000-000000000001",
+  "expiresAt": 1767225600000,
+  "id": "00000000-0000-4000-8000-000000000000",
+  "kind": "session",
+  "label": "Example device",
+  "lending": {
+    "commandTimeouts": true,
+    "fileEdits": true,
+    "lendingDetails": true,
+    "lentMcp": true,
+    "longCommands": true,
+    "sharedComputers": true
+  },
+  "own": true,
+  "scopes": [
+    "client",
+    "admin"
+  ],
+  "via": "bearer"
+}

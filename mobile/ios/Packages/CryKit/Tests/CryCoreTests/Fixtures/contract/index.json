@@ -1,5 +1,21 @@
 [
   {
+    "file": "apierror/live-pair-error.json",
+    "swiftType": "APIError"
+  },
+  {
+    "file": "authsession/live-session.json",
+    "swiftType": "AuthSession"
+  },
+  {
+    "file": "botssnapshot/live-bots.json",
+    "swiftType": "BotsSnapshot"
+  },
+  {
+    "file": "configresponse/live-config.json",
+    "swiftType": "ConfigResponse"
+  },
+  {
     "file": "crychartspec/area.json",
     "swiftType": "CryChartSpec"
   },
@@ -26,6 +42,10 @@
   {
     "file": "crychartspec/scatter.json",
     "swiftType": "CryChartSpec"
+  },
+  {
+    "file": "environmentinfo/live-environment.json",
+    "swiftType": "EnvironmentInfo"
   },
   {
     "file": "frames/app-trigger-16.json",
@@ -89,6 +109,22 @@
   },
   {
     "file": "frames/groups.order-28.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/live-hello.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/live-message.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/live-ping.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/live-runtime.json",
     "swiftType": "ServerFrame"
   },
   {
@@ -166,6 +202,14 @@
   {
     "file": "frames/webhook.deleted-15.json",
     "swiftType": "ServerFrame"
+  },
+  {
+    "file": "inboxcount/live-inbox-count.json",
+    "swiftType": "InboxCount"
+  },
+  {
+    "file": "inboxpage/live-inbox.json",
+    "swiftType": "InboxPage"
   },
   {
     "file": "messages/activity.json",
@@ -524,6 +568,10 @@
     "swiftType": "WireMessage"
   },
   {
+    "file": "notificationspage/live-notifications.json",
+    "swiftType": "NotificationsPage"
+  },
+  {
     "file": "optioncarddata/field-accessRequest.json",
     "swiftType": "OptionCardData"
   },
@@ -766,6 +814,18 @@
   {
     "file": "runtimeevent/turn.wait_started-7.json",
     "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "sendresponse/live-send.json",
+    "swiftType": "SendResponse"
+  },
+  {
+    "file": "threadpage/live-before.json",
+    "swiftType": "ThreadPage"
+  },
+  {
+    "file": "threadpage/live-messages.json",
+    "swiftType": "ThreadPage"
   },
   {
     "file": "widgetnode/Badge.json",

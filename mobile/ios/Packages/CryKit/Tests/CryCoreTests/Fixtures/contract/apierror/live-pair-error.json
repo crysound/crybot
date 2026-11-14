@@ -1,0 +1,4 @@
+{
+  "error": "pairing code is wrong or has expired; create a new one on the server",
+  "errorKey": "serverError.pair.codeWrong"
+}
