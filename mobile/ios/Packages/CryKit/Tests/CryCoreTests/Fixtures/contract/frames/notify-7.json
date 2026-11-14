@@ -1,0 +1,14 @@
+{
+  "kind": "notify",
+  "notification": {
+    "at": 1767225600000,
+    "body": "Example",
+    "botId": "00000000-0000-4000-8000-000000000001",
+    "botName": "Example",
+    "id": "00000000-0000-4000-8000-000000000000",
+    "kind": "secret",
+    "read": false,
+    "threadId": "00000000-0000-4000-8000-000000000002",
+    "title": "Example"
+  }
+}

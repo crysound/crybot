@@ -1,0 +1,12 @@
+{
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "outboundRequest": {
+    "app": "Example",
+    "tool": "Example"
+  },
+  "subtitle": "Example request",
+  "title": "Approve request"
+}

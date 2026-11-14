@@ -1,0 +1,12 @@
+{
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "questionRequest": {
+    "questions": [],
+    "version": 1
+  },
+  "subtitle": "Example request",
+  "title": "Approve request"
+}

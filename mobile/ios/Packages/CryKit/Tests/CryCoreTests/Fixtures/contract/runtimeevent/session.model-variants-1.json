@@ -1,0 +1,11 @@
+{
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "eventId": "00000000-0000-4000-8000-000000000000",
+  "model": "Example",
+  "provider": "Example",
+  "threadId": "00000000-0000-4000-8000-000000000001",
+  "type": "session.model-variants",
+  "variants": {
+    "options": []
+  }
+}

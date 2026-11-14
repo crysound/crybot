@@ -1,0 +1,15 @@
+{
+  "notifications": [
+    {
+      "at": 1767225600000,
+      "body": "hello from fake claude",
+      "botId": "00000000-0000-4000-8000-000000000001",
+      "botName": "Contract Bot",
+      "id": "00000000-0000-4000-8000-000000000000",
+      "kind": "done",
+      "read": false,
+      "threadId": "00000000-0000-4000-8000-000000000002",
+      "title": "Contract Bot finished"
+    }
+  ]
+}

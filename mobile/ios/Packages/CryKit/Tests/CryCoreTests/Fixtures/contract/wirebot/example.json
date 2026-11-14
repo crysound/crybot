@@ -1,0 +1,16 @@
+{
+  "avatarUrl": "https://cry.example.com",
+  "color": "green",
+  "createdAt": 1767225600000,
+  "description": "Example",
+  "id": "00000000-0000-4000-8000-000000000000",
+  "modelSelection": {
+    "instanceId": "00000000-0000-4000-8000-000000000002",
+    "model": "Example"
+  },
+  "name": "Example",
+  "notifications": false,
+  "threadId": "00000000-0000-4000-8000-000000000001",
+  "title": "Example",
+  "unread": false
+}

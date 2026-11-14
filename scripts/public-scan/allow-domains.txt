@@ -14,3 +14,6 @@ accounts.larksuite.com # Lark 官方账号授权，与飞书国际版登录配�
 example.cloudflareaccess.com # 历史登录接力测试夹具的虚构团队名。
 network-online.target # systemd 网络依赖单元名称。
 multi-user.target # systemd 安装目标单元名称。
+r2.md # 返工说明文件名，不是域名。
+usercustomize.py # Python 启动钩子文件名，不是域名。
+linux-test.sh # 脚本文件名，不是域名。

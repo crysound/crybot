@@ -1,0 +1,14 @@
+{
+  "accessRequest": {
+    "botId": "00000000-0000-4000-8000-000000000000",
+    "botName": "Example",
+    "email": "person@example.com",
+    "name": "Example"
+  },
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "subtitle": "Example request",
+  "title": "Approve request"
+}
