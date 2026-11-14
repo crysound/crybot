@@ -6,6 +6,8 @@
     <string name="server_address_invalid">Enter a valid https server address.</string>
     <string name="load_error">The server could not be loaded.</string>
     <string name="retry">Retry</string>
+    <string name="login">Log in</string>
+    <string name="login_error">Login has not completed. Please log in again.</string>
     <string name="change_server">Change server</string>
     <string name="download_started">Download started.</string>
     <string name="download_unsupported">This download type is not supported.</string>

@@ -17,4 +17,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationDidBecomeActive(_ application: UIApplication) {
         WatchSync.shared.refresh()
     }
+
+    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        return (window?.rootViewController as? ViewController)?.handleAuthCallback(url) ?? false
+    }
 }
