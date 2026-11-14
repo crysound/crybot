@@ -47,3 +47,16 @@ it.skipIf(process.platform !== "linux")("prints fixed broker startup diagnostics
     expect(unknown.stderr.trim()).toBe("飞书代领服务启动失败，请检查配置和权限");
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+it.skipIf(process.platform !== "linux")("prints the fixed socket creation error when listening fails", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "feishu-entry-socket-"));
+  try {
+    const credentialFile = join(directory, "credential.json");
+    const configFile = join(directory, "config.json");
+    await writeFile(credentialFile, '{"token":"fixture-secret"}', { mode: 0o600 });
+    await writeFile(configFile, JSON.stringify({ credentialFile, tokenUrl: "https://example.invalid/token", socketPath: join(directory, "token.sock/") }));
+    const result = await run([new URL("./main.mjs", import.meta.url).pathname, configFile]);
+    expect(result.status).toBe(1);
+    expect(result.stderr.trim()).toBe("飞书代领服务无法创建套接字");
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

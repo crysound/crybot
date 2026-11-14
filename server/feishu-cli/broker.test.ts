@@ -92,6 +92,22 @@ it.skipIf(process.platform !== "linux")("refuses a credential readable by the Cr
   await expect(startBroker({ credentialFile, tokenUrl: "https://example.invalid/token", socketPath: join(directory, "runtime", "token.sock") })).rejects.toThrow("凭证文件必须仅 broker 用户可读");
 });
 
+it("maps invalid token URLs to the fixed configuration error", async () => {
+  await expect(startBroker({ credentialFile: join(directory, "credential.json"), tokenUrl: "not a URL", socketPath: join(directory, "runtime", "token.sock") })).rejects.toThrow("飞书代领服务配置无效");
+});
+
+it("maps a missing credential file to the fixed credential error", async () => {
+  await expect(startBroker({ credentialFile: join(directory, "missing.json"), tokenUrl: "https://example.invalid/token", socketPath: join(directory, "runtime", "token.sock") })).rejects.toThrow("凭证文件必须仅 broker 用户可读");
+});
+
+it.skipIf(process.platform !== "linux")("maps socket directory creation failures to the fixed socket error", async () => {
+  await chmod(join(directory, "credential.json"), 0o600);
+  await chmod(directory, 0o500);
+  try {
+    await expect(startBroker({ credentialFile: join(directory, "credential.json"), tokenUrl: "https://example.invalid/token", socketPath: join(directory, "missing", "runtime", "token.sock") })).rejects.toThrow("飞书代领服务无法创建套接字");
+  } finally { await chmod(directory, 0o700); }
+});
+
 it("reuses a newly issued token inside the refresh window for 60 seconds", async () => {
   const fresh = { ...good(), expires_at: Math.floor(now / 1000) + 120 };
   fetcher.mockImplementation(async () => Response.json(fresh));

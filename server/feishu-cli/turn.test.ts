@@ -91,6 +91,34 @@ it.each(["zh-CN", "en"])("continues with an authorization link and no capability
   expect(JSON.stringify([access.prompt(), logs.map(log => log.mock.calls)])).not.toContain(short);
 });
 
+it.each([
+  "https://example.invalid/authorize\nfixture",
+  "http://example.invalid/authorize",
+  `https://example.invalid/${"x".repeat(2048)}`,
+])("does not put an unsafe upstream authorization URL in the prompt: %s", async authorizationUrl => {
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", authorizationUrl));
+  const access = feishuCliAccess("test_union", env, "zh-CN")!;
+  await access.environment();
+  expect(access.prompt()).not.toContain(authorizationUrl);
+  expect(access.prompt()).toBe("飞书暂不可用。");
+});
+
+it("uses a valid configured authorization URL when the broker omits one", async () => {
+  env.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://example.invalid/configured-authorize";
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权"));
+  const access = feishuCliAccess("test_union", env, "zh-CN")!;
+  await access.environment();
+  expect(access.prompt()).toContain(env.CRYBOT_FEISHU_AUTHORIZATION_URL);
+});
+
+it("rejects an unsafe configured authorization URL", async () => {
+  env.CRYBOT_FEISHU_AUTHORIZATION_URL = "http://example.invalid/configured-authorize";
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权"));
+  const access = feishuCliAccess("test_union", env, "zh-CN")!;
+  await access.environment();
+  expect(access.prompt()).toBe("飞书暂不可用。");
+});
+
 it.each([false, true])("does not fall back to the allowlisted thread starter without a human sender (peer: %s)", async peer => {
   const session = sessions.issueDevice("feishu:test_union", "Fixture", { scopes: ["client"], maxAgeDays: 1 }).session;
   const starter = personKey(session);

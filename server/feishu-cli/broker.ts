@@ -54,15 +54,17 @@ export function createTokenBroker(config: BrokerConfig, dependencies: { fetch?: 
 }
 
 export class BrokerStartupError extends Error {
-  constructor(message: "飞书代领服务配置无效" | "凭证文件必须仅 broker 用户可读" | "飞书套接字路径已存在或不可访问" | "飞书套接字目录必须归 broker 用户所有") {
+  constructor(message: "飞书代领服务配置无效" | "凭证文件必须仅 broker 用户可读" | "飞书套接字路径已存在或不可访问" | "飞书套接字目录必须归 broker 用户所有" | "飞书代领服务无法创建套接字") {
     super(message);
   }
 }
 
 export async function startBroker(config: BrokerConfig) {
-  const url = new URL(config.tokenUrl);
+  let url: URL;
+  try { url = new URL(config.tokenUrl); } catch { throw new BrokerStartupError("飞书代领服务配置无效"); }
   if (!["https:", "http:"].includes(url.protocol) || url.username || url.password || !isAbsolute(config.socketPath) || !isAbsolute(config.credentialFile)) throw new BrokerStartupError("飞书代领服务配置无效");
-  const credential = await lstat(config.credentialFile);
+  let credential;
+  try { credential = await lstat(config.credentialFile); } catch { throw new BrokerStartupError("凭证文件必须仅 broker 用户可读"); }
   if (!credential.isFile() || credential.uid !== process.getuid?.() || (credential.mode & 0o077) !== 0) throw new BrokerStartupError("凭证文件必须仅 broker 用户可读");
   try {
     await lstat(config.socketPath);
@@ -71,11 +73,14 @@ export async function startBroker(config: BrokerConfig) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw new BrokerStartupError("飞书套接字路径已存在或不可访问");
   }
   const directory = dirname(config.socketPath);
-  await mkdir(directory, { recursive: true, mode: 0o750 });
-  const stat = await lstat(directory);
+  try { await mkdir(directory, { recursive: true, mode: 0o750 }); } catch { throw new BrokerStartupError("飞书代领服务无法创建套接字"); }
+  let stat;
+  try { stat = await lstat(directory); } catch { throw new BrokerStartupError("飞书代领服务无法创建套接字"); }
   if (!stat.isDirectory() || stat.uid !== process.getuid?.()) throw new BrokerStartupError("飞书套接字目录必须归 broker 用户所有");
-  await chmod(directory, 0o700);
-  await chown(directory, process.getuid!(), process.getgid!());
+  try {
+    await chmod(directory, 0o700);
+    await chown(directory, process.getuid!(), process.getgid!());
+  } catch { throw new BrokerStartupError("飞书代领服务无法创建套接字"); }
   const token = createTokenBroker(config);
   const server = createServer(async (req, res) => {
     const reply = req.method === "POST" && req.url === "/token" ? await token() : { status: 404, body: { message: "Not found" } };
@@ -90,7 +95,7 @@ export async function startBroker(config: BrokerConfig) {
     await chmod(directory, 0o750);
   } catch {
     server.close();
-    throw new Error("飞书代领服务无法创建套接字");
+    throw new BrokerStartupError("飞书代领服务无法创建套接字");
   }
   return { close: () => new Promise<void>((resolve, reject) => {
     server.close(error => error ? reject(error) : resolve());

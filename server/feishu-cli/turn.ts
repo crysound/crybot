@@ -8,6 +8,14 @@ export interface FeishuCliAccess {
   prompt(): string;
 }
 
+function validAuthorizationUrl(value: string | undefined): value is string {
+  if (!value || value.length > 2048 || /\s/u.test(value) || [...value].some(character => {
+    const code = character.codePointAt(0)!;
+    return code <= 0x1f || code === 0x7f;
+  })) return false;
+  try { return new URL(value).protocol === "https:"; } catch { return false; }
+}
+
 export function directFeishuCliAccess(
   request: Parameters<typeof provenRequestPerson>[0], generation: string,
   personOf: (messageId: string) => string | undefined,
@@ -37,10 +45,13 @@ export function feishuCliAccess(unionId: string | undefined, env: NodeJS.Process
         };
       } catch (error) {
         unavailable = language.startsWith("zh") ? "飞书暂不可用。" : "Feishu is temporarily unavailable.";
-        if (error instanceof BrokerAuthorizationError && error.authorizationUrl) {
+        const authorizationUrl = error instanceof BrokerAuthorizationError && validAuthorizationUrl(error.authorizationUrl)
+          ? error.authorizationUrl
+          : validAuthorizationUrl(env.CRYBOT_FEISHU_AUTHORIZATION_URL) ? env.CRYBOT_FEISHU_AUTHORIZATION_URL : undefined;
+        if (authorizationUrl) {
           unavailable += language.startsWith("zh")
-            ? ` 请在回复中告诉用户去此链接重新授权：${error.authorizationUrl}`
-            : ` Tell the user in your reply to reauthorize at this link: ${error.authorizationUrl}`;
+            ? ` 请在回复中告诉用户去此链接重新授权：${authorizationUrl}`
+            : ` Tell the user in your reply to reauthorize at this link: ${authorizationUrl}`;
         }
         return {};
       }

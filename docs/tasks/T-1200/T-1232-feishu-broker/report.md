@@ -131,6 +131,7 @@ broker 单测覆盖并发合并、POST/redirect/超时信号、缓存、5 分钟
 - 开沙箱后，应只将 broker socket、包装器和必要的轮次环境变量挂入名单用户的沙箱，并阻止沙箱访问其他进程。当前没有自动开放沙箱挂载或扩大沙箱环境白名单。
 - 写操作/发消息前确认由系统提示要求；包装器保留真实 CLI 的高风险退出码 10，不自动绕过。提示不是所有 CLI 写 API 的强制授权网关。
 - 单 broker 对应单凭证身份；其他驱动及多员工路由的范围见上文。没有接入 meegle，没有 refresh token，也不会自行刷新 OAuth 凭证。
+- 同一机器人线程若有其他登录用户进入，飞书轮次读到的内容会留在该线程历史里；当前飞书直登只开放给一个人，所以不构成问题，放开多人前要另行处理。
 
 
 ## 第 2 轮返工
@@ -170,3 +171,28 @@ broker 单测覆盖并发合并、POST/redirect/超时信号、缓存、5 分钟
 单测共 45 项通过。新增测试和原有 e2e 全部使用临时目录及合成身份/凭证；完整服务沿用 `launchRestartableServer` 隔离 fixture。仓库仍缺少 AGENTS.md 指向的 `docs/verification/README.md`。本沙箱不允许监听端口或 Unix socket，端到端结果以仓库 Node 24 Actions 为准；本轮没有运行 Actions，不将上一轮端到端通过记录视为本轮通过。
 
 另已尝试 `node --experimental-strip-types scripts/control-cry.ts launch` 启动独立验证实例，返回 `no free port block`，与监听禁令一致。`git diff --check` 通过；公开扫描通过仓库 `scanDiff` 检查本轮 diff（含两个未跟踪的新测试文件），未发现问题。扫描环境未配置私有 denylist 密钥，因此私有词表检查未执行；新增测试地址均为 `example.invalid`，身份与凭证均为合成夹具值。
+
+## 第 3 轮小修
+
+本轮继续使用隔离测试夹具，没有安装服务、读取真实凭证或接触用户 live app/data。
+
+1. **启动错误可诊断**：`BrokerStartupError` 新增「飞书代领服务无法创建套接字」消息，监听失败时由 `main.mjs` 原样输出；无效 tokenUrl、缺失凭证文件和套接字目录创建失败分别归一为固定配置、凭证或套接字错误，避免泄露原始路径和系统错误。入口测试用带尾斜杠的 Unix 路径触发监听失败并检查 stderr 原文。
+2. **授权链接校验**：轮次只接受可解析、`https`、无空白和控制字符且长度不超过 2048 的 `authorization_url`。上游没有安全链接时才使用 `CRYBOT_FEISHU_AUTHORIZATION_URL`，配置值也经过相同校验；不安全链接不会进入系统提示。新增换行、HTTP、超长链接及配置回退用例。
+3. **公开扫描说明**：保留两个 systemd target 白名单行，并将同行说明统一为中文。
+
+### 本轮验证
+
+先运行 `crybot-link-deps`，测试逐文件执行，使用 PATH 中的 Node 24；没有使用 `systemd-run`。
+
+| 检查 | 本轮结果 |
+| --- | --- |
+| `pnpm exec vitest run server/feishu-cli/broker.test.ts` | 20 项通过 |
+| `pnpm exec vitest run server/feishu-cli/wrapper.test.ts` | 12 项通过 |
+| `pnpm exec vitest run server/feishu-cli/turn.test.ts` | 17 项通过 |
+| `pnpm exec vitest run scripts/feishu-broker/entrypoints.test.mjs` | 4 项通过 |
+| `pnpm exec vitest run server/feishu-cli/socket.e2e.test.ts` | 2 项因本沙箱禁止监听 HTTP 端口而报 `listen EPERM`，以 Actions 为准 |
+| `pnpm exec vitest run server/feishu-cli/server.e2e.test.ts` | 1 项因本沙箱禁止监听 Unix socket 而报 `listen EPERM`，以 Actions 为准 |
+| `pnpm exec tsc -p tsconfig.server.json --noEmit --pretty false` | 通过 |
+| `pnpm exec oxlint --deny-warnings`（本轮改动代码和测试） | 通过 |
+
+本轮新增测试均使用临时目录、`example.invalid` 和合成凭证。端到端测试没有在禁止监听的沙箱内宣称通过；Actions 负责完整监听环境验证。
