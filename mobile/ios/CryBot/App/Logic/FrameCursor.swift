@@ -5,9 +5,9 @@ enum FrameCursor {
     static func value(for frame: ServerFrame, previous: String?) -> String? {
         if case .hello(let hello) = frame { return hello.cursor }
         guard let previous, let separator = previous.lastIndex(of: ":"),
-              case .number(let seq) = additionalFields(for: frame)["seq"],
-              seq.isFinite, seq >= 0, seq <= 9_007_199_254_740_991, seq.rounded() == seq else { return nil }
-        return "\(previous[..<separator]):\(Int64(seq))"
+              case .number(let raw) = additionalFields(for: frame)["seq"],
+              let seq = Int64("\(raw)"), seq >= 0, seq <= 9_007_199_254_740_991 else { return nil }
+        return "\(previous[..<separator]):\(seq)"
     }
 
     private static func additionalFields(for frame: ServerFrame) -> [String: JSONValue] {

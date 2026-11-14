@@ -202,22 +202,43 @@ final class AppStoreTests: XCTestCase {
         XCTAssertNil(store.imageCache.data(for: url))
     }
 
-    func testAbsoluteImageURLsFailWithoutUsingTransportOrCache() async throws {
+    func testUnapprovedImagePathsFailBeforeTransportOrCache() async throws {
         let store = try AppStore.fixture(loaded: shellScenario())
         let transport = try XCTUnwrap(store.transport as? FixtureTransport)
         let urls = ["https://example.com/api/attachments/example.png", "http://example.com/api/private",
-                    "//example.com/api/private", "file:///api/private"]
+                    "//example.com/api/private", "file:///api/private",
+                    "api/attachments/example.png", "/api/config", "/api/attachments-other/example.png",
+                    "/api/attachments/", "/api/attachments/../config", "/api/attachments/a..png",
+                    "/api/attachments/example.png%0A",
+                    "/api/attachments/%2e%2e/config", "/api/attachments/%252e%252e%252fconfig",
+                    "/api/attachments/example.png/../../config", "/api/attachments/a%5cb.png",
+                    "/api/team/people", "/api/team/people/p_0000000000000000000000/profile",
+                    "/api/team/people/p_0000000000000000000000/picture/../profile"]
         for value in urls {
             let url = try XCTUnwrap(URL(string: value))
             store.imageCache.insert(Data([1]), for: url)
             do {
                 _ = try await store.imageData(url: url)
-                XCTFail("Absolute image URLs must fail")
+                XCTFail("Unapproved image URL must fail: \(value)")
             } catch {
                 XCTAssertTrue(error is EndpointError)
             }
         }
         XCTAssertTrue(transport.requests.isEmpty)
+    }
+
+    func testTeamPicturePathUsesTransportAndPreservesVersionQuery() async throws {
+        let path = "/api/team/people/p_0000000000000000000000/picture"
+        var scenario = shellScenario()
+        scenario.responses["GET \(path)"] = .object(["base64": .string("AQID")])
+        let store = try AppStore.fixture(loaded: scenario)
+        let url = try XCTUnwrap(URL(string: "\(path)?v=example"))
+        let data = try await store.imageData(url: url)
+        XCTAssertEqual(data, Data([1, 2, 3]))
+        let transport = try XCTUnwrap(store.transport as? FixtureTransport)
+        XCTAssertEqual(transport.requests.count, 1)
+        XCTAssertEqual(transport.requests.first?.path, path)
+        XCTAssertEqual(transport.requests.first?.query, [URLQueryItem(name: "v", value: "example")])
     }
 
     func testEachTabRetainsItsOwnNavigationPath() throws {
@@ -234,7 +255,7 @@ final class AppStoreTests: XCTestCase {
         let screen = GroupScreen(group: "group-1", thread: "thread-2", focus: "message-3")
         XCTAssertEqual(screen.ref, ref)
         store.navigate(to: .desktop(DesktopTarget(bot: "bot-1")))
-        XCTAssertEqual(screen.ref, ref)
+        XCTAssertEqual(store.chatsPath, [.conversation(ref), .desktop(DesktopTarget(bot: "bot-1"))])
     }
 
     func testLateSnapshotCannotRestoreSignedOutState() async throws {

@@ -15,7 +15,9 @@ final class ImageDataCache {
 extension AppStore {
     func imageData(url: URL) async throws -> Data {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              components.scheme == nil, components.host == nil, url.baseURL == nil else {
+              components.scheme == nil, components.host == nil, url.baseURL == nil,
+              components.percentEncodedPath.hasPrefix("/"),
+              Self.isImagePath(components.path) else {
             throw EndpointError.invalidPath
         }
         guard let transport else { throw StoreError.detached }
@@ -28,5 +30,15 @@ extension AppStore {
         guard session == sessionID else { throw CancellationError() }
         imageCache.insert(data, for: url)
         return data
+    }
+
+    private static func isImagePath(_ path: String) -> Bool {
+        guard !path.contains(".."), !path.contains("\\"), !path.contains("%") else { return false }
+        if path.hasPrefix("/api/attachments/") {
+            return path != "/api/attachments/." &&
+                path.range(of: #"^/api/attachments/[A-Za-z0-9_.-]+\z"#, options: .regularExpression) != nil
+        }
+        return path.hasPrefix("/api/team/people/") &&
+            path.range(of: #"^/api/team/people/p_[A-Za-z0-9_-]{22}/picture\z"#, options: .regularExpression) != nil
     }
 }

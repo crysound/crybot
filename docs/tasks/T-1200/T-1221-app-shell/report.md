@@ -1,8 +1,35 @@
 # T-1221-app-shell 交付报告
 
-## 第 1 轮：2026-11-14（实现记录摘要）
+## 第 1 轮：2026-11-14（实现记录）
 
-上轮交付 SwiftUI 骨架、状态仓库、夹具传输、19 个功能占位、主题资源及 27 个 XCTest 方法；当时只有静态核对，没有 App 编译、XCTest 执行或截图结果。上轮实现已包含在本次检出的已提交基线中，不能再描述为「等待创建分支、尚未提交的工作区代码」。与 brief 重复的入口表、任务要求和旧环境脚本已删去；本轮的实际状态如下。
+交付 SwiftUI 骨架、状态仓库、夹具传输、19 个功能占位、主题资源及 27 个 XCTest 方法；当时只有静态核对，没有 App 编译、XCTest 执行或截图结果。
+
+### 文件改动
+
+- `mobile/ios/CryBot/App/`：SwiftUI App 入口、RootView、Types、LaunchOptions、MessageBodyView、纯逻辑分发及 shell-basic / shell-signed-out 场景；`AppDelegate.swift` 保留必要代理行为，移除旧 `ViewController.swift` 网页壳。
+- `mobile/ios/CryBot/Store/`：AppStore、FixtureTransport、连接策略及鉴权图片缓存。状态归并、独立帧订阅、历史分页、动作请求、导航、顺序退出处理器与夹具请求记录已接入。
+- `mobile/ios/CryBot/Features/`：19 个允许目录的 Entry、Gallery 与空文案表；WebHost 只提供类型和占位入口，尚无网页容器实现。
+- `mobile/ios/CryBot/Design/`、`Assets.xcassets/`：主题令牌、通用控件、AuthImage 及明暗 Color Set。
+- `mobile/ios/CryBotTests/Shell/`：状态、连接、传输、启动参数与类型、消息分发及目录检查的隔离测试。
+
+### 覆盖表对应项
+
+- App 根导航、登录占位、通知入口、原生远程桌面入口，以及 `AppRoute.web` 的统一全屏入口已经接通。
+- `MessageLayout` 为全部已知消息 kind 和 unknown 建立稳定分发；widget / app 对应 `WebMessageSummary`。这是分发与占位完成，不代表各消息正文功能或网页功能完成。
+- `ServerFrame` 先交 LiveState 再分发给订阅者；无原生消费者的帧仍可订阅。夹具、退出清理、主题与启动参数作为功能任务的共用基础。
+- 未修改 `server/testing/ios-contract/coverage.ts`；由协调者按实际功能进度登记，不应将 19 个功能占位或 48 的容器实现直接标为 done。
+
+### 需要协调者处理
+
+- `ConversationRef` 使用 `.bot(BotID, thread: ThreadID?, focus: MessageID? = nil)` / `.group(GroupID, thread: ThreadID?, focus: MessageID? = nil)`，把 focus 放进会话引用本身，保留不传 focus 的调用形式。08、22 接口核对时需共同沿用。
+- `RespondAction` 选择 `thread: ThreadID` 与 `body: RespondBody`，直接复用 CryCore 的响应合同；相等性涵盖 body，哈希使用 thread 和 requestId。`DesktopTarget` 选择 `bot: BotID` 与可选的 `desktopID: String? = nil`，供 35 接入时确认桌面标识。
+- `loadOlder(thread:)` 返回合并的 `ThreadPage`，通过 Store 的 historyPages 缓存旧页、按消息 ID 去重，再由 `page(thread:)` 合并实时消息。CryCore 的 LiveState 目前没有历史页归并入口，不能直接写其 private(set) threads；建议 01 / 协调者补专用历史 API 后统一归并位置，08 应通过 Store 读取分页，避免只读 state.threads 丢失旧页。
+- `PersonRef(member:)` 暂收 `[String: JSONValue]`，转换 id、name/email、avatarUrl、color；CryCore 缺少可直接使用的成员列表强类型合同。需由协议层与头像/团队功能协调正式成员类型，再替换这一适配，不能把字典适配当作协议已补全。
+- `LoginRouter.handle(url:)` 当前是返回 false 的占位。05 将其接到 03 的 CallbackRouter；App 的 Universal Links 和 scheme 回调都只经 LoginRouter，不在入口解析。
+- 48 接续现有 `WebHostTarget`、三种 `WebEntryScope`、`WebMessageSummary` 和全屏 `WebHostScreen`，替换占位内容。网页会话注入、真实路由和容器生命周期仍归 48；05 注册身份/手表清理，48 另注册网页数据清理。
+- 05 接入 LiveTransport 时可用 03 的连接状态机替换 Store 最小策略，保留取消、退避、续传行为，避免两层重连。
+
+以上三节在第 4 轮按审核列出的缺失事项、brief 和当前代码补回。当前检出只有压平基线，`git show 9d5d38f1:docs/tasks/T-1200/T-1221-app-shell/report.md` 返回 `fatal: invalid object name '9d5d38f1'.`，且没有配置 remote；因此尚未与该提交逐字核对。协调者持有原历史时仍需核对原文，不能将本次补回描述为已从该对象精确恢复。
 
 ## 第 2 轮：2026-11-14（审核第 1 轮返工）
 
@@ -76,7 +103,7 @@
 开工执行 `crybot-link-deps`，退出码 0，原始输出：
 
 ```text
-crybot-link-deps: linked 73 entries from /opt/crybot-deps/node_modules into /data/home/codex-t-1221-app-shell-39eca854c5bf/node_modules
+crybot-link-deps: linked 73 entries from /opt/crybot-deps/node_modules into <worktree>/node_modules
 ```
 
 `docs/verification/README.md` 在当前检出不存在。没有启动或修改用户 live app，也没有对真实服务器发请求。新增测试全部使用进程内的 FixtureTransport 或 ShellControlledTransport，不需要监听端口；由于没有 Swift 工具链，本机没有执行这些夹具测试。沙箱端口 e2e 未运行，以 Actions 为准；没有为此尝试启动服务。
@@ -196,3 +223,59 @@ App 内截图可分别使用 `WebHostGallery(scene: .screen/.menu/.summary)`，�
 不需要改 project.yml、Packages、服务端、网页、WatchSync、手表、Shared 或工作流，也没有新增第三方依赖。05 接入 LiveTransport 时可以将 Store 中最小连接策略替换为 03 的状态机，保留本轮退避、无帧超时和 since 行为测试，避免双重重连。Group 的 thread/focus 参数和三个 WebHost Gallery scene 供 22/04 接续；48 继续替换现有全屏 WebHostScreen 内容。
 
 尚未完成的验收只有运行验证：需要协调者提供 Swift 工具链或由 Actions 做语法/类型检查、App 编译、35 个测试实际执行及截图检查，并补 Mobile builds / Public scan 的真实链接。本机没有可附的 Swift 或 Xcode 成功结果。
+
+## 第 3 轮：记录归档说明
+
+本次检出的上一轮详细结果保留在上方「第 2 轮」原章节中，涵盖 r3.md 所列图片 URL、独立导航栈、GroupScreen 参数、connectionStatus、deinit、退避、MessageLayout、Gallery、外观参数和 Color Set。为保留已有记录，本轮不重编号或重写这些历史结果；其中游标、未读数和报告恢复的后续修正以下方第 4 轮为准。
+
+## 第 4 轮：2026-11-14
+
+本轮只改审核指定范围，不提交 git。开工已在 worktree 根目录运行 `crybot-link-deps`，链接 73 项预装依赖；未安装新依赖。
+
+### 修复与回归测试
+
+1. `FrameCursor` 已按 `JSONValue.number(Decimal)` 的真实关联类型改为 `Int64("\(raw)")`，只接受 0…9_007_199_254_740_991。测试补上下边界和 Int64 溢出值，保留负数、小数、非数字、ping、未知帧等覆盖。
+2. 非续传 hello 到来时立即把 cursor 置 nil（需要快照），仅快照成功并确认连接仍有效后采用 hello.cursor；失败或取消路径不再受 connectionID 判断限制。续传 hello 保留旧 cursor，只随随后已处理帧的 seq 前进。新增挂起快照期间 pause → resume 后 since 为 nil、重新拉取并成功提交游标，以及快照失败后重新拉取的测试；另测 STREAM:5 → resumed hello STREAM:20 → 重放前断线仍以 STREAM:5 续传，再处理 seq=6 后以 STREAM:6 续传。协议依据为 `server/index.ts:14716`–`:14735`：hello 给出 lastSeq，重放在 hello 之后才发送。
+3. 快照和相关帧只调度未读数刷新，不在帧循环等待计数接口。刷新任务复用一个在途请求，期间有变化则在结束后补一次；message.patch 不触发。显式 refreshInboxCount 也复用此任务；detach / signOut 取消任务并阻止旧会话写回。原逐帧请求次数断言改为上限；新增 60 秒计数请求挂起时 10 个 patch 继续归并、持续帧不被误判超时、20 个相关帧只补一次、最大并发为 1、纯 patch 批次不补请求及退出取消测试。
+4. 补回第 1 轮「文件改动」「覆盖表对应项」「需要协调者处理」，保留已有返工记录并追加本节。指定历史对象不可用，精确原文恢复仍需协调者核对，详情见第 1 轮末尾。
+5. 旧输出中的沙箱绝对工作区路径已替换为 `<worktree>`。
+6. 图片校验在缓存读取之前执行。仅允许前导 `/` 的已知接口：`/api/attachments/<文件名>`（附件、机器人及个人头像），以及 `/api/team/people/p_<22 位标识>/picture`（团队成员头像）。路由依据：`server/routes/threads.ts:452`、`shared/bot-avatar.ts:55`、`server/routes/team-owners.ts:27`、`:63`、`:99`。拒绝路径中任何 `..`、反斜线、解码后残留百分号、无前导 `/`、未知前缀及不符合路由形状的路径；覆盖编码/双重编码穿越、缓存预填绕过、未知路径及团队头像合法下载和 query 保留。
+7. 删除重复的 screen.ref 断言，改为检查继续导航后 chatsPath 的实际路由结果，仍保留一次 GroupScreen 完整引用断言。
+
+### 改动文件（逐个列出）
+
+以下 6 个 Swift 文件均需协调者检查；前三个可纳入 Foundation / Observation 的 Swift 6 类型检查，后三个需编译 CryBotTests（其中 AppStoreTests 引用 SwiftUI 功能入口）。
+
+- `mobile/ios/CryBot/App/Logic/FrameCursor.swift`
+- `mobile/ios/CryBot/Store/AppStore.swift`
+- `mobile/ios/CryBot/Store/ImageDataCache.swift`
+- `mobile/ios/CryBotTests/Shell/ConnectionTests.swift`
+- `mobile/ios/CryBotTests/Shell/AppStoreTests.swift`
+- `mobile/ios/CryBotTests/Shell/ShellTestSupport.swift`
+- 文档：`docs/tasks/T-1200/T-1221-app-shell/report.md`
+
+### 验证与待验收
+
+**未在沙箱编译**。本沙箱没有 swiftc / Xcode，不能运行 Swift 6 类型检查、App 编译或 XCTest。新增测试全部使用隔离的 FixtureTransport / ShellControlledTransport 和注入时钟，不连接 live app、不读写用户数据。`docs/verification/README.md` 在本检出缺失；没有据此声称运行验收通过。端口监听受限的 e2e 未运行，以 Actions 为准。
+
+协调者需在 Swift 6.3 环境对 Types、LaunchOptions、App/Logic、Store 及测试做类型检查，并推分支运行 Actions「Mobile builds」ios 作业，确认 App 编译与 CryBotTests 全绿且实际测试数大于 0。本轮没有 Actions 运行链接，也没有截图结果。
+
+本轮本地静态检查输出（不替代 Swift / XCTest）：
+
+```text
+Swift compiler: not found on PATH
+/opt/swift/usr/bin/swiftc exists: False
+Verification README exists: False
+Shell XCTest source methods: 42
+Swift compilation and XCTest execution: NOT RUN
+Report sandbox path audit: passed
+```
+
+Shell 测试源码由 35 增至 42 个方法，新增 7 个；本沙箱实际执行数为 0。`git diff --check` 退出 0，无输出。通过 shell 导出工作区 diff，再调用仓库 `scripts/public-scan/scan.mjs` 的 `scanDiff` 检查该 diff，退出 0：
+
+```text
+Working-tree public scan: 0 finding(s).
+denylist: skipped (no key)
+```
+
+首次从 Node 内启动 git 的方式被沙箱以 `spawnSync git EPERM` 拒绝；改为 shell 导出 diff 后完成扫描，无需修改权限。此结果只覆盖工作区新增行的可用规则，HMAC 名单无密钥未执行，Actions Public scan 仍待协调者推分支后验收。

@@ -100,18 +100,33 @@ final class ShellDelayedTransport: Transport {
 
 final class ShellControlledTransport: Transport, @unchecked Sendable {
     let base: FixtureTransport
+    private let clock: ShellClock
+    private let snapshotDelay: TimeInterval
+    private let inboxDelay: TimeInterval
+    private let snapshotFails: Bool
     private let lock = NSLock()
     private var streams: [AsyncThrowingStream<ServerFrame, Error>.Continuation] = []
     private var recordedEvents: [FixtureRequest] = []
     private var count = 0
     private var countRequests = 0
+    private var snapshotRequests = 0
+    private var activeCountRequests = 0
+    private var peakCountRequests = 0
 
-    init(scenario: FixtureScenario = shellScenario()) {
+    init(scenario: FixtureScenario = shellScenario(), clock: ShellClock = .continuous,
+         snapshotDelay: TimeInterval = 0, inboxDelay: TimeInterval = 0, snapshotFails: Bool = false) {
         base = FixtureTransport(scenario: scenario)
+        self.clock = clock
+        self.snapshotDelay = snapshotDelay
+        self.inboxDelay = inboxDelay
+        self.snapshotFails = snapshotFails
     }
 
     var eventRequests: [FixtureRequest] { lock.withLock { recordedEvents } }
     var inboxRequestCount: Int { lock.withLock { countRequests } }
+    var snapshotRequestCount: Int { lock.withLock { snapshotRequests } }
+    var activeInboxRequests: Int { lock.withLock { activeCountRequests } }
+    var peakInboxRequests: Int { lock.withLock { peakCountRequests } }
     var inboxCount: Int {
         get { lock.withLock { count } }
         set { lock.withLock { count = newValue } }
@@ -119,8 +134,20 @@ final class ShellControlledTransport: Transport, @unchecked Sendable {
 
     func send<R: Decodable>(_ endpoint: Endpoint<R>) async throws -> R {
         if endpoint.path == "/api/inbox/count" {
-            let value = lock.withLock { countRequests += 1; return count }
+            let value = lock.withLock {
+                countRequests += 1
+                activeCountRequests += 1
+                peakCountRequests = max(peakCountRequests, activeCountRequests)
+                return count
+            }
+            defer { lock.withLock { activeCountRequests -= 1 } }
+            if inboxDelay > 0 { try await clock.sleep(inboxDelay) }
             return try endpoint.decode(Data("{\"count\":\(value)}".utf8))
+        }
+        if endpoint.path == "/api/bots" {
+            lock.withLock { snapshotRequests += 1 }
+            if snapshotDelay > 0 { try await clock.sleep(snapshotDelay) }
+            if snapshotFails { throw FixtureError.missingResponse("GET /api/bots") }
         }
         return try await base.send(endpoint)
     }

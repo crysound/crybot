@@ -34,7 +34,9 @@ final class AppStore {
 
     @ObservationIgnored let imageCache = ImageDataCache()
     @ObservationIgnored private let clock: ShellClock
-    @ObservationIgnored private let connection = ConnectionTaskLifetime()
+    @ObservationIgnored private let connection = ShellTaskLifetime<Never>()
+    @ObservationIgnored private let inboxRefresh = ShellTaskLifetime<Error>()
+    @ObservationIgnored private var inboxRefreshPending = false
     @ObservationIgnored private var connectionID = UUID()
     @ObservationIgnored private var signOutTask: Task<Void, Never>?
     @ObservationIgnored private var signOutHandlers: [@MainActor () async -> Void] = []
@@ -73,6 +75,9 @@ final class AppStore {
         transport = nil
         sessionID = UUID()
         cursor = nil
+        inboxRefresh.task?.cancel()
+        inboxRefresh.task = nil
+        inboxRefreshPending = false
         finishSubscriptions()
     }
 
@@ -106,12 +111,38 @@ final class AppStore {
     func refreshSnapshot() async throws {
         let snapshot = try await request(CoreEndpoints.snapshot())
         state.load(snapshot: snapshot)
-        try? await refreshInboxCount()
+        scheduleInboxRefresh()
     }
 
     func refreshInboxCount() async throws {
-        let response = try await request(CoreEndpoints.inboxCount)
-        inboxUnreadCount = max(0, Int(min(response.count.isFinite ? response.count : 0, Double(Int32.max))))
+        try await scheduleInboxRefresh().value
+        try Task.checkCancellation()
+    }
+
+    @discardableResult
+    private func scheduleInboxRefresh() -> Task<Void, Error> {
+        inboxRefreshPending = true
+        if let task = inboxRefresh.task { return task }
+        let session = sessionID
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                if self.sessionID == session { self.inboxRefresh.task = nil }
+            }
+            repeat {
+                try Task.checkCancellation()
+                guard self.sessionID == session else { throw CancellationError() }
+                self.inboxRefreshPending = false
+                do {
+                    let response = try await self.request(CoreEndpoints.inboxCount)
+                    self.inboxUnreadCount = max(0, Int(min(response.count.isFinite ? response.count : 0, Double(Int32.max))))
+                } catch {
+                    if Task.isCancelled || self.sessionID != session || !self.inboxRefreshPending { throw error }
+                }
+            } while self.inboxRefreshPending
+        }
+        inboxRefresh.task = task
+        return task
     }
 
     @discardableResult
@@ -300,22 +331,32 @@ final class AppStore {
         guard id == connectionID else { throw CancellationError() }
         policy.receivedFrame(at: clock.now())
         if connectionStatus != .connected { connectionStatus = .connected }
-        if let next = FrameCursor.value(for: frame, previous: cursor) { cursor = next }
+        switch frame {
+        case .hello: break
+        default:
+            if let next = FrameCursor.value(for: frame, previous: cursor) { cursor = next }
+        }
         state.apply(frame)
         for subscription in subscriptions.values where subscription.kinds.contains(frame.kind) {
             subscription.continuation.yield(frame)
         }
         if case .hello(let hello) = frame, !hello.resumed {
-            do { try await refreshSnapshot() }
+            cursor = nil
+            do {
+                try await refreshSnapshot()
+                try Task.checkCancellation()
+                guard id == connectionID else { throw CancellationError() }
+                cursor = hello.cursor
+            }
             catch {
-                if id == connectionID { cursor = nil }
+                cursor = nil
                 throw error
             }
         } else {
             switch frame {
-            case .bot, .group, .botDeleted, .groupDeleted, .message, .messagePatch,
+            case .bot, .group, .botDeleted, .groupDeleted, .message,
                  .thread, .notify, .notificationsRead, .snapshot:
-                try? await refreshInboxCount()
+                scheduleInboxRefresh()
             default: break
             }
         }
@@ -343,8 +384,8 @@ final class AppStore {
     }
 }
 
-private final class ConnectionTaskLifetime {
-    var task: Task<Void, Never>?
+private final class ShellTaskLifetime<Failure: Error> {
+    var task: Task<Void, Failure>?
 
     deinit { task?.cancel() }
 }
