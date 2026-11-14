@@ -23,12 +23,12 @@ AssertionError: expected undefined to be 'venice-owner-…'   (opencode-provider
 1. 在 worktree 里定位根因：读 `server/opencode-provider-keys.e2e.test.ts` 的整个流程（保存钥匙 → `nextProviderEnvironment` 等待提供方进程重启并 dump 环境），对照 T-1232 的改动找出导致新进程环境缺 `VENICE_API_KEY` 的那一处。能在沙箱里跑这个 e2e 就跑（`pnpm exec vitest run server/opencode-provider-keys.e2e.test.ts`）；沙箱禁止监听端口跑不了就在报告里写明，靠读代码 + 针对性单测定位。
 2. 修复产品代码，让 OpenCode 提供方钥匙照旧只交给 OpenCode 进程；**不得放松 T-1232 的安全约束**（飞书令牌只经服务端按轮授予、`CRYBOT_FEISHU_*`/`LARKSUITE_CLI_*`/`MEEGLE_` 仍不能漏进智能体环境），也**不得改这个 e2e 的断言来迁就**。如果确认是测试本身的夹具与新行为不符（而非产品回归），在报告里写清证据，只改夹具、断言语义不变。
 3. 在根因附近补一个不需要监听端口的单测，锁住这次回归（保存的提供方钥匙出现在提供方进程环境里，同时飞书类变量仍被剥离）。
-4. 报告 `report.md` 写清：根因（文件:行）、为什么 #45 的改动导致它、修法、跑过的命令和真实输出结尾几行。
+4. 报告文件写清：根因（文件:行）、为什么 #45 的改动导致它、修法、跑过的命令和真实输出结尾几行。
 
 ## 范围与约束
 - 只改定位到的产品文件、对应 `*.test.ts` 和本任务报告；不改 `.github/workflows/`、不改 file-size ratchet 数字、不改其他 e2e 的断言。
 - 不要 git 提交，不联网，不装依赖。
-- 开工先在 worktree 根目录准备依赖（本机：若 `node_modules` 不存在，链到 `/root/workspace/crybot/node_modules`；InstaBox 上运行 `crybot-link-deps`）。没有 systemd 的环境去掉 `systemd-run` 前缀；一次只跑一个测试文件。
+- 开工先在 worktree 根目录准备依赖（本机：若 `node_modules` 不存在，链到 `/root/workspace/crybot/node_modules`；上运行 依赖准备脚本）。没有 systemd 的环境去掉 `systemd-run` 前缀；一次只跑一个测试文件。
 
 ## 验收
 - 逐个跑并贴结尾输出：新增/改动的单测文件、`server/bot-box/env.test.ts`、`server/feishu-cli/turn.test.ts`、`server/feishu-cli/wrapper.test.ts`；能跑的话 `server/opencode-provider-keys.e2e.test.ts`、`server/feishu-cli/server.e2e.test.ts`。
