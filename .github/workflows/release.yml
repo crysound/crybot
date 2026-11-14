@@ -23,6 +23,10 @@ env:
   CRYBOT_DEFAULT_SERVER_URL: ${{ secrets.CRYBOT_SERVER_URL }}
   CRYBOT_LOGIN_HOSTS: ${{ secrets.CRYBOT_LOGIN_HOSTS }}
   CRYBOT_UPDATE_FEED_URL: ${{ secrets.CRYBOT_UPDATE_FEED_URL }}
+  # Mirror of the pinned Windows browser engine; the build verifies its sha256.
+  CRYBOT_BROWSER_ENGINE_URL: ${{ vars.CRYBOT_BROWSER_ENGINE_URL }}
+  # tsc -b on the full client exceeds Node's default ~2 GB heap on the macOS runner.
+  NODE_OPTIONS: --max-old-space-size=6144
 defaults:
   run:
     shell: bash
