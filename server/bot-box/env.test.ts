@@ -5,7 +5,7 @@ import { BOX_ENV_NAMES, BOX_ENV_NEVER, BOX_ENV_CRYBOT_NAMES, BOX_ENV_CRYBOT_PREF
 
 /** Every other `CRYBOT_` name the server's code knows: decided to stay on the server, never in a bot's environment. A name
  * ending in `_` is a family (`CRYBOT_CLOUD_*`). */
-const SERVER_ONLY_OMB: ReadonlySet<string> = new Set([
+const SERVER_ONLY_CRYBOT: ReadonlySet<string> = new Set([
   "CRYBOT_ACP_LIMIT_QUIET_MS", "CRYBOT_ACP_NO_SIGNS_STOP_MS", "CRYBOT_ACP_PLAN_LINES", "CRYBOT_ACP_QUIET_NOTICE_MS",
   "CRYBOT_ACP_QUIET_TICK_MS", "CRYBOT_ACP_SESSION_IDLE_", "CRYBOT_ACP_SHARED_RECYCLE_MS", "CRYBOT_ADMIN_", "CRYBOT_ADMIN_MEMBERSHIP",
   "CRYBOT_ADMIN_URL", "CRYBOT_ADMIN_WORKSPACE", "CRYBOT_AGENT_BROWSER_PATH", "CRYBOT_AI_CHECKS", "CRYBOT_ANTHROPIC_API_KEY",
@@ -54,7 +54,7 @@ const SERVER_ONLY_OMB: ReadonlySet<string> = new Set([
   "CRYBOT_TTS_KEY", "CRYBOT_TUNNEL_ORIGIN_PORT", "CRYBOT_TUNNEL_SOCKET", "CRYBOT_TURN_STALL_MS", "CRYBOT_UPDATE_CHANNEL", "CRYBOT_UPDATE_INSTALL",
   "CRYBOT_USER_DATA", "CRYBOT_WARM_SUMMARY", "CRYBOT_WARM_SUMMARY_TIME_SCALE", "CRYBOT_WEBHOOK_PORT", "CRYBOT_WEBHOOK_PUBLIC_URL", "CRYBOT_WEBHOOK_SOCKET",
   "CRYBOT_WORKERS_AI_TOKEN", "CRYBOT_XAI_TTS_API",
-  "CRYBOT_ANNOUNCEMENTS_URL", "CRYBOT_BROWSER_ENGINE_URL", "CRYBOT_CODEX_", "CRYBOT_COMPANY_API_KEY",
+  "CRYBOT_ANNOUNCEMENTS_URL", "CRYBOT_BROWSER_ENGINE_URL", "CRYBOT_CODEX_", "CRYBOT_COMPANY_API_KEY", "CRYBOT_CF_ACCESS_ALLOW", "CRYBOT_CF_ACCESS_AUD", "CRYBOT_CF_ACCESS_TEAM_DOMAIN", "CRYBOT_DESKTOP_UPDATES_DIR",
   "CRYBOT_COMPUTER_CALL_WAIT_MS", "CRYBOT_COMPUTER_WAIT_MAX_MS", "CRYBOT_CONTROL_PORT", "CRYBOT_CUA_EMBEDDED",
   "CRYBOT_CUA_SDK_LIBRARY", "CRYBOT_INTERNAL_DATA_DIR_LEASE", "CRYBOT_LOCAL_", "CRYBOT_MODEL_MANIFEST_URL",
   "CRYBOT_PERSONA", "CRYBOT_PHONE_RELAY_TOKEN", "CRYBOT_PROBE_LOCAL_INJECT", "CRYBOT_QWEN_",
@@ -147,10 +147,10 @@ describe("the box's environment allow-list", () => {
 
   it("every CRYBOT_ name the server knows has a decision: passed to a bot's box or kept on the server", () => {
     const passed = (name: string) => BOX_ENV_CRYBOT_NAMES.has(name) || BOX_ENV_CRYBOT_PREFIXES.includes(name);
-    const undecided = knownCryNames().filter((name) => !passed(name) && !SERVER_ONLY_OMB.has(name));
-    expect(undecided, "add each to BOX_ENV_CRYBOT_NAMES in env.ts if a bot's engine, hook or MCP proxy reads it, else to SERVER_ONLY_OMB here").toEqual([]);
-    expect([...BOX_ENV_CRYBOT_NAMES].filter((name) => SERVER_ONLY_OMB.has(name))).toEqual([]);
-    for (const name of SERVER_ONLY_OMB) if (!name.endsWith("_")) expect(boxEnvironmentAllows(name), name).toBe(false);
+    const undecided = knownCryNames().filter((name) => !passed(name) && !SERVER_ONLY_CRYBOT.has(name));
+    expect(undecided, "add each to BOX_ENV_CRYBOT_NAMES in env.ts if a bot's engine, hook or MCP proxy reads it, else to SERVER_ONLY_CRYBOT here").toEqual([]);
+    expect([...BOX_ENV_CRYBOT_NAMES].filter((name) => SERVER_ONLY_CRYBOT.has(name))).toEqual([]);
+    for (const name of SERVER_ONLY_CRYBOT) if (!name.endsWith("_")) expect(boxEnvironmentAllows(name), name).toBe(false);
   });
 
   it("returns a fresh object, never the caller's", () => {

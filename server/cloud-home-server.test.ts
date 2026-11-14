@@ -2,7 +2,7 @@
 // Cloud Pro dropped included AI. Disposable home; no network; a synthetic Claude CLI.
 import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -283,6 +283,7 @@ import { writeFileSync } from "node:fs";
 writeFileSync(${JSON.stringify(dump)}, JSON.stringify(process.env));
 console.log("dump-env 1.0.0");
 `, { mode: 0o755 });
+  chmodSync(cli, 0o755);
   const probe = await api("POST", "/api/cli-test", { body: { cli } });
   expect(probe.body, JSON.stringify(probe.body)).toMatchObject({ ok: true, version: "dump-env 1.0.0" });
   const env = JSON.parse(readFileSync(dump, "utf8"));

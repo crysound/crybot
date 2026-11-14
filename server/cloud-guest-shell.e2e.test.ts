@@ -193,10 +193,10 @@ it("no engine a bot runs finds the Cloud's secrets: not in its own environment, 
   expect((await say(owner, bot, "Hello.", mine)).status).toBe(202);
   await expect.poll(() => existsSync(probeOf("claude")), { timeout: hostTimeout(15_000) }).toBe(true);
   const probe = JSON.parse(readFileSync(probeOf("claude"), "utf8")) as { parent: string; own: string };
-  if (process.platform !== "win32") expect(probe.parent).toContain("CRYBOT_CLOUD_MACHINE_ID=3f9c2a4e");
   for (const where of [probe.parent, probe.own]) {
     expect(where).not.toContain(secret);
     expect(where).not.toContain(relayToken);
+    if (process.platform !== "win32") expect(where).not.toContain("CRYBOT_CLOUD_MACHINE_ID=");
   }
   expect((await api("POST", `/api/bots/${bot.id}/interrupt`, { token: owner, body: { threadId: mine } })).status).toBe(200);
 }, hostTimeout(60_000));

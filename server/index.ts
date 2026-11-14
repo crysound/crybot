@@ -2854,8 +2854,10 @@ const sendSequencer = new SendSequencer();
 // Before the new-bot default is read: a saved default may name the engine.
 await retryComputerEngineMove(); mcpServersHost.boot();
 if (store.needsSeed()) await Promise.race([cloudCreditStarted, new Promise(resolve => setTimeout(resolve, 15_000).unref())]);
-if (store.needsSeed()) { firstEngineRead(); await refreshUnsetModelSelections(); }
-else enginesRead = registry.readAtStart(enginesByUse([cfg.defaultModelSelection, ...store.bots.map((bot) => bot.modelSelection)]), firstEngineRead).then(async ({ engines, changed }) => {
+if (store.needsSeed()) {
+  const { engines, changed } = await registry.readAtStart(enginesByUse([cfg.defaultModelSelection]), firstEngineRead);
+  await refreshUnsetModelSelections(engines); if (changed) broadcast({ kind: "config", ...configStatus() });
+} else enginesRead = registry.readAtStart(enginesByUse([cfg.defaultModelSelection, ...store.bots.map((bot) => bot.modelSelection)]), firstEngineRead).then(async ({ engines, changed }) => {
   await refreshUnsetModelSelections(engines); if (changed) broadcast({ kind: "config", ...configStatus() });
 }).catch((error) => console.warn(`[engines] reading the engines at start failed: ${error instanceof Error ? error.message : String(error)}`)).finally(() => { enginesRead = null; });
 const startupCatalogs = registry.instances().flatMap((instance) =>

@@ -1714,7 +1714,7 @@ describe("harness HTTP API", () => {
   it("keeps the fleet screen behind the admin entitlement on the open-source edition", async () => {
     const fleet = await api("GET", "/api/fleet");
     expect(fleet.status).toBe(403);
-    expect(fleet.body.error).toContain("enterprise");
+    expect(fleet.body.error).toBe("Workspace administration is unavailable.");
     expect((await api("POST", "/api/fleet/workspaces", { slug: "acme", admins: ["a@b.test"] })).status).toBe(403);
     expect((await api("DELETE", "/api/fleet/workspaces/acme")).status).toBe(403);
   });
@@ -2936,11 +2936,11 @@ describe("harness HTTP API", () => {
     }
   });
 
-  it("lets only a Chief read the team library from its turn", async () => {
+  it("lets only a Chief read the team setup catalog from its turn", async () => {
     const helper = (await api("POST", "/api/bots")).body.bot;
     try {
       const token = await mintTestCapability(BASE, helper.id, helper.threadId);
-      const response = await fetch(`${BASE}/api/internal/team-library`, { headers: { authorization: `Bearer ${token}` } });
+      const response = await fetch(`${BASE}/api/internal/team-setup-catalog`, { headers: { authorization: `Bearer ${token}` } });
       expect(response.status).toBe(403);
       expect(await response.json()).toEqual({ error: "Only an active Chief may plan team setup" });
     } finally {
@@ -7985,7 +7985,7 @@ describe("harness HTTP API", () => {
     }
   });
 
-  it("a new bot greets its person by first name and is announced in its chosen look, or a fresh one, from the first frame", async () => {
+  it("a new bot greets its person by profile name and is announced in its chosen look, or a fresh one, from the first frame", async () => {
     const before = (await api("GET", "/api/config")).body.profile?.name ?? "";
     expect((await api("PUT", "/api/config", { profile: { name: "Hangzhou Crysound Electronics Co., Ltd." } })).status).toBe(200);
     const stream = await openSse(`${BASE}/api/events`);
@@ -7994,7 +7994,7 @@ describe("harness HTTP API", () => {
       await stream.until((frame) => frame.kind === "hello");
       const bot = (await api("POST", "/api/bots", { name: "Scout", useDefaults: false, settings: { color: "purple", mascotBody: "star" } })).body.bot;
       id = bot.id;
-      expect(bot.messages[0].text).toBe("Hi Owner, I'm Scout. What would you like me to do?");
+      expect(bot.messages[0].text).toBe("Hi Hangzhou Crysound Electronics Co., Ltd., I'm Scout. What would you like me to do?");
       const announced = await stream.until((frame) => frame.kind === "bot" && frame.bot?.id === id);
       expect(announced.bot).toMatchObject({ color: "purple", mascotBody: "star" });
       const plain = (await api("POST", "/api/bots", { name: "Wren", useDefaults: false })).body.bot;
