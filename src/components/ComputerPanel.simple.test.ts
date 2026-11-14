@@ -23,7 +23,7 @@ const fixture = vi.hoisted(() => {
     index: 0,
     own: 0,
     seed: {} as Record<string, unknown>,
-    config: {} as FeatureFlagConfig & { cloudHome?: boolean; box?: { configured: boolean; last4?: string } },
+    config: {} as FeatureFlagConfig & { cloudHome?: boolean; providerLock?: boolean; box?: { configured: boolean; last4?: string } },
     instances: [] as InstanceInfo[],
     android: false,
     dispatch: (() => {}) as (...args: unknown[]) => void,
@@ -685,4 +685,21 @@ describe("Technical controls", () => {
     (simple.button("Show advanced controls")!.props.onClick as () => void)();
     expect(fixture.setAdvancedMode).toHaveBeenCalledWith(true);
   });
+});
+
+it.each([false, true])("offers VPS and private desktops while hiding Boat only when locked: %s", async (providerLock) => {
+  fixture.config = { ...fixture.config, providerLock, box: { configured: false } };
+  fixture.dispatch = vi.fn();
+  const rendered = render(makeBot());
+  const labels = grid(rendered).map((node) => text(node.props.children));
+  expect(labels.some((label) => label.includes("Private desktop"))).toBe(true);
+  expect(labels.some((label) => label.includes("Cloud desktop"))).toBe(!providerLock);
+  expect(rendered.html.includes("Connect Boat first")).toBe(!providerLock);
+  if (providerLock) {
+    expect(rendered.html).not.toMatch(/Boat|data-boat-key|cloud-computer-recovery/);
+    const vps = grid(rendered).find((node) => text(node.props.children).includes("Self-hosted VPS"))!;
+    expect(vps).toBeDefined();
+    (vps.props.onClick as () => void)();
+    expect(fixture.dispatch).toHaveBeenCalledWith({ type: "updateBot", botId: "scout", patch: { computer: "cloud", cloudBackend: "vps" } });
+  }
 });

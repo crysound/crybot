@@ -19,6 +19,8 @@ concurrency:
   group: crybot-build-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: false
 env:
+  CRYBOT_PROVIDER_LOCK: ${{ vars.CRYBOT_PROVIDER_LOCK }}
+  CRYBOT_DESKTOP_REMOTE_ONLY: ${{ vars.CRYBOT_DESKTOP_REMOTE_ONLY }}
   CRYBOT_SERVER_URL: ${{ secrets.CRYBOT_SERVER_URL }}
   CRYBOT_DEFAULT_SERVER_URL: ${{ secrets.CRYBOT_SERVER_URL }}
   CRYBOT_LOGIN_HOSTS: ${{ secrets.CRYBOT_LOGIN_HOSTS }}

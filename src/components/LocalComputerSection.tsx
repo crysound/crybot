@@ -762,7 +762,9 @@ function SafetyLine({ perBot, path }: { perBot: boolean; path: string }) {
 }
 
 export function LocalComputerSection({ privateOnly = false }: { privateOnly?: boolean }) {
-  const cloudHome = useStore().state.config?.cloudHome === true;
+  const { config } = useStore().state;
+  const cloudHome = config?.cloudHome === true;
+  const providerLock = config?.providerLock === true;
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<Action | null>(null);
@@ -908,7 +910,7 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
   }, [inventoryRefreshKey, refreshInventory, status?.mode]);
 
   useEffect(() => {
-    if (privateOnly) return;
+    if (privateOnly || providerLock) return;
     const controller = new AbortController();
     setCloudLoading(true);
     void refreshCloudInventory(controller.signal)
@@ -921,7 +923,7 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
         if (!controller.signal.aborted) setCloudLoading(false);
       });
     return () => controller.abort();
-  }, [cloudRefreshKey, privateOnly, refreshCloudInventory]);
+  }, [cloudRefreshKey, privateOnly, providerLock, refreshCloudInventory]);
 
   useEffect(() => {
     if (privateOnly) return;
@@ -1191,7 +1193,7 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
   return (
     <>
       <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">{announcement}</p>
-      {!privateOnly && <><CloudComputersCard
+      {!privateOnly && <>{!providerLock && <CloudComputersCard
         instances={cloudInventory}
         configured={cloudConfigured}
         loading={cloudLoading}
@@ -1201,7 +1203,7 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
         onRefresh={() => setCloudRefreshKey((key) => key + 1)}
         onSleep={(instance) => void actOnCloudComputer("sleep", instance)}
         onDelete={(instance) => void actOnCloudComputer("delete", instance)}
-      />
+      />}
       <VpsComputersCard
         instances={vpsInventory}
         configured={vpsConfigured}

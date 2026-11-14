@@ -12,6 +12,7 @@ import { botAvatarUrlSchema } from "../shared/bot-avatar.ts";
 import { writeFileAtomic } from "./atomic.ts";
 import { defaultBotThreads, MAX_CONCURRENT_BOT_THREADS } from "./bot-thread-limits.ts";
 import { anthropicKeyEnv } from "./anthropic-key-env.ts";
+import { lockedProviderConfigs, providerLockEnabled } from "./provider-lock.ts";
 import { withoutComputerEngine } from "./computer-engine-removal.ts";
 import { newBotDefaultsSchema, type NewBotDefaults } from "./new-bot-defaults.ts";
 import { replaySettings } from "./replay-settings.ts";
@@ -904,7 +905,7 @@ export function saveConfig(
     if (parsed.success) disk = parsed.data;
   } catch {
   }
-  const checkedPatch = appConfigSchema.partial().extend({ threads: threadsPatchSchema.optional(), newBots: newBotsPatchSchema.optional(), imageGen: imageGenPatchSchema.optional() }).parse(patch);
+  const checkedPatch = appConfigSchema.partial().extend(helperStoredShape).extend({ threads: threadsPatchSchema.optional(), newBots: newBotsPatchSchema.optional(), imageGen: imageGenPatchSchema.optional() }).parse(patch);
   const before = configSaveListeners.size ? structuredClone(disk) : disk;
   const keepImageModels = keepKeysOutOfImageModels(disk, checkedPatch.imageGen);
   const storedProfiles = storedBrowserProfilesSchema.safeParse(disk.browserProfiles);
@@ -928,6 +929,7 @@ export function saveConfig(
   if (checkedPatch.signIn !== undefined) disk.signIn = checkedPatch.signIn;
   // Replace the section so clearing a backup cannot revive the old selection.
   if (checkedPatch.automaticRecovery !== undefined) disk.automaticRecovery = checkedPatch.automaticRecovery;
+  if (checkedPatch.helper !== undefined) disk.helper = checkedPatch.helper;
   if (checkedPatch.cacheKeepWarm !== undefined) disk.cacheKeepWarm = checkedPatch.cacheKeepWarm;
   if (checkedPatch.defaultModelSelection !== undefined) {
     disk.defaultModelSelection = checkedPatch.defaultModelSelection;
@@ -1044,7 +1046,7 @@ export function withInstanceCli(
 
 /** Materialize defaults without freezing injected workspace settings or secrets. */
 export function persistableInstanceConfigs(cfg: AppConfig): InstanceConfigMap {
-  const map = instanceConfigs(cfg);
+  const map = unlockedInstanceConfigs(cfg);
   for (const [id, entry] of Object.entries(map)) {
     const environment = cfg.instances?.[id]?.environment;
     if (environment) entry.environment = { ...environment };
@@ -1151,6 +1153,10 @@ function injectedEnvironment(cfg: AppConfig, instanceId: string, driver: string)
 }
 
 export function instanceConfigs(cfg: AppConfig): InstanceConfigMap {
+  return providerLockEnabled() ? lockedProviderConfigs(cfg.instances ?? {}) : unlockedInstanceConfigs(cfg);
+}
+
+function unlockedInstanceConfigs(cfg: AppConfig): InstanceConfigMap {
   const configured = cfg.instances && Object.keys(cfg.instances).length ? cfg.instances : null;
   const map: InstanceConfigMap = withoutComputerEngine(configured ? { ...configured } : { ...DEFAULT_FLEET });
   if (

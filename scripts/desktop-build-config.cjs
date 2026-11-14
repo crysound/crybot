@@ -14,7 +14,7 @@ function desktopBuildConfig(env = process.env) {
   const feed = webUrl(env.CRYBOT_UPDATE_FEED_URL, "CRYBOT_UPDATE_FEED_URL");
   const loginHosts = [...new Set((env.CRYBOT_LOGIN_HOSTS ?? "").split(",").map(value => value.trim().toLowerCase()).filter(Boolean))];
   if (loginHosts.some(host => !/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(host))) throw new Error("CRYBOT_LOGIN_HOSTS must contain exact hostnames, without schemes, ports or wildcards");
-  return { defaultServerUrl: server?.origin ?? null, loginHosts, updateFeedUrl: feed?.href ?? null };
+  return { defaultServerUrl: server?.origin ?? null, loginHosts, updateFeedUrl: feed?.href ?? null, providerLock: env.CRYBOT_PROVIDER_LOCK === "1", remoteOnly: env.CRYBOT_DESKTOP_REMOTE_ONLY === "1" && Boolean(server) };
 }
 
 function writeDesktopBuildConfig(file, config) {

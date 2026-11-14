@@ -615,3 +615,15 @@ describe("Local VM idle timeout setting", () => {
     expect(markup).toContain("minutes");
   });
 });
+
+it.each([false, true])("keeps local and VPS settings and hides Boat only while locked: %s", (providerLock) => {
+  storeFixture.config = { providerLock };
+  try {
+    setLocale("en");
+    const markup = renderToStaticMarkup(createElement(LocalComputerSection));
+    expect(markup.includes("Cloud desktops")).toBe(!providerLock);
+    expect(markup).toContain("Private desktops");
+    expect(markup).toContain("Self-hosted VPS computers");
+    if (providerLock) expect(markup).not.toMatch(/Boat|data-keys-link="box"/);
+  } finally { storeFixture.config = null; }
+});

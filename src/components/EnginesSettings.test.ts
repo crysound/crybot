@@ -519,3 +519,33 @@ describe("Settings → Engines → custom Claude endpoints", () => {
     expect(html).toContain('data-claude-bedrock="claude-bedrock-1"');
   });
 });
+
+describe("locked providers", () => {
+  afterEach(() => { fixture.config = undefined; });
+  it.each([false, true])("shows only the endpoint row and refresh in simple=%s", (simple) => {
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("navigator", { userAgent: "Linux" });
+    fixture.config = { providerLock: true };
+    fixture.instances = [{ instanceId: "gateway", driverKind: "claudeAgent", displayName: "Cry Bot", snapshot: { state: "unavailable", reason: "fixture" }, models: { default: "claude-sonnet-5", options: [] }, icon: { kind: "preset", preset: "crybot" } }];
+    const html = renderToStaticMarkup(createElement(EnginesSettings, { simple, more: { id: "more", open: true, onToggle: () => {} } }));
+    expect(html).toContain("Cry Bot");
+    expect(html).toContain("/app-icon.svg");
+    expect(html).toContain("Check again");
+    expect(html).not.toContain("More providers");
+    expect(html).not.toContain("data-hidden-engines");
+    expect(html).not.toContain("data-claude-endpoint-form");
+    expect(html).not.toContain("data-codex-endpoints");
+    expect(html.match(/<button\b/g)).toHaveLength(1);
+  });
+  it("shows the Claude endpoint form immediately when the locked list is empty", () => {
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("navigator", { userAgent: "Linux" });
+    fixture.config = { providerLock: true };
+    fixture.instances = [];
+    const html = renderToStaticMarkup(createElement(EnginesSettings));
+    expect(html).toContain('data-claude-endpoint-form="new"');
+    expect(html).not.toContain("More providers");
+    expect(html).not.toContain("data-codex-endpoints");
+    expect(html).not.toContain("data-claude-bedrock-endpoints");
+  });
+});

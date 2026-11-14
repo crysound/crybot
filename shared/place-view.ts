@@ -85,6 +85,8 @@ export interface PlaceFacts {
   plan?: boolean;
   /** Where cloud computers come from here: the plan's, the person's own Boat key, or nowhere. */
   boat: "included" | "own-key" | "none";
+  /** Boat desktops are unavailable in provider-locked installations. */
+  providerLock?: boolean;
   /** The cloud computer's provider: Boat, or the person's own server. */
   backend?: "box" | "vps";
   engine: {
@@ -306,9 +308,10 @@ const ACTION_KEY: Record<PlaceActionId, PlaceKey> = {
 export function placeState(facts: PlaceFacts): { state: PlaceState; params: PlaceParams } {
   const bot = facts.bot;
   const model = facts.engine.model || facts.engine.name;
+  if (facts.providerLock && facts.place === "cloud" && facts.backend !== "vps") return { state: "off", params: { bot } };
   if (facts.place === "off") return { state: "off", params: { bot } };
   if (facts.place === "auto") {
-    return facts.teamComputer
+    return facts.teamComputer && !facts.providerLock
       ? { state: "auto-team", params: { bot, computer: facts.teamComputer } }
       : { state: "auto", params: { bot } };
   }
@@ -438,7 +441,7 @@ export function placeViewOf(state: PlaceState, params: PlaceParams, context: Pla
 /** The view of a place from its facts. */
 export function placeView(facts: PlaceFacts, options: { translate?: PlaceTranslate; locale?: string } = {}): PlaceView {
   const { state, params } = placeState(facts);
-  return placeViewOf(state, params, { server: facts.server, role: facts.role, mode: facts.mode, ...options });
+  return placeViewOf(state, params, { server: facts.providerLock && facts.server === "my-cloud" ? "linux" : facts.server, role: facts.role, mode: facts.mode, ...options });
 }
 
 /** A stored failed-turn row, worded for this reader. */

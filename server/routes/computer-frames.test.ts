@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createComputerFrames } from "../computer-frames.ts";
 import { createComputerFramesRoutes, frameForCaller, mapComputers, parseHave } from "./computer-frames.ts";
 import { PASS } from "./table.ts";
+
+afterEach(() => vi.unstubAllEnvs());
 
 const bots = [
   { id: "ada", name: "Ada", section: "Research", computer: "cloud" as const },
@@ -68,5 +70,10 @@ describe("GET /api/computers/frames", () => {
     expect(body.computers.map((computer: { id: string }) => computer.id)).toEqual(["ada", "computer_11111111-1111-4111-8111-111111111111"]);
     expect(lists).toBe(0);
     expect(frames.watching()).toBe(false);
+    vi.stubEnv("CRYBOT_PROVIDER_LOCK", "1");
+    expect((await request(handler)).body).toMatchObject({ configured: false, available: false, computers: [] });
+    expect(lists).toBe(0);
+    vi.stubEnv("CRYBOT_PROVIDER_LOCK", "0");
+    expect((await request(handler)).body.computers).toHaveLength(2);
   });
 });

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
+import { loadDesktopWindow } from "./remote-only.mjs";
 
 test("a navigation retires the launch recovery, except the recovery's own", async () => {
   const source = readFileSync(new URL("./main.mjs", import.meta.url), "utf8");
@@ -11,6 +12,7 @@ test("a navigation retires the launch recovery, except the recovery's own", asyn
   const end = start + close.index + close[0].length;
   const calls = [];
   const context = vm.createContext({
+    loadDesktopWindow, desktopBuild: { remoteOnly: false },
     homeWindow: { cancel: () => calls.push("cancel") },
     mainWindow: { isDestroyed: () => false, loadURL: async (url) => { calls.push(`load:${url}`); } },
   });
@@ -22,8 +24,9 @@ test("a navigation retires the launch recovery, except the recovery's own", asyn
   assert.deepEqual(calls, ["load:https://garage.example.test/"], "the recovery's own way back is not a choice");
 });
 
-test("popups keep only login hosts inside, while top-level navigation keeps the server too", async () => {
-  const { loginNavigationAllowed } = await import("./desktop-build-config.mjs");
+for (const remoteOnly of [false, true]) test(`login popups and the return to the server stay inside (remoteOnly=${remoteOnly})`, async () => {
+  const { defaultServerEnvironment, loginNavigationAllowed } = await import("./desktop-build-config.mjs");
+  const { default: environments } = await import("./environments.cjs");
   const { externalLinkUrl } = await import("./app-permissions.mjs");
   const source = readFileSync(new URL("./main.mjs", import.meta.url), "utf8");
   const start = source.indexOf("  const loginAllowed =");
@@ -31,10 +34,12 @@ test("popups keep only login hosts inside, while top-level navigation keeps the 
   assert.ok(start > 0 && end > start);
   const handlers = new Map(), loaded = [], external = [];
   let popup, now = 1_000;
+  const desktopBuild = { remoteOnly, defaultServerUrl: "https://example.com", loginHosts: ["login.example.com"] };
+  const saved = { activeId: "local", environments: [] };
+  const environmentsState = defaultServerEnvironment(saved, desktopBuild, remoteOnly, () => "gateway");
   const context = vm.createContext({
-    loginNavigationAllowed, externalLinkUrl,
-    activeRemote: () => ({ origin: "https://example.com" }),
-    environmentsState: {}, desktopBuild: { loginHosts: ["login.example.com"] },
+    loginNavigationAllowed, externalLinkUrl, loadDesktopWindow,
+    activeRemote: environments.activeRemote, environmentsState, desktopBuild,
     rendererOrigin: () => "http://localhost:3000", workspaceNavigationAllowed: () => false,
     slog: () => {}, URL, Date: { now: () => now },
     shell: { openExternal: async url => { external.push(url); } },
@@ -52,6 +57,7 @@ test("popups keep only login hosts inside, while top-level navigation keeps the 
   const event = { preventDefault: () => blocked++ };
   handlers.get("will-navigate")(event, "https://example.com/chat");
   handlers.get("will-redirect")(event, "https://login.example.com/oauth");
+  handlers.get("will-redirect")(event, "https://example.com/chat?logged-in=1");
   assert.equal(blocked, 0);
   const outside = "https://outside.example.com/path";
   handlers.get("will-navigate")(event, outside);

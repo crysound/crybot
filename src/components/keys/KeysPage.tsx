@@ -9,7 +9,7 @@ import { LiveProviderSettings } from "../LiveProviderSettings";
 import { VoiceEveryReplySetting } from "../VoiceEveryReplySetting";
 import { BuiltInReplyWait, LmStudioServer, OtherOpenAiCompatServers } from "../OpenAiCompatServers";
 import { OllamaServer } from "../OllamaServer";
-import { KEY_CATALOG, KEY_SECTIONS, keyHidden, keyMatches, savedState, type KeyEntry, type KeyId, type KeySectionId } from "./key-catalog";
+import { KEY_CATALOG, KEY_SECTIONS, keyHidden, keyMatches, savedState, sectionPurposeKey, type KeyEntry, type KeyId, type KeySectionId } from "./key-catalog";
 import { finishKeyFocus, useKeyFocus, type KeyFocusRequest } from "./key-focus";
 import { AnthropicEveryClaudeBot, OpenAiCompatUrl, OpenCodeProviderKeys, VpsConnection } from "./KeyPanels";
 import { KEY_CONTENT, KEY_ROW, KeyRow, MaskedKey, RowHeading, type KeyStatus } from "./KeyRow";
@@ -97,7 +97,7 @@ function KeySection({ id, rows, open, onToggle }: { id: KeySectionId; rows: KeyE
       >
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span id={headId} className="text-[14px] font-medium leading-5 text-ink">{t(section.titleKey)}</span>
-          <span className="text-[13px] leading-[18px] text-ink-secondary">{t(section.purposeKey)}</span>
+          <span className="text-[13px] leading-[18px] text-ink-secondary">{t(sectionPurposeKey(section, state.config))}</span>
         </span>
         {count > 0 && <span className="shrink-0 text-[12px] leading-4 text-ink-secondary">{t("keys.section.connected", { count })}</span>}
         <ChevronRight size={14} aria-hidden="true" className={cn("shrink-0 text-ink-secondary transition-transform motion-reduce:transition-none", open && "rotate-90")} />
@@ -173,7 +173,7 @@ export function KeysPage({ bare = false, exclude = [] }: { bare?: boolean; exclu
             const section = KEY_SECTIONS.find((candidate) => candidate.id === id)!;
             const count = sectionRows.filter((entry) => connected(entry, state.config)).length;
             return (
-              <SettingsFoldRow key={id} id={`keys-${id}`} title={t(section.titleKey)} subtitle={t(section.purposeKey)} leading={<span aria-hidden="true" />}
+              <SettingsFoldRow key={id} id={`keys-${id}`} title={t(section.titleKey)} subtitle={t(sectionPurposeKey(section, state.config))} leading={<span aria-hidden="true" />}
                 value={count > 0 ? t("keys.section.connected", { count }) : undefined} open={open.has(id)} onToggle={() => toggle(id)}>
                 <div data-keys-section={id} className="flex flex-col gap-0.5 py-1.5">
                   {sectionRows.map((entry) => <KeyCatalogRow key={entry.id} entry={entry} visible={open.has(id)} />)}

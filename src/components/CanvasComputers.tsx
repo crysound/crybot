@@ -23,7 +23,12 @@ function computerStateLabel(state: string, updating: boolean): string {
  * Owner control: the list is read-only, and every paid lifecycle action is a deliberate button press, never a render
  * effect.
  */
-export function CanvasComputers({ open, createRequest, drop, sections, onClose, onDropHandled, onChange }: {
+export function CanvasComputers(props: Parameters<typeof BoatComputers>[0]) {
+  const { state } = useStore();
+  return state.config?.providerLock ? null : <BoatComputers {...props} />;
+}
+
+function BoatComputers({ open, createRequest, drop, sections, onClose, onDropHandled, onChange }: {
   open: boolean;
   createRequest: number;
   drop: { id: string; section: string } | null;

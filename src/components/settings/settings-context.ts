@@ -23,6 +23,7 @@ export function useSettingsContext(): SettingsContext {
   const team = Boolean(state.config?.team);
   const desktop = Boolean(cry);
   return {
+    providerLock: state.config?.providerLock === true,
     desktop,
     here: pageIsThisComputer(),
     home: pageIsThisComputer() || Boolean(cry?.home),
