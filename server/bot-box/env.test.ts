@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { BOX_ENV_NAMES, BOX_ENV_NEVER, BOX_ENV_CRYBOT_NAMES, BOX_ENV_CRYBOT_PREFIXES, boxEnvironment, boxEnvironmentAllows, instanceEnvNames } from "./env.ts";
+import { stripControlPlaneEnv } from "../credential-env.ts";
 
 /** Every other `CRYBOT_` name the server's code knows: kept on the server unless explicitly granted to one spawn. A name
  * ending in `_` is a family (`CRYBOT_CLOUD_*`). */
@@ -106,6 +107,23 @@ describe("the box's environment allow-list", () => {
       "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "CRYBOT_COMMS_TOKEN", "CRYBOT_HOOK_URL", "ELECTRON_RUN_AS_NODE",
       "HOME", "HTTPS_PROXY", "LANG", "LC_ALL", "NO_PROXY", "NPM_CONFIG_LOGLEVEL", "OPENAI_API_KEY", "PATH", "TERM", "TZ",
     ]);
+  });
+
+  it("passes a saved provider key while stripping inherited Feishu credentials", () => {
+    const saved = {
+      VENICE_API_KEY: "saved-venice",
+      ANTHROPIC_API_KEY: "saved-anthropic",
+    };
+    const environment: Record<string, string | undefined> = {
+      ...saved,
+      CRYBOT_FEISHU_USER_TOKEN: "inherited-token",
+      LARKSUITE_CLI_USER_ACCESS_TOKEN: "inherited-cli-token",
+      MEEGLE_TOKEN: "inherited-meegle-token",
+    };
+    stripControlPlaneEnv(environment);
+    const allow = new Set(instanceEnvNames(saved, environment));
+    expect(allow).toEqual(new Set(["VENICE_API_KEY", "ANTHROPIC_API_KEY"]));
+    expect(boxEnvironment(environment, new Set(), allow)).toEqual(saved);
   });
 
   it("a denied name loses even against an allowing list or prefix, and the never-list beats everything", () => {
