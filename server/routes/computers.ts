@@ -170,7 +170,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       if (method === "POST" && !computerId) {
         const parsed = teamComputerCreate.safeParse(body);
         if (!parsed.success) return json(res, 400, { error: "Provide requestId (UUID), a name, and acknowledgeCost: true to create a paid cloud computer" });
-        if (!boat.boatConfigured(cfg)) return json(res, 409, { error: "Configure Boat in Settings before creating a cloud computer" });
+        if (!boat.boatOffered(cfg)) return json(res, 409, { error: "Configure Boat in Settings before creating a cloud computer" });
         const computer = teamComputers.create(parsed.data.name, parsed.data.requestId);
         const release = claimTeamComputerLifecycle(computer);
         try {
@@ -211,6 +211,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
     // Read-only; lifecycle changes are revalidated against a fresh provider listing. The path keeps its historical /boxes segment.
     if (method === "GET" && path === "/api/computers/boxes") {
       res.setHeader("cache-control", "private, no-store");
+      if (!boat.boatOffered(cfg)) return json(res, 200, { configured: false, available: false, problem: null, instances: [] });
       const inventory = await boat.listManagedBoats(cfg, managedBoatOwners());
       // A computer that stopped answering is not shown running, whatever the provider still says.
       return json(res, 200, { ...inventory, instances: inventory.instances.map((instance) =>

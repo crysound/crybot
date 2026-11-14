@@ -186,10 +186,11 @@ it.each(["darwin", "win32"])("hides all server choices while keeping reload in a
     expect(locked.find(item => item.label === "服务器")).toBeUndefined();
     const items = locked.flatMap(item => item.submenu ?? []);
     expect(items.some(item => item.type === "radio" || item.id === "organization-sign-in")).toBe(false);
-    for (const label of ["重新加载", "强制重新加载"]) items.find(item => item.label === label).click();
+    const focusedWindow = { id: "settings" };
+    for (const label of ["重新加载", "强制重新加载"]) items.find(item => item.label === label).click({}, focusedWindow);
     expect(onReload).toHaveBeenCalledTimes(2);
-    expect(onReload).toHaveBeenNthCalledWith(1, false);
-    expect(onReload).toHaveBeenNthCalledWith(2, true);
+    expect(onReload).toHaveBeenNthCalledWith(1, false, focusedWindow);
+    expect(onReload).toHaveBeenNthCalledWith(2, true, focusedWindow);
     expect(locked.map(item => item.label)).toContain("编辑");
     expect(locked.map(item => item.label)).toContain("视图");
   } finally {

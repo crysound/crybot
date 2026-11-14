@@ -880,6 +880,7 @@ export async function findBoat(cfg: AppConfig, botId: string) {
 }
 
 export async function readyBoat(cfg: AppConfig, botId: string, budgetMs = 60_000) {
+  assertBoatAllowed();
   cfg = snapshotBoatConfig(cfg);
   const boat = await findBoat(cfg, botId);
   if (!boat) return null;
@@ -889,7 +890,12 @@ export async function readyBoat(cfg: AppConfig, botId: string, budgetMs = 60_000
 
 export const boatAccount = (cfg: AppConfig): ServiceCredential | null => boatCredential(cfg.box?.token);
 
-export const boatConfigured = (cfg: AppConfig) => process.env.CRYBOT_PROVIDER_LOCK !== "1" && Boolean(boatAccount(cfg));
+export const boatConfigured = (cfg: AppConfig) => Boolean(boatAccount(cfg));
+export const boatOffered = (cfg: AppConfig) => process.env.CRYBOT_PROVIDER_LOCK !== "1" && boatConfigured(cfg);
+
+function assertBoatAllowed(): void {
+  if (process.env.CRYBOT_PROVIDER_LOCK === "1") throw Object.assign(new Error("Boat is unavailable while CRYBOT_PROVIDER_LOCK=1"), { status: 403 });
+}
 
 const usesIncludedBoat = (cfg: AppConfig): boolean => boatAccount(cfg)?.included === true;
 
@@ -1055,7 +1061,7 @@ async function finishPriorDeletionBeforeProvision(cfg: AppConfig, botId: string)
 
 export async function boatStatus(cfg: AppConfig, botId: string) {
   cfg = snapshotBoatConfig(cfg);
-  if (!boatConfigured(cfg)) return { configured: false, box: null };
+  if (!boatOffered(cfg)) return { configured: false, box: null };
   const boat = await findBoat(cfg, botId);
   return {
     configured: true,
@@ -1064,6 +1070,7 @@ export async function boatStatus(cfg: AppConfig, botId: string) {
 }
 
 export async function provisionBoat(cfg: AppConfig, botId: string, _botName: string) {
+  assertBoatAllowed();
   cfg = snapshotBoatConfig(cfg);
   if (!boatConfigured(cfg)) {
     throw new Error("Boat is not configured — add its API key in Settings → API keys");
@@ -1135,6 +1142,7 @@ export async function provisionBoat(cfg: AppConfig, botId: string, _botName: str
 }
 
 export async function joinBoat(cfg: AppConfig, botId: string) {
+  assertBoatAllowed();
   cfg = snapshotBoatConfig(cfg);
   const boat = await findBoat(cfg, botId);
   if (!boat) throw new Error("no computer yet — provision it first");
@@ -1146,6 +1154,7 @@ export async function joinBoat(cfg: AppConfig, botId: string) {
 
 /** The only join path allowed while a bot turn is active: no lifecycle or guest-process change. */
 export async function joinReadyBoat(cfg: AppConfig, botId: string) {
+  assertBoatAllowed();
   cfg = snapshotBoatConfig(cfg);
   const boat = await findBoat(cfg, botId);
   if (!boat) throw Object.assign(new Error("no computer yet — provision it first"), { status: 409 });
@@ -1168,6 +1177,7 @@ export async function sleepBoat(cfg: AppConfig, botId: string) {
 }
 
 export async function execOnBoat(cfg: AppConfig, botId: string, command: string) {
+  assertBoatAllowed();
   cfg = snapshotBoatConfig(cfg);
   if (command.length > MAX_REMOTE_COMMAND_LENGTH) {
     throw new RangeError(`command is too long (maximum ${MAX_REMOTE_COMMAND_LENGTH} characters)`);

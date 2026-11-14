@@ -35,3 +35,15 @@ it("keeps an entry that already exists under the stable id", () => {
   store.renameInstances(new Map([[legacy, stable]]));
   expect(store.taskByThread(bot.id, bot.threadId)?.resumeCursors).toEqual({ [stable]: "newer" });
 });
+
+it("can discard renamed cursors without changing the default rename semantics", () => {
+  const store = new Store(() => ({ instanceId: legacy, model: "fixture" }));
+  const bot = store.createBot({}, { seedMessages: false });
+  store.patchBot(bot.id, { resumeCursors: { [legacy]: "foreign-bot-session" } });
+  store.setResumeCursor(bot.id, legacy, "foreign-task-session", bot.threadId);
+  store.renameInstances(new Map([[legacy, stable]]), { discardResumeCursors: true });
+  const reloaded = new Store(() => ({ instanceId: "", model: "" }));
+  expect(reloaded.bot(bot.id)?.resumeCursors).toEqual({});
+  expect(reloaded.taskByThread(bot.id, bot.threadId)?.resumeCursors).toEqual({});
+  expect(reloaded.bot(bot.id)?.modelSelection.instanceId).toBe(stable);
+});
