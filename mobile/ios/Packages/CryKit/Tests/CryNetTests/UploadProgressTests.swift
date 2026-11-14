@@ -2,10 +2,49 @@
 import Foundation
 import Network
 import XCTest
+import CryCore
+import CryNetLogic
 @testable import CryNet
 
 final class UploadProgressTests: XCTestCase {
-    func testURLSessionDeliversBodyProgressToHTTPTaskDelegate() async throws {
+    func testLiveTransportConnectsTaskDelegateToUploadProgress() async throws {
+        let server = try CryServer(webURL: "https://example.com")
+        let store = MemorySessionStore(SessionRecord(server: server, method: .pairing, sessionToken: "cry_sess_fixture"))
+        for explicitProgress in [false, true] {
+            let lock = NSLock()
+            var progress: [Int64] = []
+            let observe: (Int64, Int64) -> Void = { sent, total in
+                XCTAssertEqual(total, 10)
+                lock.withLock { progress.append(sent) }
+            }
+            let transport = LiveTransport(server: server, store: store, onSnapshotRequired: {}, uploadProgress: observe)
+            var uploads = 0
+            transport.performUpload = { session, request, data, delegate in
+                uploads += 1
+                XCTAssertEqual(request.url?.path, "/api/attachments")
+                XCTAssertEqual(data, Data(repeating: 42, count: 10))
+                let delegate = try XCTUnwrap(delegate as? HTTPTaskDelegate)
+                let task = session.uploadTask(with: request, from: data)
+                defer { task.cancel() }
+                delegate.urlSession(session, task: task, didSendBodyData: 4, totalBytesSent: 4, totalBytesExpectedToSend: 10)
+                XCTAssertEqual(lock.withLock { progress }, [0, 4])
+                let body = Data(#"{"path":"/api/files/test","mime":"image/png"}"#.utf8)
+                return (body, HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            }
+            let endpoint = CoreEndpoints.uploadImage(mime: "image/png")
+            let result: UploadResponse
+            if explicitProgress {
+                result = try await transport.upload(Data(repeating: 42, count: 10), to: endpoint, progress: observe)
+            } else {
+                result = try await transport.upload(Data(repeating: 42, count: 10), to: endpoint)
+            }
+            XCTAssertEqual(result.path, "/api/files/test")
+            XCTAssertEqual(uploads, 1)
+            XCTAssertEqual(lock.withLock { progress }, [0, 4, 10])
+        }
+    }
+
+    func testLiveTransportReceivesRealURLSessionBodyProgress() async throws {
         let payload = Data(repeating: 42, count: 256 * 1024)
         let fixture = try UploadProgressFixture(payload: payload)
         defer { fixture.stop() }
@@ -22,26 +61,39 @@ final class UploadProgressTests: XCTestCase {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 5
         configuration.connectionProxyDictionary = [:]
-        let session = URLSession(configuration: configuration)
-        defer { session.invalidateAndCancel() }
         let callback = expectation(description: "URLSession didSendBodyData")
         callback.assertForOverFulfill = false
         let lock = NSLock()
         var progress: [(Int64, Int64)] = []
-        let delegate = HTTPTaskDelegate { sent, total in
+        let server = try CryServer(webURL: "https://example.com")
+        let store = MemorySessionStore(SessionRecord(server: server, method: .pairing, sessionToken: "cry_sess_fixture"))
+        let transport = LiveTransport(server: server, store: store, configuration: configuration, onSnapshotRequired: {}, uploadProgress: { sent, total in
             lock.withLock { progress.append((sent, total)) }
             if sent > 0 { callback.fulfill() }
+        })
+        transport.performUpload = { session, request, data, delegate in
+            XCTAssertTrue(delegate is HTTPTaskDelegate)
+            XCTAssertEqual(data, payload)
+            XCTAssertEqual(request.url?.scheme, "https")
+            XCTAssertEqual(request.url?.path, "/api/files")
+            var localRequest = request
+            localRequest.url = URL(string: "http://127.0.0.1:\(port.rawValue)/upload")!
+            localRequest.setValue(String(data.count), forHTTPHeaderField: "Content-Length")
+            let reply = try await session.upload(for: localRequest, from: data, delegate: delegate)
+            let callbacks = lock.withLock { Array(progress.dropFirst()) }
+            XCTAssertFalse(callbacks.isEmpty)
+            XCTAssertEqual(callbacks.last?.0, Int64(payload.count))
+            XCTAssertEqual(callbacks.last?.1, Int64(payload.count))
+            XCTAssertTrue(callbacks.allSatisfy { $0.0 > 0 && $0.0 <= $0.1 })
+            return reply
         }
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port.rawValue)/upload")!)
-        request.httpMethod = "POST"
-        request.setValue(String(payload.count), forHTTPHeaderField: "Content-Length")
-        let (_, response) = try await session.upload(for: request, from: payload, delegate: delegate)
+        let result = try await transport.upload(payload, to: CoreEndpoints.uploadFile(name: "test.bin", mime: "application/octet-stream"))
         await fulfillment(of: [callback], timeout: 2)
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        XCTAssertEqual(result.path, "/api/files/test")
         let observed = lock.withLock { progress }
+        XCTAssertEqual(observed.first?.0, 0)
         XCTAssertEqual(observed.last?.0, Int64(payload.count))
         XCTAssertEqual(observed.last?.1, Int64(payload.count))
-        XCTAssertTrue(observed.allSatisfy { $0.0 > 0 && $0.0 <= $0.1 })
     }
 }
 
@@ -81,7 +133,8 @@ private final class UploadProgressFixture {
             if let data { bytes.append(data) }
             if let separator = bytes.range(of: Data("\r\n\r\n".utf8)), bytes.count - separator.upperBound >= self.payload.count {
                 XCTAssertEqual(Data(bytes[separator.upperBound...]), self.payload)
-                let response = Data("HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}".utf8)
+                let body = #"{"path":"/api/files/test","mime":"application/octet-stream"}"#
+                let response = Data("HTTP/1.1 200 OK\r\nContent-Length: \(body.utf8.count)\r\nConnection: close\r\n\r\n\(body)".utf8)
                 connection.send(content: response, completion: .contentProcessed { _ in connection.cancel() })
             } else if complete || error != nil {
                 XCTFail("Upload connection ended before receiving the body")

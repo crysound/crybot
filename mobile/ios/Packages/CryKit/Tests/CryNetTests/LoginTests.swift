@@ -143,5 +143,25 @@ final class LoginTests: NetworkTestCase {
         }
         XCTAssertNil(store.read())
     }
+    func testShortPairingCodeDoesNotRedactErrorIdentifiers() async throws {
+        for code in ["code", "serverError.pair.codeWrong", "auth.code.wrong"] {
+            let store = try store()
+            let previous = store.read()
+            NetworkFixture.install { _ in
+                FixtureReply(status: 401, body: "{\"error\":\"Rejected \(code)\",\"code\":\"auth.code.wrong\",\"errorKey\":\"serverError.pair.codeWrong\",\"errorParams\":{\"input\":\"\(code)\"}}")
+            }
+            do {
+                _ = try await PairingLogin(client: client(store)).login(code: code, label: "Phone")
+                XCTFail("Expected API error")
+            } catch {
+                guard case CryNetError.api(let api) = error else { return XCTFail("Wrong error") }
+                XCTAssertEqual(api.code, "auth.code.wrong")
+                XCTAssertEqual(api.errorKey, "serverError.pair.codeWrong")
+                XCTAssertEqual(api.error, "Rejected [redacted]")
+                XCTAssertEqual(api.errorParams?["input"], .string("[redacted]"))
+            }
+            XCTAssertEqual(store.read(), previous)
+        }
+    }
 }
 #endif

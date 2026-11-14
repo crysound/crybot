@@ -128,6 +128,7 @@ final class HandoffTests: NetworkTestCase {
             let client = HTTPClient(server: try server(), store: store, configuration: NetworkFixture.configuration(), now: { self.date })
             let router = CallbackRouter(linkHost: "example.com")
             let ignored = expectation(description: "wrong state ignored")
+            ignored.expectedFulfillmentCount = 5
             let completed = expectation(description: "valid state completed")
             var completions = 0
             let handoff = AppHandoff(client: client, router: router, log: { event in
@@ -141,7 +142,9 @@ final class HandoffTests: NetworkTestCase {
             let privateKey = try key(1)
             _ = try handoff.begin(privateKey: privateKey, state: state)
             NetworkFixture.install { _ in XCTFail("Wrong state contacted server"); return FixtureReply() }
-            XCTAssertTrue(router.handle(URL(string: "\(base)?v=1&state=wrong")!))
+            for query in ["?v=1&state=wrong", "", "?v=1", "?v=1&state=a&state=b", "?state=\(state)"] {
+                XCTAssertTrue(router.handle(URL(string: base + query)!))
+            }
             await fulfillment(of: [ignored], timeout: 2)
             XCTAssertEqual(completions, 0)
             XCTAssertNil(store.read())
@@ -153,6 +156,31 @@ final class HandoffTests: NetworkTestCase {
             XCTAssertEqual(completions, 1)
             XCTAssertEqual(store.read()?.sessionToken, "cry_sess_handoff")
         }
+    }
+    @MainActor func testCallbacksWithoutPendingAttemptAreIgnored() async throws {
+        let store = try store()
+        let previous = store.read()
+        let router = CallbackRouter(linkHost: "example.com")
+        let ignored = expectation(description: "callbacks without pending attempt ignored")
+        ignored.expectedFulfillmentCount = 8
+        var completions = 0
+        let handoff = AppHandoff(client: try client(store), router: router, log: { event in
+            guard case .ignoredHandoffState = event else { return XCTFail("Unexpected log") }
+            ignored.fulfill()
+        }) { _ in completions += 1 }
+        NetworkFixture.install { _ in XCTFail("Unsolicited callback contacted server"); return FixtureReply() }
+        for cancelled in [false, true] {
+            if cancelled { _ = try handoff.begin(); handoff.cancel() }
+            for base in ["crybot://auth", "https://example.com/auth/app-return"] {
+                for query in ["?v=1&state=unsolicited", "?v=99&state=unsolicited"] {
+                    XCTAssertTrue(router.handle(URL(string: base + query)!))
+                }
+            }
+            await Task.yield()
+        }
+        await fulfillment(of: [ignored], timeout: 2)
+        XCTAssertEqual(completions, 0)
+        XCTAssertEqual(store.read(), previous)
     }
     @MainActor func testHandoffRetriesSameServerCASAndRejectsChangedServer() async throws {
         for mutation in ["rotation", "expiry", "server"] {

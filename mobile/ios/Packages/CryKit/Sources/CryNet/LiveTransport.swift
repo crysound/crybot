@@ -9,6 +9,9 @@ public final class LiveTransport: Transport {
     private let uploadProgress: (Int64, Int64) -> Void
     private let clock: () -> TimeInterval
     private let sleep: (TimeInterval) async throws -> Void
+    var performUpload: (URLSession, URLRequest, Data, URLSessionTaskDelegate?) async throws -> (Data, URLResponse) = { session, request, data, delegate in
+        try await session.upload(for: request, from: data, delegate: delegate)
+    }
 
     public init(server: CryServer, store: any SessionStore, configuration: URLSessionConfiguration = .ephemeral,
                 onSnapshotRequired: @escaping () async throws -> Void,
@@ -105,7 +108,7 @@ public final class LiveTransport: Transport {
         let prepared = try client.prepare(endpoint)
         do {
             progress(0, Int64(data.count))
-            let (body, response) = try await client.session.upload(for: prepared.request, from: data, delegate: HTTPTaskDelegate(progress: progress))
+            let (body, response) = try await performUpload(client.session, prepared.request, data, HTTPTaskDelegate(progress: progress))
             try Task.checkCancellation()
             try client.accept(response, body: body, prepared: prepared)
             let value: UploadResponse

@@ -84,6 +84,7 @@ final class HTTPClientTests: NetworkTestCase {
     }
     func testRealRedirectionDelegateRefusesNewDestination() async throws {
         let store = try store()
+        let previous = try XCTUnwrap(store.read())
         var requests = 0
         NetworkFixture.install { request in
             requests += 1
@@ -100,6 +101,15 @@ final class HTTPClientTests: NetworkTestCase {
         }
         XCTAssertFalse(store.read()?.isAuthenticated == true)
         XCTAssertEqual(requests, 1)
+        store.write(previous)
+        do {
+            _ = try await client.send(CoreEndpoints.authSession)
+            XCTFail("Expected redirect expiration through send")
+        } catch {
+            guard case CryNetError.loginExpired = error else { return XCTFail("Wrong send redirect error") }
+        }
+        XCTAssertFalse(store.read()?.isAuthenticated == true)
+        XCTAssertEqual(requests, 2)
     }
     func testJSONForbiddenIsAPIErrorAndSecretsAreRedacted() async throws {
         let store = try store(cf: "cf-secret")

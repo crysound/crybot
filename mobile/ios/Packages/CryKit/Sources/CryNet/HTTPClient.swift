@@ -147,10 +147,9 @@ public final class HTTPClient {
         if let body = prepared.request.httpBody, let json = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] {
             for key in ["code", "token", "attemptId"] { if let value = json[key] as? String { secrets.append(value) } }
         }
-        func scrub(_ value: String?, patterns: Bool = true) -> String? {
+        func scrub(_ value: String?) -> String? {
             guard var value else { return nil }
             for secret in secrets where !secret.isEmpty { value = value.replacingOccurrences(of: secret, with: "[redacted]") }
-            guard patterns else { return value }
             for pattern in ["cry_(?:sess|pair)_[A-Za-z0-9_-]+", "(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{9,}\\.[A-Za-z0-9_-]{12,}\\.[A-Za-z0-9_-]{16,}(?![A-Za-z0-9_-])", "\\b[0-9]{6,8}\\b"] {
                 value = value.replacingOccurrences(of: pattern, with: "[redacted]", options: .regularExpression)
             }
@@ -164,7 +163,11 @@ public final class HTTPClient {
             case .unknown: break
             }
         }
-        return APIError(error: scrub(error.error) ?? "Request refused", code: scrub(error.code, patterns: false), errorKey: scrub(error.errorKey, patterns: false), errorParams: params)
+        func identifier(_ value: String?) -> String? {
+            guard let value else { return nil }
+            return value.range(of: "^[A-Za-z0-9_.]+$", options: .regularExpression) == value.startIndex..<value.endIndex ? value : "[redacted]"
+        }
+        return APIError(error: scrub(error.error) ?? "Request refused", code: identifier(error.code), errorKey: identifier(error.errorKey), errorParams: params)
     }
 }
 #endif

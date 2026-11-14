@@ -87,9 +87,11 @@ public struct HandoffParameters: CustomStringConvertible, CustomDebugStringConve
                                 completion: @escaping (Result<Void, Error>) -> Void) {
         let handler: Handler = { url in
             Task { @MainActor in
+                guard let parameters = try? HandoffParameters(url: url), acceptsState(parameters.state) else {
+                    onIgnoredState()
+                    return
+                }
                 do {
-                    let parameters = try HandoffParameters(url: url)
-                    guard acceptsState(parameters.state) else { onIgnoredState(); return }
                     try await registry.handle(url)
                     completion(.success(()))
                 } catch HandoffError.invalidState { onIgnoredState() }

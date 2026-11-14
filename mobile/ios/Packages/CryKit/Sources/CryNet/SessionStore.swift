@@ -11,12 +11,13 @@ public protocol SessionStore: AnyObject {
 extension SessionStore {
     func storeLogin(_ record: SessionRecord, replacing previous: SessionRecord?) throws {
         var expected = previous
-        while true {
+        for _ in 0..<3 {
             try Task.checkCancellation()
             if try replace(ifMatching: expected, with: record) { return }
             expected = try read()
-            guard expected == nil || expected?.server == record.server else { throw CryNetError.serverChanged }
+            guard expected?.server == previous?.server || expected?.server == record.server else { throw CryNetError.serverChanged }
         }
+        throw CryNetError.storage
     }
 }
 

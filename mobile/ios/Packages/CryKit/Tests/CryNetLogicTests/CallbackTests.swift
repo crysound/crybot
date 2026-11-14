@@ -48,6 +48,7 @@ final class CallbackTests: XCTestCase {
         let router = CallbackRouter()
         let registry = HandoffRegistry()
         let ignored = expectation(description: "ignored callback")
+        ignored.expectedFulfillmentCount = 5
         let completed = expectation(description: "matching callback")
         var handled = 0
         var completions = 0
@@ -57,7 +58,10 @@ final class CallbackTests: XCTestCase {
             if case .failure = result { XCTFail("Unexpected failure") }
             completed.fulfill()
         }
-        XCTAssertTrue(router.handle(URL(string: "crybot://auth?v=99&state=wrong")!))
+        for url in ["crybot://auth?v=99&state=wrong", "crybot://auth", "crybot://auth?v=1",
+                    "crybot://auth?v=1&state=a&state=b", "crybot://auth?state=pending"] {
+            XCTAssertTrue(router.handle(URL(string: url)!))
+        }
         await fulfillment(of: [ignored], timeout: 2)
         XCTAssertEqual(handled, 0)
         XCTAssertEqual(completions, 0)

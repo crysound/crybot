@@ -31,7 +31,7 @@ public struct HandoffAttempt: CustomStringConvertible, CustomDebugStringConverti
             try await self.complete(parameters)
         }
         router.registerHandoff(self.registry, acceptsState: { [weak self] state in
-            guard let pending = self?.pending else { return true }
+            guard let pending = self?.pending else { return false }
             return pending.state == state
         }, onIgnoredState: { log(.ignoredHandoffState) }, completion: completion)
     }
