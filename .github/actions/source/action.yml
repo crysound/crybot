@@ -1,0 +1,59 @@
+name: Locked product source
+description: Checkout and verify the exact product commit; activate its pnpm version.
+inputs:
+  commit:
+    required: true
+    description: Full product SHA
+  version:
+    required: false
+    default: ''
+    description: Expected product version
+outputs:
+  version:
+    description: Product package version
+    value: ${{ steps.version.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - name: Mask private endpoints
+      shell: bash
+      run: |
+        # 内部地址只存在加密密钥里；派生出的主机名也要在公开日志里遮盖
+        for v in "${CRYBOT_SERVER_URL:-}" "${CRYBOT_UPDATE_FEED_URL:-}"; do
+          h=${v#*://}; h=${h%%/*}; h=${h%%:*}
+          if [ -n "$h" ]; then echo "::add-mask::$h"; fi
+        done
+        IFS=', ' read -ra hosts <<< "${CRYBOT_LOGIN_HOSTS:-}"
+        for h in "${hosts[@]}"; do if [ -n "$h" ]; then echo "::add-mask::$h"; fi; done
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      with:
+        repository: crysound/crybot
+        ref: ${{ inputs.commit }}
+        persist-credentials: false
+        path: product
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: '24'
+    - id: version
+      shell: bash
+      working-directory: product
+      env:
+        EXPECTED_COMMIT: ${{ inputs.commit }}
+        EXPECTED_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
+        if ! git rev-parse --verify origin/main >/dev/null 2>&1; then
+          git fetch --no-tags origin main:refs/remotes/origin/main
+        fi
+        git merge-base --is-ancestor "$EXPECTED_COMMIT" origin/main
+        node --input-type=module - <<'JS'
+        import fs from 'node:fs';
+        const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+        if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(pkg.version)) throw new Error('Invalid package version');
+        if (!/^pnpm@/.test(pkg.packageManager)) throw new Error('Expected pinned pnpm packageManager');
+        if (process.env.EXPECTED_VERSION && pkg.version !== process.env.EXPECTED_VERSION) throw new Error('Version mismatch');
+        fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${pkg.version}\n`);
+        JS
+        corepack enable
+        pnpm --version
