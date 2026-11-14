@@ -1,5 +1,6 @@
 // The full server as a Team Cloud: the Admin's signed Team admin read and removal, and the team's default language from
 // the Admin. Disposable home; every request but the test's own is offline.
+import { fixtureInput } from "./testing/fixture-state.ts";
 import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -40,7 +41,7 @@ if (process.argv[2] === "auth") {
   console.log(JSON.stringify({ loggedIn: true, email: "mira@gmail.com" }));
   process.exit(0);
 }
-process.env.FAKE_CLAUDE_TOOL_CALLS_FILE = ${JSON.stringify(join(home, "tool-calls.json"))};
+process.env.FAKE_CLAUDE_TOOL_CALLS_FILE = ${JSON.stringify(fixtureInput(home, "tool-calls.json"))};
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
   writeFileSync(join(dataDir, "config.json"), JSON.stringify({
@@ -142,7 +143,7 @@ it("the signed read says who added a server, which bots use it and how it is doi
   expect(await tracker()).toMatchObject({ addedBy: { email: "admin@acme.test", name: null }, addedAt: expect.any(String), bots: expect.arrayContaining(["Scout"]) });
   expect(await tracker()).not.toHaveProperty("health");
   const turn = async (calls: unknown[], until: (server: Record<string, unknown>) => boolean) => {
-    writeFileSync(join(home, "tool-calls.json"), JSON.stringify(calls));
+    writeFileSync(fixtureInput(home, "tool-calls.json"), JSON.stringify(calls));
     expect((await admin("POST", `/api/bots/${bot.id}/messages`, { text: "Look at the tracker.", threadId: bot.mainThreadId })).status).toBe(202);
     await expect.poll(async () => until(await tracker()), { timeout: 30_000, interval: 200 }).toBe(true);
   };

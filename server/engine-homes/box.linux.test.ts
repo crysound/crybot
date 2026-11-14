@@ -28,6 +28,8 @@ function runInBox(request: Omit<BoxRequest, "command" | "args" | "cwd">, script:
   });
   expect(ran.error, ran.stderr).toBeUndefined();
   expect(ran.status, ran.stderr).toBe(0);
+  expect(ran.stderr).not.toContain("sardine");
+  expect(ran.stderr).not.toContain("lighthouse");
   return ran.stdout;
 }
 

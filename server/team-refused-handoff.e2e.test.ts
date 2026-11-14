@@ -3,9 +3,9 @@
 // that a model would write that call.
 import { randomBytes } from "node:crypto";
 import { rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
+import { fixtureInput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OWNER = { email: "olive@acme.test", role: "owner" as const }, MEMBER = { email: "mara@acme.test", role: "member" as const };
@@ -17,7 +17,7 @@ let fx: CloudSendFixture, team: CloudTeamFixture, owner = "", member = "";
 let rooms: Bot, hours: Bot, books: Bot;
 
 const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
-const script = (calls: unknown[] | null) => { const file = join(team.home, "tool-calls.json"); if (calls) writeFileSync(file, JSON.stringify(calls)); else rmSync(file, { force: true }); };
+const script = (calls: unknown[] | null) => { const file = fixtureInput(team.home, "tool-calls.json"); if (calls) writeFileSync(file, JSON.stringify(calls)); else rmSync(file, { force: true }); };
 const handOff = (to: string, extra: Record<string, unknown> = {}) => ({ name: "coordinate_bots", server: "agents", input: { bot_ids: [to], message: "Rooms 12, Staff hours 86.", ...extra } });
 const make = async (name: string, access: unknown) => {
   const made = await team.as(owner, "POST", "/api/bots", { name });
@@ -43,7 +43,7 @@ const lines = async (token: string, threadId: string) => ((await team.as(token, 
 const refusedLine = (rows: Array<{ text: string }>) => rows.filter((row) => row.text.includes(REFUSED));
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   owner = (await team.pair(OWNER)).token!;
   member = (await team.pair(MEMBER)).token!;

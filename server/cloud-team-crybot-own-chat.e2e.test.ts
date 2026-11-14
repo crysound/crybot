@@ -8,6 +8,7 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
 import { personKey } from "./person-key.ts";
+import { fixtureInput, fixtureLines, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OLIVE = { email: "olive@acme.test", role: "owner" as const };
@@ -24,10 +25,9 @@ type Bot = { id: string; threadId: string; defaultBot?: { person?: string }; tas
 let fx: CloudSendFixture, team: CloudTeamFixture;
 let olive = "", mira = "", ben = "";
 
-const planPath = () => join(team.home, "plan.json");
+const planPath = () => fixtureInput(team.home, "plan.json");
 const dataDir = (...rest: string[]) => join(team.home, ".crybot", ...rest);
-const turns = (): Array<{ planKey?: string }> => existsSync(`${planPath()}.evidence.jsonl`)
-  ? readFileSync(`${planPath()}.evidence.jsonl`, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line)) : [];
+const turns = () => fixtureLines<{ planKey?: string }>(team.home);
 const botsOf = async (token: string, messages = "") => (await team.as(token, "GET", `/api/bots${messages}`)).body.bots as Bot[];
 const ownCryBot = async (token: string) => (await botsOf(token)).find((bot) => bot.defaultBot?.person)!;
 const layer = (bot: Bot, email: string) => dataDir("workspaces", `${bot.id}--member-${personKey({ id: "", email })}`, "MEMORY.md");
@@ -42,7 +42,7 @@ async function everything(token: string, bot: Bot): Promise<string> {
 }
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-6", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-6", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   olive = (await team.pair(OLIVE)).token!;
   mira = (await team.pair(MIRA)).token!;

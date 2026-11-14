@@ -1,8 +1,9 @@
 // Three threads of one bot, each with a turn held open by a gate only the test releases, as a desktop, personal Cloud and Team Cloud server.
+import { fixtureInput, fixtureLines, fixtureOutputs } from "./testing/fixture-state.ts";
 import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes, randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -23,7 +24,7 @@ const TEAM = { id: "team-7f3a", name: "Acme" };
 class Fixture {
   home = mkdtempSync(join(tmpdir(), "cry-parallel-"));
   dataDir = join(this.home, ".crybot");
-  gates = join(this.home, "gates");
+  gates = fixtureInput(this.home, "gates");
   base = "";
   log = "";
   token = "";
@@ -58,21 +59,23 @@ class Fixture {
     const claude = fixtureEnginePath(this.dataDir, "held-claude.mjs");
     writeFileSync(claude, `#!/usr/bin/env node
 import { join } from "node:path";
+import { engineOutput } from ${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fixture-state.ts")).href)};
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
 if (process.argv[2] !== "--version") {
   const run = crypto.randomUUID();
   process.env.FAKE_CLAUDE_MODE = "slow";
   process.env.FAKE_CLAUDE_SLOW_FINISH_GATE = join(${JSON.stringify(this.gates)}, "release-" + run);
-  process.env.FAKE_CLAUDE_DUMP = join(${JSON.stringify(this.gates)}, "claude-" + run + ".json");
+  process.env.FAKE_CLAUDE_DUMP = engineOutput(${JSON.stringify(this.home)}, process.cwd(), "claude-" + run + ".json");
 }
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
     const acp = fixtureEnginePath(this.dataDir, "held-acp.mjs");
     writeFileSync(acp, `#!/usr/bin/env node
+import { engineOutput } from ${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fixture-state.ts")).href)};
 process.env.FAKE_ACP_MODE = "echo-gated";
 process.env.FAKE_ACP_GATE_FILE = ${JSON.stringify(join(this.gates, "release"))};
-process.env.FAKE_ACP_RPC_APPEND_FILE = ${JSON.stringify(join(this.gates, "acp-rpc.jsonl"))};
+process.env.FAKE_ACP_RPC_APPEND_FILE = engineOutput(${JSON.stringify(this.home)}, process.cwd(), "acp-rpc.jsonl");
 process.env.FAKE_ACP_MODELS = "fixture-fast";
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-acp-cli.ts")).href)});
 `, { mode: 0o755 });
@@ -135,7 +138,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-ac
   release() {
     writeFileSync(join(this.gates, "release"), "finish");
     for (const held of this.chatInFlight.splice(0)) held.release();
-    for (const name of this.claudeDumps()) writeFileSync(join(this.gates, `release-${name.slice("claude-".length, -".json".length)}`), "finish");
+    for (const name of this.claudeDumps()) writeFileSync(join(this.gates, `release-${basename(name).slice("claude-".length, -".json".length)}`), "finish");
   }
   private turnDump(threadId: string) {
     const name = this.claudeDumps().find((file) => basename(this.dump(file).cwd) === threadId);
@@ -144,14 +147,14 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-ac
   }
   /** Finishes only this thread's Claude turn. */
   finish(threadId: string) {
-    writeFileSync(join(this.gates, `release-${this.turnDump(threadId).slice("claude-".length, -".json".length)}`), "finish");
+    writeFileSync(join(this.gates, `release-${basename(this.turnDump(threadId)).slice("claude-".length, -".json".length)}`), "finish");
   }
   /** The MCP servers this thread's Claude turn was launched with. */
   servers(threadId: string) { return this.dump(this.turnDump(threadId)).mcpConfig.mcpServers; }
-  dump(file: string) { return JSON.parse(readFileSync(join(this.gates, file), "utf8")); }
+  dump(file: string) { return JSON.parse(readFileSync(file, "utf8")); }
   claudeDumps() {
-    return readdirSync(this.gates).filter((name) => {
-      if (!name.startsWith("claude-") || !name.endsWith(".json")) return false;
+    return fixtureOutputs(this.home, "").flatMap((dir) => readdirSync(dir).map((name) => join(dir, name))).filter((name) => {
+      if (!basename(name).startsWith("claude-") || !name.endsWith(".json")) return false;
       try { this.dump(name); return true; } catch { return false; }
     });
   }
@@ -162,8 +165,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-ac
   }
   claudeTurnsStarted() { return this.claudeDumps().length; }
   acpPrompts() {
-    const file = join(this.gates, "acp-rpc.jsonl");
-    return existsSync(file) ? readFileSync(file, "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line)).filter((row) => row.method === "session/prompt") : [];
+    return fixtureLines<{ method: string }>(this.home, "acp-rpc.jsonl").filter((row) => row.method === "session/prompt");
   }
 }
 
@@ -198,7 +200,9 @@ const rows = async (f: Fixture, threadId: string) => ((await f.api("GET", `/api/
   .map((message) => message.tool?.name).filter((name): name is string => typeof name === "string");
 const internal = async (f: Fixture, path: string, token: string, body: unknown) => {
   const response = await fetch(`${f.base}${path}`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-  return { status: response.status, body: await response.json() as any };
+  const result = { status: response.status, body: await response.json() as any };
+  expect(result.status, JSON.stringify(result.body)).toBe(200);
+  return result;
 };
 
 describe.each(roles)("one bot's threads on a %s server", (role) => {
@@ -233,7 +237,7 @@ describe.each(roles)("one bot's threads on a %s server", (role) => {
 
 /** An agent-browser stand-in answering MCP: no Chrome, no page. */
 function inertBrowser(dir: string) {
-  const browser = join(dir, "agent-browser");
+  const browser = fixtureEnginePath(join(dir, ".crybot"), "agent-browser");
   writeFileSync(browser, [
     "#!/usr/bin/env node",
     'import { createInterface } from "node:readline";',

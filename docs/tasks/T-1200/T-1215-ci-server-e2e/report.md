@@ -178,3 +178,83 @@ T-1207 证据：`git show --format= --name-status 7124ef58` 确实删除 `cloudf
 尚未完成：Team Cloud 夹具的共享 plan/dump/gate 需要适配成员 HOME；self-check share-net、OpenCode 实际凭据转发对照、Bot API 403、memory capture、routine-level 空模型候选及 `:3000` 连接拒绝仍需继续定位/验证。发布 workflow 合同需协调者确定新入口。上述项目不能标记为已通过，也未因可能属于旧托管云覆盖而擅自删除。
 
 按本轮限制，没有运行需监听端口、bubblewrap 或浏览器的 e2e，也没有重跑全量 suite。原 Actions 日志是失败依据；本轮静态修复的端到端结果须等待新的 Actions 运行。
+
+
+## r4 返工记录（2026-11-14）
+
+### 基线核对：清单不能作为“上游通过”的证据
+
+开工核对 `/root/build/t1215/ci-pr12-r3/failed-files.txt` 仍为 28 个文件，已有 7 份分片日志；没有出现额外更新。按要求先处理指定的 9 个文件。
+
+**日志与任务说明中的基线清单有冲突：9 个第一优先文件在上游基线日志里也全部失败，不能写成“上游通过、改名后回归”。** `ci-baseline/job-132202769962.log:92,106` 明确检出 `ci-baseline-upstream` 的 `da73ab0079902f1d40607eb6bed87996e122acdf`，不是 r3。用 Python 读取全部 8 份日志、去 ANSI 后提取所有 `FAIL`，共 66 个失败文件，原 failed-files.txt 只有 46 个，漏了 20 个（包含这 9 个）。部分日志有 NUL，普通文本工具可能停止扫描；本轮未改协调者提供的原始日志或清单。下表给出逐文件可复核位置。表中“已改”均表示代码修复，**不表示整个 e2e 已通过**。
+
+`data-format` 的基线源码在 :32 无条件读取 prepare-release.yml。`git ls-tree da73ab00 -- .github/workflows/` 只有 ci.yml；基线日志也确实为 ENOENT。因此不存在“基线因条件读取而通过”。当前 release.yml 构建锁定提交的既有 package version，不负责版本 bump，也没有调用记录脚本；本轮测试核对这个真实合同，仍由现有 record-data-format 单测验证记录生成逻辑。
+
+### 共同修复和第一优先 9 个文件
+
+新增 `server/testing/fixture-state.ts`：测试写的 plan、reply、tool-call 输入和 release gate 放到 `<fixture HOME>/.crybot/tools/npm/fixture-inputs`，随现有引擎目录只读挂载；引擎写的 dump、room evidence、shell log、ACP RPC 放到它自己的 bot 工作区 `.fixture-output`。测试从宿主汇集这些输出，不把 server HOME、数据目录或其他 bot 的目录开放给引擎。`room-handoff-agent` 可单独指定 evidence 路径，沿用原来按 bot 的 turnIndex/script-key 计数；没有指定时保持原默认路径。
+
+新增测试验证个人 HOME、team/member 引擎 HOME 下的 mount plan：输入/gate 只读、输出可写、其他 bot 及 config.json 不可见；并新增 room evidence 独立存放及连续计数测试。所有状态都在临时 fixture 内，无 live 数据。没有生产代码改动、没有改 CI/阈值、没有删除测试、没有新增 skip。
+
+下表日志分别相对于 `/root/build/t1215/ci-baseline/` 和 `/root/build/t1215/ci-pr12-r3/`；测试行号为对应运行时的源码位置。
+
+| 第一优先文件 | 上游基线首个失败 | r3 首个失败 | 根因与修法 |
+| --- | --- | --- | --- |
+| `server/bot-api-team.e2e.test.ts` | `job-132202769962.log:2604`（`server/bot-api-team.e2e.test.ts:33:26`） | `job-132369227272.log:2799`（`server/bot-api-team.e2e.test.ts:29:35`） | r3 的 HTTP 200 已通过，随后读取宿主 `/tmp/bot-api-team-*.json` 报 ENOENT；box 的 `/tmp` 是私有目录。改为从该 bot 工作区读取 dump，并给首个 HTTP 状态断言补响应体诊断；保留 API 信息来源、权限模式、工具范围断言。 |
+| `server/cloud-team-included-hosting.e2e.test.ts` | `job-132202769962.log:2581`（`server/cloud-team-included-hosting.e2e.test.ts:47:115`） | `job-132369227244.log:2459`（`server/cloud-team-included-hosting.e2e.test.ts:119:29`） | reply.txt 在宿主独立 `/tmp`，引擎看不到指定回复，完成回合却没有发出 Team site URL，列表缺项、删除返回 404。回复移入只读夹具输入目录，原 URL 可见性和 403/404 权限断言不变。 |
+| `server/cloud-team-one-answer.e2e.test.ts` | `job-132202770007.log:6462`（`server/cloud-team-one-answer.e2e.test.ts:94:50`） | `job-132369227382.log:5276`（`server/cloud-team-one-answer.e2e.test.ts:96:66`） | 成员 HOME 隔离后不可读服务器 HOME 的 plan、bolt-go，也无法写宿主可见 evidence。plan/gate 移至只读输入目录，evidence 放在 bot 工作区；仍验证合并同一人的请求及不同人的答案隔离。 |
+| `server/cloud-team-open-reach.e2e.test.ts` | `job-132202769962.log:2669`（`server/cloud-team-open-reach.e2e.test.ts:86:50`） | `job-132369227551.log:2793`（`server/cloud-team-open-reach.e2e.test.ts:87:140`） | 与上一项相同；原 plan/evidence 位于 team.home。迁移输入并汇集各 bot evidence，保持实际 MCP handoff、跨部门路由和私聊拒绝断言。 |
+| `server/cloud-team-people.e2e.test.ts` | `job-132202769962.log:2745`（`server/cloud-team-people.e2e.test.ts:50:50`） | `job-132369227551.log:2874`（`server/cloud-team-people.e2e.test.ts:42:33`） | dump、tool-calls.json、reply.txt 均指向不可见的 team.home。输入移入只读目录，dump 从 Scout 工作区读取，保持 message_person 挂载、离队、上限等原断言。 |
+| `server/data-format.test.ts` | `job-132202770007.log:6481`（`server/data-format.test.ts:32:12`） | `job-132369227382.log:5320`（`server/data-format.test.ts:32:12`） | 测试无条件读取 prepare-release.yml；上游导入基线也没有该文件，并非条件通过。现按协调者指定核对 release.yml：prepare 的提交/版本输出、5 个平台使用同一 source action、source 校验 package.json 版本。保留 released.version 与当前包版本相等及完整 N-1/格式断言；未改 workflow，也未假称现流程调用 record-data-format。 |
+| `server/parallel-threads.e2e.test.ts` | `job-132202769962.log:2760`（`server/parallel-threads.e2e.test.ts:211:76`） | `job-132369227260.log:5538`（`server/parallel-threads.e2e.test.ts:213:76`） | r3 家用 Cloud 的并发数量故障已消失，Team Cloud 仍因 HOME 下 gates/dump/RPC 不可见计数为 0；浏览器替身仍在不可信 HOME，导致 browser route 无 result。gate 移入只读输入目录，Claude dump/ACP RPC 写 bot 工作区并从宿主汇集，保留 UUID 对应释放 gate；agent-browser 移入可信引擎程序目录，internal 调用新增 HTTP 200 和响应体诊断。 |
+| `server/same-name-mentions.e2e.test.ts` | `job-132202769962.log:3059`（`server/same-name-mentions.e2e.test.ts:91:68`） | `job-132369227382.log:5332`（`server/same-name-mentions.e2e.test.ts:91:68`） | room plan、lead-go、evidence 仍在 team.home。与 one-answer 共用迁移，保留被选中的唯一 bot、同名歧义拒绝、mention_ids 和私聊的人名归属断言。 |
+| `server/team-move.e2e.test.ts` | `job-132202770007.log:6660`（`server/team-move.e2e.test.ts:157:120`） | `job-132369227551.log:3018`（`server/team-move.e2e.test.ts:179:105`） | r3 已通过迁入文件/对话的前置检查，卡在迁移后 Team Cloud 回合的 team.home/dump.json。仅迁移目标 team 的合成引擎输出，并读取 Scout 工作区；源 Cloud 和迁移协议保持原样。 |
+
+### 第二优先 19 个文件逐个现状
+
+以下每一项均已核对为**上游基线也失败**，包含改名后的两个 crybot 文件。只改同根因的夹具路径；未处理的 3 项保留原测试和断言。
+
+| 文件 | 上游基线首个失败 | r3 首个失败 | 判断与本轮现状 |
+| --- | --- | --- | --- |
+| `server/bot-box/self-check.linux.test.ts` | `job-132202769892.log:5598`（`server/bot-box/self-check.linux.test.ts:47:87`） | `job-132369227551.log:3157`（`server/bot-box/self-check.linux.test.ts:47:87`） | 未改。share-net 令 isolatedNet=false，探针跳过 host-loopback/外部网络隔离检查且撤去 bridges，预期失败集合与实际观察合同不符；按本轮要求不重设计、不放宽断言。 |
+| `server/cloud-lending.e2e.test.ts` | `job-132202769924.log:3487`（`server/cloud-lending.e2e.test.ts:86:27`） | `job-132369227405.log:3602`（`server/cloud-lending.e2e.test.ts:87:27`） | 未改。agentsFor 等不到能按 agents.env.CRYBOT_BOT_ID 匹配的 dump（调用者 :247，首个 owner turn）。这是个人 Cloud，HOME 本应可见，不能直接套用 Team HOME 解释；需进一步区分回合未启动与工具 gate/环境封装改变匹配结构。保留为未定位。 |
+| `server/cloud-team-admin.e2e.test.ts` | `job-132202769924.log:3589`（`server/cloud-team-admin.e2e.test.ts:89:42`） | `job-132369227260.log:5446`（`server/cloud-team-admin.e2e.test.ts:147:95`） | 同根因已改：独立 CLI 的 tool-calls.json 位于服务器 HOME，迁入只读输入目录，使真实工具调用可更新 tracker health；待 Actions。 |
+| `server/cloud-team-browser.e2e.test.ts` | `job-132202769924.log:3635`（`server/cloud-team-browser.e2e.test.ts:174:50`） | `job-132369227260.log:5470`（`server/cloud-team-browser.e2e.test.ts:118:79`） | 同根因已改：tool-calls.json 不可见，原回合没有执行浏览器工具，stub 日志为空。迁移输入及 dump，保留会话隔离/浏览器调用断言；真实浏览器待 Actions。 |
+| `server/cloud-team-conversation-share.e2e.test.ts` | `job-132202769892.log:5148`（`server/cloud-team-conversation-share.e2e.test.ts:57:50`） | `job-132369227260.log:5415`（`server/cloud-team-conversation-share.e2e.test.ts:49:33`） | 同根因已改：等待 HOME dump 超时，改用发起回合 bot 的工作区 dump；保留分享成员、通知、记忆、撤回权限断言；待 Actions。 |
+| `server/cloud-team-engine-homes.e2e.test.ts` | `job-132202769895.log:3712`（`server/cloud-team-engine-homes.e2e.test.ts:54:50`） | `job-132369227250.log:2249`（`server/cloud-team-engine-homes.e2e.test.ts:56:41`） | 同根因已改：Team dump/tool-calls/shell log 不可见。迁移输入、dump 和 shell 日志；My Cloud 对照仍走原 HOME；引擎实际 HOME、transcript、凭据刷新和离队断言不变；待 Actions。 |
+| `server/cloud-team-per-person.e2e.test.ts` | `job-132202769892.log:5191`（`server/cloud-team-per-person.e2e.test.ts:45:50`） | `job-132369227260.log:5482`（`server/cloud-team-per-person.e2e.test.ts:36:33`） | 同根因已改：Scout HOME dump 不可见；改读工作区 dump，保留每人 unread/SSE/排序独立性；待 Actions。 |
+| `server/cloud-team-preference.e2e.test.ts` | `job-132202769895.log:3934`（`server/cloud-team-preference.e2e.test.ts:80:50`） | `job-132369227382.log:5298`（`server/cloud-team-preference.e2e.test.ts:82:69`） | 同根因已改：plan/evidence 不可见，使用只读 plan 和工作区 evidence；保留 About me 私人层和经 handoff 写入断言；待 Actions。 |
+| `server/cloud-team-private.e2e.test.ts` | `job-132202769944.log:2856`（`server/cloud-team-private.e2e.test.ts:42:50`） | `job-132369227260.log:5429`（`server/cloud-team-private.e2e.test.ts:50:33`） | 同根因已改：HOME dump/tool-calls 不可见；迁移输入与输出，保留所有跨成员权限/搜索/SSE/文件负向断言；待 Actions。 |
+| `server/cloud-team-published-apps.e2e.test.ts` | `job-132202769941.log:2881`（`server/cloud-team-published-apps.e2e.test.ts:49:115`） | `job-132369227250.log:2359`（`server/cloud-team-published-apps.e2e.test.ts:114:29`） | 与 included-hosting 同根因已改：宿主 /tmp reply 不可见，使对话未出现发布 URL。回复移入只读输入，保留列表和删除授权断言；待 Actions。 |
+| `server/cloud-team-setup-request.e2e.test.ts` | `job-132202769918.log:3092`（`server/cloud-team-setup-request.e2e.test.ts:58:106`） | `job-132369227250.log:2471`（`server/cloud-team-setup-request.e2e.test.ts:47:41`） | 同根因已改：HOME dump 不可见；按本次 botId 读取工作区 dump，保留 Set me up 归属和停止权限断言；待 Actions。 |
+| `server/opencode-provider-keys.e2e.test.ts` | `job-132202769941.log:3056`（`server/opencode-provider-keys.e2e.test.ts:139:43`） | `job-132369227551.log:2888`（`server/opencode-provider-keys.e2e.test.ts:139:43`） | 未改。断言期望原始 ANTHROPIC key，实际收到 broker 的 cry_t0_ 令牌；上游为对应 omb_t0_。需要真实 upstream 收到 key 的正向转发证据，不以接收令牌代替原断言。 |
+| `server/outside-work-threads.e2e.test.ts` | `job-132202769895.log:3965`（`server/outside-work-threads.e2e.test.ts:25:148`） | `job-132369227405.log:3704`（`server/outside-work-threads.e2e.test.ts:25:148`） | 与 bot-api-team 同根因已改：dump 位于宿主私有 /tmp。改读 bot 工作区，保留 webhook 派生线程受限和本人对照断言；待 Actions。 |
+| `server/question-cards.e2e.test.ts` | `job-132202769924.log:3891`（`server/question-cards.e2e.test.ts:85:50`） | `job-132369227272.log:3014`（`server/question-cards.e2e.test.ts:100:11`） | 同根因已改：room-plan 与 evidence 不可见，迁移 plan，按 botId 汇集 evidence；保留卡片、Inbox、点击续跑的原断言；待 Actions。 |
+| `server/question-routing.e2e.test.ts` | `job-132202769941.log:3103`（`server/question-routing.e2e.test.ts:67:50`） | `job-132369227551.log:2935`（`server/question-routing.e2e.test.ts:61:33`） | 同根因已改：room-plan 与 evidence 不可见，迁移并按 botId 汇集；保留默认处理、问题卡片和通知路由断言；浏览器分支待 Actions。 |
+| `server/team-protocol.e2e.test.ts` | `job-132202769944.log:3471`（`server/team-protocol.e2e.test.ts:51:54`） | `job-132369227551.log:3041`（`server/team-protocol.e2e.test.ts:52:102`） | 同根因已改：plan、hold.gate、evidence 不可见；迁移并保留每个发言人的身份协议和排队行为断言；待 Actions。 |
+| `server/team-refused-handoff.e2e.test.ts` | `job-132202769941.log:3240`（`server/team-refused-handoff.e2e.test.ts:58:15`） | `job-132369227244.log:2507`（`server/team-refused-handoff.e2e.test.ts:58:15`） | 同根因已改：tool-calls.json 不可见，合成引擎没有执行预定 handoff，routine 状态与预期不同。迁移输入，保留 failed/refused 和 Inbox 断言；待 Actions。 |
+| `server/cloud-team-crybot-own-chat.e2e.test.ts` | `job-132202769918.log:3053`（`server/cloud-team-mausbot-own-chat.e2e.test.ts:66:122`） | `job-132369227382.log:5254`（`server/cloud-team-crybot-own-chat.e2e.test.ts:67:97`） | 同根因已改：plan/evidence 不可见；迁移并保留私人默认 bot/记忆层/权限断言。上游文件名为 cloud-team-mausbot-own-chat；待 Actions。 |
+| `server/cloud-team-crybot-reach.e2e.test.ts` | `job-132202769944.log:3275`（`server/cloud-team-mausbot-reach.e2e.test.ts:54:54`） | `job-132369227272.log:2807`（`server/cloud-team-crybot-reach.e2e.test.ts:56:113`） | 同根因已改：plan/evidence 不可见；迁移并保留名单、list_bots、hand-off 和私人记忆断言。上游文件名为 cloud-team-mausbot-reach；待 Actions。 |
+
+### 审核建议
+
+`server/engine-homes/box.linux.test.ts` 继续要求无 spawn error、exit 0，stdout 保留全部可见性/凭据断言，另外明确断言 stderr 不含 `sardine` 和 `lighthouse`。拒绝访问的 stderr 可以打印调用者自己指定的路径，但不能带出其他成员的秘密内容。
+
+### 验证与边界
+
+所有命令用 `PATH=/opt/node24/bin:$PATH`（Node 24.22.3），重命令串行，Vitest 一律 `--maxWorkers=1 --configLoader runner`。本 checkout 依然缺少 AGENTS.md 指定的 `docs/verification/README.md`；所有已启动的程序仅使用临时隔离 fixture，不宣称完成缺失文档规定的服务验证。
+
+- 完整 `server/data-format.test.ts` 加 fixture-state/fixture-engine 首次执行：13 passed / 4 failed / 1 existing skipped。4 个失败全部在 `freePortBlock()`：`no free port block for offsets 0,1 in 19600..22600`，没有走到 server 启动断言；发布合同已过。日志 `/tmp/t1215-r4/unit-first.log`。
+- `pnpm vitest run server/data-format.test.ts --maxWorkers=1 --configLoader runner --testNamePattern 'the N-1 rule|the data folder'`：11 passed，4 个 server 用例被过滤，另 1 个原有 root 权限 skip；没有把过滤记为整文件通过。日志 `/tmp/t1215-r4/data-format-pure.log`。
+- `pnpm vitest run server/testing/fixture-state.test.ts server/testing/fixture-engine.test.ts scripts/testing/record-data-format.test.ts scripts/testing/index-route-ratchet.test.ts scripts/testing/file-size-ratchet.test.ts server/engine-homes/box.linux.test.ts --maxWorkers=1 --configLoader runner`：5 files / 6 tests passed；engine-homes 的 2 个真实 bubblewrap 用例因本机检测不可用按原逻辑跳过。日志 `/tmp/t1215-r4/pure-final.log`。
+- 真实启动新包装的 synthetic Claude（shell stdin、临时 HOME/workspace，未启动 server）：成功从只读输入目录约定的位置读取 `fixture-paths-work` 回复，输出 assistant + successful result，并在 bot 工作区生成含原 prompt 的 dump；文件 `/tmp/t1215-r4/engine-smoke/`。这里只证明合成 CLI 的输入/输出接线，真实只读 mount 仍需 Linux Actions。
+- 完整 `server/testing/room-handoff-agent.test.ts` 同上述 5 个纯测试一起执行：7 passed / 5 failed，其中 room 文件原 4 个子进程用例及新增 1 个子进程用例失败（空 stdio、exit 0 或 timeout），纯 ownTurnText 通过。最小独立 Node `spawn(node, ['-e', stdin echo])` 复现输入 `fixture-stdio\n`，收到 `{code:0,stdout:'',stderr:''}`；同一 shell 直接给 synthetic CLI stdin 正常。保留这组失败和新增测试，不放宽断言，待 Actions 验证。日志 `/tmp/t1215-r4/unit-final.log`。
+
+最终检查结果见下（代码修复不等于 Actions 已绿）：
+
+- `pnpm typecheck`：最终通过，exit 0（`/tmp/t1215-r4/typecheck-final.log`）。
+- `pnpm lint`：最终全仓通过，exit 0（`/tmp/t1215-r4/lint-final.log`）。
+- `node scripts/check-brand-residue.mjs`：通过，0 forbidden references（`/tmp/t1215-r4/brand-final.log`）。
+- `git diff --check`：通过。
+
+没有提交或推送；开工时已有未跟踪的任务说明 r4.md 未改动。第一优先 9 个文件均已针对当前可定位根因落地修改，第二优先 16 个同根因文件一并修改，剩余 self-check/share-net、cloud-lending、opencode-provider-keys 保留原样并逐项记录。**真实 HTTP/e2e 和 bubblewrap 验收仍未完成，不能据本机纯测试宣称这 9 个文件已经全绿；最终以协调者推送后的 Actions 为准。**

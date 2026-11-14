@@ -5,10 +5,10 @@
 // separately. The engine is the synthetic Claude CLI playing a scripted plan through the real agents tools, so it proves
 // the routing, not a model's judgement.
 import { randomBytes } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { writeFileSync } from "node:fs";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
+import { fixtureInput, fixtureLines, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OLIVE = { email: "olive@acme.test", role: "owner" as const };
@@ -27,11 +27,10 @@ let fx: CloudSendFixture, team: CloudTeamFixture;
 let olive = "", bob = "";
 let scout: Bot, quill: Bot, bolt: Bot, pip: Bot;
 
-const planPath = () => join(team.home, "plan.json");
+const planPath = () => fixtureInput(team.home, "plan.json");
 /** Bolt works on its answer until this file exists. */
-const boltGo = () => join(team.home, "bolt-go");
-const turns = (): Turn[] => existsSync(`${planPath()}.evidence.jsonl`)
-  ? readFileSync(`${planPath()}.evidence.jsonl`, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line) as Turn) : [];
+const boltGo = () => fixtureInput(team.home, "bolt-go");
+const turns = (): Turn[] => fixtureLines<Turn>(team.home);
 const create = async (body: Record<string, unknown>) => {
   const created = await team.as(olive, "POST", "/api/bots", { visibility: "everyone", ...body });
   expect(created.status, JSON.stringify(created.body)).toBe(201);
@@ -56,7 +55,7 @@ const privateChat = async (token: string, bot: Bot, title: string) => {
 };
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-3", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-3", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   olive = (await team.pair(OLIVE)).token!;
   bob = (await team.pair(BOB)).token!;
