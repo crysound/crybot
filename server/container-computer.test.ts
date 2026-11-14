@@ -30,6 +30,7 @@ import {
   containerRunArgs,
   localVmRecreatableOnDemand,
   localVmResumable,
+  localVmWakeAction,
   localVmWorkspaceExists,
   managedImageDockerfile,
   perBotLocalVmTarget,
@@ -1425,6 +1426,21 @@ describe("Auto's Local VM eligibility", () => {
     expect(autoLocalVmAttachable({ ...base, container: "stopped" })).toBe(false);
     expect(autoLocalVmAttachable({ ...base, runtime: null })).toBe(false);
     expect(autoLocalVmAttachable({ ...base, create_supported: false })).toBe(false);
+  });
+
+  it("distinguishes waking a stopped desktop from creating a missing one", () => {
+    const stopped = {
+      ...base,
+      container: "stopped",
+      imageMatches: true,
+      managed: true,
+      network: "loopback",
+      security: "hardened",
+      persistence: "durable",
+      problem: null,
+    } as typeof base;
+    expect(localVmWakeAction(stopped)).toBe("start");
+    expect(localVmWakeAction(base)).toBe("run");
   });
 });
 
