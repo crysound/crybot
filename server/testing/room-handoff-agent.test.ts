@@ -46,8 +46,42 @@ it("reaps the MCP process even if it ignores graceful shutdown", () => withMcp(`
 // Answers every request, as an agents server that has nothing to say does.
 const RESPONDER = `require("node:readline").createInterface({ input: process.stdin }).on("line", line => {
   const request = JSON.parse(line);
+  require("node:fs").appendFileSync(require("node:path").join(process.env.FIXTURE_HOME, "requests.jsonl"), line + "\\n");
   process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id: request.id, result: {} }) + "\\n");
 });`;
+
+const stepCalls = (dir: string): string[] => {
+  const path = join(dir, "requests.jsonl");
+  return existsSync(path) ? readFileSync(path, "utf8").trim().split("\n").map(line => JSON.parse(line))
+    .filter(request => request.method === "tools/call" && request.params.name === "coordinate_bots")
+    .map(request => request.params.arguments.message) : [];
+};
+
+it("sends a step only after its waitForFile exists, including a file already present", () => withMcp(RESPONDER, async (run, dir) => {
+  const ready = join(dir, "ready");
+  writeFileSync(join(dir, "plan.json"), JSON.stringify({ fixture: { steps: [
+    { arguments: { message: "first" } },
+    { waitForFile: ready, arguments: { message: "second" } },
+    { waitForFile: ready, arguments: { message: "third" } },
+  ], reply: "Completed fixture" } }));
+  const result = run().catch((error: unknown) => error);
+  try {
+    await expect.poll(() => stepCalls(dir), { timeout: 10_000 }).toEqual(["first"]);
+  } finally {
+    writeFileSync(ready, "ready");
+    await expect(result).resolves.toBe("Completed fixture");
+  }
+  expect(stepCalls(dir)).toEqual(["first", "second", "third"]);
+}));
+
+it("times out a missing waitForFile without sending the blocked step", () => withMcp(RESPONDER, async (run, dir) => {
+  writeFileSync(join(dir, "plan.json"), JSON.stringify({ fixture: { timeoutMs: 3_000, steps: [
+    { arguments: { message: "first" } },
+    { waitForFile: join(dir, "missing"), arguments: { message: "second" } },
+  ] } }));
+  await expect(run()).rejects.toThrow("Fixture MCP run timed out");
+  expect(stepCalls(dir)).toEqual(["first"]);
+}), 10_000);
 
 it("keeps turn counters in writable evidence without writing beside the input plan", () => withMcp(RESPONDER, async (run, dir) => {
   const evidence = join(dir, "turns.jsonl");

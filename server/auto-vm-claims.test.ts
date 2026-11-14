@@ -129,12 +129,12 @@ describe("startAutoVmClaim", () => {
     expect(onRejected).toHaveBeenCalledExactlyOnceWith("the Local VM died", expect.objectContaining({ message: "the Local VM died" }));
   });
 
-  it("lets a later screen call claim again after a network failure, without failing the turn", async () => {
+  it.each([false, true])("lets a later screen call retry a network failure (Local VM background wake: %s)", async localVm => {
     const table: AutoVmClaimTable = new Map();
     const onRejected = vi.fn();
     const unreachable = Object.assign(new Error("Could not reach Cry Bot Cloud's computer service to list cloud computers"), { transient: true });
     const claim = vi.fn<() => Promise<void>>().mockRejectedValueOnce(unreachable).mockResolvedValueOnce(undefined);
-    table.set("t1", { ...slot(claim), label: "the cloud computer", onRejected });
+    table.set("t1", { ...slot(claim), label: "the cloud computer", onRejected, ...(localVm ? { localVm: true, startsComputer: true as const } : {}) });
     startAutoVmClaim(table, "t1", "gen-1");
     await table.get("t1")!.begin;
     const after = table.get("t1")!;
@@ -148,12 +148,12 @@ describe("startAutoVmClaim", () => {
     expect(claim).toHaveBeenCalledTimes(2);
   });
 
-  it("fails closed once network failures reach the attempt limit, and at once on any other failure", async () => {
+  it.each([false, true])("limits network retries and fails closed (Local VM background wake: %s)", async localVm => {
     const table: AutoVmClaimTable = new Map();
     const onRejected = vi.fn();
     const reset = Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNRESET" } });
     const claim = vi.fn(async () => { throw reset; });
-    table.set("t1", { ...slot(claim), onRejected });
+    table.set("t1", { ...slot(claim), onRejected, ...(localVm ? { localVm: true, startsComputer: true as const } : {}) });
     for (let attempt = 0; attempt < MAX_CLAIM_ATTEMPTS + 2; attempt++) {
       startAutoVmClaim(table, "t1", "gen-1");
       await table.get("t1")!.begin;

@@ -1,3 +1,4 @@
+import { containerComputerMcp } from "./container-computer.ts";
 import { describe, expect, it } from "vitest";
 
 import { customServerGate, gateQueryTools, gateServer, hasOwnResultBudget, mcpStdioServer, resultBudget, serverResultBudget } from "./mcp-gate-config.ts";
@@ -166,4 +167,19 @@ describe("the gate's own query tool", () => {
       .toEqual(["mcp__shop__query_result"]);
     expect(gateQueryTools({ files: privateTrimming, broken: { args: trimming.args, env: {} } })).toEqual(["mcp__files__query_result"]);
   });
+});
+
+
+it("checks the nested tool of a lazy container directory against the turn's selection", () => {
+  const lazy = containerComputerMcp("podman", undefined, undefined, {});
+  const gated = gateServer({ name: "computer", server: lazy, threadId: "fixture-thread", budget: 0, toolScope: { deny: ["mcp:computer:click"] } })!;
+  expect(gated.env.CRYBOT_GATE_DIRECTORY).toBe("1");
+  expect(JSON.parse(gated.env.CRYBOT_GATE_TOOL_SCOPE)).toEqual({ deny: ["mcp:computer:click"] });
+});
+
+
+it("does not let an arbitrary stdio server opt into directory permissions with an environment flag", () => {
+  const gated = gateServer({ name: "computer", server: { ...server, env: { CRYBOT_CONTAINER_LAZY: "1" } },
+    threadId: "fixture-thread", budget: 0, toolScope: { deny: ["mcp:computer:click"] } })!;
+  expect(gated.env).not.toHaveProperty("CRYBOT_GATE_DIRECTORY");
 });

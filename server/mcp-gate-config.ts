@@ -157,7 +157,10 @@ export function gateServer(input: {
   const scoped = parsed.scope !== undefined;
   const remote = remoteMcpSpec(server) !== undefined;
   if (budget <= 0 && !scoped && !apps && !schemaProfile && !limitsTools) return null;
-  const directory = input.directory === true && remote;
+  const local = mcpStdioServer(server);
+  const lazyContainer = name === "computer" && local?.command === process.execPath &&
+    local.args?.[0] === SPAWNED_PROXIES.containerMcp && local.env?.CRYBOT_CONTAINER_LAZY === "1";
+  const directory = (input.directory === true && remote) || lazyContainer;
   const proxyOptions = {
     nodeEnv: input.nodeEnv,
     execPath: input.execPath,

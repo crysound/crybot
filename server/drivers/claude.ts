@@ -39,7 +39,7 @@ import { appMountFor, customServerGate, gateQueryTools, gateServer } from "../mc
 import { canUseMcpServer } from "../../shared/tool-scope.ts";
 import { assertToolScopeSupported } from "../../shared/tool-scope-support.ts";
 import { newEventId, newId } from "../contracts.ts";
-import { askInputSummary, commandSummary, toolDetailPreview } from "../tool-summary.ts";
+import { askInputSummary, commandSummary, computerToolTitle, toolDetailPreview } from "../tool-summary.ts";
 import { classifyError, computeBackoff, interruptibleDelay, mayResendTurn, USAGE_LIMIT } from "./retry.ts";
 import { claudeApiError, claudeApiErrorMessage, claudeLimitError, claudeLimitFacts, claudeLimitRefusal, claudeUsageLimit, claudeVersionTooOld, type ClaudeLimit } from "./claude-limits.ts";
 import { createOrgModelBlocks, modelSwapNotice, withOrgBlocks } from "./claude-model-access.ts";
@@ -1557,7 +1557,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
                   type: "item.started",
                   itemType: "tool",
                   itemId: b.id,
-                  title: b.name,
+                  title: computerToolTitle(b.name, b.input),
                   summary: commandSummary(b.input),
                   input: toolDetailPreview(b.input),
                 });

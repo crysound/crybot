@@ -494,6 +494,7 @@ export async function mountChatTools(integrations: SendTurnInput["integrations"]
   const servers: Array<[string, Server]> = [];
   const observers = new Map<string, AppObserver>();
   const searchable = new Set<string>();
+  if (integrations?.localComputer?.env.CRYBOT_CONTAINER_LAZY === "1") searchable.add("computer");
   const eligible = (server: string) => scope === undefined || canUseMcpServer(scope, server);
   if (computerUse && integrations?.localComputer && eligible("computer")) servers.push(["computer", integrations.localComputer]);
   if (computerUse && integrations?.browser && eligible("browser")) servers.push(["browser", integrations.browser]);

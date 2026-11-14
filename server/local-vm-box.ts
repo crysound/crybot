@@ -22,8 +22,9 @@ export function containerComputerMcp(
   runtime: Runtime,
   control?: { url: string; token: string },
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
+  lazy: Parameters<typeof mountContainerComputerMcp>[3] = false,
 ): ReturnType<typeof mountContainerComputerMcp> {
   const boxed = localVmInBoxMessage(botBox.enabled());
   if (boxed) throw Object.assign(new Error(boxed), { status: 409, code: "bot_box" });
-  return mountContainerComputerMcp(runtime, control, target);
+  return mountContainerComputerMcp(runtime, control, target, lazy);
 }

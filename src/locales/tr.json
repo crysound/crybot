@@ -1,4 +1,10 @@
 {
+  "chat.notice.computerWakeFailed": "Bilgisayar uyandırılamadı ({reason})",
+  "chat.notice.previousComputerWakeFailed": "Önceki tur için bilgisayar uyandırılamadı ({reason})",
+  "chat.notice.wakingComputer": "Bilgisayar uyandırılıyor…",
+  "server.computer.wakeFailed": "Bilgisayar uyandırılamadı ({reason})",
+  "server.computer.previousWakeFailed": "Önceki tur için bilgisayar uyandırılamadı ({reason})",
+  "server.computer.waking": "Bilgisayar uyandırılıyor…",
   "voice.gemini.keyPlaceholder": "Google AI Studio API anahtarınızı yapıştırın",
   "voice.gemini.model": "Gemini konuşma modeli",
   "keys.label.geminiTts": "Gemini konuşma API anahtarı",
