@@ -8,7 +8,7 @@ import { api, ApiError, currentTaskBot, useStore, type Bot, type ConfigStatus } 
 import { setAdvancedMode, useAdvancedMode } from "@/lib/interface-mode";
 import { SIMPLE_ONLY } from "@/lib/simple-only";
 import { ComputerFilesPane } from "./ComputerFilesPane";
-import { effectivePlace, isComputerPlace, personPin, placeLabelKey, placeOffered } from "@/lib/place";
+import { effectivePlace, personPin, placeLabelKey, placeOffered } from "@/lib/place";
 import type { CloudBackend } from "../../shared/wire";
 import { KeyRow } from "./keys/KeyRow"; import { openKeySettings } from "./keys/key-focus";
 import { cn } from "@/lib/cn";
@@ -38,7 +38,8 @@ import { LinuxLocalControl } from "./LinuxLocalControl";
 import { MacLocalControl } from "./MacLocalControl"; import { WindowsLocalControl } from "./WindowsLocalControl";
 import { LocalComputerAutoWarning } from "./LocalComputerAutoWarning";
 import { busyBoatView, instanceSupportsLocalComputer, localComputerDisabledReason, localComputerSelectable, pageOnRemoteServer, persistedComputerSelectionMatches, isReadyBoatState, resolveBoatPanelAction, shouldPollCloudPreview } from "@/lib/local-computer";
-import { moveBetweenTabs, PANEL_TABS, panelTabProps, scrollTabsWithWheel, TAB_PANEL_FOCUS, tabPanelProps, useAndroidTabFallback } from "./computer-panel-tabs";
+import { TAB_PANEL_FOCUS, tabPanelProps, useAndroidTabFallback } from "./computer-panel-tabs";
+import { ComputerPanelTabs } from "./ComputerPanelTabs";
 import { releaseComputerPanelFocus, useComputerPanelEntry } from "@/lib/computer-panel-focus";
 import { PANEL_MAX_WIDTH, PANEL_MIN_WIDTH, useComputerPanelResize } from "./computer-panel-resize";
 import {
@@ -337,7 +338,6 @@ export function ComputerPanel({
   useAndroidTabFallback(bot.id, androidStatus, setPanelView);
   useEffect(() => {
     vmReadinessAttempts.current = 0;
-    lastVmScreenTarget.current = { botId: bot.id, computer: bot.computer, target: null };
   }, [bot.id, bot.computer]);
   if (lastVmScreenTarget.current.botId !== bot.id || lastVmScreenTarget.current.computer !== bot.computer) {
     lastVmScreenTarget.current = { botId: bot.id, computer: bot.computer, target: null };
@@ -360,7 +360,7 @@ export function ComputerPanel({
   useEffect(() => {
     if (panelView !== "computer") return;
     let alive = true;
-    const keepVmWait = bot.computer === "vm" && phase === "vm-waiting" && lastVmScreenTarget.current.botId === bot.id;
+    const keepVmWait = bot.computer === "vm" && phase === "vm-waiting";
     setResolvedComputerSelection(null);
     setTeamComputer(null);
     setPhase(keepVmWait ? "vm-waiting" : "checking");
@@ -450,7 +450,7 @@ export function ComputerPanel({
             setVmStatus((current) => localVmUnassignedStatus(current));
             setError(null);
             setPhase("vm-waiting");
-            retryTimer = window.setTimeout(() => setRetry((n) => n + 1), 15_000);
+            retryTimer = window.setTimeout(() => setRetry((n) => n + 1), localVmPollInterval({ screen: null }));
             return;
           }
           setError(e.message);
@@ -644,7 +644,7 @@ export function ComputerPanel({
   }, [bot.id, dispatch, threadPath, liveTarget]);
   const takeover = useComputerTakeover({
     botId: bot.id,
-    session: localVmTakeoverSession(viewerConnectionKey, panelView, bot.computer === "vm" && lastVmScreenTarget.current.botId === bot.id ? lastVmScreenTarget.current.target : null),
+    session: localVmTakeoverSession(viewerConnectionKey, panelView, bot.computer === "vm" ? lastVmScreenTarget.current.target : null),
     held: control.held,
     request: requestControl,
     viewerClose: bot.computer === "cloud" && cloudBackend === "vps" ? threadPath("computer/viewer-close") : null,
@@ -1143,7 +1143,10 @@ export function ComputerPanel({
     dispatch({ type: "updateTask", botId: profileBot.id, threadId: profileBot.threadId, patch: { surface: null } });
   };
   const heldPin = livePin && profileBot.computer !== "off" && livePin !== profileBot.computer ? livePin : undefined;
-  const chooseTab = (view: ComputerPanelView) => { if (view === "browser") setError(null); selectPanelView(view); };
+  const chooseTab = (view: ComputerPanelView) => {
+    if (view === "browser") setError(null);
+    selectPanelView(view);
+  };
 
   const emptyState = localVmEmptyStateText({
     cloudBackend,
@@ -1199,20 +1202,13 @@ export function ComputerPanel({
               <Settings size={18} />
             </button>
           )}
-          <div className="mx-9 flex min-w-0 touch-pan-x gap-0.5 overflow-x-auto whitespace-nowrap rounded-full bg-inset p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-tour="computer-tabs" data-testid="computer-tabs" role="tablist" aria-label={t("computer.tabsAria")} onWheel={scrollTabsWithWheel} onKeyDown={(event) => moveBetweenTabs(event, panelTabs, chooseTab)}>
-            {panelTabs.map((view) => {
-              const { Icon, label, tour } = PANEL_TABS[view];
-              const live = !placeLive ? undefined
-                : view === "computer" && isComputerPlace(livePlace) ? "computer-tab-live"
-                : view === "browser" && livePlace === "browser" ? "browser-tab-live" : undefined;
-              return (
-                <button key={view} type="button" data-tour={tour} {...panelTabProps(view, view === panelView)} title={t(label)} onClick={() => chooseTab(view)} className={cn("flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[13px] transition-colors @max-[28rem]/paneltabs:[&>svg]:hidden @max-[22rem]/paneltabs:px-2", view === panelView ? "bg-raised text-ink shadow-sm" : "text-ink-secondary hover:text-ink")}>
-                  <Icon size={13} /> {t(label)}
-                  {live && <span className="size-1.5 animate-pulse rounded-full bg-success" role="img" aria-label={t("place.live")} data-testid={live} />}
-                </button>
-              );
-            })}
-          </div>
+          <ComputerPanelTabs
+            tabs={panelTabs}
+            selected={panelView}
+            livePlace={livePlace}
+            busy={placeLive}
+            onSelect={chooseTab}
+          />
           <button
             data-computer-panel-close
             onClick={() => {
@@ -1293,7 +1289,7 @@ export function ComputerPanel({
           {liveHere && liveDesktopTarget ? (
             <Suspense fallback={<Loader2 size={18} className="animate-spin text-ink-secondary" />}>
               <LiveDesktop
-                target={liveDesktopTarget!} threadId={bot.threadId} name={bot.name} poster={frameSrc}
+                target={liveDesktopTarget} threadId={bot.threadId} name={bot.name} poster={frameSrc}
                 expanded={takeover.expanded} onExpandedChange={takeover.setExpanded}
                 onHandBack={() => void handBack()} handingBack={takeover.handingBack}
                 onUnreachable={() => { takeover.leave(); setError(new LocalizedPanelError("computer.err.openDesktop")); }}

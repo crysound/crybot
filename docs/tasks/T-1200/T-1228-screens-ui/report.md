@@ -2,9 +2,7 @@
 
 日期：2026-11-14。任务：T-1228 多屏云电脑，子任务 D，第一批。
 
-状态：前端实现和本地组件验证已完成；整体验收尚未完成。两张真实截图、全量中继／服务 E2E、Actions 仍未完成。未提交 git，未推送，未开 PR。
-
-更正：上面关于第 1 轮未提交、`.git` 只读以及工作树显示 `master` 的记录属于当时环境；第 1、2 轮改动现已提交，本轮仅保留第 3 轮工作树改动。
+第 1 轮状态（当时记录）：前端实现和本地组件验证已完成；整体验收尚未完成。两张真实截图、全量中继／服务 E2E、Actions 仍未完成。未提交 git，未推送，未开 PR。
 
 ## 实现
 
@@ -120,6 +118,8 @@ node docs/tasks/T-1200/T-1228-screens-ui/capture.mjs
 
 ## 第 3 轮返工（2026-11-14）
 
+提交状态更正（第 4 轮补记）：第 1 轮关于“未提交 git、`.git` 只读、工作树显示 `master`”的记录仅描述当时环境。第 1～3 轮改动已包含在第 4 轮起始分支基线中；本次新增的未提交工作树改动属于第 4 轮。
+
 ### 实现
 
 - `ComputerPanel` 的接管会话键只在当前 bot 收到明确的 `screen.viewerTarget` 时追加屏目标；VPS、单屏和独占模式沿用原会话键。屏目标 ref 按 bot 和电脑模式清理，`liveTarget` 不再用旧 ref 兜底，VM 在未分配、状态未确认或切 bot 时返回空目标。VPS 的状态重拉保留接管画面和 viewer-close 路径，不发送 release。
@@ -145,3 +145,50 @@ node docs/tasks/T-1200/T-1228-screens-ui/capture.mjs
 | `pnpm lint` | 仅剩基线告警：`scripts/public-scan/scan.mjs:297`、`server/lazy-container-mcp.ts:122` |
 
 本轮未修改 `server/`、`desktop-connection.ts` 正则、`IMAGE_LAYER_VERSION` 或原生手机端。沙箱禁止监听端口，浏览器截图和完整服务 E2E 仍以 Actions 为准。
+
+## 第 4 轮返工（2026-11-14）
+
+### 修复与依据
+
+- 先复现 `ComputerPanel.simple.test.ts` 的原始失败：43 项中 5 项失败，均在 `browserSwitch(rendered).props` 处读取到 `undefined`。原因是 `ComputerBrowserSwitch` 已成为独立子组件，测试的 `nodes()` 只遍历元素的 `props.children`，没有执行该子组件。真实 SSR HTML 仍包含浏览器关闭说明和 `aria-label="Let Scout use a browser"`；不是 tab 格式或产品开关渲染回退。
+- 测试现在展开真实的 `ComputerBrowserSwitch` 再按原 aria-label 查找开关，并增加完整 SSR HTML 中该 aria-label 的断言。原有安装级 `PATCH /api/config`、bot 级开关、禁用状态、启用后 BrowserPanel 以及高级模式断言全部保留；没有修改浏览器开关的产品实现、标签或点击行为。
+- 抽出同目录 `ComputerPanelTabs.tsx`，保留原 tab 顺序、样式、状态指示、滚轮和键盘行为；`chooseTab` 与按钮属性恢复多行格式。浅层测试同步展开 tab 子组件，原有布局断言保留，另跑真实 DOM tab 回归。`ComputerPanel.tsx` 为 1757 行，上限 1782，余量 25 行；`LocalComputerSection.tsx` 为 1358 行，上限 1437。没有调整行数上限。
+- 409 分支改为调用 `localVmPollInterval({ screen: null })`。新增真实组件＋模拟 API 的假定时器用例：初始排队第 2 位，2 秒轮询收到 409；原 `role=status` 节点保持挂载，文案精确变为 `vm.screens.unassignedBot`，旧队列位置消失；409 后 14.9 秒及 14.999 秒均不发新请求，15 秒时才请求，下一请求挂起期间提示仍为同一节点。
+- 新增切 bot 组件回归：先接管 Scout 的 `local/shared-s2`，让 Rover 的状态请求挂起，再在同一组件实例切换 bot；记录首次接管 hook 调用和所有 LiveDesktop 渲染，断言首帧会话键没有旧屏后缀、没有旧屏画面或接管按钮。没有用按 bot 加 key 重挂载来掩盖组件的首次渲染问题。
+- 屏目标 ref 仅保留渲染时按 bot／电脑模式重置，删除 effect 中的重复重置；就绪重试计数的 effect 保留。删除 `keepVmWait` 与会话键中恒真的 botId 比较；应用入口已有按 bot 的组件 key，等待状态随 bot 重挂载隔离。`liveTarget` 仍由当前状态归属校验保护，ref 只稳定会话键。去掉 `liveDesktopTarget` 多余非空断言。
+- 原报告顶部的更正已移入第 3 轮，明确前三轮内容属于本轮起始基线，本次未提交的是第 4 轮改动。
+
+### 第 4 轮验证
+
+开工已运行 `crybot-link-deps`；未使用 systemd，一次只运行一个测试文件。测试使用独立 happy-dom／模拟 API 夹具，没有访问用户在线应用或真实数据。本轮未遇到 `node:sqlite` 打包错误。
+
+`pnpm exec vitest run src/components/ComputerPanel.simple.test.ts` 最终输出（设置 `NODE_OPTIONS=--max-old-space-size=4096`）：
+
+```text
+ Test Files  1 passed (1)
+      Tests  43 passed (43)
+   Start at  18:38:01
+   Duration  3.21s (transform 2.11s, setup 797ms, import 1.95s, tests 300ms, environment 0ms)
+```
+
+| 命令 | 结果 |
+| --- | --- |
+| `pnpm exec vitest run src/components/ComputerPanel.simple.test.ts` | 43 项通过，含原先失败的全部 5 项 |
+| `pnpm exec vitest run src/components/ComputerPanel.takeover.test.ts` | 29 项通过，含新增 409 定时与切 bot 首帧回归 |
+| `pnpm exec vitest run src/components/remote-desktop-panel.open.test.ts` | 9 项通过 |
+| `pnpm exec vitest run src/components/LocalVmScreens.test.tsx` | 12 项通过 |
+| `pnpm exec vitest run src/components/LocalComputerSection.test.ts` | 52 项通过 |
+| `pnpm exec vitest run src/lib/local-vm-screen-state.test.ts` | 5 项通过 |
+| `pnpm exec vitest run src/components/ComputerPanel.tabs.test.ts` | 11 项通过 |
+| `pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts` | 1 项通过，上限未改 |
+| `pnpm exec tsc -b` | 通过 |
+| `pnpm exec tsc -p tsconfig.server.json` | 通过 |
+| `pnpm exec oxlint --deny-warnings src/components/ComputerPanel.tsx src/components/ComputerPanelTabs.tsx src/components/ComputerPanel.simple.test.ts src/components/ComputerPanel.takeover.test.ts` | 通过 |
+| `pnpm i18n:check` | 通过，16 种语言目录有效 |
+| `pnpm check:brand` | 通过，0 个禁止引用 |
+| `pnpm lint` | 未通过，仅原有两条基线告警：`scripts/public-scan/scan.mjs:297`、`server/lazy-container-mcp.ts:122` |
+| `git diff --check` | 通过 |
+
+共逐文件通过 8 个测试文件、162 项测试，其中本轮指定的 6 个文件共 150 项通过。没有提交、推送或运行 Actions；本分支相对 main 的完整 vitest 分片结果须由协调者推分支后确认，不能用本地定向检查代替。
+
+`docs/verification/README.md` 在当前工作树仍不存在。沙箱禁止监听端口，本轮未运行服务 E2E；真实连接、截图及 Actions 验收继续以协调者外部隔离环境／Actions 为准。本轮没有修改 `server/`、观看目标正则、`IMAGE_LAYER_VERSION` 或原生手机端代码。
