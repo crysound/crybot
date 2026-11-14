@@ -1764,6 +1764,7 @@
   "computer.chooseCloudOpen": "खोलने के लिए क्लाउड डेस्कटॉप चुनें",
   "computer.chooseCloudManage": "प्रबंधित करने के लिए क्लाउड डेस्कटॉप चुनें",
   "computer.createVm": "{name} का निजी डेस्कटॉप बनाएँ",
+  "computer.wakeVm": "Wake the desktop",
   "computer.replaceVm": "{name} का निजी डेस्कटॉप बदलें",
   "computer.openVmSetup": "निजी डेस्कटॉप सेटअप खोलें",
   "computer.openVpsSettings": "VPS सेटिंग्स खोलें",
@@ -3603,5 +3604,6 @@
   "computer.recovery.replaceTitle": "यह क्लाउड कंप्यूटर हटाकर बॉट को नया दें। जो फ़ाइलें सिर्फ़ इस पर हैं, वे खो जाती हैं।",
   "settings.profile.nameFromLogin": "आपके लॉगिन खाते से",
   "botOverview.preference.cloud.locked": "कॉन्फ़िगर किया गया सर्वर",
-  "keys.section.computers.purpose.locked": "आपका अपना सर्वर और वेबसाइटों के लॉगिन।"
+  "keys.section.computers.purpose.locked": "आपका अपना सर्वर और वेबसाइटों के लॉगिन।",
+  "vm.setup.step4Wake": "Wake the private desktop"
 }

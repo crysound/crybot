@@ -50,6 +50,7 @@ interface Status {
   viewer_url: string;
   idle_timeout_ms: number;
   stop_reason?: "idle" | null;
+  resumable?: boolean;
   mode: "shared" | "per-bot" | "pool";
   max_instances: number;
   commands: {
@@ -624,6 +625,18 @@ function Step({ n, title, done, children }: { n: number; title: string; done: bo
       </div>
     </div>
   );
+}
+
+export function localVmSetupStep4Title({
+  mode,
+  container,
+  resumable,
+  needsRecreate,
+}: Pick<Status, "mode" | "container" | "resumable"> & { needsRecreate: boolean }): LocaleKey {
+  if (mode === "per-bot") return "vm.setup.step4PerBot";
+  if (needsRecreate) return "vm.setup.step4Recreate";
+  if (container === "stopped" && resumable) return "vm.setup.step4Wake";
+  return "vm.setup.step4";
 }
 
 function ActionButton({
@@ -1327,13 +1340,12 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
 
           <Step
             n={4}
-            title={
-              perBot
-                ? t("vm.setup.step4PerBot")
-                : needsRecreate
-                  ? t("vm.setup.step4Recreate")
-                  : t("vm.setup.step4")
-            }
+            title={t(localVmSetupStep4Title({
+              mode: status?.mode ?? "shared",
+              container: status?.container ?? "missing",
+              resumable: status?.resumable === true,
+              needsRecreate,
+            }))}
             done={!perBot && ready}
           >
             {perBot ? (

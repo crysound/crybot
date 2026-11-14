@@ -50,7 +50,7 @@ describe("which computer select_computer picks", () => {
   });
 
   it("on Auto starts a stopped private desktop before waking or creating a cloud computer", () => {
-    // A stopped or recreatable private desktop reads as canCreate; a sleeping cloud computer as canStart.
+    // A recreatable private desktop reads as canCreate; a stopped one and a sleeping cloud computer canStart.
     expect(pickComputer([option("cloud", "asleep"), option("vm", "missing")], "auto", "off", false).option?.surface).toBe("vm");
     expect(pickComputer([option("cloud", "asleep"), option("vm", "off")], "auto", "off", false).option?.surface).toBe("cloud");
   });

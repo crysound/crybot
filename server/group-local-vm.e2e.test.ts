@@ -628,7 +628,7 @@ describe("Group Local VM ownership on the real isolated server", () => {
       // Works on Browser with the browser off: chosen, but not to be had, so Auto picks.
       expect(listed.chosen).toBe("browser");
       expect(offered).toContainEqual(expect.objectContaining({ surface: "cloud", ready: false, canStart: true }));
-      expect(offered).toContainEqual(expect.objectContaining({ surface: "vm", ready: false, available: true }));
+      expect(offered).toContainEqual(expect.objectContaining({ surface: "vm", ready: false, available: true, canStart: true, canCreate: false }));
       expect(await (await call("POST", { surface: "auto" })).json()).toMatchObject({ status: "pending", surface: "vm" });
     } finally {
       writeFileSync(finishFile, "finish");

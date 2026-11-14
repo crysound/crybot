@@ -1853,6 +1853,7 @@
   "computer.chooseCloudOpen": "Wähl Cloud-Desktop zum Öffnen",
   "computer.chooseCloudManage": "Wähl Cloud-Desktop zum Verwalten",
   "computer.createVm": "Privaten Desktop von {name} anlegen",
+  "computer.wakeVm": "Wake the desktop",
   "computer.replaceVm": "Privaten Desktop von {name} ersetzen",
   "computer.openVmSetup": "Einrichtung des privaten Desktops öffnen",
   "computer.openVpsSettings": "VPS-Einstellungen öffnen",
@@ -3920,5 +3921,6 @@
   "computer.recovery.replaceTitle": "Diesen Cloud-Computer löschen und dem Bot einen neuen geben. Dateien, die nur darauf liegen, gehen verloren.",
   "settings.profile.nameFromLogin": "Aus deinem Anmeldekonto",
   "botOverview.preference.cloud.locked": "ein eingerichteter Server",
-  "keys.section.computers.purpose.locked": "Dein eigener Server und Anmeldungen auf Websites."
+  "keys.section.computers.purpose.locked": "Dein eigener Server und Anmeldungen auf Websites.",
+  "vm.setup.step4Wake": "Wake the private desktop"
 }
