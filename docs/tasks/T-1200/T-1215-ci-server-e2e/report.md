@@ -345,3 +345,29 @@ Vitest 命令均使用 PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-s
 - git diff --check：通过。
 
 没有提交、安装依赖、运行完整 pnpm test，也没有改 CI/构建文件。docs/verification/README.md 在当前 checkout 中不存在，因此无法执行其中规定的额外验证流程。
+
+## 第 9 轮（2026-11-14）
+
+### 原因判断与修改
+
+`server/card-answerers.e2e.test.ts` 的管理员回答卡片用例仍把 `answeredBy.name` 写成了 `BOSS`（`boss@example.test`）。这是测试预先签发的 Access/邮箱会话，没有 `displayName` 或团队成员名；按 T-1217 的回退顺序，email 前缀应显示为 `Boss`。`server/person-name.ts` 的 `personDisplayName()` 明确在无 displayName/团队名时调用 `nameFromEmail()`，同文件的 `person-name.test.ts` 也覆盖了 `alex.lee@example.test` → `Alex Lee`，因此这是过时断言而非代码 bug。已将该断言改为具体值 `"Boss"`，保留 `kind` 和 `person` 的强断言。
+
+### 搜索结果
+
+在 `server/` 和 `src/` 的测试中搜索了 `BOSS`、`ADA`、`BOB`、`answeredBy`、`sender.name`、reaction `name` 及带 `@` 的 `name` 字段。除上述真实 server 响应外，以下可疑字符串没有改动，原因是它们不经过 T-1217 的会话人名解析：
+
+- `server/chat-followups.test.ts`：直接构造 durable follow-up 的 `sender.name`，测试重启后保留队列元数据；无会话或 resolver，属于历史/存储值传递。
+- `server/routes/reactions.test.ts`、`server/reactions.test.ts`：`reactorFor`/`react` 依赖由测试直接注入 email 字符串，测试的是路由转发和 reaction 元数据保存，不是 Access 会话姓名生成。
+- `src/components/Reactions.shared.test.ts`、`src/components/Reactions.test.ts`：组件只渲染 wire reaction 已提供的 `name`，测试夹具未连接服务端会话，改名会改变组件的通用输入合同。
+- `server/host/run-owner.test.ts`、`src/components/SharedQueueLine.test.ts`：专门测试无姓名时把 email 前缀格式化为 `Dev`/`Mary Ann Lee`，与 T-1217 的 email 前缀回退一致。
+- `server/live-call-controller.test.ts`：email 形式的 `sender.name` 只是合成输入，断言的是通话是否转发 typed line，没有人名显示断言。
+- `server/cloud-team-routines.e2e.test.ts`、`server/host/team-member-left.test.ts`：审计事件中的 person target 使用 canonical email 作为标识，不是消息、卡片或 reaction 的显示姓名。
+
+### 验证
+
+- `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm exec vitest run server/card-answerers.e2e.test.ts --maxWorkers=1`：未能启动；Vite 尝试写入 `node_modules/.vite-temp` 时因沙箱 `EROFS` 失败。按要求未用同一测试反复重试。
+- `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm typecheck`：通过。
+- `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm lint`：通过。
+- `git diff --check`：通过。
+
+未提交、未安装依赖、未运行完整 `pnpm test`，也未修改 CI 或构建文件。`docs/verification/README.md` 在当前 checkout 中仍不存在；本轮未接触用户 live app 或数据。
