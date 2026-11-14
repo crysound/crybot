@@ -26,7 +26,11 @@ function runInBox(request: Omit<BoxRequest, "command" | "args" | "cwd">, script:
   const ran = spawnSync(detection.tools!.bwrap, [...bwrapArgs(plan), "--", "/bin/sh", "-c", script], {
     env: Object.fromEntries(Object.entries(request.env).filter((entry): entry is [string, string] => entry[1] !== undefined)), encoding: "utf8", timeout: 30_000,
   });
-  return `${ran.stdout}${ran.stderr}`;
+  expect(ran.error, ran.stderr).toBeUndefined();
+  expect(ran.status, ran.stderr).toBe(0);
+  expect(ran.stderr).not.toContain("sardine");
+  expect(ran.stderr).not.toContain("lighthouse");
+  return ran.stdout;
 }
 
 describe.skipIf(!available)(`engine homes in a real box (${available ? "bubblewrap works here" : `skipped: ${detection.reason}`})`, () => {

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { removeTempDirStrict, waitForExit } from "./testing/cleanup.ts";
 import { splitLaunchNote } from "./testing/launch-note.ts";
 import { withoutTurnClock } from "./testing/turn-clock-text.ts";
 import { workerPort } from "./testing/worker-port.ts";
@@ -40,7 +41,8 @@ posixOnly("mid-turn steering e2e", () => {
   const getBot = async (id: string) => (await api("GET", "/api/bots")).body.bots.find((b: any) => b.id === id);
   const askedAt = (botId: string, threadId: string) => (JSON.parse(readFileSync(join(home, ".crybot", "bots.json"), "utf8")) as any[])
     .find((bot) => bot.id === botId).tasks.find((task: any) => task.threadId === threadId).askedAt;
-  const PAIRED = { name: "Safari on Mac", id: expect.stringMatching(/^p_[\w-]{22}$/) };
+  const PAIRED = { name: "Member", id: expect.stringMatching(/^p_[\w-]{22}$/) };
+  const PAIRED_LABEL = "Safari on Mac";
   const asPairedPerson = async () => {
     const opened = await api("POST", "/api/auth/pairing", {});
     expect(opened.status).toBe(200);
@@ -51,7 +53,7 @@ posixOnly("mid-turn steering e2e", () => {
     });
     const session = await paired.json() as any;
     expect(paired.status).toBe(200);
-    expect(session.session.label).toBe(PAIRED.name);
+    expect(session.session.label).toBe(PAIRED_LABEL);
     return async (method: string, path: string, body?: unknown): Promise<{ status: number; body: any }> => {
       const res = await fetch(`${BASE}${path}`, {
         method,
@@ -149,13 +151,8 @@ posixOnly("mid-turn steering e2e", () => {
   }, 30_000);
 
   afterAll(async () => {
-    child?.kill("SIGTERM");
-    await new Promise<void>((resolve) => {
-      if (!child || child.exitCode !== null) return resolve();
-      child.on("close", () => resolve());
-      setTimeout(() => (child.kill("SIGKILL"), resolve()), 5_000).unref?.();
-    });
-    rmSync(home, { recursive: true, force: true });
+    await waitForExit(child, { signal: "SIGTERM" });
+    await removeTempDirStrict(home);
   });
 
   it(

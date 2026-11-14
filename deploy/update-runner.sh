@@ -339,7 +339,7 @@ install_button() {
   place "$SBIN_DIR/$RUNNER" 755 <"$0"
   # Root's own settings at the time of the install, never anything the server writes.
   extra=""
-  for name in CRYBOT_STABLE_URL CRYBOT_NEWEST_URL CRYBOT_UPDATE_WAIT_S CRYBOT_RUNNER_GAP_S CRYBOT_RUNNER_QUIET_S CRYBOT_RUNNER_IDLE_S; do
+  for name in CRYBOT_UPDATE_URL CRYBOT_UPDATE_WAIT_S CRYBOT_RUNNER_GAP_S CRYBOT_RUNNER_QUIET_S CRYBOT_RUNNER_IDLE_S; do
     value=$(printenv "$name" || true)
     case "$value" in '' | *[!A-Za-z0-9:/._-]*) ;; *) extra="$extra $name=$value" ;; esac
   done

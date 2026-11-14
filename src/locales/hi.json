@@ -3594,5 +3594,8 @@
   "computer.recovery.restart": "कंप्यूटर फिर से चालू करें",
   "computer.recovery.restartTitle": "इस क्लाउड कंप्यूटर को बंद करके फिर से चालू करें। खुले प्रोग्राम बंद हो जाते हैं; फ़ाइलें बनी रहती हैं।",
   "computer.recovery.replace": "कंप्यूटर बदलें",
-  "computer.recovery.replaceTitle": "यह क्लाउड कंप्यूटर हटाकर बॉट को नया दें। जो फ़ाइलें सिर्फ़ इस पर हैं, वे खो जाती हैं।"
+  "computer.recovery.replaceTitle": "यह क्लाउड कंप्यूटर हटाकर बॉट को नया दें। जो फ़ाइलें सिर्फ़ इस पर हैं, वे खो जाती हैं।",
+  "settings.profile.nameFromLogin": "आपके लॉगिन खाते से",
+  "botOverview.preference.cloud.locked": "कॉन्फ़िगर किया गया सर्वर",
+  "keys.section.computers.purpose.locked": "आपका अपना सर्वर और वेबसाइटों के लॉगिन।"
 }
