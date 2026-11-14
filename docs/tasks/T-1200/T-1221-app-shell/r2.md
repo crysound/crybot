@@ -1,5 +1,5 @@
-## 运行环境（InstaBox 云沙箱，必读）
-- 开工先在 worktree 根目录运行 `crybot-link-deps`（镜像自带，把预装依赖链进 node_modules），之后 `pnpm exec vitest` / `pnpm exec tsc` 才可用。
+## 运行环境（云沙箱，必读）
+- 开工先在 worktree 根目录运行 依赖准备脚本（镜像自带，把预装依赖链进 node_modules），之后 `pnpm exec vitest` / `pnpm exec tsc` 才可用。
 - 这里**没有** systemd，说明里出现的 `systemd-run --scope ... --` 前缀一律去掉直接运行；本机 8G/4 核，一次只跑一个测试文件。
 - 沙箱禁止监听端口的 e2e 跑不了，就在报告里写明，以 Actions 为准。
 
@@ -53,7 +53,7 @@
    - `WebHostTarget`：`.settings(SettingsPageID?)`、`.botSettings(BotID, BotSettingsSection?)`、`.botPanel(BotID, PanelTarget?)`、`.newBot`、`.automations(id: String?)`、`.files`、`.teamMap`、`.mcp(McpScope)`、`.plugins`、`.webPanel`、`.publishedApps`、`.browser(BotID)`、`.phone(PhoneDeviceID)`、`.computer(BotID)`、`.call(CallRef)`、`.message(ConversationRef, MessageID)`。`SettingsPageID`、`BotSettingsSection`、`PanelTarget` 直接用 CryCore 的。
    - `WebEntryScope`：`.global`、`.bot(BotID)`、`.group(GroupID)`。
    - 这些类型都要 `Hashable`（导航要用），闭包字段除外。
-7. `App/MessageBodyView.swift` 和纯函数 `MessageLayout.plan(for: WireMessage) -> [MessagePart]`：固定顺序为 `MessageLeadingExtras` → 按 `kind` 分发的正文 → `AttachmentsView`（有附件时）→ `MessageTrailingExtras`。正文分发：`text` → `MarkdownView`；`options` → `OptionsCardView`；`connector`、`secret`、`signin` → `ConnectCardView`；`routine.run`、`goal.run`、`burst`、`digest`、`compaction`、`call`、`screen` → `RecordRowView`；`activity` → `ActivityMessageView`；`widget`、`app` → `WebMessageSummary`；`unknown` → 原生的「需要更新 App」提示行，不能崩。`MessagePart` 和 `plan` 放进 `App/Logic/`（只 import Foundation 和 CryCore）。这个文件之后不会再改，所以分发要写全。
+7. `App/MessageBodyView.swift` 和纯函数 `MessageLayout.plan(for: WireMessage) -> [MessagePart]`：固定顺序为 `MessageLeadingExtras` → 按 `kind` 分发的正文 → `AttachmentsView`（有附件时）→ `MessageTrailingExtras`。正文分发：`text` → `MarkdownView`；`options` → `OptionsCardView`；`connector`、`secret`、`signin` → `ConnectCardView`；`routine.run`、`goal.run`、`burst`、`digest`、`compaction`、`call`、`screen` → `RecordRowView`；`activity` → `ActivityMessageView`；`widget`、`app` → `WebMessageSummary`；`unknown` → 原生的「需要更新 App」提示行，不能崩。`MessagePart` 和 `plan` 放进 `App/Logic/`（只 import Foundation 和 CryCore）。这个文件之后不会再改，所以分发要写全。 <!-- public-scan: allow domain -->
 8. 按第 1.4 节入口表建占位：只给「状态」列为**保留、改由 16、新增**的行建，共 19 个目录：Login、Avatar、Sidebar、Chat、Composer、Activity、Markdown、Code、Math、Media、CardsApproval、CardsRequests、CardsConnect、Records、MessageExtras、Group、Inbox、Desktop、WebHost。「删除」的行（ChatFind、Mermaid、Widget、Charts、WebContent、Automations、Files、TeamMap、MCP、BotSettings、BotPanel、BotPanelMore、NewBot、Settings、SettingsAI、SettingsAdmin、ScreenStream、Computer、Call、CallOpenAI、CallFish）**不建目录、不建占位、不在任何地方引用**。每个目录里：
    - `Features/<名字>/<名字>Entry.swift`：入口签名逐字照表，显示名字，并加 `accessibilityIdentifier("<名字>.placeholder")`。`LoginRouter` 是带静态方法 `handle(url: URL) -> Bool` 的类型；`LoginFlowView(model: LoginModel)` 需要的 `LoginModel` 在 Login 目录里放一个最小占位类型（05 会替换）。
    - `<名字>Gallery()` 占位视图。`-CryGallery <名字>` 时根视图直接显示对应的 Gallery。
@@ -91,7 +91,7 @@
 - [ ] `App/Types.swift` 里 `WebHostTarget` 的 16 个 case、`WebEntryScope` 的 3 个 case 与第 1.6 节一致；`MessageLayout.plan` 把 `widget`、`app` 分发给 `WebMessageSummary`。
 - [ ] 用 `-CryFixtureScenario shell-basic` 启动时不联网、不登录，直接进入「对话」页签（由 04 的截图验证；本任务在报告里写明启动参数）。
 - [ ] 单元测试覆盖「要做的事」里列出的逻辑，并在 Actions 上通过。
-- [ ] 如果 43 已合并，`linux-test.sh` 和 `linux-check.sh` 的输出贴进报告（`App/Logic/` 的纯逻辑在 Linux 上能类型检查）；没合并就用「约束」里的写法做语法检查。
+- [ ] 如果 43 已合并，`linux-test.sh` 和 `linux-check.sh` 的输出贴进报告（`App/Logic/` 的纯逻辑在 Linux 上能类型检查）；没合并就用「约束」里的写法做语法检查。 <!-- public-scan: allow domain -->
 - [ ] 协调者推分支、开草稿 PR 后，`Mobile builds`、`iOS Linux`（43 合并后才有）和 `Public scan` 都是绿的；日志里 CryBotTests 实际执行的测试数大于 0。运行链接由协调者补进报告。
 
 ## 约束

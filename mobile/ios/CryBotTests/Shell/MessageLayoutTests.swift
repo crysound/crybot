@@ -11,7 +11,8 @@ final class MessageLayoutTests: XCTestCase {
         let expected: [(String, MessagePart)] = [
             ("text", .markdown), ("options", .optionsCard), ("activity", .activity),
             ("screen", .recordRow), ("connector", .connectCard), ("secret", .connectCard),
-            ("signin", .connectCard), ("routine.run", .recordRow), ("goal.run", .recordRow),
+            ("signin", .connectCard), ("routine.run", .recordRow), // public-scan: allow domain
+            ("goal.run", .recordRow), // public-scan: allow domain
             ("burst", .recordRow), ("digest", .recordRow), ("compaction", .recordRow),
             ("call", .recordRow), ("widget", .webSummary), ("app", .webSummary), ("future", .updateRequired)
         ]
@@ -28,7 +29,8 @@ final class MessageLayoutTests: XCTestCase {
         let expected: [(String, MessagePart)] = [
             ("text", .markdown), ("options", .optionsCard), ("activity", .activity),
             ("screen", .recordRow), ("connector", .connectCard), ("secret", .connectCard),
-            ("signin", .connectCard), ("routine.run", .recordRow), ("goal.run", .recordRow),
+            ("signin", .connectCard), ("routine.run", .recordRow), // public-scan: allow domain
+            ("goal.run", .recordRow), // public-scan: allow domain
             ("burst", .recordRow), ("digest", .recordRow), ("compaction", .recordRow),
             ("call", .recordRow), ("widget", .webSummary), ("app", .webSummary), ("future", .updateRequired)
         ]

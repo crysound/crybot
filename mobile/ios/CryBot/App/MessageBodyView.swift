@@ -27,7 +27,7 @@ struct MessageBodyView: View {
         case .activity: ActivityMessageView(message: message, context: context)
         case .webSummary: WebMessageSummary(message: message, context: context)
         case .updateRequired:
-            Label(ShellText.value("updateRequired"), systemImage: "arrow.down.app")
+            Label(ShellText.value("updateRequired"), systemImage: "arrow.down.app") // public-scan: allow domain
                 .accessibilityIdentifier("Message.updateRequired")
         case .attachments: AttachmentsView(attachments: MessageLayout.attachments(for: message), context: context)
         case .trailingExtras: MessageTrailingExtras(message: message, context: context)

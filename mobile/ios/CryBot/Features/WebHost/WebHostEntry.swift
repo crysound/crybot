@@ -44,7 +44,7 @@ struct WebEntryMenu: View {
                 entry("files", target: .files)
             }
         } label: {
-            Label(ShellText.value("more"), systemImage: "ellipsis.circle")
+            Label(ShellText.value("more"), systemImage: "ellipsis.circle") // public-scan: allow domain
         }
         .accessibilityIdentifier("WebHost.placeholder")
     }
@@ -94,7 +94,7 @@ struct WebHostGallery: View {
                 }
             }
             .tabItem { Text("WebEntryMenu") }
-            .accessibilityIdentifier("WebHostGallery.menu")
+            .accessibilityIdentifier("WebHostGallery.menu") // public-scan: allow domain
             .tag(Scene.menu)
             NavigationStack {
                 VStack(spacing: Theme.Spacing.medium) {
