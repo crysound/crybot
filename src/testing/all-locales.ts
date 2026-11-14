@@ -1,9 +1,12 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { vi } from "vitest";
 
-import { loadLocalePack, localePacks, locales, type LocalePack } from "../locales/index.ts";
+import * as readyLocales from "../locales/index.ts";
+import type { LocalePack } from "../locales/index.ts";
 
+const { loadLocalePack, localePacks, locales } = readyLocales;
 await loadLocalePack("en");
 
 const folder = join(dirname(fileURLToPath(import.meta.url)), "..", "locales");
@@ -16,3 +19,5 @@ const pack = (name: string): LocalePack => {
 for (const [tag, name] of Object.entries(localePacks)) {
   if (!(tag in locales)) Object.defineProperty(locales, tag, { configurable: true, enumerable: true, get: () => pack(name) });
 }
+
+vi.doMock("../locales/index.ts", () => readyLocales);

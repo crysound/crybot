@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { activePackComplete, documentLanguage, intlLocale, resolveLocale, setLocale, t, tFromServer } from "./i18n";
 import { en, localeChoices, locales } from "@/locales";
@@ -193,6 +193,10 @@ describe("tFromServer", () => {
 });
 
 describe("loading a language", () => {
+  beforeEach(() => {
+    vi.doUnmock("@/locales");
+  });
+
   afterEach(() => {
     vi.doUnmock("@/locales");
     vi.resetModules();

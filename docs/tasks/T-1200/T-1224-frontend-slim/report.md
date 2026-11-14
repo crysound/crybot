@@ -326,3 +326,128 @@ git diff --check
 | git diff --check | 退出 0 |
 
 i18n 唯一失败为 `activePackComplete > is true only for a pack other than English that has every English key`，pt-br 返回 false、断言期待 true。通过 `git show origin/main:src/locales/{en,pt-br}.json` 读取两份语言包并比较 key，main 与当前分支都恰好缺少 `botOverview.preference.cloud.locked`、`keys.section.computers.purpose.locked`、`settings.profile.nameFromLogin`，没有新增缺失项。
+
+
+## 第 6 轮
+
+### 根因与改法
+
+本轮基于 `df1c1b8e`，本地 `origin/main` 为 `ea5bc8b8`，没有联网或提交。修改范围只有共享测试引导 `src/testing/all-locales.ts`、必要的冷启动测试引导 `src/lib/i18n.test.ts` 和本报告；保留用户已有的未跟踪 `r6.md`。
+
+`vite.config.ts:69` 已对所有这些测试配置 `src/testing/all-locales.ts`。问题不是遗漏 setup 或独立配置：setup 在每个测试文件开始前 `await loadLocalePack("en")`，只填充当时的 `src/locales/index.ts` 实例。Vitest 4.1.11 的 `vi.resetModules()` 清空模块缓存，却不会重新执行 setup；随后动态 import 得到新的 locales/i18n，英文对象重新为空。同步 `setLocale("en")` 只选择语言，不下载包。
+
+| 文件 | 具体触发路径 |
+| --- | --- |
+| `src/components/ChromeRailToggle.test.ts` | happy-dom 环境；`page()` 第 25 行 reset，然后动态导入 i18n、同步 setLocale，再导入 ChromeRailToggle/ChromeRailRow。新的英文对象为空，两个有 rail 的用例在 `rail.hide` 抛错；无按钮的用例不触发翻译。afterEach 也 reset。 |
+| `src/components/MacLocalControl.test.ts` | 默认 node 环境；文件顶部首次导入使用已预热实例，所以前几个用例正常。第 43 行为了隔离“Not now”会话状态 reset，再导入组件并 SSR，新的 macCuaPermissionMessage/i18n 在 `computer.mac.permission.requiredOne` 抛错。第 53、59 行也重置和导入，但只调用权限打开函数，不渲染文案。DesktopCapabilities mock 没有 mock 语言模块。 |
+| `src/components/PlaceLookCard.test.ts` | happy-dom 环境；`page()` 第 21 行 reset，再导入 i18n、同步 setLocale 和 PlaceLookCard/PlaceTint，分别在 `placeLook.pictureLine`、`rail.thisComputer` 抛错。“older app”分支第 156 行还有一次额外 reset，之后直接导入并渲染 PlaceLookCard。store、权限、图片的 mock 均不是 locales mock。 |
+| `src/components/RoutineScheduleNote.test.ts` | 默认 node 环境；前两个用例只测 schedulePlace，不需要文案。第三个用例第 27 行 reset，mock store、云计划、WelcomeGate、brand 后动态导入组件并 SSR，没有加载语言包，在 `routines.scheduleNote.local` 抛错。brand mock 提供产品名，并不预热 locales。 |
+| `src/lib/skins.default.test.ts` | 默认 node 环境并 stub document/window；`boot()` 第 11 行每次 reset，重新导入皮肤和模式模块。前六个用例只检查状态；后两个在 boot 后动态导入 SkinPicker/ThemeRow/SettingsPrimitives 并 SSR，在 `settings.theme.title` 抛错。 |
+
+修改方式：setup 保留原有真实英文包加载和其他语言 JSON getter，待初始化完成后用 `vi.doMock("../locales/index.ts", () => readyLocales)` 将这个已就绪的真实模块作为共享测试 fixture。Vitest 的模块重置不会清掉 mock 注册，因此新导入的 i18n 仍能获得已加载的英文；i18n 自己的当前语言、切换计数以及组件状态仍可随 reset 重新初始化。没有 mock 翻译函数、替换文案或修改生产代码，真实运行时未就绪的 `t()` 仍抛错。
+
+特殊处理只有 `i18n.test.ts` 的 `loading a language` 分组：增加 beforeEach `vi.doUnmock("@/locales")`，让已有 reset 和动态 import 继续取得真实冷启动模块。保留全部断言，包括英文初始为空、只加载所选语言、补齐缺失翻译、离线回退和英文也离线后重试。`render-page.test.ts` 已通过自身 doMock + importOriginal 取得真实冷模块，覆盖 setup mock，无须修改；`preview-locale` 和 `language-preference` 自己的 i18n mock 同样保留。
+
+修复前按指定命令重现 ChromeRailToggle：2 failed / 1 passed，两个失败均为 `Locale not ready for rail.hide`。修复后同命令为 3 passed。其余四个指定文件均未改动，直接由共享引导修复。
+
+### 全仓同类扫描与逐文件验证
+
+执行的搜索命令（从仓库根目录）：
+
+```sh
+rg -n 'resetModules' --glob '*test*' --glob '*spec*' .
+rg -n -U '(?:vi|vitest)\.(?:doMock|mock|unmock|doUnmock)\(\s*(?:import\()?\s*["\x27][^"\x27]*(?:locales|i18n)' --glob '*test*' --glob '*spec*' .
+rg -l 'resetModules|(?:vi|vitest)\.(?:doMock|mock|unmock|doUnmock)\([^\n]*(?:locales|i18n)' --glob '*test*' --glob '*spec*' src
+```
+
+resetModules 共命中 60 个文件：`src/` 30 个、`server/` 25 个、`electron/` 4 个、`scripts/` 1 个。语言模块 mock/unmock 搜索仅命中 `i18n.test.ts`、`render-page.test.ts`、`language-preference.test.ts`、`preview-locale.test.ts`，全部包含在这 30 个前端文件内，没有额外的 locale JSON mock。
+
+检查各文件 reset 后的 import：除指定五个外，组件/文案相关候选还包括 `ChatMarkdown.katex-load`（重新导入 ChatMarkdown）、`lazy-screens`（重新导入懒加载组件）、`computer-takeover`（重新导入 UI 控制模块）、`admin-scope`（导入 PluginsPanel）、`cloud-intent`（SSR）、`follow-up`、`send-key`（文案函数），以及上述四个语言模块测试。为覆盖间接依赖，30 个前端命中全部逐个执行，连只测偏好或状态的文件也没有省略。
+
+非前端命中不属于本轮的渲染语言包风险：`scripts/verify-engines-ui.test.mjs` 重置后导入的是验证启动脚本，Vite/HTTP/fixture launch 均被 mock，没有导入或渲染浏览器组件；Electron 的 `cua-launch`、`cua-watch-restart`、`cua-windows-isolation`、`updater` 测试重置主进程模块；25 个 server 测试重置服务端模块，不渲染前端组件。这些不纳入本轮逐文件运行范围。
+
+下表每个文件各执行一次独立 Vitest 命令，没有同时运行两个文件；`activity-text`、`SettingsModal.i18n` 是额外的必需回归文件，其余 30 个就是扫描命中集合。ChromeRailToggle 的修复前重现另计。
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run <下表完整文件路径> --maxWorkers=2
+```
+
+| 文件 | 结果 | 退出码 |
+| --- | --- | ---: |
+| `src/components/ChatMarkdown.katex-load.test.ts` | 3 passed (3) | 0 |
+| `src/components/ChromeRailToggle.test.ts` | 3 passed (3) | 0 |
+| `src/components/MacLocalControl.test.ts` | 5 passed (5) | 0 |
+| `src/components/PlaceLookCard.test.ts` | 11 passed (11) | 0 |
+| `src/components/RoutineScheduleNote.test.ts` | 3 passed (3) | 0 |
+| `src/components/SettingsModal.i18n.test.ts` | 3 passed (3) | 0 |
+| `src/components/computer-takeover.test.ts` | 15 passed (15) | 0 |
+| `src/components/lazy-screens.test.ts` | 19 passed (19) | 0 |
+| `src/lib/activity-text.test.ts` | 14 passed (14) | 0 |
+| `src/lib/admin-scope.test.ts` | 4 passed (4) | 0 |
+| `src/lib/call-mode.test.ts` | 6 passed (6) | 0 |
+| `src/lib/cloud-intent.test.ts` | 7 passed (7) | 0 |
+| `src/lib/connected-apps-outages.test.ts` | 5 passed (5) | 0 |
+| `src/lib/desktop.test.ts` | 7 passed (7) | 0 |
+| `src/lib/follow-up.test.ts` | 4 passed (4) | 0 |
+| `src/lib/i18n.test.ts` | 1 failed 、 38 passed (39) | 1 |
+| `src/lib/interface-mode.test.ts` | 7 passed (7) | 0 |
+| `src/lib/language-preference.test.ts` | 13 passed (13) | 0 |
+| `src/lib/mcp-servers.test.ts` | 9 passed (9) | 0 |
+| `src/lib/new-look.test.ts` | 16 passed (16) | 0 |
+| `src/lib/notification-preferences.test.ts` | 13 passed (13) | 0 |
+| `src/lib/render-page.test.ts` | 2 passed (2) | 0 |
+| `src/lib/run-card-preferences.test.ts` | 8 passed (8) | 0 |
+| `src/lib/send-key.test.ts` | 23 passed (23) | 0 |
+| `src/lib/session-ended.test.ts` | 3 passed (3) | 0 |
+| `src/lib/sidebar-preferences.density.test.ts` | 4 passed (4) | 0 |
+| `src/lib/simple-mode-prompt.test.ts` | 2 passed (2) | 0 |
+| `src/lib/skins.default.test.ts` | 8 passed (8) | 0 |
+| `src/lib/thread-preferences.test.ts` | 13 passed (13) | 0 |
+| `src/lib/use-owner-or-admin.test.ts` | 4 passed (4) | 0 |
+| `src/lib/user-bubble-preference.test.ts` | 3 passed (3) | 0 |
+| `src/testing/preview-locale.test.ts` | 3 passed (3) | 0 |
+
+共 32 个文件，31 个文件全绿；唯一失败是已允许的 `i18n > activePackComplete > is true only for a pack other than English that has every English key`，仍为 pt-br 期待 true、实际 false，i18n 其余 38 项通过。读取本地 `origin/main` 与 `HEAD` 的 en/pt-br JSON 比较，均恰好缺少 `botOverview.preference.cloud.locked`、`keys.section.computers.purpose.locked`、`settings.profile.nameFromLogin` 三项，没有新增失败。
+
+### Electron 依赖证据
+
+检查 `electron/updater-handoff.electron.test.mjs` 的直接 import/require，以及它启动的 `electron/fixtures/updater-handoff.cjs`。fixture 动态导入 `updater.mjs` 和 `package-install-command.mjs`；updater 导入的终端、提权、更新协调、原生文案等模块继续递归展开，连 re-export 和条件 require 的 vendored updater 一并检查，共 27 个本地文件。和 `git diff --name-only origin/main...HEAD` 的交集为空，无缺失的相对引用。
+
+完整集合（均在 `electron/` 下）：
+
+```text
+updater-handoff.electron.test.mjs, fixtures/updater-handoff.cjs,
+updater.mjs, package-install-command.mjs, terminal-launch.mjs,
+desktop-build-config.mjs, environments.cjs, elevated-install.mjs,
+single-instance.mjs, update-errors.mjs, updater-coordinator.mjs,
+update-when-quiet.mjs, update-when-quiet-main.mjs, update-words.mjs,
+one-home.mjs, native-text.cjs, move-failure.mjs, move-gaps.mjs,
+cloud-send.mjs, cloud-send-parts.mjs, cloud-send-check.mjs,
+cloud-send-kinds.mjs, cloud-connections.mjs, cloud-logins.mjs,
+cloud-power.mjs, cloud-space.mjs, vendor/electron-updater.cjs
+```
+
+`native-text.cjs` 额外用 fs 直接读取 `src/locales/*.json`；它不 import 前端 `src/locales/index.ts` 或 `src/lib/i18n.ts`。继续检查数据和依赖：
+
+```sh
+git rev-parse origin/main
+git diff --name-only origin/main...HEAD
+rg -n 'import|require\(' electron/updater-handoff.electron.test.mjs electron/fixtures/updater-handoff.cjs electron/updater.mjs
+# 同样逐层检查上述 27 个文件的相对 import、export from、require。
+git diff origin/main...HEAD -- electron 'src/locales/*.json' pnpm-lock.yaml
+git diff origin/main...HEAD -- package.json
+```
+
+倒数第二条无输出；package.json 唯一变化是增加 `check:bundle` script，依赖版本未变。Vitest 父进程的公共 setup 确有本任务改动，但独立启动的 Electron fixture 不会加载它，终端启动链没有进入前端语言模块。CI 片段已经走到 `fixture-complete`，缺少的是 `terminal-really-launched`，并伴随 XIO 错误；这与终端/X11 环境问题相符，不能仅凭片段证明具体抖动机制。按本轮要求不改、不重跑该 Electron 测试，不宣称已修好该环境失败。
+
+### 类型与静态检查
+
+所有 Vitest 结束后执行 `free -m` 和 `ps -eo pid,ppid,rss,args`：可用内存 6,323 MiB，未发现仍在运行的 Vitest、tsc 或 Vite build。按本轮 4 GiB 限额串行执行前端 tsc，Node 堆上限 3,072 MiB；没有并行测试或构建。
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc -b --pretty false
+PATH=/opt/node24/bin:$PATH pnpm exec oxlint --deny-warnings src/testing/all-locales.ts src/lib/i18n.test.ts
+git diff --check
+```
+
+三项均退出 **0**，tsc 无诊断，oxlint 无警告。未修改任何生产源码、断言期望、依赖、server/electron/mobile/.github 文件，也没有 git 提交。测试日志和本轮扫描明细保存在本机 `/tmp/t1224-r6/`，不纳入仓库。
