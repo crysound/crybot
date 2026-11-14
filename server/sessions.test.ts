@@ -24,6 +24,7 @@ import {
   cookieMaxAgeSeconds,
   daysMs,
 } from "./sessions.ts";
+import { lendingPersonKey, OWN_SERVER_LENDER, personKey } from "./person-key.ts";
 import { userError } from "./user-errors.ts";
 
 let dir: string;
@@ -830,6 +831,56 @@ describe("a member's own phone on a Team Cloud", () => {
 });
 
 describe("Access session reuse", () => {
+  it("keeps the session person key and own-server lender through Access profile changes and an unclean restart", () => {
+    const issued = registry.issueAccess("owner", "Browser", { accessEmail: "alex@example.test", displayName: "Alex" });
+    const paired = registry.issue({ label: "Phone", scopes: ["admin", "client"] });
+    const key = personKey({ id: issued.session.id });
+    expect(personKey(issued.session)).toBe(key);
+    registry.refreshAccessDetails(issued.session.id, { accessEmail: "RENAMED@EXAMPLE.TEST", displayName: "张三" });
+    const refreshed = registry.authenticate(issued.token)!;
+    expect(refreshed).toMatchObject({ accessEmail: "renamed@example.test", displayName: "张三" });
+    expect(refreshed.email).toBeUndefined();
+    expect(personKey(refreshed)).toBe(key);
+    expect(lendingPersonKey(refreshed, { admin: null })).toBe(OWN_SERVER_LENDER);
+    expect(lendingPersonKey(paired.session, { admin: null })).toBe(OWN_SERVER_LENDER);
+    expect(existsSync(`${file()}.open`)).toBe(true);
+    registry = new SessionRegistry({ file: file(), now: () => clock, emailScopes: () => null });
+    const restored = registry.authenticate(issued.token)!;
+    expect(restored).toMatchObject({ id: issued.session.id, accessEmail: "renamed@example.test", displayName: "张三" });
+    expect(restored.email).toBeUndefined();
+    expect(personKey(restored)).toBe(key);
+    expect(lendingPersonKey(restored, { admin: null })).toBe(OWN_SERVER_LENDER);
+    expect(registry.authenticate(paired.token)?.id).toBe(paired.session.id);
+  });
+  it.each([false, true])("moves persisted Access email out of account identity before loading (unclean=%s)", (unclean) => {
+    const issued = registry.issueAccess("owner", "Browser", { displayName: "Alex" });
+    registry.close();
+    const saved = JSON.parse(readFileSync(file(), "utf8"));
+    saved.sessions[0].email = "alex@example.test";
+    writeFileSync(file(), JSON.stringify(saved));
+    if (unclean) writeFileSync(`${file()}.open`, "open");
+    registry = new SessionRegistry({ file: file(), now: () => clock, emailScopes: () => null });
+    const restored = registry.authenticate(issued.token)!;
+    expect(restored).toMatchObject({ id: issued.session.id, accessEmail: "alex@example.test", displayName: "Alex" });
+    expect(restored.email).toBeUndefined();
+    expect(personKey(restored)).toBe(personKey({ id: issued.session.id }));
+    expect(lendingPersonKey(restored, { admin: null })).toBe(OWN_SERVER_LENDER);
+    const persisted = JSON.parse(readFileSync(file(), "utf8")).sessions[0];
+    expect(persisted.accessEmail).toBe("alex@example.test");
+    expect(persisted).not.toHaveProperty("email");
+  });
+  it("discards oversized Access emails on issuance and refresh without losing persisted sessions", () => {
+    const oversized = "a".repeat(321);
+    const issued = registry.issueAccess("owner", "Browser", { accessEmail: oversized, displayName: "Alex" });
+    expect(issued.session.accessEmail).toBeUndefined();
+    registry.refreshAccessDetails(issued.session.id, { accessEmail: "alex@example.test", displayName: "Alex" });
+    expect(registry.authenticate(issued.token)?.accessEmail).toBe("alex@example.test");
+    registry.refreshAccessDetails(issued.session.id, { accessEmail: oversized, displayName: "张三" });
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock });
+    expect(registry.authenticate(issued.token)).toMatchObject({ id: issued.session.id, displayName: "张三" });
+    expect(registry.authenticate(issued.token)?.accessEmail).toBeUndefined();
+  });
   it("persists identity without raw tokens and evicts the oldest after five restarts", () => {
     const unrelated = registry.issue({ label: "paired", scopes: ["admin"] });
     const other = registry.issueAccess("other", "Access");
@@ -860,5 +911,41 @@ describe("Access session reuse", () => {
     const third = registry.issueAccess("owner", "Access");
     expect(third.token).not.toBe(second.token);
     expect(registry.list()).toHaveLength(1);
+  });
+  it("counts distinct Access identities using private records even without email", () => {
+    registry.issue({ label: "Desktop", scopes: ["admin"] });
+    registry.issue({ label: "Phone", scopes: ["admin"] });
+    registry.issueAccess("alex", "Browser");
+    expect(registry.hasMultiplePeople()).toBe(false);
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock });
+    registry.issueAccess("alex", "Second browser");
+    expect(registry.list()).toHaveLength(4);
+    expect(registry.hasMultiplePeople()).toBe(false);
+    registry.issueAccess("zhang", "Another browser");
+    expect(registry.hasMultiplePeople()).toBe(true);
+  });
+  it("persists 64 code points and keeps Access outside email membership without a new authority value", () => {
+    const name = "😀".repeat(64);
+    const issued = registry.issueAccess("owner", "Safari on iPhone", { accessEmail: "alex@example.test", displayName: name + "X" });
+    expect(issued.session.displayName).toBe(name);
+    expect(JSON.parse(readFileSync(file(), "utf8")).sessions[0].membershipAuthority).toBeUndefined();
+    registry.revalidateEmailSessions();
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock, emailScopes: () => null });
+    expect(registry.authenticate(issued.token)?.displayName).toBe(name);
+    registry.refreshAccessDetails(issued.session.id, { displayName: " \u200bAlex\u2028\u2029\ufeff " });
+    expect(registry.authenticate(issued.token)).toMatchObject({ displayName: "Alex" });
+    expect(registry.authenticate(issued.token)?.accessEmail).toBeUndefined();
+    registry.refreshAccessDetails(issued.session.id, {});
+    expect(registry.authenticate(issued.token)?.displayName).toBeUndefined();
+    expect(registry.list()).toHaveLength(1);
+  });
+  it("stores and refreshes Access identity details without changing the token", () => {
+    const first = registry.issueAccess("owner", "Chrome on Mac", { accessEmail: "a@example.test", displayName: "张三" });
+    const second = registry.issueAccess("owner", "Safari on iPhone", { accessEmail: "A@EXAMPLE.TEST", displayName: "Alex" });
+    expect(second.token).toBe(first.token);
+    expect(second.session).toMatchObject({ accessEmail: "a@example.test", displayName: "Alex", label: "Chrome on Mac" });
+    expect(registry.list()[0]).toMatchObject({ accessEmail: "a@example.test", displayName: "Alex" });
   });
 });

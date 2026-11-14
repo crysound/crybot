@@ -1685,6 +1685,7 @@
   "settings.profile.subtitle": "Shown in the sidebar. Saved as you go.",
   "settings.profile.sharedSubtitle": "Your details and shared context. Saved as you go.",
   "settings.profile.name": "Your name",
+  "settings.profile.nameFromLogin": "From your sign-in account",
   "settings.profile.avatar.choose": "Choose photo",
   "settings.profile.avatar.uploading": "Uploading…",
   "settings.profile.avatar.remove": "Remove photo",

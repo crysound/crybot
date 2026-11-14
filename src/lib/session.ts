@@ -14,7 +14,7 @@ export interface TeamSession { id: string; name: string; role: string }
 
 export type SessionState =
   | { kind: "loopback"; trust?: "service" }
-  | { kind: "session"; id: string; label: string; email?: string; scopes: string[]; expiresAt: number; cloudGuest?: true; openedThreads?: string[]; reactor?: string; team?: TeamSession; teamSignIn?: string }
+  | { kind: "session"; id: string; label: string; email?: string; displayName?: string; scopes: string[]; expiresAt: number; cloudGuest?: true; openedThreads?: string[]; reactor?: string; team?: TeamSession; teamSignIn?: string }
   | { kind: "unauthenticated"; error: string }
   | { kind: "unreachable"; error: string };
 
@@ -25,6 +25,7 @@ type SessionProfile = { name?: string; email?: string; avatarUrl?: string };
 export function profileForSession(profile: SessionProfile | undefined, sessionState: SessionState | null): SessionProfile | undefined {
   if (!sessionState) return undefined;
   if (sessionState.kind !== "session") return sessionState.kind === "loopback" ? profile : undefined;
+  if (sessionState.displayName?.trim()) return { ...profile, name: sessionState.displayName.trim(), email: sessionState.email ?? profile?.email };
   if (sessionState.team || sessionState.scopes.includes("admin")) return profile;
   const email = sessionState.email;
   if (!email?.trim()) return undefined;
@@ -60,6 +61,7 @@ export async function readSessionState(fetchImpl: typeof fetch = fetch): Promise
       id: record.id,
       label: typeof record.label === "string" ? record.label : "",
       ...(typeof record.email === "string" ? { email: record.email } : {}),
+      ...(typeof record.displayName === "string" ? { displayName: record.displayName } : {}),
       scopes: Array.isArray(record.scopes) ? record.scopes.filter((s): s is string => typeof s === "string") : [],
       expiresAt: typeof record.expiresAt === "number" ? record.expiresAt : 0,
       ...(typeof record.reactor === "string" ? { reactor: record.reactor } : {}),

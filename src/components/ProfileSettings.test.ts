@@ -3,17 +3,19 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setLocale } from "@/lib/i18n";
 import type { ConfigStatus } from "@/state/store";
 
-const fixture = vi.hoisted(() => ({ config: {} as Partial<ConfigStatus>, dispatch: vi.fn(), api: vi.fn() }));
+const fixture = vi.hoisted(() => ({ displayName: undefined as string | undefined, config: {} as Partial<ConfigStatus>, dispatch: vi.fn(), api: vi.fn() }));
 vi.mock("@/state/store", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/state/store")>()),
   api: fixture.api,
   useStore: () => ({ state: { config: fixture.config }, dispatch: fixture.dispatch }),
 }));
+vi.mock("@/lib/session-profile", () => ({ useSessionDisplayName: () => fixture.displayName }));
 vi.mock("./AboutMeSettings", () => ({ AboutMeSettings: () => null }));
 
-const { ProfileFields, profilePhotoFileProblem, profilePhotoSizeProblem } = await import("./ProfileSettings");
+const { ProfileSummaryRow, ProfileFields, profilePhotoFileProblem, profilePhotoSizeProblem } = await import("./ProfileSettings");
 const { InitialsAvatar } = await import("./Avatar");
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -22,6 +24,8 @@ let root: Root;
 const photo = "/api/attachments/5f0c2b1e-8a43-4c1d-9e7a-2b6f1d3c4e5a.webp";
 
 beforeEach(() => {
+  fixture.displayName = undefined;
+  setLocale("en");
   fixture.dispatch.mockReset();
   fixture.api.mockReset();
   host = document.createElement("div");
@@ -31,9 +35,40 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  setLocale("en");
 });
 
 describe("the profile photo", () => {
+  it("shows the login name read-only, its initials and source without saving on blur", async () => {
+    setLocale("zh");
+    fixture.config = { profile: { name: "Local profile", email: "local@example.test" } };
+    fixture.displayName = "Alex";
+    const fetched = vi.fn();
+    vi.stubGlobal("fetch", fetched);
+    try {
+      await act(async () => root.render(createElement(ProfileFields)));
+      const name = host.querySelector<HTMLInputElement>("#profile-name")!;
+      expect(name.value).toBe("Alex");
+      expect(name.readOnly).toBe(true);
+      expect(host.textContent).toContain("来自登录账号");
+      expect(host.querySelector("span[aria-hidden=true]")?.textContent).toBe("A");
+      await act(async () => name.dispatchEvent(new FocusEvent("focusout", { bubbles: true })));
+      expect(fetched).not.toHaveBeenCalled();
+      expect(fixture.api).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("shows the login name and initials in the collapsed settings summary", async () => {
+    fixture.config = { profile: { name: "Local profile", email: "local@example.test" } };
+    fixture.displayName = "Alex";
+    await act(async () => root.render(createElement(ProfileSummaryRow)));
+    expect(host.textContent).toContain("Alex");
+    expect(host.textContent).not.toContain("Local profile");
+    expect([...host.querySelectorAll("span")].some((element) => element.textContent === "A")).toBe(true);
+  });
+
   it("takes only a PNG, JPEG, GIF or WebP of at most 10 MB", () => {
     expect(profilePhotoFileProblem({ type: "image/jpeg", size: 2_000_000 })).toBeNull();
     expect(profilePhotoFileProblem({ type: "image/webp; charset=binary", size: 10 * 1024 * 1024 })).toBeNull();
