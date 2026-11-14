@@ -1,7 +1,10 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ConfirmDialog } from "../../src/components/ConfirmDialog";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 function Preview() {
   const [open, setOpen] = useState(false);

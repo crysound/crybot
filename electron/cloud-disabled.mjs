@@ -1,3 +1,5 @@
+import environments from "./environments.cjs";
+
 export const hostedAvailable = false;
 export const hostedDisabledState = Object.freeze({ available: false, status: "unavailable", message: "disabled" });
 const unavailable = () => Promise.resolve(hostedDisabledState);
@@ -32,7 +34,15 @@ export function localEnvironmentsStore(store) {
     write(next) {
       const dormant = store.read().environments.filter(hostedPlace);
       const ids = new Set(next.environments.map(entry => entry.id));
-      store.write({ ...next, environments: [...next.environments, ...dormant.filter(entry => !ids.has(entry.id))] });
+      const origins = new Set(next.environments.map(entry => environments.normalizeOrigin(entry.origin)).filter(Boolean));
+      const retained = dormant.filter(entry => {
+        const origin = environments.normalizeOrigin(entry.origin);
+        if (ids.has(entry.id) || (origin && origins.has(origin))) return false;
+        ids.add(entry.id);
+        if (origin) origins.add(origin);
+        return true;
+      });
+      store.write({ ...next, environments: [...next.environments, ...retained] });
     },
   };
 }

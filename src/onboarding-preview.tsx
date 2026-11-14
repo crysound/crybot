@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "./testing/preview-locale";
 // Dev-only gallery of the first run's two screens, served at /onboarding-preview.html; not in the packaged app.
 // It answers the app's own requests from a fixture, so it needs no server and never touches one.
 import { Component, StrictMode, useEffect, useState, type ReactNode } from "react";
@@ -9,6 +10,8 @@ import { EMPTY_ONBOARDING, type BeatId } from "@/lib/onboarding";
 import { SKINS, type SkinId } from "@/lib/skins";
 import { StoreProvider } from "@/state/store";
 import "./styles.css";
+
+await preparePreviewLocale();
 
 /** ?screen=chief&ai=0&bots=3&skin=daylight&reduced=1 opens any state directly; ?w=1338&h=870 sizes the stage. */
 function fromUrl() {

@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "./testing/preview-locale";
 // Dev-only gallery of the room card, served at /room-card-preview.html; not in the packaged app.
 // ?state=memory|stopped|disk|tip|trial|upgraded|restarting|confirm&layout=desktop|phone&skin=midnight|daylight&lang=de
 import { StrictMode } from "react";
@@ -8,7 +9,7 @@ import { InitialsAvatar } from "@/components/Avatar";
 import { ConfirmDialogCard } from "@/components/ConfirmDialog";
 import { CloudRoomCardView } from "@/components/CloudRoomCard";
 import { cloudPlanLabel } from "@/lib/cloud-status";
-import { loadLocale, t } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
 import { roomCardView } from "@/lib/room-card";
 import { SKIN_IDS, type SkinId } from "@/lib/skins";
 import { upgradeConfirmBody } from "@/lib/usage-meter";
@@ -95,5 +96,5 @@ function Preview() {
   </div>;
 }
 
-await loadLocale(new URLSearchParams(location.search).get("lang") ?? "en");
+await preparePreviewLocale(new URLSearchParams(location.search).get("lang") ?? "en");
 createRoot(document.getElementById("root")!).render(<StrictMode><Preview /></StrictMode>);

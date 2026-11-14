@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { LocalComputerSection } from "../../src/components/LocalComputerSection";
@@ -10,6 +11,8 @@ import { applySkin, readSkin } from "../../src/lib/skins";
 import { publishLiveFrame } from "../../src/lib/live-events";
 import { CLOUD_COMPUTER_BUSY_ERROR } from "../../shared/computer-contention";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 function frame(label: string, color: string) {
   const canvas = document.createElement("canvas");

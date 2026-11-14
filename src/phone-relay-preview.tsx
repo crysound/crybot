@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "./testing/preview-locale";
 // Dev-only gallery of Remote access with the end-to-end phone connection, served at /phone-relay-preview.html; not in
 // the packaged app. It mounts the real settings section and pairing screen over a fake companion bridge.
 // ?view=phones|qr&e2e=on|off&relay=connected|off&skin=midnight|daylight&lang=de
@@ -6,7 +7,6 @@ import { createRoot } from "react-dom/client";
 import { PhoneDevicesSection } from "@/components/PhoneDevicesSection";
 import { PhoneSetupFlowView, type CompanionState, type PhoneSetupController } from "@/components/PhoneSetupFlow";
 import { phonePairingLink } from "../shared/pairing-link";
-import { loadLocale } from "@/lib/i18n";
 import { applySkinChoice, SKIN_IDS, type SkinId } from "@/lib/skins";
 import { initialState, StoreContext } from "@/state/store";
 import "./styles.css";
@@ -17,7 +17,7 @@ const e2eOn = params.get("e2e") !== "off";
 const relayOn = params.get("relay") !== "off";
 const skin = params.get("skin") ?? "midnight";
 applySkinChoice(SKIN_IDS.includes(skin as SkinId) ? (skin as SkinId) : "midnight");
-await loadLocale(params.get("lang") ?? "en");
+await preparePreviewLocale(params.get("lang") ?? "en");
 
 const now = Date.now();
 const K = "BJiFmi3bzpQUayMJErl6eqt24mUOvHEUR6uzutPTHfundIgyZxs3bSzUMydGOfgbWdwQshIyzzlMWqxMkNHnmd0";

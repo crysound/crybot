@@ -1,5 +1,5 @@
 import { productName } from "@/lib/brand";
-import { en, loadLocalePack, localeChoices, localePacks, locales, type LocaleKey, type LocalePack } from "@/locales";
+import { en, packComplete, loadLocalePack, localeChoices, localePacks, locales, type LocaleKey, type LocalePack } from "@/locales";
 
 export function resolveLocale(tag: string | undefined, available: ReadonlySet<string>): string {
   if (!tag) return "en";
@@ -30,8 +30,14 @@ export function setLocale(tag: string | undefined): string {
  * language it shows. Resolves to the locale shown. */
 export async function loadLocale(tag: string | undefined): Promise<string> {
   const asked = ++switches;
-  await loadLocalePack(resolveLocale(tag, knownLocales())).catch(() => undefined);
-  return asked === switches ? show(resolveLocale(tag, new Set(Object.keys(locales)))) : active;
+  let resolved = resolveLocale(tag, knownLocales());
+  try {
+    await loadLocalePack(resolved);
+  } catch {
+    resolved = "en";
+    await loadLocalePack("en");
+  }
+  return asked === switches ? show(resolveLocale(resolved, new Set(Object.keys(locales)))) : active;
 }
 
 function show(resolved: string): string {
@@ -83,21 +89,26 @@ let switches = 0;
 export function tFromServer(key: string | undefined, fallback: string, params?: Record<string, string | number>): string;
 export function tFromServer(key: string | undefined, fallback: string | undefined, params?: Record<string, string | number>): string | undefined;
 export function tFromServer(key: string | undefined, fallback: string | undefined, params?: Record<string, string | number>): string | undefined {
-  if (!key || !Object.hasOwn(en, key)) return fallback;
-  const template = activePack[key as LocaleKey] ?? en[key as LocaleKey];
+  if (!key || !hasLocaleKey(key)) return fallback;
+  const template = activePack[key as LocaleKey] ?? en[key as LocaleKey]!;
   const unfilled = [...template.matchAll(/\{(\w+)\}/g)].some(([, name]) => !params || !Object.hasOwn(params, name!));
   return unfilled ? fallback : t(key as LocaleKey, params);
 }
 
 export function activePackComplete(): boolean {
-  return activePack !== en && Object.keys(en).every((key) => Object.hasOwn(activePack, key));
+  return active !== "en" && packComplete(activePack);
 }
 
 /** `{app}` is the product's name as a person reads it (productName) unless `params` names it. */
 export function t(key: LocaleKey, params?: Record<string, string | number>): string {
   const template = activePack[key] ?? en[key];
+  if (template === undefined) throw new Error(`Locale not ready for ${key}`);
   if (!params && !template.includes("{app}")) return template;
   return template.replace(/\{(\w+)\}/g, (match, name: string) =>
     params && name in params ? String(params[name]) : name === "app" ? productName() : match,
   );
+}
+
+export function hasLocaleKey(key: string): key is LocaleKey {
+  return Object.hasOwn(activePack, key) || Object.hasOwn(en, key);
 }

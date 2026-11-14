@@ -409,6 +409,7 @@ if (process.versions.electron && process.argv.includes(flag)) {
   const { createServer } = await import("vite");
   const { default: react } = await import("@vitejs/plugin-react");
   const { default: tailwindcss } = await import("@tailwindcss/vite");
+  const { localeBundles } = await import("../scripts/locale-bundles.ts");
   const { launchVerificationServer, runControlCry } = await import("./control-cry.ts");
   const { waitForExit } = await import("../server/testing/cleanup.ts");
   const fixture = await launchVerificationServer({});
@@ -442,9 +443,9 @@ if (process.versions.electron && process.argv.includes(flag)) {
     await restart();
     const seeded = await runControlCry(["new-bot", "--name", "Original cloud snapshot bot", "--url", fixture.info.url]);
     ui = await createServer({ configFile: false, root, resolve: { alias: { "@": join(root, "src") } }, define: { __APP_VERSION__: JSON.stringify("0.1.78") },
-      server: { host: "127.0.0.1", port: 0, proxy: { "/api": { target: fixture.info.url } } }, plugins: [react(), tailwindcss(), {
+      server: { host: "127.0.0.1", port: 0, proxy: { "/api": { target: fixture.info.url } } }, plugins: [localeBundles(), react(), tailwindcss(), {
         name: "company-backup-fixture", resolveId(id) { if (id === "virtual:company-backup-fixture") return `\0${id}`; },
-        load(id) { if (id === "\0virtual:company-backup-fixture") return `import React from 'react'; import {createRoot} from 'react-dom/client'; import {CompanyBackupSettings} from '/src/components/CompanyBackupSettings.tsx'; import {WorkspaceBackupRecovery} from '/src/components/WorkspaceBackupSettings.tsx'; import {setLocale} from '/src/lib/i18n.ts'; import '/src/styles.css'; setLocale('en'); localStorage.setItem('cry-analytics-opt-out','1'); createRoot(document.getElementById('root')).render(React.createElement(WorkspaceBackupRecovery,null,React.createElement('main',{className:'mx-auto max-w-2xl p-4'},React.createElement(CompanyBackupSettings)))); document.body.dataset.ready='true';`; },
+        load(id) { if (id === "\0virtual:company-backup-fixture") return `import React from 'react'; import {createRoot} from 'react-dom/client'; import {CompanyBackupSettings} from '/src/components/CompanyBackupSettings.tsx'; import {WorkspaceBackupRecovery} from '/src/components/WorkspaceBackupSettings.tsx'; import {loadLocale} from '/src/lib/i18n.ts'; import '/src/styles.css'; loadLocale('en').then(() => { localStorage.setItem('cry-analytics-opt-out','1'); createRoot(document.getElementById('root')).render(React.createElement(WorkspaceBackupRecovery,null,React.createElement('main',{className:'mx-auto max-w-2xl p-4'},React.createElement(CompanyBackupSettings)))); document.body.dataset.ready='true'; });`; },
         configureServer(server) { server.middlewares.use((req, res, next) => {
           if (req.url?.split("?")[0] !== "/__company-backups.html") return next();
           void server.transformIndexHtml(req.url, '<html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Isolated company backups</title></head><body class="bg-app"><div id="root"></div><script type="module" src="/@id/virtual:company-backup-fixture"></script></body></html>')
