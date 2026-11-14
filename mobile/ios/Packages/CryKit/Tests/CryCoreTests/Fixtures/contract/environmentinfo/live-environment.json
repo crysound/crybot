@@ -1,0 +1,14 @@
+{
+  "capabilities": {
+    "emailSignIn": false,
+    "install": "source",
+    "jobs": true,
+    "move": 1,
+    "remoteSessions": true,
+    "selfUpdate": "operator"
+  },
+  "environmentId": "00000000-0000-4000-8000-000000000000",
+  "label": "Example device",
+  "platform": "linux",
+  "version": "0.0.0"
+}

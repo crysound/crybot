@@ -1,0 +1,24 @@
+{
+  "appTriggerRequest": {
+    "botId": "00000000-0000-4000-8000-000000000001",
+    "createdAt": 1767225600000,
+    "operation": {
+      "action": "create",
+      "trigger": {
+        "app": "Example",
+        "event": "Example",
+        "instructions": "Example",
+        "name": "Example"
+      }
+    },
+    "requestId": "00000000-0000-4000-8000-000000000000",
+    "threadId": "00000000-0000-4000-8000-000000000002",
+    "version": 1
+  },
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "subtitle": "Example request",
+  "title": "Approve request"
+}

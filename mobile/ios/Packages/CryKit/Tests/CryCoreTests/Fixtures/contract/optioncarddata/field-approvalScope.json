@@ -1,0 +1,9 @@
+{
+  "approvalScope": "local-computer",
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "subtitle": "Example request",
+  "title": "Approve request"
+}

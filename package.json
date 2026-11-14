@@ -77,7 +77,8 @@
     "package:linux:dir": "pnpm package:prepare && pnpm build:cua:linux && electron-builder --config electron-builder.config.cjs --linux dir --x64 --publish never",
     "package": "pnpm package:mac",
     "test:packaged-server": "pnpm build:server && node scripts/smoke-packaged-server.mjs",
-    "check:brand": "node scripts/check-brand-residue.mjs"
+    "check:brand": "node scripts/check-brand-residue.mjs",
+    "contract:ios": "node --experimental-strip-types scripts/ios-contract.ts"
   },
   "dependencies": {
     "@1password/sdk": "0.5.0",

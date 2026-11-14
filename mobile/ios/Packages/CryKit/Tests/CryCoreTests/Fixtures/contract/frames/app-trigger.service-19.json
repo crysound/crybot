@@ -1,0 +1,6 @@
+{
+  "kind": "app-trigger.service",
+  "service": {
+    "available": false
+  }
+}
