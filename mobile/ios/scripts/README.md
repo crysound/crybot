@@ -15,7 +15,7 @@ node mobile/ios/scripts/gen-strings.mjs --check
 
 `CRY_SNAPSHOT_FEATURES` 未设时本地全跑；`all` 全跑；`none` 或空列表全部跳过截图。ServerText 表保留 `{name}`，渲染器按名字替换、翻译引用部件并派生重置时间；Web 表按英文占位符首次出现的顺序使用 `%N$@`，字面百分号转为 `%%`。ServerText 也包含 `approval.held.*` 的 heldCode 文案。缺英文键会报错，`--check` 只检查 `Features/<Feature>/Web<Feature>.xcstrings` 这种命名的遗留生成表；普通生成删除这些遗留表。其他命名或子目录的表不参与清理，例如 `Features/WebHost/WebHost.xcstrings`、`WebHostMenu.xcstrings` 是手写表，会保留。
 
-附件通过 `export-screenshots.sh OUTPUT FEATURES RESULT...` 导出，导出失败会报错；按 `CryBotTests` 内 Swift 源码的类声明识别 `<Feature>SnapshotTests`（不区分功能名大小写）：选中的功能存在该类，就必须在 App 内截图目录产出至少一张该功能前缀的 PNG；不存在该类时打印警告并继续，允许 0 张。多个功能逐个检查，其他功能或 UI 启动图不计入。`all` 仍必须有 12 张 `harness-basic`（含 `-axl`），检查同时读取 xcresulttool 的 `manifest.json` 名称映射且要求文件存在。Nightly 另外运行 `assert-screenshots.py OUTPUT none --require-launch iPhone16 iPhoneSE iPhoneProMax`，分别要求 `CryBotUITests-<机型>` 目录至少有一张 `harness-launch-*` PNG，不能跨机型补足。`assert-tests-ran.sh RESULT --required` 要求 passed、failed、expectedFailures 之和大于零，全部 skip 不算执行。
+附件通过 `export-screenshots.sh OUTPUT FEATURES RESULT...` 导出；找不到 `.xcresult` 或所有结果都没有执行测试时，先打印「测试未运行（编译或启动失败），见上一步日志」并失败。按 `CryBotTests` 内 Swift 源码的类声明识别 `<Feature>SnapshotTests`（不区分功能名大小写）：选中的功能存在该类，就必须在 App 内截图目录产出至少一张该功能前缀的 PNG；不存在该类时打印警告并继续，允许 0 张。多个功能逐个检查，其他功能或 UI 启动图不计入。`all` 仍必须有 12 张 `harness-basic`（含 `-axl`），检查同时读取 xcresulttool 的 `manifest.json` 名称映射且要求文件存在。Nightly 另外运行 `assert-screenshots.py OUTPUT none --require-launch iPhone16 iPhoneSE iPhoneProMax`，分别要求 `CryBotUITests-<机型>` 目录至少有一张 `harness-launch-*` PNG，不能跨机型补足。`assert-tests-ran.sh RESULT --required` 要求 passed、failed、expectedFailures 之和大于零，全部 skip 不算执行。
 
 Linux 自测（一次一个文件）：
 

@@ -60,10 +60,48 @@ class ScreenshotChecks(unittest.TestCase):
         self.assertIn('Warning: no InboxSnapshotTests class', warning.getvalue())
 
     def test_export_without_snapshot_class_warns_and_succeeds(self):
+        result = self.root / 'CryBotTests.xcresult'
+        result.mkdir()
+        executable = self.root / 'xcrun'
+        executable.write_text(r'''#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$*" == *'get test-results summary'* ]]; then
+  printf '%s\n' '{"passedTests":1}'
+else
+  mkdir -p "$7"
+fi
+''')
+        executable.chmod(0o755)
         result = subprocess.run(['bash', str(self.scripts / 'export-screenshots.sh'),
-                                 str(self.root / 'screenshots'), 'Inbox'], capture_output=True, text=True)
+                                 str(self.root / 'screenshots'), 'Inbox', str(result)],
+                                env={**os.environ, 'PATH': f'{self.root}:{os.environ["PATH"]}'},
+                                capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('Warning: no InboxSnapshotTests class', result.stderr)
+
+    def test_export_without_xcresult_reports_test_not_run(self):
+        result = subprocess.run(['bash', str(self.scripts / 'export-screenshots.sh'),
+                                 str(self.root / 'screenshots'), 'Inbox'], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('测试未运行（编译或启动失败），见上一步日志', result.stderr)
+        self.assertNotIn('0 PNG', result.stderr)
+
+    def test_export_with_no_executed_tests_reports_test_not_run(self):
+        result_bundle = self.root / 'CryBotTests.xcresult'
+        result_bundle.mkdir()
+        executable = self.root / 'xcrun'
+        executable.write_text(r'''#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' '{"passedTests":0,"failedTests":0,"expectedFailures":0,"skippedTests":1}'
+''')
+        executable.chmod(0o755)
+        result = subprocess.run(['bash', str(self.scripts / 'export-screenshots.sh'),
+                                 str(self.root / 'screenshots'), 'Inbox', str(result_bundle)],
+                                env={**os.environ, 'PATH': f'{self.root}:{os.environ["PATH"]}'},
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('测试未运行（编译或启动失败），见上一步日志', result.stderr)
+        self.assertNotIn('0 PNG', result.stderr)
 
     def test_all_requires_each_of_twelve_not_just_count(self):
         for name in NAMES:
@@ -90,6 +128,10 @@ class ScreenshotChecks(unittest.TestCase):
         executable = self.root / 'xcrun'
         executable.write_text(r'''#!/usr/bin/env bash
 set -euo pipefail
+if [[ "$*" == *'get test-results summary'* ]]; then
+  printf '%s\n' '{"passedTests":1}'
+  exit 0
+fi
 if [[ "$5" == *CryBotUITests.xcresult ]]; then
   printf '\211PNG\r\n\032\n' > "$7/harness-launch.png"
 fi
@@ -110,6 +152,10 @@ fi
     def test_export_failure_still_attempts_remaining_results(self):
         executable = self.root / 'xcrun'
         executable.write_text('''#!/usr/bin/env bash
+if [[ "$*" == *'get test-results summary'* ]]; then
+  printf '%s\\n' '{"passedTests":1}'
+  exit 0
+fi
 printf '%s\\n' "$*" >> "$EXPORT_LOG"
 exit 1
 ''')

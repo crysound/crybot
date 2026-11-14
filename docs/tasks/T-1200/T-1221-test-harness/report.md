@@ -329,3 +329,67 @@ Swift parse not run. macOS compilation and XCTest require Actions.
 - 不需要新增依赖或 project.yml 行，无超范围源码改动。给任务 43 的命令仍为 `node mobile/ios/scripts/gen-strings.mjs --check`。
 - 请协调者推分支后补 Mobile builds、iOS Linux、Public scan 和 nightly 的运行链接；真实 Swift 编译/XCTest、12 张 harness-basic 内容、三台机型 harness-launch、实际执行数与耗时以 Actions 为准。前轮要求的“不存在 FlowTests”真实失败演示仍需协调者补链接。
 - 本轮没有运行 Actions，没有提交或推送 git。除这些环境相关验收外，8 项修改和相应本地脚本自测已完成。
+
+## T-1221-test-harness 第 4 轮
+
+### 改动文件
+
+| 文件 | 改动 |
+|---|---|
+| `mobile/ios/project.yml` | CryBot 主 App 在保留显示名 `Cry Bot` 的同时固定 `PRODUCT_MODULE_NAME: CryBot`，解决 `@testable import CryBot` 的编译失败。CryBotWatch 的 `PRODUCT_NAME` 已是无空格的 `CryBotWatch`，没有 widget 目标，因此无需增加其他模块名设置。 |
+| `mobile/ios/scripts/export-screenshots.sh` | 导出前检查 `.xcresult` 是否存在且至少有一个结果实际执行测试；缺失或未运行时打印「测试未运行（编译或启动失败），见上一步日志」并失败。 |
+| `mobile/ios/scripts/assert-screenshots.test.py` | 为无结果包、结果包全跳过、正常无 SnapshotTests 类、UI 附件和导出失败场景补充夹具。 |
+| `mobile/ios/scripts/workflows.test.mjs` | 增加 project.yml 中 `PRODUCT_MODULE_NAME: CryBot` 的回归断言。 |
+| `mobile/ios/scripts/README.md` | 记录截图导出在编译或启动失败时的诊断信息。 |
+| `docs/tasks/T-1200/T-1221-test-harness/report.md` | 追加第 4 轮记录。 |
+
+### 本地验证
+
+已按要求在仓库根目录先运行 `crybot-link-deps`，输出：
+
+```text
+crybot-link-deps: linked 73 entries from /opt/crybot-deps/node_modules into /data/home/codex-t-1221-test-harness-d622561cfdb4/node_modules
+```
+
+第 3 轮脚本自测重新执行，结果如下：
+
+```text
+$ node --test mobile/ios/scripts/gen-strings.test.mjs
+✔ mobile/ios/scripts/gen-strings.test.mjs
+ℹ pass 1
+Exit code: 0
+
+$ node mobile/ios/scripts/gen-strings.mjs --check
+Exit code: 0
+
+$ bash mobile/ios/scripts/ui-test-selection.test.sh
+ui-test-selection: ok (isolated paths, feature flow directory, shared files, pipeline paths, ASCII feature names, spaces, Unicode, none, stdin, help)
+Exit code: 0
+
+$ bash mobile/ios/scripts/assert-tests-ran.test.sh
+assert-tests-ran: ok (executed/skipped counts, required, malformed/missing summary)
+Exit code: 0
+
+$ python3 mobile/ios/scripts/assert-screenshots.test.py
+............
+----------------------------------------------------------------------
+Ran 12 tests in 0.357s
+
+OK
+Exit code: 0
+
+$ node --test mobile/ios/scripts/workflows.test.mjs
+✔ mobile/ios/scripts/workflows.test.mjs
+ℹ pass 1
+Exit code: 0
+
+（以 `--test-isolation=none` 展开用例时为 13/13，新增模块名断言也通过。）
+```
+
+新增夹具确认无 `.xcresult` 和结果全跳过时均输出指定「测试未运行（编译或启动失败），见上一步日志」，不会再只报 `0 PNG`。`bash -n mobile/ios/scripts/export-screenshots.sh`、`git diff --check` 均无输出且退出 0；工作流自测同时解析 `project.yml` 和两份 iOS workflow。当前环境没有 Xcode/macOS，Swift 编译、XCTest、真实截图和 XCUITest 仍以 Actions 为准；沙箱禁止监听端口，e2e 未运行。
+
+### 覆盖表与协调者交接
+
+- 本轮完成测试模块名固定和截图导出失败诊断，未修改 `server/testing/ios-contract/coverage.ts`；当前 checkout 仍没有该覆盖表文件可供追加项。
+- 无新增依赖。请协调者推分支后确认 Mobile builds 的 iOS 编译、截图产物和测试执行数，并补运行链接；project.yml 的模块名改动已直接落在本轮允许的工程配置范围内。
+- 本轮未提交或推送 git。

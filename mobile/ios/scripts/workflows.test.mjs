@@ -10,9 +10,14 @@ import YAML from 'yaml';
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const mobile = YAML.parse(fs.readFileSync(path.join(root, '.github/workflows/mobile.yml'), 'utf8'));
 const nightly = YAML.parse(fs.readFileSync(path.join(root, '.github/workflows/ios-nightly.yml'), 'utf8'));
+const project = YAML.parse(fs.readFileSync(path.join(root, 'mobile/ios/project.yml'), 'utf8'));
 const step = (job, name) => job.steps.find(item => item.name === name);
 const selection = step(mobile.jobs.ios, 'Select iOS test scope').run;
 const flows = step(mobile.jobs.ios, 'Run selected XCUITest flows').run;
+
+test('the app keeps its Swift module name when the display product name has spaces', () => {
+  assert.equal(project.targets.CryBot.settings.base.PRODUCT_MODULE_NAME, 'CryBot');
+});
 
 function fixture(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cry-workflows-'));
