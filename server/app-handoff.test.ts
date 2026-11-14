@@ -193,7 +193,7 @@ describe("mobile app login handoff", () => {
     expect((await f.get({ "cf-access-jwt-assertion": await jwt({ exp: now + 60 }) })).status).toBe(200);
   });
 
-  it("returns an escaped automatic callback and a matching manual link without scripts", async () => {
+  it("requires a manual callback link without automatic refresh or scripts", async () => {
     const token = await jwt();
     const result = await fixture().get({ "cf-access-jwt-assertion": token });
     const url = callbackURL(result.body);
@@ -211,7 +211,7 @@ describe("mobile app login handoff", () => {
     expect(result.body).not.toContain(token);
     expect(result.body).not.toContain("token=");
     expect(result.status).toBe(200);
-    expect(result.body).toContain(`<meta http-equiv="refresh" content="0;url=${callback}">`);
+    expect(result.body).not.toContain('http-equiv="refresh"');
     expect(result.body).toContain(`<a role="button" href="${callback}">Return to Cry Bot</a>`);
     expect(result.body).not.toContain(`&token=${token}`);
     expect(result.body).not.toContain("<script");
@@ -221,6 +221,17 @@ describe("mobile app login handoff", () => {
     expect(result.headers["content-type"]).toBe("text/html; charset=utf-8");
     expect(result.headers["content-security-policy"]).toBe("default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
     expect(result.headers.location).toBeUndefined();
+  });
+
+  it("escapes the verified JWT email displayed on the confirmation page", async () => {
+    const email = '<b>"owner"&\'account\'</b>@crybot.example';
+    const token = await jwt({ email });
+    const response = await fixture({ ...env, CRYBOT_CF_ACCESS_ALLOW: email }).get({ "cf-access-jwt-assertion": token });
+    expect(response.status).toBe(200);
+    expect(response.body).toContain('<p>Current account: &lt;b&gt;&quot;owner&quot;&amp;&#39;account&#39;&lt;/b&gt;@crybot.example</p>');
+    expect(response.body).not.toContain(email);
+    expect(response.body).not.toContain(token);
+    expect(decryptCallback(callbackURL(response.body))).toBe(token);
   });
 
   it("uses the Access cookie only when the assertion header is absent", async () => {
@@ -313,7 +324,16 @@ describe("mobile app login handoff", () => {
     ["fr", "en", "Return to Cry Bot"],
   ])("selects the page language for %s", async (language, lang, label) => {
     const response = await fixture().get({ "cf-access-jwt-assertion": await jwt(), "accept-language": language });
+    const title = lang === "zh-Hans" ? "在 Cry Bot App 中登录" : "Sign in to the Cry Bot App";
+    const warning = lang === "zh-Hans"
+      ? "只有你刚刚在 Cry Bot App 里点了登录，才点下面的按钮。如果你没有这样做，请直接关闭此页。"
+      : "Only click the button below if you just tapped Sign in in the Cry Bot App. If you did not, close this page.";
     expect(response.body).toContain(`<html lang="${lang}">`);
+    expect(response.body).toContain(`<title>${title}</title>`);
+    expect(response.body).toContain(`<h1>${title}</h1>`);
+    expect(response.body).toContain(`<p>${lang === "zh-Hans" ? "当前账号：" : "Current account: "}OWNER@CRYBOT.EXAMPLE</p>`);
+    expect(response.body).toContain(`<strong>${warning}</strong>`);
+    expect(response.body).not.toContain('http-equiv="refresh"');
     expect(response.body).toContain(`>${label}</a>`);
   });
 });

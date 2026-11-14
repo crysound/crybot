@@ -406,7 +406,8 @@ class MainActivity : Activity() {
     private fun handleAuthCallback(uri: Uri?): Boolean {
         if (uri == null || !uri.isHierarchical || uri.scheme != "crybot" || uri.host != "auth" || loginHosts.isEmpty()) return false
         val state = preferences.getString("login_state", null) ?: return false
-        if (uri.getQueryParameters("state") != listOf(state) || preferences.getString("login_server", null) != currentServer) {
+        if (uri.getQueryParameters("state") != listOf(state)) return true
+        if (preferences.getString("login_server", null) != currentServer) {
             clearPendingLogin()
             showError(login = true)
             return true

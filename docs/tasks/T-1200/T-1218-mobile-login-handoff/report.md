@@ -159,3 +159,44 @@ JS
 2. 在 Xcode / Android SDK 环境编译并用同一 `protocolVector` 验证两端解密；真机覆盖完整授权链路、错误版本/参数/密文、取消重试、重复回调、子路径、空 loginHosts、安卓十分钟过期/冷启动和空弹窗关闭。
 3. 部署时同步更新服务端和手机 App；v1 要求 pk 且不接受明文 token 回跳，旧 App 无法与新接力协议互通。
 4. `cf-access.ts` 校验逻辑收拢及 `CF_Binding` Cookie 核对仍由协调者按 review-1 处理，本轮未扩展这些范围。
+
+## 第 3 轮
+
+### 1. 逐条修改说明与文件
+
+- `server/app-handoff.ts`：删除成功页的 `<meta http-equiv="refresh">`，只保留用户亲手点击的普通回跳链接（`role="button"`）。页面标题及一级标题为「在 Cry Bot App 中登录」/「Sign in to the Cry Bot App」，显示已验证 JWT 中的 email，并经过 HTML 转义；沿用原有 `Accept-Language` 权重选择中英文。提示用 `<strong>` 加粗，中文为「只有你刚刚在 Cry Bot App 里点了登录，才点下面的按钮。如果你没有这样做，请直接关闭此页。」，英文对应翻译。沿用允许无 email 的身份规则，此时显示「未提供邮箱」/「Email not provided」。没有加入脚本或样式，CSP 和三个安全响应头不变，HTML 不含明文 JWT。
+- `mobile/ios/CryBot/ViewController.swift`：state 缺失、重复或不匹配时直接 `return true`，不调用 `failLogin()`，不消费 state/私钥、不取消认证会话、不显示错误。返回 true 也使 `ASWebAuthenticationSession` completion 不会继续执行失败兜底；AppDelegate 入口共用同一处理器。state 匹配后仍按原逻辑消费，解密失败仍显示登录失败。
+- `mobile/android/app/src/main/kotlin/com/crysound/crybot/MainActivity.kt`：将 state 校验提前为独立的直接 `return true`，不执行 `clearPendingLogin()` 或 `showError`。缺失、重复或不匹配的 state 均忽略；原有服务器绑定检查、过期清理、匹配后的私钥消费及解密失败处理保留。两个 Intent 入口仍在 finally 中清掉 Activity 持有的回调 URL。
+- `docs/self-hosting.md`：改为说明人工确认后回跳，并明确 v1 只防被动截获回跳后读取 JWT，不能防同机恶意 App 自带公钥主动发起接力；人工确认只缓解风险，彻底解决需要 App Links / Universal Links。同步说明 state 不匹配时忽略。
+- `server/app-handoff.test.ts`：成功页断言无自动刷新、普通按钮指向可解密的加密回跳；增加含 `<b>`、单双引号和 `&` 的 JWT email 转义测试；中英文语言用例断言标题、账号和完整加粗提示。保留无脚本、无明文 JWT、CSP、安全响应头和 v1 固定向量等原有断言。
+- `docs/tasks/T-1200/T-1218-mobile-login-handoff/report.md`：追加本轮修改、验证结果及平台限制。
+
+加密协议 v1、固定向量和两端加解密实现均未改动。未引入依赖，未实现 App Links / Universal Links 或 Android Keystore，未执行 git 提交，未修改用户提供的 r3.md。
+
+### 2. 验证与结果
+
+按要求仅运行一个测试文件：
+
+```sh
+PATH=/opt/node24/bin:$PATH pnpm vitest run server/app-handoff.test.ts --maxWorkers=1 --configLoader runner
+```
+
+结果：**60/60 通过**。测试使用临时会话目录、临时签名密钥、假 JWKS 和内存 HTTP fixture，不访问用户实时应用或真实数据。未运行 `pnpm typecheck`、完整 `pnpm test` 或其他测试文件。
+
+```sh
+PATH=/opt/node24/bin:$PATH pnpm exec oxlint --deny-warnings server/app-handoff.ts server/app-handoff.test.ts
+git diff --check
+```
+
+结果：lint 和差异空白检查通过。
+
+`AGENTS.md` 引用的 `docs/verification/README.md` 在当前工作树中仍不存在。尝试通过 `launchVerificationServer({}, AbortSignal.timeout(20000))` 启动仓库的隔离服务，计划检查 Access 未启用时接力返回 404；启动在端口分配阶段失败：`no free port block for offsets 0,1 in 19600..22600`。随后用 Node 监听系统分配的回环临时端口确认返回 `EPERM`。因此本轮没有完成真实监听服务的集成验证或真实手机登录链路验证，不能据此宣称端到端可用。
+
+### 3. Swift / Kotlin 检查及没把握之处
+
+本机未找到 `swift`、`kotlinc`，未编译或运行两端。本轮没有新增平台 API；逐行静态检查了修改分支及调用者：
+
+- Swift：不匹配分支在任何 state/私钥变更之前返回 true；认证会话 completion 不会因此落入 `failLogin()`，AppDelegate 也不会触发额外处理。匹配后解密失败依然调用 `failLogin()`。仍需真机确认系统认证会话收到不匹配回调后自身的生命周期，以及之后合法回调能否从 completion / AppDelegate 正常接续；代码不主动 cancel，但无法用静态检查保证系统会话 UI 保持打开。
+- Kotlin：不匹配分支在读取/删除私钥之前返回 true；onNewIntent 不显示新错误面板，Intent 的 finally 清理不影响 SharedPreferences。onCreate 的返回值不会进入原有登录错误面板分支；若是不匹配回调触发的冷启动，此时未创建 WebView，实际界面表现需真机观察。十分钟过期和服务器绑定失效仍按原规则清理；匹配后解密失败仍显示错误。
+
+需要平台环境补验「先发错误 state，再发合法回调」及「正确 state 但坏密文」两组流程，覆盖 iOS 双入口、安卓热启动与冷启动，并确认 Cookie 写入和真实授权链路；本轮服务器测试不能替代这些平台验证。

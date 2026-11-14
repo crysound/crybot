@@ -71,10 +71,16 @@ export function createAppHandoff(enabled: boolean, env: NodeJS.ProcessEnv = proc
     const callback = escapeHtml(`${scheme}://auth?${new URLSearchParams(encrypted)}`);
     const chinese = prefersChinese(req.headers["accept-language"]);
     const label = escapeHtml(chinese ? "返回 Cry Bot" : "Return to Cry Bot");
+    const title = chinese ? "在 Cry Bot App 中登录" : "Sign in to the Cry Bot App";
+    const accountLabel = chinese ? "当前账号：" : "Current account: ";
+    const email = escapeHtml(typeof payload.email === "string" ? payload.email : (chinese ? "未提供邮箱" : "Email not provided"));
+    const warning = chinese
+      ? "只有你刚刚在 Cry Bot App 里点了登录，才点下面的按钮。如果你没有这样做，请直接关闭此页。"
+      : "Only click the button below if you just tapped Sign in in the Cry Bot App. If you did not, close this page.";
     res.writeHead(200, {
       "content-type": "text/html; charset=utf-8",
       "content-security-policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
     });
-    res.end(`<!doctype html><html lang="${chinese ? "zh-Hans" : "en"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="refresh" content="0;url=${callback}"><title>${label}</title></head><body><a role="button" href="${callback}">${label}</a></body></html>`);
+    res.end(`<!doctype html><html lang="${chinese ? "zh-Hans" : "en"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title></head><body><h1>${title}</h1><p>${accountLabel}${email}</p><p><strong>${warning}</strong></p><a role="button" href="${callback}">${label}</a></body></html>`);
   };
 }

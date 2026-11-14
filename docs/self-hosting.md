@@ -16,7 +16,9 @@ export CRYBOT_CF_ACCESS_ALLOW='*'
 
 ## 手机 App 登录接力
 
-iOS / 安卓构建配置了 `CRYBOT_LOGIN_HOSTS` 时，去往登录主机的导航会改用系统认证会话或系统浏览器访问服务器的 `/auth/app-handoff?state=...&pk=...`。服务器地址有子路径时，在子路径后追加 `/auth/app-handoff`（例如 `https://crybot.example/sub/` → `https://crybot.example/sub/auth/app-handoff`）。飞书等身份源授权完成后，接力页通过 `crybot://auth` 自动返回 App；浏览器阻止自动跳转时可点击「返回 Cry Bot」。App 校验一次性 state 并解密，将 Access JWT 写入内嵌网页的 Secure、HttpOnly Cookie 后重新加载服务器。未配置登录主机时保持原有行为。
+iOS / 安卓构建配置了 `CRYBOT_LOGIN_HOSTS` 时，去往登录主机的导航会改用系统认证会话或系统浏览器访问服务器的 `/auth/app-handoff?state=...&pk=...`。服务器地址有子路径时，在子路径后追加 `/auth/app-handoff`（例如 `https://crybot.example/sub/` → `https://crybot.example/sub/auth/app-handoff`）。飞书等身份源授权完成后，接力页显示「在 Cry Bot App 中登录」、当前账号的 JWT email 和确认提示，不会自动跳转。只有刚刚在 Cry Bot App 内点过登录，才应亲手点击「返回 Cry Bot」，通过 `crybot://auth` 返回 App；否则直接关闭页面。App 校验一次性 state 并解密，将 Access JWT 写入内嵌网页的 Secure、HttpOnly Cookie 后重新加载服务器。未配置登录主机时保持原有行为。
+
+**残余风险：** v1 加密协议能防住被动截获回跳的 App 读取 JWT，但不能防住同机恶意 App 主动发起接力：恶意 App 可以注册同一自定义 scheme，自带密钥对和公钥打开接力页，借用系统浏览器里已有的 Access 登录；如果用户确认回跳，恶意 App 就能用自己的私钥解出 JWT。本轮只能靠用户确认这一步缓解，不能保证防住恶意 App。彻底解决需要使用绑定到合法 App 的 App Links / Universal Links，目前尚未实现。
 
 接力路由只在 Cloudflare Access 已启用时可用，仍在整站 Access 保护后，不需要添加 Bypass 或无需登录的兑换接口。Access 层的拒绝保留原有 JSON 响应；通过后，接力处理器重新校验 JWT 签名、issuer、audience、身份允许名单，并要求至少剩余 60 秒有效期。服务端环境变量 `CRYBOT_APP_SCHEME` 默认 `crybot`，仅接受 `^[a-z][a-z0-9+.-]{1,30}$`，非法值回落默认；请求参数不能指定回跳地址。发行版两端注册的 scheme 均为 `crybot`；自定义 scheme 需要同时调整 App 的协议注册和回调处理后重新构建。
 
@@ -25,7 +27,7 @@ iOS / 安卓构建配置了 `CRYBOT_LOGIN_HOSTS` 时，去往登录主机的导�
 1. App 每次登录生成新的 P-256 密钥对及随机 32 字节的 state。state 为无填充 base64url，服务端接受 `^[A-Za-z0-9_-]{32,128}$`。公钥 `pk` 为 X9.63 未压缩点：`0x04 || X || Y`，X、Y 均为 32 字节大端无符号整数（不足补前导零），共 65 字节，再编码为无填充 base64url。请求为 `GET /auth/app-handoff?state=<state>&pk=<pk>`；state、pk 缺失或重复、格式不合法、pk 不在 P-256 曲线上均返回 400。
 2. 服务端为每次响应生成新的临时 P-256 密钥对，与 pk 做 ECDH，得到 32 字节共享密钥（共享点的 X 坐标，大端补齐）。执行 `HKDF-SHA256(ikm=共享密钥, salt=UTF8(state), info=UTF8("crybot-app-handoff-v1"), L=32)` 得到 AES-256 密钥。salt 是 state 字符串的 UTF-8 字节，**不是** state 的 base64url 解码结果。
 3. 服务端生成随机 12 字节 nonce，用 AES-256-GCM 加密 JWT 的 UTF-8 字节，AAD 为 `UTF8(state)`，tag 长度为 16 字节。回跳地址固定为 `<scheme>://auth?v=1&state=<state>&epk=<epk>&iv=<iv>&ct=<ct>`。epk 使用与 pk 相同的 X9.63 编码；iv 是 nonce；ct 是 `密文 || tag`。这三个字段均为无填充 base64url。URL、HTML 和日志不得包含明文 JWT，HTML 中的 `&` 转义为 `&amp;`。
-4. App 只处理当前挂起 state 对应的回调；各参数必须唯一，v 必须为 `1`。App 用自己的私钥和 epk 重算共享密钥与 HKDF，以同一 state 作 AAD 解密。字段缺失、重复、编码非法、版本不支持或认证解密失败均显示登录错误面板及「登录」重试按钮，不写 Cookie。回调消费后 state 和私钥立即失效；同一回调不能重复使用。
+4. App 只处理当前挂起 state 对应的回调；state 缺失、重复或不匹配时直接忽略，不清除挂起的 state 和私钥，也不显示错误。state 匹配后，其余各参数必须唯一，v 必须为 `1`。App 用自己的私钥和 epk 重算共享密钥与 HKDF，以同一 state 作 AAD 解密。其余字段缺失、重复、编码非法、版本不支持或认证解密失败均显示登录错误面板及「登录」重试按钮，不写 Cookie。回调消费后 state 和私钥立即失效；同一回调不能重复使用。
 5. iOS 私钥仅存内存，使用 CryptoKit 的 `P256.KeyAgreement`、`sharedSecret.hkdfDerivedSymmetricKey(using: SHA256.self, salt:sharedInfo:outputByteCount:)`、`AES.GCM.SealedBox(nonce:ciphertext:tag:)` 和 `AES.GCM.open`。安卓只用平台的 `KeyPairGenerator("EC")` / `ECGenParameterSpec("secp256r1")`、`KeyAgreement("ECDH")`、`Mac("HmacSHA256")`、`Cipher("AES/GCM/NoPadding")`；HKDF 为 HMAC extract 后接一个 expand 块 `HMAC(PRK, UTF8(info) || 0x01)`。安卓为冷启动恢复在私有 SharedPreferences 暂存 PKCS#8 私钥、state、服务器地址和开始时间；消费、失败或重试时删除，超过 10 分钟（或时钟回拨）也清除，冷启动正常加载网页。Activity 在两个 Intent 入口处理后均清掉回调 URL。
 
 固定已知答案见 [`server/app-handoff.test.ts`](../server/app-handoff.test.ts) 的 `protocolVector`：包含 App 私钥标量 `1`、服务端临时私钥标量 `2`（均为 32 字节大端）、nonce `000102030405060708090a0b`、完整测试 JWT 字节串、state、pk、epk、共享密钥、HKDF 输出及 ct。该 JWT 是无有效签名的公开测试材料；固定密钥和 nonce 仅用于向量，不能用于真实登录。测试通过可注入私钥和 nonce 的纯加密函数比对全部回跳字段，并独立使用 WebCrypto 导入密钥、派生密钥和解密，便于两端对照。CryptoKit 可用 `PrivateKey(rawRepresentation:)` 导入标量；安卓可用 `ECPrivateKeySpec(BigInteger(1, 标量字节), P-256 参数)` 导入后取得 PKCS#8 编码。

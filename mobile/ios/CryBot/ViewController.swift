@@ -199,7 +199,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
               let state = pendingLoginState else { return false }
         guard let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
               items.filter({ $0.name == "state" }).count == 1,
-              items.first(where: { $0.name == "state" })?.value == state else { failLogin(); return true }
+              items.first(where: { $0.name == "state" })?.value == state else { return true }
         let privateKey = pendingLoginKey
         pendingLoginState = nil
         pendingLoginKey = nil
