@@ -430,3 +430,40 @@ PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc 
 以下检查仍需 Actions 的隔离环境给出最终结果：`server/feishu-routes.test.ts`、`server/app-host.e2e.test.ts`、`server/app-links.e2e.test.ts`，以及上述 `server/environment.test.ts` 子进程用例。`server/index.test.ts` 的完整入口集成本轮未运行，也应由 Actions 覆盖。飞书 HTTP 超时本身没有业务失败堆栈，不能把它算作通过；当前也不宣称完整服务端或端到端验证通过。
 
 本轮实际编辑 `server/index.ts`、`server/app-handoff.ts`，新增组合门回归测试，并追加本报告；已有 `r8.md` 和自动合并内容保留。新增内容仅使用合成测试身份和示例域名。文本冲突已解决；未执行 git 暂存或提交，`server/index.ts` 的索引仍是 `UU`，由协调者暂存解决结果并完成合并提交。
+
+## 第 9 轮：校正 app-host E2E 的飞书路由表
+
+### 1. 路由行为核对
+
+本轮只修改 `server/app-host.e2e.test.ts` 的路由表，没有修改产品代码。
+
+- `feishuLoginConfig` 只有在同时具备 App ID、租户列表和 App Secret 时才返回配置；当前 E2E 的 `baseEnv` 只有 `CRYBOT_FEISHU_APP_ID`，因此 `FEISHU_CONFIG` 为 `null`。
+- `index.ts` 先调用 `appLinks`，再调用 `feishuExchangeRoute`。后者在配置为空时会把所有 `/auth/feishu*` 和 `/api/auth/feishu*` 请求直接返回 404。因此 `/auth/feishu/start`、`/auth/feishu/callback` 和 `POST /api/auth/feishu/exchange` 在 app Host、旧代理 Host 都是 404。
+- `/auth/feishu/app-return` 由 `appLinks` 先处理：`baseEnv` 有 App ID 且 app Host 匹配，所以 app Host 为 200；旧代理 Host 被 Host 限制返回 404。完全清空环境时没有 App ID，两个 Host 都是 404，原有 `unconfigured: 404` 保留。
+- 配置完整时，`feishuExchangeRoute` 只消费 `POST /api/auth/feishu/exchange`；两个 GET 路径不由它生成 302，而是继续到 SPA 静态回退。当前文件没有完整 Feishu 配置的 E2E 分支，因此没有新增虚构的 configured 期望；交换接口的成功、拒绝和上游失败由 `server/feishu-routes.test.ts` 覆盖。
+
+按当前入口接线得到的状态矩阵如下（exchange 行使用 E2E 发送的缺少必填字段的 JSON；完整请求的结果由上游和准入决定）：
+
+| Feishu 状态 | Host | `/auth/feishu/start` | `/auth/feishu/callback` | `/auth/feishu/app-return` | `POST /api/auth/feishu/exchange` |
+|---|---|---:|---:|---:|---:|
+| 未配置，`baseEnv` 仅有 App ID | app | 404 | 404 | 200 | 404 |
+| 未配置，`baseEnv` 仅有 App ID | legacy | 404 | 404 | 404 | 404 |
+| 完整配置 | app | 200 | 200 | 200 | 400 |
+| 完整配置 | legacy | 200 | 200 | 404 | 400 |
+| 完全清空环境 | app/legacy | 404 | 404 | 404 | 404 |
+
+路由表现已更新为 start、callback 和 exchange 在 app/legacy 两个 Host 均期望 404，并删除了描述旧 SPA 回退行为的注释。
+
+### 2. 本轮验证
+
+先执行了 `crybot-link-deps`。结果如下：
+
+| 命令 | 结果 |
+|---|---|
+| `pnpm exec vitest run server/app-host.e2e.test.ts --maxWorkers=1 --configLoader runner` | 沙箱禁止监听端口：前两项无法取得 `19600..22600` 的端口块，JWT 用例报 `listen EPERM: operation not permitted 127.0.0.1`；未完成业务断言。 |
+| `pnpm exec vitest run server/app-handoff-gate.test.ts --maxWorkers=1 --configLoader runner` | 9 passed |
+| `pnpm exec vitest run server/app-host.test.ts --maxWorkers=1 --configLoader runner` | 8 passed |
+| `pnpm exec vitest run server/feishu-routes.unit.test.ts --maxWorkers=1 --configLoader runner` | 8 passed |
+| `pnpm exec tsc --noEmit -p tsconfig.server.json` | 退出 0 |
+
+`AGENTS.md` 指向的 `docs/verification/README.md` 在当前仓库不存在；本轮 E2E 仍使用其已有临时目录和隔离环境配置，未访问用户 live app 或数据。未执行 git 暂存或提交。
