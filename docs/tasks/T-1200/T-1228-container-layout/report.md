@@ -139,3 +139,71 @@
 本沙箱不能运行真实容器或监听端口型 E2E；真实镜像的解释器版本、root/屏幕身份隔离、supervisor 和 websockify 行为，必须以协调者推分支后的 Actions「Real VM screens」全绿为准，本轮未声称已完成该验收。
 
 未改动单屏 fixture、`server/index.ts`、`server/vps-computer.ts`、IMAGE_LAYER_VERSION 或端口安全判定。`scripts/public-scan/allow-domains.txt` 保持原样，协调者添加的末尾行保留。未提交 git、未推送分支。
+
+## 第 6 轮小修（2026-11-14）
+
+### 本轮修改
+
+- 将容器/屏幕目标、身份常量与目标构造函数整体搬入 `server/container-targets.ts`（78 行）；将 exec 参数、口令 stdin 写入、屏幕起停、状态解析与按屏安装包搬入 `server/container-computer-screens.ts`（161 行）。生命周期工厂显式接收命令执行和运行时探测依赖，只有类型导入指回 `container-computer.ts`，不引入运行时循环依赖。
+- `server/container-computer.ts` 保留原导出入口和调用，现为 **1151 行**，低于 1175 行上限；没有修改 ratchet 清单。两个新模块均小于 1000 行。搬动代码与 HEAD 逐段比较一致，只有工厂嵌套所需的缩进和 export 位置变化；原有测试、断言及单屏参数 fixture 均未修改。
+- 在 `server/bot-box/env.test.ts` 的 `SERVER_ONLY_CRYBOT` 加入 `CRYBOT_PACKAGE_SCREEN`，旁边一行注释注明只经 `docker exec -e` 传给容器内包安装脚本。
+
+### 本地验收输出
+
+先运行 `crybot-link-deps`，成功链接 73 项预装依赖。没有使用 systemd；vitest 每次只运行一个文件。`docs/verification/README.md` 在当前分支仍不存在；验证仅使用 mock、隔离临时目录和子进程 fixture，没有访问用户 live app/data。
+
+```text
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+
+$ pnpm exec vitest run server/bot-box/env.test.ts
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+
+$ pnpm exec vitest run server/container-screens.test.ts
+ Test Files  1 passed (1)
+      Tests  25 passed (25)
+
+$ pnpm exec vitest run server/container-computer.test.ts
+ Test Files  1 passed (1)
+      Tests  150 passed (150)
+
+$ pnpm exec vitest run server/container-mcp.test.ts
+ Test Files  1 failed (1)
+      Tests  4 failed | 9 passed (13)
+```
+
+MCP 失败仍为前几轮相同的 4 个子进程桥接 fixture：
+
+```text
+lists lazy computer tools without starting a runtime or waiting for the desktop
+  SyntaxError: Unexpected end of JSON input
+passes MCP bytes unchanged to cua-driver mcp over the container runtime
+  AssertionError: expected '' to be '{"jsonrpc":"2.0","id":1,"method":"too…'
+answers ping locally so the bundled cua-driver is not invoked
+  AssertionError: expected [] to deeply equal [ …(2) ]
+never hands an engine an error result that carries a screenshot
+  SyntaxError: Unexpected end of JSON input
+```
+
+本轮重新运行独立最小复现 `spawnSync(process.execPath, ['-e', 'console.log(123)'], { encoding: 'utf8' })`，实际输出：
+
+```json
+{"error":"EPERM","status":0,"stdout":"","stderr":""}
+```
+
+没有修改或跳过这 4 个测试。本地不能声称 MCP 全绿，完整桥接结果以 Actions 为准。
+
+```text
+$ pnpm exec tsc -p tsconfig.server.json
+（无输出，退出码 0）
+
+$ pnpm exec oxlint --deny-warnings server/container-computer.ts server/container-computer-screens.ts server/container-targets.ts server/bot-box/env.test.ts
+（无输出，退出码 0）
+
+$ git diff --check
+（无输出，退出码 0）
+```
+
+本沙箱没有 Docker，不能监听 TCP 端口，因此未运行真实容器或端口型 E2E。`scripts/smoke-screens-container.mjs` 与 `.github/workflows/real-vm.yml` 均未修改；本轮真实镜像回归以协调者推分支后的 Actions「Real VM screens」为准。未提交 git、未推送分支。

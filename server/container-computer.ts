@@ -1,6 +1,6 @@
 // Cua-backed Local VM: CRY owns only the sandbox boundary; desktop automation is Cua Driver's (`cua-driver mcp` in the container).
-import { execFile, spawn } from "node:child_process";
-import { createHash, randomBytes } from "node:crypto";
+import { execFile } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { lstatSync } from "node:fs";
 import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -13,7 +13,6 @@ export { invalidateContainerComputerStatus } from "./container-status-cache.ts";
 import type { ToolScope } from "../shared/tool-scope.ts";
 import { augmentedPath, resolveCliSpawn } from "./env-path.ts";
 import { workspacePreparationDockerfile } from "./container-workspace.ts";
-import { DATA_DIR } from "./config.ts";
 import {
   applyResourcesBeforeStart,
   DEFAULT_DESKTOP_RESOURCES,
@@ -38,9 +37,14 @@ import {
   type HostUser,
 } from "./container-isolation.ts";
 import { SPAWNED_PROXIES } from "./proxy-paths.ts";
-import { rootContainerExecArgs, multiScreenInitScript, SCREENS_LAYOUT_LABEL, SCREENS_FALLBACK_FILE, SCREENS_SUPERVISOR_CONFIG, SCREEN_DRIVER_ENV, SCREEN_DRIVER_OPTIONS, screensLayoutOf, validateScreenPackages } from "./container-screens.ts";
+import { rootContainerExecArgs, multiScreenInitScript, SCREENS_LAYOUT_LABEL, SCREENS_FALLBACK_FILE, SCREEN_DRIVER_ENV, SCREEN_DRIVER_OPTIONS, screensLayoutOf } from "./container-screens.ts";
 export { screensLayoutOf } from "./container-screens.ts";
 export { SCREENS_LAYOUT_LABEL } from "./container-screens.ts";
+
+import { CUA_EXECUTABLE, CUA_SOCKET, DISPLAY, VM_WORKSPACE_GUEST, SHARED_LOCAL_VM_TARGET, containerTargetOf, isScreenTarget, screenDisplay, screenSocket, screenUid, screenUser, screenWorkdir, type LocalVmTarget } from "./container-targets.ts";
+export { CONTAINER, CUA_EXECUTABLE, CUA_SOCKET, DISPLAY, VM_WORKSPACE_DIR, VM_WORKSPACE_GUEST, SHARED_LOCAL_VM_TARGET, containerTargetOf, isScreenTarget, perBotLocalVmTarget, poolLocalVmTarget, sharedScreenTarget, screenDisplay, screenSocket, screenUid, screenUser, screenWorkdir, type LocalVmTarget } from "./container-targets.ts";
+import { createContainerScreens, screenExecArgs, screenIdentityArgs } from "./container-computer-screens.ts";
+export { cuaExecArgs, screenExecArgs, screenIdentityArgs, startScreen, type ContainerScreenState } from "./container-computer-screens.ts";
 
 const run = promisify(execFile);
 
@@ -61,95 +65,22 @@ export const IMAGE_REPOSITORY = "localhost/crybot/cua-local-vm";
 export const IMAGE_LAYER_VERSION = "9";
 export const IMAGE_LAYER_LABEL = "com.crybot.image-layer";
 export const IMAGE = `${IMAGE_REPOSITORY}:driver-${CUA_DRIVER_VERSION}-v${IMAGE_LAYER_VERSION}`;
-export const CONTAINER = "crybot-computer";
 export const MANAGED_LABEL = "com.crybot.local-vm";
 export const DRIVER_LABEL = "com.crybot.cua-driver";
 export const BASE_IMAGE_LABEL = "com.crybot.cua-base";
 export const WORKSPACE_LABEL = "com.crybot.workspace";
 export const TARGET_LABEL = "com.crybot.local-vm-target";
-export const VM_WORKSPACE_DIR = join(DATA_DIR, "vm-home");
-export const VM_WORKSPACE_GUEST = "/home/cua/workspace";
-export const DISPLAY = ":1";
-export const CUA_SOCKET = "/run/user/1000/crybot-cua.sock";
-export const CUA_EXECUTABLE = "/usr/local/libexec/crybot/cua-driver";
-
 const RUNTIMES = ["docker", "podman", "container"] as const;
 export type Runtime = (typeof RUNTIMES)[number];
 export type LifecycleAction = "pull" | "run" | "start" | "stop" | "remove";
 
 const INTERNAL_VIEWER_PORT = 6901;
-const HOST_VIEWER_PORT = 6080;
 export interface DesktopRunOptions {
   platform: NodeJS.Platform;
   resources: DesktopResources;
   /** The account that owns the workspace on the host. */
   hostUser: HostUser | null;
   screensLayout?: "single" | "multi";
-}
-
-export interface LocalVmTarget {
-  key: string;
-  containerName: string;
-  workspaceDir: string;
-  viewerPort: number | null;
-  label: string;
-  screen?: number;
-}
-
-export const SHARED_LOCAL_VM_TARGET: LocalVmTarget = {
-  key: "shared",
-  containerName: CONTAINER,
-  workspaceDir: VM_WORKSPACE_DIR,
-  viewerPort: HOST_VIEWER_PORT,
-  label: "shared",
-};
-
-function checkedScreen(n: number): number {
-  if (!Number.isInteger(n) || n < 1 || n > 4) throw new RangeError("screen must be between 1 and 4");
-  return n;
-}
-
-export function sharedScreenTarget(n: number): LocalVmTarget {
-  checkedScreen(n);
-  return { ...SHARED_LOCAL_VM_TARGET, key: `shared:s${n}`, screen: n };
-}
-
-export function containerTargetOf(target: LocalVmTarget): LocalVmTarget {
-  return isScreenTarget(target) ? SHARED_LOCAL_VM_TARGET : target;
-}
-
-export function isScreenTarget(target: LocalVmTarget): target is LocalVmTarget & { screen: number } {
-  return target.key === `shared:s${target.screen}` && Number.isInteger(target.screen) && (target.screen as number) >= 1 && (target.screen as number) <= 4;
-}
-
-export function screenUser(n: number): string { return `crybot-s${checkedScreen(n)}`; }
-export function screenUid(n: number): number { return 61000 + checkedScreen(n); }
-export function screenDisplay(n: number): string { return `:${checkedScreen(n)}`; }
-export function screenSocket(n: number): string { return `/run/user/${screenUid(n)}/crybot-cua.sock`; }
-export function screenWorkdir(n: number): string { return `/home/cua/workspace/screens/s${checkedScreen(n)}`; }
-
-/** Identities come from a digest, never a bot's display name or a caller-controlled path fragment. */
-export function perBotLocalVmTarget(botId: string): LocalVmTarget {
-  const digest = createHash("sha256").update(botId).digest("hex");
-  const short = digest.slice(0, 16);
-  return {
-    key: `bot:${digest}`,
-    containerName: `${CONTAINER}-${short}`,
-    workspaceDir: join(DATA_DIR, "vm-homes", short),
-    viewerPort: null,
-    label: digest,
-  };
-}
-
-/** Seat identities stay disjoint from the shared singleton and per-bot digests, so the three modes never meet. */
-export function poolLocalVmTarget(seat: number): LocalVmTarget {
-  return {
-    key: `pool:${seat}`,
-    containerName: `${CONTAINER}-p${seat}`,
-    workspaceDir: join(DATA_DIR, "vm-homes", `pool-${seat}`),
-    viewerPort: null,
-    label: `pool-${seat}`,
-  };
 }
 
 /** Only provisioning creates this durable directory; idle shutdown keeps it. */
@@ -504,76 +435,6 @@ function viewerUrl(password: string | null, port: number | null): string {
   if (!password) return base;
   const fragment = new URLSearchParams({ autoconnect: "true", resize: "scale", password });
   return `${base}#${fragment.toString()}`;
-}
-
-export function cuaExecArgs(
-  args: string[],
-  options: { container?: string; interactive?: boolean } = {},
-): string[] {
-  return [
-    "exec",
-    ...(options.interactive ? ["-i"] : []),
-    "-u",
-    "cua",
-    "-e",
-    "HOME=/home/cua",
-    "-e",
-    `DISPLAY=${DISPLAY}`,
-    "-e",
-    "CUA_DRIVER_INSTALL_CHANNEL=python_package",
-    "-e",
-    "CUA_DRIVER_RS_TELEMETRY_ENABLED=0",
-    options.container ?? CONTAINER,
-    CUA_EXECUTABLE,
-    ...args,
-  ];
-}
-
-export function screenIdentityArgs(
-  target: LocalVmTarget,
-  args: string[],
-  options: { interactive?: boolean; workdir?: string; env?: Record<string, string> } = {},
-): string[] {
-  if (!isScreenTarget(target)) {
-    const base = cuaExecArgs([], { container: target.containerName, interactive: options.interactive });
-    base.pop();
-    base.push(...args);
-    if (options.workdir) base.splice(base.indexOf("-u"), 0, "-w", options.workdir);
-    if (options.env) {
-      const at = base.indexOf(target.containerName);
-      base.splice(at, 0, ...Object.entries(options.env).flatMap(([key, value]) => ["-e", `${key}=${value}`]));
-    }
-    return base;
-  }
-  const n = target.screen;
-  const env = {
-    HOME: `/home/${screenUser(n)}`,
-    DISPLAY: screenDisplay(n),
-    XDG_RUNTIME_DIR: `/run/user/${screenUid(n)}`,
-    TMPDIR: `/run/user/${screenUid(n)}/tmp`,
-    CUA_DRIVER_INSTALL_CHANNEL: "python_package",
-    CUA_DRIVER_RS_TELEMETRY_ENABLED: "0",
-    ...options.env,
-  };
-  return [
-    "exec",
-    ...(options.interactive ? ["-i"] : []),
-    "-u", screenUser(n),
-    ...(options.workdir ? ["-w", options.workdir] : []),
-    ...Object.entries(env).flatMap(([key, value]) => ["-e", `${key}=${value}`]),
-    target.containerName,
-    "env", "-u", "VNC_PW", "prlimit", "--nproc=1500", "--",
-    "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
-    ...args,
-  ];
-}
-
-export function screenExecArgs(
-  target: LocalVmTarget,
-  args: string[],
-  options: { interactive?: boolean; workdir?: string; env?: Record<string, string> } = {},
-): string[] {
-  return screenIdentityArgs(target, [CUA_EXECUTABLE, ...args], options);
 }
 
 export function containerComputerStatus(
@@ -1050,84 +911,7 @@ export async function containerComputerExists(
   }
 }
 
-async function execContainerWithInput(runtime: Runtime, args: string[], input: string): Promise<void> {
-  const resolved = resolveCliSpawn(runtime, args);
-  await new Promise<void>((resolvePromise, reject) => {
-    const child = spawn(resolved.command, resolved.args, { env: { ...process.env, PATH: augmentedPath() }, stdio: ["pipe", "ignore", "pipe"] });
-    const timer = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(new Error(`${runtime} exec timed out after 30 seconds`));
-    }, 30_000);
-    child.stderr.resume();
-    child.stdin.on("error", () => {});
-    child.on("error", () => { clearTimeout(timer); reject(new Error(`${runtime} exec could not start`)); });
-    child.on("close", code => {
-      clearTimeout(timer);
-      if (code === 0) resolvePromise();
-      else reject(new Error(`${runtime} exec failed (exit ${code})`));
-    });
-    child.stdin.end(input);
-  });
-}
-
-export async function startScreen(runtime: Runtime, target: LocalVmTarget, password: string): Promise<void> {
-  if (!isScreenTarget(target)) throw new Error("startScreen requires a screen target");
-  if (password.length < 8 || /[\r\n\0]/.test(password)) throw new Error("screen password requires at least 8 characters and no line breaks");
-  const n = target.screen;
-  const path = `/run/crybot/screens/s${n}/passwd`;
-  await execContainerWithInput(runtime, rootContainerExecArgs(target.containerName, ["sh", "-c",
-    `set -eu; umask 077; vncpasswd -f > ${path}.tmp; chown ${screenUser(n)}:${screenUser(n)} ${path}.tmp; chmod 0400 ${path}.tmp; mv -f ${path}.tmp ${path}; supervisorctl -c ${SCREENS_SUPERVISOR_CONFIG} start screen-s${n}:*`,
-  ], { interactive: true }), `${password}\n`);
-}
-
-export async function stopScreen(runtime: Runtime, target: LocalVmTarget, runner: CommandRunner = sh): Promise<void> {
-  if (!isScreenTarget(target)) throw new Error("stopScreen requires a screen target");
-  try {
-    await runner(runtime, rootContainerExecArgs(target.containerName, ["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "stop", `screen-s${target.screen}:*`]), 30_000);
-  } finally {
-    await runner(runtime, rootContainerExecArgs(target.containerName, ["sh", "-c",
-      `setpriv --reuid=${screenUid(target.screen)} --regid=${screenUid(target.screen)} --clear-groups pkill -KILL -u ${screenUser(target.screen)} || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }`]), 30_000);
-  }
-}
-
-export type ContainerScreenState = "running" | "off" | "starting" | "stopping" | "failed";
-
-export async function screenStates(runtime: Runtime, containerName: string, runner: CommandRunner = sh): Promise<Record<number, ContainerScreenState>> {
-  let stdout: string;
-  try {
-    ({ stdout } = await runner(runtime, rootContainerExecArgs(containerName, ["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "status"]), 30_000));
-  } catch (error) {
-    const failure = error as { code?: number; stdout?: unknown; killed?: boolean; signal?: string };
-    if (failure.code !== 3 || typeof failure.stdout !== "string" || failure.killed || failure.signal ||
-      !/^screen-s[1-4]:\S+\s+[A-Z]+/m.test(failure.stdout)) throw error;
-    stdout = failure.stdout;
-  }
-  const groups = new Map<number, string[]>();
-  for (const line of stdout.split(/\r?\n/)) {
-    const match = line.match(/^screen-s([1-4]):[^\s]+\s+([A-Z]+)/);
-    if (!match) continue;
-    const n = Number(match[1]);
-    groups.set(n, [...(groups.get(n) ?? []), match[2]!]);
-  }
-  const states: Record<number, ContainerScreenState> = {};
-  for (const [n, programs] of groups) {
-    states[n] = programs.some(state => ["FATAL", "BACKOFF", "EXITED"].includes(state)) ? "failed"
-      : programs.every(state => state === "RUNNING") ? "running"
-      : programs.includes("STARTING") ? "starting"
-      : programs.includes("STOPPING") ? "stopping"
-      : programs.every(state => state === "STOPPED") ? "off" : "failed";
-  }
-  return states;
-}
-
-export async function installScreenPackages(target: LocalVmTarget, names: string[], options: { runtime?: Runtime; runner?: CommandRunner } = {}): Promise<void> {
-  if (!isScreenTarget(target)) throw new Error("installScreenPackages requires a screen target");
-  validateScreenPackages(names);
-  const runtime = options.runtime ?? (await containerRuntimeStatus()).runtime;
-  if (!runtime) throw new Error("No container runtime is available");
-  await (options.runner ?? sh)(runtime, rootContainerExecArgs(target.containerName,
-    ["/usr/local/sbin/crybot-pkg", ...names], { env: { CRYBOT_PACKAGE_SCREEN: `s${target.screen}` } }), 300_000);
-}
+export const { stopScreen, screenStates, installScreenPackages } = createContainerScreens({ sh, containerRuntimeStatus });
 
 export type ScreenshotCheck = { ok: boolean; mime: "image/png" | "image/jpeg" };
 
