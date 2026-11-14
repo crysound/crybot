@@ -2,18 +2,16 @@
 // access it would run with every tool and no approval.
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { expect, it } from "vitest";
 
 import { launchCloudSendFixture } from "../scripts/testing/cloud-send-fixture.ts";
+import { fixtureOutput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 it("a confined webhook turn can't open a thread that runs unconfined; a person's own turn still can", async () => {
-  const dump = join(tmpdir(), `outside-work-${randomBytes(6).toString("hex")}.json`);
   const fx = await launchCloudSendFixture({
     onePasswordToken: `ops_fake-${randomBytes(8).toString("hex")}`,
-    team: { id: "team-acme-1", name: "Acme", engine: `process.env.FAKE_CLAUDE_MODE = "hang"; process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(dump)};` },
+    team: { id: "team-acme-1", name: "Acme", engine: withFixtureState(`process.env.FAKE_CLAUDE_MODE = "hang"; process.env.FAKE_CLAUDE_DUMP = "dump.json";`) },
   });
   try {
     const team = fx.team!;
@@ -21,7 +19,7 @@ it("a confined webhook turn can't open a thread that runs unconfined; a person's
     const bot = (await team.as(ada, "POST", "/api/bots", { name: "Scout" })).body.bot as { id: string; threadId: string };
     expect((await team.as(ada, "PATCH", `/api/bots/${bot.id}`, { approvalMode: "full", applyToAllThreads: true })).status).toBe(200);
     const hook = (await team.as(ada, "POST", "/api/webhooks", { name: "Inbox", prompt: "Handle the event.", botId: bot.id })).body;
-    const read = () => { try { return JSON.parse(readFileSync(dump, "utf8")); } catch { return null; } };
+    const read = () => { try { return JSON.parse(readFileSync(fixtureOutput(team.home, bot.id, "dump.json"), "utf8")); } catch { return null; } };
     const reached = (marker: string) => expect.poll(() => JSON.stringify(read()?.prompt ?? "").includes(marker), { timeout: hostTimeout(30_000) }).toBe(true);
     const receiver = team.base.replace(/:(\d+)$/, (_: string, port: string) => `:${Number(port) + 1}`);
     const delivered = await fetch(`${receiver}/hooks/${hook.webhook.endpointId}/${encodeURIComponent(hook.credential.secret)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: "webhook-marker" }) });

@@ -7052,5 +7052,8 @@
   "computer.recovery.restart": "Riavvia computer",
   "computer.recovery.restartTitle": "Ferma e riavvia questo computer cloud. I programmi aperti vengono chiusi; i suoi file restano.",
   "computer.recovery.replace": "Sostituisci computer",
-  "computer.recovery.replaceTitle": "Elimina questo computer cloud e ne dà uno nuovo al bot. I file che sono solo lì vanno persi."
+  "computer.recovery.replaceTitle": "Elimina questo computer cloud e ne dà uno nuovo al bot. I file che sono solo lì vanno persi.",
+  "settings.profile.nameFromLogin": "Dal tuo account di accesso",
+  "botOverview.preference.cloud.locked": "un server configurato",
+  "keys.section.computers.purpose.locked": "Il tuo server e gli accessi ai siti web."
 }

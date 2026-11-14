@@ -3,6 +3,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSyn
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { parse } from "yaml";
 
 import {
   checkDataFormat, DATA_FORMAT, DATA_FORMAT_FILE, DataFormatError, dataFormatStepProblem, readDataFormat, stampDataFormat, type ReleasedDataFormat,
@@ -27,9 +28,28 @@ describe("the N-1 rule", () => {
     expect(dataFormatStepProblem(DATA_FORMAT, released)).toBeNull();
   });
 
-  it("is held against the release this tree follows, recorded by the release tooling and not by hand", () => {
+  it("is held against the package version built from the release workflow's locked source", () => {
     expect(released.version, "server/data-format-released.json is for another release: run `node scripts/record-data-format.mjs` only as part of a version bump").toBe(VERSION);
-    expect(readFileSync(join(ROOT, ".github", "workflows", "prepare-release.yml"), "utf8")).toContain("node scripts/record-data-format.mjs");
+    const workflow = parse(readFileSync(join(ROOT, ".github", "workflows", "release.yml"), "utf8"));
+    expect(workflow.jobs.prepare.outputs).toMatchObject({
+      commit: "${{ steps.lock.outputs.commit }}", version: "${{ steps.source.outputs.version }}",
+    });
+    expect(workflow.jobs.prepare.steps).toContainEqual(expect.objectContaining({
+      id: "source", uses: "./.github/actions/source", with: { commit: "${{ steps.lock.outputs.commit }}" },
+    }));
+    for (const target of ["server", "mac", "win", "android", "ios"]) {
+      expect(workflow.jobs[target].needs).toBe("prepare");
+      expect(workflow.jobs[target].steps).toContainEqual(expect.objectContaining({
+        uses: "./.github/actions/source",
+        with: { commit: "${{ needs.prepare.outputs.commit }}", version: "${{ needs.prepare.outputs.version }}" },
+      }));
+    }
+    const source = parse(readFileSync(join(ROOT, ".github", "actions", "source", "action.yml"), "utf8"));
+    const version = source.runs.steps.find((step: { id?: string }) => step.id === "version");
+    expect(version["working-directory"]).toBe("product");
+    expect(version.env.EXPECTED_VERSION).toBe("${{ inputs.version }}");
+    expect(version.run).toContain("pkg.version !== process.env.EXPECTED_VERSION");
+    expect(version.run).toContain("fs.readFileSync('package.json', 'utf8')");
   });
 
   it("fails a format bump that skips the two-release step", () => {

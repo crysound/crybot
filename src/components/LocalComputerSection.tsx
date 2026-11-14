@@ -1,3 +1,5 @@
+import { MIN_LOCAL_VM_IDLE_TIMEOUT_MINUTES, MAX_LOCAL_VM_IDLE_TIMEOUT_MINUTES, DEFAULT_LOCAL_VM_IDLE_TIMEOUT_MINUTES, parseLocalVmIdleTimeoutMinutes } from "@/lib/local-vm-idle-timeout";
+export { parseLocalVmIdleTimeoutMinutes } from "@/lib/local-vm-idle-timeout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { t } from "@/lib/i18n";
 import { waitForLocalVmReady } from "@/lib/local-vm-readiness";
@@ -649,18 +651,6 @@ function ActionButton({
       {children}
     </button>
   );
-}
-
-// Mirrors localVm.idleTimeoutMinutes in server/config.ts; the server is the authority.
-const MIN_LOCAL_VM_IDLE_TIMEOUT_MINUTES = 5;
-const MAX_LOCAL_VM_IDLE_TIMEOUT_MINUTES = 1_440;
-const DEFAULT_LOCAL_VM_IDLE_TIMEOUT_MINUTES = 480;
-
-export function parseLocalVmIdleTimeoutMinutes(value: string): number | null {
-  const trimmed = value.trim();
-  if (!/^\d+$/.test(trimmed)) return null;
-  const minutes = Number(trimmed);
-  return minutes >= MIN_LOCAL_VM_IDLE_TIMEOUT_MINUTES && minutes <= MAX_LOCAL_VM_IDLE_TIMEOUT_MINUTES ? minutes : null;
 }
 
 export function LocalVmIdleTimeoutSetting({

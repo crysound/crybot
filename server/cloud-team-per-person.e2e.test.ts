@@ -10,6 +10,7 @@ import { DatabaseSync } from "node:sqlite";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
 import { personKey } from "./person-key.ts";
+import { fixtureOutput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OWNER = { email: "olive@acme.test", role: "owner" as const };
@@ -39,11 +40,11 @@ async function until(done: () => Promise<boolean> | boolean, timeoutMs = 60_000)
 }
 /** One line in Scout's Shared chat and its reply. */
 async function turn(token: string, text: string) {
-  rmSync(join(team.home, "dump.json"), { force: true });
+  rmSync(fixtureOutput(team.home, scout.id, "dump.json"), { force: true });
   const before = (await messages(token, scout.mainThreadId)).length;
   const sent = await team.as(token, "POST", `/api/bots/${scout.id}/messages`, { text, threadId: scout.mainThreadId });
   expect(sent.status, JSON.stringify(sent.body)).toBe(202);
-  await until(async () => await idle(token) && (await messages(token, scout.mainThreadId)).length >= before + 2 && existsSync(join(team.home, "dump.json")));
+  await until(async () => await idle(token) && (await messages(token, scout.mainThreadId)).length >= before + 2 && existsSync(fixtureOutput(team.home, scout.id, "dump.json")));
 }
 /** One person's live stream: every frame it was sent. */
 async function listen(token: string) {
@@ -65,7 +66,7 @@ async function listen(token: string) {
 const settle = () => new Promise((resolve) => setTimeout(resolve, 500));
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   owner = (await team.pair(OWNER)).token!;
   admin = (await team.pair(ADMIN)).token!;

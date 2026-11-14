@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { removeTempDir } from "./cleanup.ts";
 import { ownTurnText, runRoomHandoffAgent } from "./room-handoff-agent.ts";
 
@@ -82,6 +82,22 @@ it("times out a missing waitForFile without sending the blocked step", () => wit
   await expect(run()).rejects.toThrow("Fixture MCP run timed out");
   expect(stepCalls(dir)).toEqual(["first"]);
 }), 10_000);
+
+it("keeps turn counters in writable evidence without writing beside the input plan", () => withMcp(RESPONDER, async (run, dir) => {
+  const evidence = join(dir, "turns.jsonl");
+  const plan = join(dir, "plan.json");
+  const input = readFileSync(plan, "utf8");
+  vi.stubEnv("FAKE_CLAUDE_ROOM_EVIDENCE", evidence);
+  try {
+    await expect(run()).resolves.toBe("Completed fixture");
+    await expect(run()).resolves.toBe("Completed fixture");
+    expect(readFileSync(evidence, "utf8").trim().split("\n").map((line) => JSON.parse(line).turnIndex)).toEqual([0, 1]);
+    expect(readFileSync(plan, "utf8")).toBe(input);
+    expect(existsSync(`${plan}.evidence.jsonl`)).toBe(false);
+  } finally {
+    vi.unstubAllEnvs();
+  }
+}));
 
 it("reads a turn's own words: a replayed history and recalled passages are not the turn's", () => {
   const replayed = "[This conversation received an update outside your provider session. The complete current history follows so you can use that update in your next response:]\n\nUser: OTHER-JOB\n\n[Now reply to the user's latest message:]\n\nTHIS-JOB";

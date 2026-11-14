@@ -1,5 +1,5 @@
 // The real server runs against the fake ACP CLI in "permission" mode: every turn asks to run `echo hi`.
-import { spawn, type ChildProcess } from "node:child_process";
+import { type ChildProcess } from "node:child_process";
 import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -8,12 +8,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { DecisionRow } from "./decision-log.ts";
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
-import { workerPort } from "./testing/worker-port.ts";
+import { spawnReservedServer } from "./testing/reserved-server.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
 const FAKE_CLI = join(SERVER_DIR, "testing", "fake-acp-cli.ts");
-const PORT = workerPort(28800, 10_000);
-const BASE = `http://127.0.0.1:${PORT}`;
+let base: string;
 const posixOnly = describe.skipIf(process.platform === "win32");
 const UNDELIVERED = "Couldn't deliver that answer";
 
@@ -22,7 +21,7 @@ let home: string;
 let log = "";
 
 const api = async (method: string, path: string, body?: unknown): Promise<{ status: number; body: any }> => {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${base}${path}`, {
     method,
     headers: body ? { "content-type": "application/json" } : {},
     body: body ? JSON.stringify(body) : undefined,
@@ -31,21 +30,23 @@ const api = async (method: string, path: string, body?: unknown): Promise<{ stat
 };
 
 async function start() {
-  child = spawn(process.execPath, [join(SERVER_DIR, "index.ts")], {
+  const started = await spawnReservedServer(join(SERVER_DIR, "index.ts"), {
     cwd: join(SERVER_DIR, ".."),
     env: {
       ...(process.env.PATH ? { PATH: process.env.PATH } : {}),
       ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
-      HOME: home, USERPROFILE: home, CRYBOT_PORT: String(PORT), CRYBOT_WEBHOOK_PORT: String(PORT + 1),
+      HOME: home, USERPROFILE: home,
     },
-    stdio: ["ignore", "pipe", "pipe"],
   });
+  child = started.child;
+  base = `http://127.0.0.1:${started.port}`;
   child.stdout!.on("data", (c) => (log += c));
   child.stderr!.on("data", (c) => (log += c));
   const deadline = Date.now() + 20_000;
   for (;;) {
+    if (child.exitCode !== null || child.signalCode !== null) throw new Error(`server exited:\n${log}`);
     try {
-      if ((await fetch(`${BASE}/api/health`)).ok) return;
+      if ((await fetch(`${base}/api/health`)).ok) return;
     } catch {
     }
     if (Date.now() > deadline) throw new Error(`server never came up:\n${log}`);

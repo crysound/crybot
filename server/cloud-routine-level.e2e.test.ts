@@ -1,6 +1,7 @@
 // The real Cloud home server with synthetic engines: a routine a Full access bot makes in the owner's own conversation
 // runs at Full access, whatever else the bot posted there, on Claude and on Codex. What a webhook's run made stays
 // confined, and what a bot asks to change in a conversation a guest left behind waits for the owner.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { connect } from "node:net";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -63,14 +64,14 @@ beforeAll(async () => {
   dataDir = join(home, ".crybot");
   mkdirSync(dataDir, { recursive: true });
   // Claude's turns hold until the test writes the release file; each engine dumps its latest start.
-  const claude = join(home, "claude-cli.mjs");
+  const claude = fixtureEnginePath(dataDir, "claude-cli.mjs");
   writeFileSync(claude, `#!/usr/bin/env node
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
 if (process.argv[2] !== "--version") { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(home, "claude.json"))}; process.env.FAKE_CLAUDE_MODE = "hang"; process.env.FAKE_CLAUDE_RELEASE = ${JSON.stringify(join(home, "release"))}; }
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
-  const codex = join(home, "codex-cli.mjs");
+  const codex = fixtureEnginePath(dataDir, "codex-cli.mjs");
   writeFileSync(codex, `#!/usr/bin/env node
 process.env.FAKE_CODEX_DUMP = ${JSON.stringify(join(home, "codex.json"))};
 process.env.FAKE_CODEX_DUMP_TURNS_ONLY = "1";
@@ -79,8 +80,8 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-co
   writeFileSync(join(dataDir, "config.json"), JSON.stringify({
     instances: {
       ...Object.fromEntries(["cursor", "githubCopilot", "openaiCompat", "qwen", "hermes", "pi"].map((id) => [id, { driver: "not-a-real-driver" }])),
-      claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: claude } },
-      codex: { driver: "codex", displayName: "Codex", config: { cli: codex } },
+      claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(claude)}` } },
+      codex: { driver: "codex", displayName: "Codex", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(codex)}` } },
     },
   }));
   const port = await freePortBlock([0, 1]);
