@@ -8,6 +8,18 @@ public protocol SessionStore: AnyObject {
     @discardableResult func replace(ifMatching expected: SessionRecord?, with record: SessionRecord?) throws -> Bool
 }
 
+extension SessionStore {
+    func storeLogin(_ record: SessionRecord, replacing previous: SessionRecord?) throws {
+        var expected = previous
+        while true {
+            try Task.checkCancellation()
+            if try replace(ifMatching: expected, with: record) { return }
+            expected = try read()
+            guard expected == nil || expected?.server == record.server else { throw CryNetError.serverChanged }
+        }
+    }
+}
+
 public final class MemorySessionStore: SessionStore {
     private let lock = NSLock()
     private var record: SessionRecord?
@@ -65,11 +77,14 @@ public final class KeychainSessionStore: SessionStore {
         do { return try JSONDecoder().decode(SessionRecord.self, from: data) }
         catch { throw CryNetError.storage }
     }
+    static func writeAttributes(data: Data) -> [String: Any] {
+        [kSecValueData as String: data,
+         kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly]
+    }
     private func save(_ record: SessionRecord) throws {
         let data: Data
         do { data = try JSONEncoder().encode(record) } catch { throw CryNetError.storage }
-        let attributes: [String: Any] = [kSecValueData as String: data,
-                                       kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly]
+        let attributes = Self.writeAttributes(data: data)
         let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
         if status == errSecItemNotFound {
             guard SecItemAdd(query.merging(attributes) { _, new in new } as CFDictionary, nil) == errSecSuccess else { throw CryNetError.storage }

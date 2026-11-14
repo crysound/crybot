@@ -179,9 +179,7 @@ public final class LiveTransport: Transport {
 
     public func webSocket(path: String) async throws -> any WebSocketChannel {
         var prepared = try client.prepare(Endpoint<Data>(path: path, decode: { $0 }))
-        guard let url = prepared.request.url, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { throw CryNetError.invalidResponse }
-        components.scheme = "wss"
-        prepared.request.url = components.url
+        prepared.request.url = try WebSocketRequest.url(server: client.server, path: path)
         let socket = client.session.webSocketTask(with: prepared.request)
         let channel = LiveWebSocketChannel(task: socket, client: client, prepared: prepared)
         try await channel.open()

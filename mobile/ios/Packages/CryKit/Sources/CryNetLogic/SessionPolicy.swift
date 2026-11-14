@@ -27,13 +27,18 @@ public enum SessionPolicy {
         return json?["error"] == nil
     }
 
-    public static func needsLogin(_ record: SessionRecord, now: Date = Date()) -> Bool {
-        guard record.isAuthenticated else { return true }
-        if let expiry = record.sessionExpires, expiry <= now { return true }
+    public enum LoginStatus: Equatable, Sendable {
+        case ok, renewSoon, loginRequired
+    }
+
+    public static func needsLogin(_ record: SessionRecord, now: Date = Date()) -> LoginStatus {
+        guard record.isAuthenticated else { return .loginRequired }
+        if let expiry = record.sessionExpires, expiry <= now { return .loginRequired }
         if record.method == .cfHandoff, let expiry = record.cfExpires {
-            return expiry.timeIntervalSince(now) <= 600
+            if expiry <= now { return .loginRequired }
+            if expiry.timeIntervalSince(now) <= 600 { return .renewSoon }
         }
-        return false
+        return .ok
     }
 
     public static func serverExpiry(milliseconds: Double?) -> Date? {
@@ -77,7 +82,7 @@ public struct SessionCookie: Equatable, Sendable, CustomStringConvertible {
     public func applying(to record: SessionRecord) -> SessionRecord {
         var updated = record
         updated.sessionToken = token
-        updated.sessionExpires = expires
+        updated.sessionExpires = expires ?? record.sessionExpires
         return updated
     }
 }

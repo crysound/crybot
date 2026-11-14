@@ -43,6 +43,8 @@ final class NetworkFixture: URLProtocol, @unchecked Sendable {
             let response = HTTPURLResponse(url: try XCTUnwrap(request.url), statusCode: reply.status, httpVersion: "HTTP/1.1", headerFields: reply.headers)!
             if let redirect = reply.redirect {
                 client?.urlProtocol(self, wasRedirectedTo: URLRequest(url: redirect), redirectResponse: response)
+                client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+                client?.urlProtocolDidFinishLoading(self)
             } else {
                 client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
                 if !reply.body.isEmpty { client?.urlProtocol(self, didLoad: reply.body) }

@@ -44,6 +44,28 @@ final class CallbackTests: XCTestCase {
         await fulfillment(of: [completed], timeout: 2)
         XCTAssertEqual(Set(states), ["scheme", "https"])
     }
+    @MainActor func testMismatchedStateIsIgnoredBeforeVersionDispatch() async {
+        let router = CallbackRouter()
+        let registry = HandoffRegistry()
+        let ignored = expectation(description: "ignored callback")
+        let completed = expectation(description: "matching callback")
+        var handled = 0
+        var completions = 0
+        registry.register(version: 1) { _ in handled += 1 }
+        router.registerHandoff(registry, acceptsState: { $0 == "pending" }, onIgnoredState: { ignored.fulfill() }) { result in
+            completions += 1
+            if case .failure = result { XCTFail("Unexpected failure") }
+            completed.fulfill()
+        }
+        XCTAssertTrue(router.handle(URL(string: "crybot://auth?v=99&state=wrong")!))
+        await fulfillment(of: [ignored], timeout: 2)
+        XCTAssertEqual(handled, 0)
+        XCTAssertEqual(completions, 0)
+        XCTAssertTrue(router.handle(URL(string: "crybot://auth?v=1&state=pending")!))
+        await fulfillment(of: [completed], timeout: 2)
+        XCTAssertEqual(handled, 1)
+        XCTAssertEqual(completions, 1)
+    }
     @MainActor func testVersionDispatchAndUnknownVersionError() async throws {
         let registry = HandoffRegistry()
         var seen = 0

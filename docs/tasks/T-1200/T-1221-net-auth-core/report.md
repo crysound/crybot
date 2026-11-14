@@ -69,7 +69,7 @@ $ /opt/swift/usr/bin/swiftc -typecheck mobile/ios/Packages/CryKit/Sources/CryNet
 /bin/bash: line 10: /opt/swift/usr/bin/swiftc: No such file or directory
 ```
 
-`command -v swift`、`command -v swiftc` 没有输出；同时搜索 `/opt`、`/usr/local`、`/data/home`（含隐藏目录）也未找到工具链。没有安装新的包。没有运行需要监听端口的 e2e，以 Actions 为准；本轮新增 URLProtocol 测试本身不监听端口，Keychain 测试使用独立随机 service，不接触用户会话。
+`command -v swift`、`command -v swiftc` 没有输出；同时搜索系统安装目录和用户目录（含隐藏目录）也未找到工具链。没有安装新的包。没有运行需要监听端口的 e2e，以 Actions 为准；本轮新增 URLProtocol 测试本身不监听端口，Keychain 测试使用独立随机 service，不接触用户会话。
 
 纯逻辑 import 检查：
 
@@ -341,3 +341,149 @@ Worktree Public scan: 22 files, 0 findings.
 ```
 
 未注入黑名单密钥，所以没有执行 HMAC 黑名单检查。这个本地结果不代替 PR 上的 Public scan，也不代替 Swift 测试。
+
+
+## 第 2 轮（2026-11-14）
+
+13 项返工已落到实现、测试与接口说明；本轮没有 git 提交。保留协调者已加入的 `scripts/public-scan/allow-domains.txt` 末尾内容，该文件没有工作区差异。没有改 Package.swift、CryCore、工程、工作流、App、Shared、服务端或网页。
+
+本机仍无 Swift 工具链，没有执行 Swift 测试，实际执行数为 **0**；源码计数为 CryNetLogicTests **24** 个、CryNetTests **32** 个测试方法。不能据此宣称编译或测试通过。macOS `swift test` 是否全绿，以协调者推送后的 Actions「Mobile builds」ios 作业为准，运行链接待协调者补充。
+
+### 1. 返工逐项结果与文件
+
+下表源码路径相对于 `mobile/ios/Packages/CryKit/`；“测试”均表示已写入的回归断言，执行状态见下一节。
+
+| 项 | 文件与结果 | 回归覆盖 |
+|---|---|---|
+| 1 | `Sources/CryNet/HTTPClient.swift` 仅在 usesSession 为 true 时判响应过期；公开请求按 APIError 解码，沿用 `CryNetError.api(APIError)` 契约。 | `LoginTests.swift` 分别让配对、邮箱返回 401 与 errorKey，断言 key/code 保留、验证码脱敏、已有会话及过期通知不受影响。 |
+| 2 | 同文件的 errorKey/code 不做模式替换，仍精确替换已知秘密值；JWT 必须有 JSON 头前缀，三段长度至少 12/12/16 字符。 | `HTTPClientTests.swift` 保留 errorKey 和普通三段文本、打码现场生成的 JWT；`LoginTests.swift` 同时覆盖已知秘密出现在 code/errorKey 中。 |
+| 3 | `Tests/CryNetTests/NetworkFixture.swift` 在重定向通知后补发响应与 finish。 | `HTTPClientTests.swift` 使用真实 URLSession 重定向委托，断言返回原 302、原 URL、只有一次请求；产品 accept 将该鉴权响应映射成 loginExpired 并清凭据。 |
+| 4 | `Sources/CryNet/SessionStore.swift` 提取纯函数 `writeAttributes(data:)`，由 SecItemUpdate 和 SecItemAdd 共用。iOS 的访问属性没有改变。 | `KeychainStoreTests.swift` 对实际写入的属性字典断言 AfterFirstUnlockThisDeviceOnly；仍用独立随机 service 测试系统 JSON 存取、共享读者及 CAS，不再断言 macOS 系统读回可访问属性。选择纯函数方案，未添加 kSecUseDataProtectionKeychain。 |
+| 5 | `LiveTransportTests.swift` 中 watchdog 的 opened/stopped 设置 assertForOverFulfill=false。 | 允许取消前额外重连触发相同 expectation，仍检查无帧超时导致停止。 |
+| 6 | `Sources/CryNet/SessionStore.swift` 集中登录 CAS 重试；`Logins.swift`、`AppHandoff.swift` 使用它；`CryNetError.swift` 新增 serverChanged。 | `LoginTests.swift`、`HandoffTests.swift` 分别覆盖三种登录遇到同服务器轮换、同服务器过期以及切换服务器。前两者写入新会话，后者抛 serverChanged 并保留另一服务器记录。 |
+| 7 | `HTTPClient.swift` 保留端点已有 Accept，身份头的保护继续生效。 | `HTTPClientTests.swift` 对 attachment、messageFile 实际请求断言 `*/*`；已有测试仍断言 JSON 和 SSE 的 Accept。 |
+| 8 | 保留 SessionStore 的原子 replace 要求。 | 下方“给后续任务的接口”明确 05/T-1222-06 自定义存储的实现义务。 |
+| 9 | `Sources/CryNetLogic/SessionPolicy.swift` 的 needsLogin 返回 LoginStatus：ok、renewSoon、loginRequired。 | `SessionTests.swift` 更新全部布尔调用，覆盖无 CF、601/600 秒边界、CF 已过期、会话到期优先、未登录，以及 pairing/email/feishu 不检查 CF。 |
+| 10 | 新增 `Sources/CryNetLogic/WebSocketRequest.swift`，由 `LiveTransport.swift` 调用纯函数构造 WSS URL。 | `SessionTests.swift` 覆盖 API 主机、端口、部署前缀、编码路径、默认 API 地址与恶意路径拒绝。新增 `UploadProgressTests.swift` 用 URLSession 真上传触发 HTTPTaskDelegate.didSendBodyData，断言收到非零进度和最终字节数；原上传端点、请求体测试保留。 |
+| 11 | `Sources/CryNetLogic/CallbackRouter.swift` 在版本分发前校验 state，错误 state 只记录日志、不调 completion；`AppHandoff.swift` 提供当前 pending state；`CryNetError.swift` 新增无敏感值的日志事件。 | `CallbackTests.swift` 覆盖错误 state 配未知版本仍被忽略；`HandoffTests.swift` 对 scheme/https 两入口先发错 state、再发有效密文，断言无提前完成、无请求、pending 可继续登录。 |
+| 12 | `SessionPolicy.swift` 的 SessionCookie.applying 在没有 cookie 期限时保留原 sessionExpires。 | `SessionTests.swift` 断言只轮换 token、保留期限；显式 Max-Age=0 仍更新期限。 |
+| 13 | 本报告第 1 轮第 72 行改成通用目录描述。 | 报告不含具体沙箱目录。 |
+
+### 2. 本地验证与限制
+
+开工已执行 `crybot-link-deps`：链接 73 个预装依赖条目。未安装其他依赖。没有 systemd，运行命令未加 systemd-run。
+
+Linux 自测脚本位于忽略目录 `mobile/ios/.linux-cache/test-net-logic-round2.sh`，内容如下（没有改写 HOME，显式缓存路径均在工作区）：
+
+```bash
+#!/usr/bin/env bash
+set -eu
+net_workspace=$(pwd)/mobile/ios
+net_cache=$net_workspace/.linux-cache
+export PATH=/opt/swift/usr/bin:$PATH
+export XDG_CACHE_HOME=$net_cache/xdg TMPDIR=$net_cache/tmp CLANG_MODULE_CACHE_PATH=$net_cache/clang-module-cache SWIFTPM_MODULECACHE_OVERRIDE=$net_cache/swiftpm-module-cache
+mkdir -p "$net_cache/home" "$XDG_CACHE_HOME" "$TMPDIR" "$CLANG_MODULE_CACHE_PATH" "$SWIFTPM_MODULECACHE_OVERRIDE"
+timeout 1200 swift test --jobs 2 --package-path "$net_workspace/Packages/CryKit" --scratch-path "$net_workspace/.linux-build" \
+  --cache-path "$net_cache/swiftpm" --config-path "$net_cache/config" --security-path "$net_cache/security" \
+  --manifest-cache local --disable-sandbox --filter CryNetLogicTests
+```
+
+命令及原样输出，退出码 127：
+
+```text
+$ bash mobile/ios/.linux-cache/test-net-logic-round2.sh
+timeout: failed to run command ‘swift’: No such file or directory
+```
+
+`command -v swift` 未找到命令，搜索系统安装目录和用户目录也未找到 swift/swiftc。没有执行任何 Swift 测试或类型检查，也没有同时运行多个测试文件。工具链恢复后可逐一过滤 SessionTests、CallbackTests、ReconnectTests 执行，避免并发跑多个测试文件。
+
+CryNetLogic 源码 import 检查命令：
+
+```bash
+rg -n '^import ' mobile/ios/Packages/CryKit/Sources/CryNetLogic
+```
+
+结果仅有 Foundation、FoundationNetworking、CryCore；FoundationNetworking 在 canImport 条件内。`git diff --check` 无输出，退出码 0。
+
+对四个目录的 23 个 Swift 文件检查尾随空白、占位令牌长度、JWT 字面量，并核对协调者白名单没有差异，结果：
+
+```text
+23 Swift files: whitespace, placeholder length, JWT literal checks passed; CryNetLogic import allowlist passed; coordinator allow-domains unchanged.
+```
+
+使用仓库 scanDiff 对 23 个 Swift 文件和本报告构造完整新增行 diff，包含两个尚未跟踪的新文件；本地工作区公开扫描命令与输出：
+
+```text
+$ node mobile/ios/.linux-cache/scan-net-worktree.mjs
+denylist: skipped (no key)
+Worktree Public scan: 24 files, 0 findings.
+```
+
+未注入黑名单密钥，HMAC 黑名单检查未执行；该结果不等于 Actions Public scan 通过。
+
+网络测试只用隔离夹具：现有 HTTP/SSE/登录测试用 URLProtocol，Keychain 用独立随机 service；上传真实回调测试用系统 Network 框架建立仅绑定回环地址、随机端口的临时 HTTP 接收器，测试结束取消连接及 listener，直接测试 URLSession 与产品 HTTPTaskDelegate，不放宽产品 CryServer 的 HTTPS 限制。Network 只用于测试，未安装包或修改 Package.swift。该测试不能用 URLProtocol 的收包或产品手动发出的首尾进度代替真实 didSendBodyData。沙箱禁止监听端口，且缺少 Apple 框架/Swift，本机未运行该测试或 e2e；以 Actions macOS 为准。
+
+当前检出仍缺 `docs/verification/README.md` 和 `mobile/ios/scripts/linux-test.sh`、`mobile/ios/scripts/linux-check.sh`，没有对用户 live app 或数据执行验证，没有声称服务端改动已验证。
+
+### 3. 原任务验收逐条重核
+
+| 原验收项 | 本轮结果 |
+|---|---|
+| Linux `swift test --filter CryNetLogicTests` 通过 | 未通过验收：工具链缺失，命令退出 127，原样输出见上。 |
+| Actions Mobile builds 的全部 CryKit 测试通过 | 待协调者推送后的 ios 作业；重定向和 Keychain 两个已知失败点已修订测试，尚无本轮运行链接。 |
+| CryNetLogic 无允许范围外 import | 本地文本检查通过，只有 Foundation/FoundationNetworking/CryCore。 |
+| 无 CF 时无 Cookie，始终无 Origin、不跟随重定向 | HTTPClientTests/NetworkFixture 已有头断言，重定向夹具现会结束；运行结果待 Actions。 |
+| 接力往返通过且算法和原 ViewController 一致 | 静态重核 P256 X9.63、HKDF-SHA256（32 字节、state salt、固定 info）、12 字节 nonce、16 字节 tag、state AAD 均一致；同密文双入口测试保留，运行结果待 Actions。 |
+| 日志/错误不含 token、JWT、配对码 | HTTPClientTests/LoginTests/HandoffTests 补齐标识字段保留及秘密精确替换断言；运行结果待 Actions。 |
+| 单测覆盖“要做的事”的逻辑 | 源码逐项映射见下；56 个测试方法仅为源码计数，实际执行 0。 |
+| Mobile builds、iOS Linux、Public scan 全绿且测试数大于 0 | 待协调者推分支、开 PR 和补链接；iOS Linux 仍需任务 43。工作区公开扫描不代替 Actions 或密钥黑名单检查。 |
+
+“要做的事”12 项源码映射：
+
+1. SessionRecord v2、未知版本/method、feishu 和 CF 可选编码：SessionTests。
+2. CryServer HTTPS 规范化、API 默认地址和构建参数：SessionTests。
+3. 请求头、轮换/期限保留、响应过期、三态登录判断：SessionTests；重连退避/40 秒/cursor/resumed：ReconnectTests；参数与版本分发：CallbackTests。
+4. CallbackRouter 主机/整段路径匹配、双入口、未知入口、注册扩展点：CallbackTests；错误 state 的忽略及 pending 保留追加到 HandoffTests。
+5. 回调模式四种组合：CallbackTests；AppHandoff 的系统可用性判断保留，浏览器接入仍由 05 完成。
+6. SessionStore 内存 CAS：HTTPClientTests；Keychain JSON/共享读取/CAS/清除和写入访问属性：KeychainStoreTests。
+7. HTTPClient 实际头/API 地址、公开与鉴权错误、轮换、拒绝重定向、迟到响应、Accept：HTTPClientTests/LoginTests。
+8. LiveTransport SSE/快照/watchdog、上传字节/query、Range 下载：LiveTransportTests；真实进度：UploadProgressTests；WSS URL 纯函数：SessionTests。真实 TLS/WebSocket 二进制往返仍需 macOS 隔离集成，不能把 URL 断言当成网络往返通过。
+9. 接力密文双入口、CF cookie 与 assertion 回退、日志、过期、取消、篡改、防重放、CAS：HandoffTests。
+10. 配对请求/二维码、邮箱 start/verify、写入方式和期限、缺 cookie、401/errorKey、CAS：LoginTests。
+11. Linux 纯逻辑测试覆盖上述逻辑；本机无工具链，未执行。
+12. Apple 网络/Keychain/CryptoKit 测试覆盖上述集成；全部待 Actions 实际执行。
+
+覆盖表未改；网络层交付项仍为 hello 的 resumed/cursor 与重新拉快照、ping 的活动时间及退避复位、其他 ServerFrame 按 SSE id 更新 cursor 后透传。没有据此登记 UI、页面或业务归并完成。
+
+### 4. 给后续任务的接口
+
+05 和 T-1222-06 的自定义 SessionStore **除 read/write/clear 外必须实现**：
+
+```swift
+@discardableResult
+func replace(ifMatching expected: SessionRecord?, with record: SessionRecord?) throws -> Bool
+```
+
+比较与写入必须原子执行；当前值与 expected 不相等时返回 false，保持当前值。MemorySessionStore 和 KeychainSessionStore 已提供实现。普通迟到响应仍只尝试一次 CAS；登录成功写入遇到冲突时重新读取，同一服务器继续 CAS，服务器不同抛 `CryNetError.serverChanged`。清空记录后没有其他服务器地址时允许重试；主动登出仍应取消正在进行的登录任务。05/T-1222-06 可将 serverChanged 显示为重新发起登录，不应当作静默取消。
+
+needsLogin 的返回值改为 `SessionPolicy.LoginStatus`，调用方必须按三个状态处理；renewSoon 只是提示重新接力，不应清除当前会话。最小示例（UI 函数由 05 提供）：
+
+```swift
+switch SessionPolicy.needsLogin(record, now: Date()) {
+case .ok: break
+case .renewSoon: showHandoffRenewalPrompt()
+case .loginRequired: showLogin()
+}
+let socketURL = try WebSocketRequest.url(server: server,
+    path: "/api/desktop-viewer/fixture/websockify")
+```
+
+CF 或会话已到期、记录未登录返回 loginRequired；只有 cfHandoff 且 CF 尚有效、剩余不超过 600 秒返回 renewSoon；pairing/email/feishu 不检查 CF 期限。
+
+CallbackRouter 仍由 App 生命周期持有，无单例；原第 1 轮初始化与两个入口的调用示例继续适用。registerHandoff 增加带默认值的 acceptsState/onIgnoredState 参数，AppHandoff 自动传入 pending 校验和安全日志；原 `router.registerHandoff(registry) { result in ... }` 仍可用。错误 state 不触发 completion，调用方不能据此关闭当前登录流程。HTTP/API 错误仍用 `CryNetError.api(let api)` 读取 errorKey/errorParams。其余公开类型、初始化方法和 35/48 的示例沿用第 1 轮。
+
+### 5. 协调者后续
+
+- 推送后检查 Actions「Mobile builds」ios 作业完整 `swift test`：尤其重定向、Keychain、watchdog 和真实上传进度测试；补运行链接和实际执行数。
+- 本轮没有 CryCore 字段缺口，没有请求变更 Package.swift。Network 为仅测试使用的系统框架，无第三方包；任务 43 的 Linux 条件隔离继续按原安排。
+- 补齐验证指南与覆盖表；TLS/WebSocket 真网络往返保留为隔离集成验收项。

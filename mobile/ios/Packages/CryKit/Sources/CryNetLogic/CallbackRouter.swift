@@ -81,10 +81,18 @@ public struct HandoffParameters: CustomStringConvertible, CustomDebugStringConve
         handler(url)
         return true
     }
-    public func registerHandoff(_ registry: HandoffRegistry, completion: @escaping (Result<Void, Error>) -> Void) {
+    public func registerHandoff(_ registry: HandoffRegistry,
+                                acceptsState: @escaping (String) -> Bool = { _ in true },
+                                onIgnoredState: @escaping () -> Void = { NSLog("Ignored handoff callback with mismatched state.") },
+                                completion: @escaping (Result<Void, Error>) -> Void) {
         let handler: Handler = { url in
             Task { @MainActor in
-                do { try await registry.handle(url); completion(.success(())) }
+                do {
+                    let parameters = try HandoffParameters(url: url)
+                    guard acceptsState(parameters.state) else { onIgnoredState(); return }
+                    try await registry.handle(url)
+                    completion(.success(()))
+                } catch HandoffError.invalidState { onIgnoredState() }
                 catch { completion(.failure(error)) }
             }
         }

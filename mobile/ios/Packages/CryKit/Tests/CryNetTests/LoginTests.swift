@@ -73,12 +73,70 @@ final class LoginTests: NetworkTestCase {
         catch { XCTAssertEqual(error as? HandoffError, .missingSession) }
         XCTAssertNil(store.read())
     }
+    func testWrongPairingAndEmailCodesPreserveAPIErrorKeys() async throws {
+        for email in [false, true] {
+            let store = try store()
+            let previous = store.read()
+            let errorKey = email ? "serverError.email.codeWrong" : "serverError.pair.codeWrong"
+            NetworkFixture.install { request in
+                self.assertHeaders(request, token: nil)
+                return FixtureReply(status: 401, body: "{\"error\":\"Wrong code 123456\",\"code\":\"auth.code.wrong\",\"errorKey\":\"\(errorKey)\"}")
+            }
+            let client = try client(store, expired: { XCTFail("Public request expired stored session") })
+            do {
+                if email { _ = try await EmailLogin(client: client).verify(email: "person@example.com", code: "123456", label: "Phone") }
+                else { _ = try await PairingLogin(client: client).login(code: "123456", label: "Phone") }
+                XCTFail("Expected API error")
+            } catch {
+                guard case CryNetError.api(let api) = error else { return XCTFail("Wrong login error") }
+                XCTAssertEqual(api.errorKey, errorKey)
+                XCTAssertEqual(api.code, "auth.code.wrong")
+                XCTAssertFalse(api.error.contains("123456"))
+            }
+            XCTAssertEqual(store.read(), previous)
+        }
+    }
+    func testLoginRetriesSameServerCASAndRejectsChangedServer() async throws {
+        for email in [false, true] {
+            for mutation in ["rotation", "expiry", "server"] {
+                let store = try store()
+                var changed = try XCTUnwrap(store.read())
+                if mutation == "rotation" { changed.sessionToken = "cry_sess_rotated" }
+                if mutation == "expiry" { changed = changed.signedOut() }
+                if mutation == "server" {
+                    changed = SessionRecord(server: try CryServer(webURL: "https://other.example.com"), method: .email, sessionToken: "cry_sess_other")
+                }
+                let concurrent = changed
+                NetworkFixture.install { _ in
+                    store.write(concurrent)
+                    return FixtureReply(headers: ["Set-Cookie": "cry_session_fixture=cry_sess_new"], body: email
+                        ? "{\"session\":\(self.publicSessionBody),\"environment\":\(self.environmentBody)}"
+                        : "{\"token\":\"cry_sess_new\"}")
+                }
+                do {
+                    let client = try client(store)
+                    let record: SessionRecord
+                    if email { record = try await EmailLogin(client: client).verify(email: "person@example.com", code: "12345678", label: "Phone") }
+                    else { record = try await PairingLogin(client: client).login(code: "123456", label: "Phone") }
+                    XCTAssertNotEqual(mutation, "server")
+                    XCTAssertEqual(store.read(), record)
+                    XCTAssertEqual(record.sessionToken, "cry_sess_new")
+                } catch {
+                    XCTAssertEqual(mutation, "server")
+                    guard case CryNetError.serverChanged = error else { return XCTFail("Wrong conflict error") }
+                    XCTAssertEqual(store.read(), concurrent)
+                }
+            }
+        }
+    }
     func testPairingErrorDoesNotExposeCode() async throws {
         let store = MemorySessionStore()
-        NetworkFixture.install { _ in FixtureReply(status: 400, body: #"{"error":"Invalid code custom-pair-code"}"#) }
+        NetworkFixture.install { _ in FixtureReply(status: 400, body: #"{"error":"Invalid code custom-pair-code","code":"custom-pair-code","errorKey":"custom-pair-code"}"#) }
         do { _ = try await PairingLogin(client: client(store)).login(code: "custom-pair-code", label: "Phone"); XCTFail("Expected failure") }
         catch {
             guard case CryNetError.api(let api) = error else { return XCTFail("Wrong error") }
+            XCTAssertEqual(api.code, "[redacted]")
+            XCTAssertEqual(api.errorKey, "[redacted]")
             for text in [api.error, String(describing: error), String(reflecting: error), error.localizedDescription] {
                 XCTAssertFalse(text.contains("custom-pair-code"))
             }

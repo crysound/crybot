@@ -68,6 +68,8 @@ final class LiveTransportTests: NetworkTestCase {
         var ticks: TimeInterval = 0
         let stopped = expectation(description: "stale request cancelled")
         let opened = expectation(description: "request opened")
+        opened.assertForOverFulfill = false
+        stopped.assertForOverFulfill = false
         NetworkFixture.install { _ in
             opened.fulfill()
             return FixtureReply(headers: ["Content-Type": "text/event-stream"], body: "", keepOpen: true, stopped: { stopped.fulfill() })

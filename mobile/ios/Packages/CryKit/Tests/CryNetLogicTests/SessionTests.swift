@@ -87,6 +87,27 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(SessionCookie.parse(["Set-Cookie": "cry_session_a=cry_sess_test; Max-Age=0"], now: now)?.expires, now)
         XCTAssertNotNil(SessionCookie.parse(["Set-Cookie": "cry_session_a=cry_sess_test; Expires=Wed, 21 Oct 2037 07:28:00 GMT"])?.expires)
     }
+    func testCookieWithoutExpiryRetainsSessionDeadline() throws {
+        let expiry = Date(timeIntervalSince1970: 2000)
+        let record = SessionRecord(server: try CryServer(webURL: "https://example.com"), method: .pairing,
+                                   sessionToken: "cry_sess_old", sessionExpires: expiry)
+        let cookie = try XCTUnwrap(SessionCookie.parse(["Set-Cookie": "cry_session_fixture=cry_sess_rotated; HttpOnly"]))
+        XCTAssertEqual(cookie.applying(to: record).sessionToken, "cry_sess_rotated")
+        XCTAssertEqual(cookie.applying(to: record).sessionExpires, expiry)
+        let now = expiry.addingTimeInterval(-60)
+        let expired = try XCTUnwrap(SessionCookie.parse(["Set-Cookie": "cry_session_fixture=cry_sess_rotated; Max-Age=0"], now: now))
+        XCTAssertEqual(expired.applying(to: record).sessionExpires, now)
+    }
+    func testWebSocketURLPreservesAPIOriginPortPrefixAndEscapedPath() throws {
+        let server = try CryServer(webURL: "https://example.com/web", apiURL: "https://api.example.com:8443/root/")
+        XCTAssertEqual(try WebSocketRequest.url(server: server, path: "/api/desktop-viewer/test%20screen/websockify").absoluteString,
+                       "wss://api.example.com:8443/root/api/desktop-viewer/test%20screen/websockify")
+        for path in ["https://other.example.com/socket", "//other.example.com/socket", "/../socket", "/%2e%2e/socket", "/socket?token=bad", "/socket#bad"] {
+            XCTAssertThrowsError(try WebSocketRequest.url(server: server, path: path))
+        }
+        let defaultAPI = try CryServer(webURL: "https://example.com")
+        XCTAssertEqual(try WebSocketRequest.url(server: defaultAPI, path: "/socket").absoluteString, "wss://example.com/socket")
+    }
     func testResponseExpiryRules() {
         for status in [302, 303, 307, 401] {
             XCTAssertTrue(SessionPolicy.responseExpiresLogin(status: status, body: Data(#"{"error":"denied"}"#.utf8)))
@@ -100,18 +121,24 @@ final class SessionTests: XCTestCase {
     func testExpiryByMethod() throws {
         let now = Date(timeIntervalSince1970: 1000)
         var record = SessionRecord(server: try CryServer(webURL: "https://example.com"), method: .cfHandoff, sessionToken: "cry_sess_test")
-        XCTAssertFalse(SessionPolicy.needsLogin(record, now: now))
+        XCTAssertEqual(SessionPolicy.needsLogin(record, now: now), .ok)
         record.cfExpires = now.addingTimeInterval(601)
-        XCTAssertFalse(SessionPolicy.needsLogin(record, now: now))
+        XCTAssertEqual(SessionPolicy.needsLogin(record, now: now), .ok)
         record.cfExpires = now.addingTimeInterval(600)
-        XCTAssertTrue(SessionPolicy.needsLogin(record, now: now))
+        XCTAssertEqual(SessionPolicy.needsLogin(record, now: now), .renewSoon)
+        record.cfExpires = now
+        XCTAssertEqual(SessionPolicy.needsLogin(record, now: now), .loginRequired)
+        record.cfExpires = now.addingTimeInterval(600)
+        record.sessionExpires = now
+        XCTAssertEqual(SessionPolicy.needsLogin(record, now: now), .loginRequired)
+        XCTAssertEqual(SessionPolicy.needsLogin(record.signedOut(), now: now), .loginRequired)
         for method in [SessionRecord.Method.pairing, .email, .feishu] {
             var bearer = SessionRecord(server: record.server, method: method, sessionToken: "cry_sess_test", cfExpires: now.addingTimeInterval(-1))
-            XCTAssertFalse(SessionPolicy.needsLogin(bearer, now: now))
+            XCTAssertEqual(SessionPolicy.needsLogin(bearer, now: now), .ok)
             bearer.sessionExpires = now.addingTimeInterval(1)
-            XCTAssertFalse(SessionPolicy.needsLogin(bearer, now: now))
+            XCTAssertEqual(SessionPolicy.needsLogin(bearer, now: now), .ok)
             bearer.sessionExpires = now
-            XCTAssertTrue(SessionPolicy.needsLogin(bearer, now: now))
+            XCTAssertEqual(SessionPolicy.needsLogin(bearer, now: now), .loginRequired)
         }
         XCTAssertEqual(SessionPolicy.serverExpiry(milliseconds: 1234000), Date(timeIntervalSince1970: 1234))
     }

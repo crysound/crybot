@@ -30,6 +30,19 @@ final class HTTPClientTests: NetworkTestCase {
         _ = try await client(store).send(CoreEndpoints.authSession)
         XCTAssertEqual(store.read(), before)
     }
+    func testDownloadEndpointsPreserveAcceptHeader() async throws {
+        let store = try store()
+        NetworkFixture.install { request in
+            self.assertHeaders(request)
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "*/*")
+            return FixtureReply(body: "file bytes")
+        }
+        for endpoint in [CoreEndpoints.attachment(name: "file.bin"),
+                         try CoreEndpoints.messageFile(thread: "fixture", message: "fixture", path: "file.bin")] {
+            let data = try await client(store).send(endpoint)
+            XCTAssertEqual(data, Data("file bytes".utf8))
+        }
+    }
     func testCFAndCookieRotationAreUsedByNextRequest() async throws {
         let store = try store(cf: "cf-fixture")
         let client = try client(store)
@@ -77,20 +90,29 @@ final class HTTPClientTests: NetworkTestCase {
             XCTAssertEqual(request.url?.host, "api.example.com")
             return FixtureReply(status: 302, headers: ["Location": "https://login.example.com"], redirect: URL(string: "https://login.example.com")!)
         }
-        do { _ = try await client(store).send(CoreEndpoints.authSession); XCTFail("Expected expiration") }
-        catch { guard case CryNetError.loginExpired = error else { return XCTFail("Wrong redirect error") } }
+        let client = try client(store)
+        let prepared = try client.prepare(CoreEndpoints.authSession)
+        let (data, response) = try await client.session.data(for: prepared.request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 302)
+        XCTAssertEqual(response.url, prepared.request.url)
+        XCTAssertThrowsError(try client.accept(response, body: data, prepared: prepared)) { error in
+            guard case CryNetError.loginExpired = error else { return XCTFail("Wrong redirect error") }
+        }
+        XCTAssertFalse(store.read()?.isAuthenticated == true)
         XCTAssertEqual(requests, 1)
     }
     func testJSONForbiddenIsAPIErrorAndSecretsAreRedacted() async throws {
         let store = try store(cf: "cf-secret")
-        let jwt = ["header", "payload", "signature"].map { HandoffEncoding.base64URL(Data($0.utf8)) }.joined(separator: ".")
+        let jwt = [#"{"alg":"HS256","typ":"JWT"}"#, #"{"exp":4102444800}"#, String(repeating: "s", count: 32)].map { HandoffEncoding.base64URL(Data($0.utf8)) }.joined(separator: ".")
         NetworkFixture.install { _ in
-            FixtureReply(status: 403, body: "{\"error\":\"cry_sess_fixture cf-secret \(jwt) 123456\",\"code\":\"DENIED\"}")
+            FixtureReply(status: 403, body: "{\"error\":\"serverError.pair.tooMany cry_sess_fixture cf-secret \(jwt) 123456\",\"code\":\"DENIED\",\"errorKey\":\"serverError.pair.tooMany\"}")
         }
         do { _ = try await client(store).send(CoreEndpoints.authSession); XCTFail("Expected API error") }
         catch {
             guard case CryNetError.api(let api) = error else { return XCTFail("Wrong API error") }
             XCTAssertEqual(api.code, "DENIED")
+            XCTAssertEqual(api.errorKey, "serverError.pair.tooMany")
+            XCTAssertTrue(api.error.contains("serverError.pair.tooMany"))
             for text in [api.error, String(describing: error), String(reflecting: error), error.localizedDescription] {
                 for secret in ["cry_sess_fixture", "cf-secret", jwt, "123456"] { XCTAssertFalse(text.contains(secret)) }
             }

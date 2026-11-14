@@ -30,7 +30,10 @@ public struct HandoffAttempt: CustomStringConvertible, CustomDebugStringConverti
             guard let self else { throw HandoffError.expiredAttempt }
             try await self.complete(parameters)
         }
-        router.registerHandoff(self.registry, completion: completion)
+        router.registerHandoff(self.registry, acceptsState: { [weak self] state in
+            guard let pending = self?.pending else { return true }
+            return pending.state == state
+        }, onIgnoredState: { log(.ignoredHandoffState) }, completion: completion)
     }
     public var callbackMode: HandoffCallbackMode {
         let supportsHTTPS: Bool
@@ -76,7 +79,7 @@ public struct HandoffAttempt: CustomStringConvertible, CustomDebugStringConverti
         let record = SessionRecord(server: client.server, method: .cfHandoff, sessionToken: cookie.token,
                                    sessionExpires: SessionPolicy.serverExpiry(milliseconds: reply.value.expiresAt) ?? cookie.expires,
                                    cfAuthorization: token, cfExpires: expiry)
-        guard try client.store.replace(ifMatching: attempt.previous, with: record) else { throw CancellationError() }
+        try client.store.storeLogin(record, replacing: attempt.previous)
     }
 
     private func decrypt(_ parameters: HandoffParameters, key: P256.KeyAgreement.PrivateKey) throws -> String {

@@ -122,6 +122,68 @@ final class HandoffTests: NetworkTestCase {
         }
         XCTAssertNil(store.read())
     }
+    @MainActor func testWrongStateLeavesPendingAttemptAndDoesNotComplete() async throws {
+        for base in ["crybot://auth", "https://example.com/auth/app-return"] {
+            let store = MemorySessionStore()
+            let client = HTTPClient(server: try server(), store: store, configuration: NetworkFixture.configuration(), now: { self.date })
+            let router = CallbackRouter(linkHost: "example.com")
+            let ignored = expectation(description: "wrong state ignored")
+            let completed = expectation(description: "valid state completed")
+            var completions = 0
+            let handoff = AppHandoff(client: client, router: router, log: { event in
+                if case .ignoredHandoffState = event { ignored.fulfill() }
+                XCTAssertFalse(event.description.contains(self.state))
+            }) { result in
+                completions += 1
+                if case .failure = result { XCTFail("Unexpected completion failure") }
+                completed.fulfill()
+            }
+            let privateKey = try key(1)
+            _ = try handoff.begin(privateKey: privateKey, state: state)
+            NetworkFixture.install { _ in XCTFail("Wrong state contacted server"); return FixtureReply() }
+            XCTAssertTrue(router.handle(URL(string: "\(base)?v=1&state=wrong")!))
+            await fulfillment(of: [ignored], timeout: 2)
+            XCTAssertEqual(completions, 0)
+            XCTAssertNil(store.read())
+            NetworkFixture.install { _ in
+                FixtureReply(headers: ["Set-Cookie": "cry_session_fixture=cry_sess_handoff"], body: self.sessionBody)
+            }
+            XCTAssertTrue(router.handle(try callback(base, query: encryptedQuery(recipient: privateKey, token: jwt()))))
+            await fulfillment(of: [completed], timeout: 2)
+            XCTAssertEqual(completions, 1)
+            XCTAssertEqual(store.read()?.sessionToken, "cry_sess_handoff")
+        }
+    }
+    @MainActor func testHandoffRetriesSameServerCASAndRejectsChangedServer() async throws {
+        for mutation in ["rotation", "expiry", "server"] {
+            let store = try store()
+            let client = HTTPClient(server: try server(), store: store, configuration: NetworkFixture.configuration(), now: { self.date })
+            let handoff = AppHandoff(client: client, router: CallbackRouter(), completion: { _ in })
+            let privateKey = try key(1)
+            _ = try handoff.begin(privateKey: privateKey, state: state)
+            var changed = try XCTUnwrap(store.read())
+            if mutation == "rotation" { changed.sessionToken = "cry_sess_rotated" }
+            if mutation == "expiry" { changed = changed.signedOut() }
+            if mutation == "server" {
+                changed = SessionRecord(server: try CryServer(webURL: "https://other.example.com"), method: .email, sessionToken: "cry_sess_other")
+            }
+            let concurrent = changed
+            NetworkFixture.install { _ in
+                store.write(concurrent)
+                return FixtureReply(headers: ["Set-Cookie": "cry_session_fixture=cry_sess_handoff"], body: self.sessionBody)
+            }
+            do {
+                try await handoff.registry.handle(callback("crybot://auth", query: encryptedQuery(recipient: privateKey, token: jwt())))
+                XCTAssertNotEqual(mutation, "server")
+                XCTAssertEqual(store.read()?.sessionToken, "cry_sess_handoff")
+                XCTAssertEqual(store.read()?.method, .cfHandoff)
+            } catch {
+                XCTAssertEqual(mutation, "server")
+                guard case CryNetError.serverChanged = error else { return XCTFail("Wrong conflict error") }
+                XCTAssertEqual(store.read(), concurrent)
+            }
+        }
+    }
     @MainActor func testAttemptExpiryAndCancellation() async throws {
         var now = date
         let store = MemorySessionStore()

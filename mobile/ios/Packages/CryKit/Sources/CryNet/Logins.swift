@@ -13,7 +13,7 @@ public final class PairingLogin {
         let record = SessionRecord(server: client.server, method: .pairing, sessionToken: reply.cookie?.token ?? reply.value.token,
                                    sessionExpires: SessionPolicy.serverExpiry(milliseconds: reply.value.session?.expiresAt) ?? reply.cookie?.expires)
         try Task.checkCancellation()
-        guard try client.store.replace(ifMatching: previous, with: record) else { throw CancellationError() }
+        try client.store.storeLogin(record, replacing: previous)
         return record
     }
     @discardableResult public func login(invite: PairingInvite, label: String, attemptId: String = UUID().uuidString) async throws -> SessionRecord {
@@ -35,7 +35,7 @@ public final class EmailLogin {
         let record = SessionRecord(server: client.server, method: .email, sessionToken: cookie.token,
                                    sessionExpires: SessionPolicy.serverExpiry(milliseconds: reply.value.session.expiresAt) ?? cookie.expires)
         try Task.checkCancellation()
-        guard try client.store.replace(ifMatching: previous, with: record) else { throw CancellationError() }
+        try client.store.storeLogin(record, replacing: previous)
         return record
     }
 }

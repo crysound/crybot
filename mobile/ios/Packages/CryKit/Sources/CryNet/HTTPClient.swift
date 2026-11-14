@@ -62,7 +62,10 @@ public final class HTTPClient {
         }
         // Endpoint headers cannot override identity or reintroduce browser-origin credentials.
         for name in ["Authorization", "Cookie", "Origin", "Cf-Access-Jwt-Assertion"] { request.setValue(nil, forHTTPHeaderField: name) }
-        for (key, value) in SessionPolicy.headers(for: record) { request.setValue(value, forHTTPHeaderField: key) }
+        for (key, value) in SessionPolicy.headers(for: record) {
+            if key == "Accept", request.value(forHTTPHeaderField: key) != nil { continue }
+            request.setValue(value, forHTTPHeaderField: key)
+        }
         if let cfToken {
             guard CredentialRules.isCookieValue(cfToken) else { throw HandoffError.invalidPayload }
             request.setValue("CF_Authorization=\(cfToken)", forHTTPHeaderField: "Cookie")
@@ -107,8 +110,8 @@ public final class HTTPClient {
             result[String(describing: pair.key)] = String(describing: pair.value)
         }
         let cookie = SessionCookie.parse(headers, now: now())
-        if SessionPolicy.responseExpiresLogin(status: http.statusCode, body: body) {
-            if prepared.usesSession, let record = prepared.record { try expire(record) }
+        if prepared.usesSession, SessionPolicy.responseExpiresLogin(status: http.statusCode, body: body) {
+            if let record = prepared.record { try expire(record) }
             throw CryNetError.loginExpired
         }
         if let cookie, let record = prepared.record {
@@ -144,10 +147,11 @@ public final class HTTPClient {
         if let body = prepared.request.httpBody, let json = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] {
             for key in ["code", "token", "attemptId"] { if let value = json[key] as? String { secrets.append(value) } }
         }
-        func scrub(_ value: String?) -> String? {
+        func scrub(_ value: String?, patterns: Bool = true) -> String? {
             guard var value else { return nil }
             for secret in secrets where !secret.isEmpty { value = value.replacingOccurrences(of: secret, with: "[redacted]") }
-            for pattern in ["cry_(?:sess|pair)_[A-Za-z0-9_-]+", "[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+", "\\b[0-9]{6,8}\\b"] {
+            guard patterns else { return value }
+            for pattern in ["cry_(?:sess|pair)_[A-Za-z0-9_-]+", "(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{9,}\\.[A-Za-z0-9_-]{12,}\\.[A-Za-z0-9_-]{16,}(?![A-Za-z0-9_-])", "\\b[0-9]{6,8}\\b"] {
                 value = value.replacingOccurrences(of: pattern, with: "[redacted]", options: .regularExpression)
             }
             return value
@@ -160,7 +164,7 @@ public final class HTTPClient {
             case .unknown: break
             }
         }
-        return APIError(error: scrub(error.error) ?? "Request refused", code: scrub(error.code), errorKey: scrub(error.errorKey), errorParams: params)
+        return APIError(error: scrub(error.error) ?? "Request refused", code: scrub(error.code, patterns: false), errorKey: scrub(error.errorKey, patterns: false), errorParams: params)
     }
 }
 #endif

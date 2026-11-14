@@ -6,6 +6,12 @@ import CryNetLogic
 @testable import CryNet
 
 final class KeychainStoreTests: XCTestCase {
+    func testWriteAttributesUseDeviceOnlyAccessibility() throws {
+        let data = Data("fixture".utf8)
+        let attributes = KeychainSessionStore.writeAttributes(data: data)
+        XCTAssertEqual(attributes[kSecAttrAccessible as String] as? String, kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String)
+        XCTAssertEqual(attributes[kSecValueData as String] as? Data, data)
+    }
     func testIsolatedKeychainRecordIsJSONAndSharedBetweenReaders() throws {
         let service = "com.example.crybot.tests.\(UUID().uuidString)"
         let first = KeychainSessionStore(service: service, accessGroup: nil)
@@ -20,7 +26,6 @@ final class KeychainStoreTests: XCTestCase {
         var result: CFTypeRef?
         XCTAssertEqual(SecItemCopyMatching(query as CFDictionary, &result), errSecSuccess)
         let attributes = try XCTUnwrap(result as? [String: Any])
-        XCTAssertEqual(attributes[kSecAttrAccessible as String] as? String, kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String)
         let data = try XCTUnwrap(attributes[kSecValueData as String] as? Data)
         XCTAssertEqual(try JSONDecoder().decode(SessionRecord.self, from: data), record)
         XCTAssertTrue(try second.replace(ifMatching: record, with: record.signedOut()))
