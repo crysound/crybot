@@ -5,3 +5,5 @@
 "LOAD_ERROR" = "无法加载服务器。";
 "RETRY" = "重试";
 "CHANGE_SERVER" = "更换服务器";
+"LOGIN" = "登录";
+"LOGIN_ERROR" = "登录已取消或未能完成，请重新登录。";

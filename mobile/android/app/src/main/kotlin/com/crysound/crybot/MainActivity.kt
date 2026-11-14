@@ -11,6 +11,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Message
+import android.util.Base64
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.webkit.CookieManager
@@ -30,6 +32,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import java.util.Locale
+import java.security.SecureRandom
+import java.security.interfaces.ECPublicKey
+import org.json.JSONObject
 
 class MainActivity : Activity() {
     private lateinit var container: ViewGroup
@@ -41,8 +46,11 @@ class MainActivity : Activity() {
     private var pendingDownload: DownloadManager.Request? = null
     private var currentServer: String = ""
     private var serverWasInjected = false
+    private var completingLogin = false
+    private var popupWebView: WebView? = null
     private val preferences by lazy { getSharedPreferences("crybot", MODE_PRIVATE) }
     private val configuredServer get() = BuildConfig.CRYBOT_SERVER_URL.trim().trimEnd('/')
+    private val loginHosts = BuildConfig.CRYBOT_LOGIN_HOSTS.split(',').map { it.trim().lowercase(Locale.US) }.filter { it.isNotEmpty() }.toSet()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,10 +86,42 @@ class MainActivity : Activity() {
         container.requestApplyInsets()
         serverWasInjected = validServer(configuredServer)
         currentServer = if (serverWasInjected) configuredServer else preferences.getString("server", "") ?: ""
-        if (validServer(currentServer)) showWebView() else showServerForm()
+        expirePendingLogin()
+        if (!consumeAuthIntent()) {
+            if (validServer(currentServer)) {
+                if (loginHosts.isNotEmpty() && preferences.contains("login_state")) showError(login = true) else showWebView()
+            } else showServerForm()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val expired = expirePendingLogin()
+        if (!consumeAuthIntent() && expired && validServer(currentServer)) showWebView()
+    }
+
+    private fun consumeAuthIntent(): Boolean {
+        return try {
+            handleAuthCallback(intent?.data)
+        } finally {
+            setIntent(Intent())
+        }
+    }
+
+    private fun destroyPopup(popup: WebView? = popupWebView) {
+        if (popup == null || popupWebView !== popup) return
+        popupWebView = null
+        popup.destroy()
+    }
+
+    override fun onDestroy() {
+        destroyPopup()
+        super.onDestroy()
     }
 
     private fun showServerForm() {
+        if (loginHosts.isNotEmpty()) clearPendingLogin()
         webViewVisible = false
         container.removeAllViews()
         val form = LinearLayout(this).apply {
@@ -119,7 +159,7 @@ class MainActivity : Activity() {
         container.addView(form, LinearLayout.LayoutParams(-1, -1))
     }
 
-    private fun showError() {
+    private fun showError(login: Boolean = false) {
         webViewVisible = false
         container.removeAllViews()
         val layout = LinearLayout(this).apply {
@@ -128,11 +168,11 @@ class MainActivity : Activity() {
             setPadding(48, 96, 48, 48)
         }
         val label = TextView(this).apply {
-            text = getString(R.string.load_error)
+            text = getString(if (login) R.string.login_error else R.string.load_error)
             textSize = 20f
         }
-        val retry = Button(this).apply { text = getString(R.string.retry) }
-        retry.setOnClickListener { showWebView() }
+        val retry = Button(this).apply { text = getString(if (login) R.string.login else R.string.retry) }
+        retry.setOnClickListener { if (login) startLogin(retry = true) else showWebView() }
         layout.addView(label, LinearLayout.LayoutParams(-1, -2))
         layout.addView(retry, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 24 })
         if (!serverWasInjected) {
@@ -158,6 +198,7 @@ class MainActivity : Activity() {
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
         settings.mediaPlaybackRequiresUserGesture = true
+        if (loginHosts.isNotEmpty()) settings.setSupportMultipleWindows(true)
         settings.userAgentString = "${settings.userAgentString} CryBotApp/${BuildConfig.VERSION_NAME} Android"
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
@@ -168,10 +209,32 @@ class MainActivity : Activity() {
             }
 
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                if (request.isForMainFrame) showError()
+                if (request.isForMainFrame && !completingLogin && (loginHosts.isEmpty() || !preferences.contains("login_state"))) showError()
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
+            override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
+                if (loginHosts.isEmpty() || popupWebView != null) return false
+                val popup = WebView(this@MainActivity)
+                popupWebView = popup
+                popup.webChromeClient = this
+                popup.webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                        if (!request.isForMainFrame) return false
+                        if (!navigate(request.url)) webView.loadUrl(request.url.toString())
+                        container.post { destroyPopup(view) }
+                        return true
+                    }
+                }
+                (resultMsg.obj as WebView.WebViewTransport).webView = popup
+                resultMsg.sendToTarget()
+                return true
+            }
+
+            override fun onCloseWindow(window: WebView) {
+                container.post { destroyPopup(window) }
+            }
+
             override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
                 fileCallback?.onReceiveValue(null)
                 fileCallback = callback
@@ -257,6 +320,10 @@ class MainActivity : Activity() {
     private fun navigate(uri: Uri): Boolean {
         val scheme = uri.scheme?.lowercase(Locale.US)
         if (scheme == "http" || scheme == "https") {
+            if (isLoginHost(uri.host)) {
+                startLogin()
+                return true
+            }
             if (allowedHost(uri.host)) return false
             openExternal(uri)
             return true
@@ -284,7 +351,106 @@ class MainActivity : Activity() {
         if (host.isNullOrBlank()) return false
         val serverHost = Uri.parse(currentServer).host ?: return false
         if (host.equals(serverHost, true)) return true
-        return BuildConfig.CRYBOT_LOGIN_HOSTS.split(',').map { it.trim().lowercase(Locale.US) }.any { it.isNotEmpty() && host.lowercase(Locale.US) == it }
+        return loginHosts.contains(host.lowercase(Locale.US))
+    }
+
+    private fun isLoginHost(host: String?): Boolean {
+        return host != null && !host.equals(Uri.parse(currentServer).host, true) && loginHosts.contains(host.lowercase(Locale.US))
+    }
+
+    private fun startLogin(retry: Boolean = false) {
+        expirePendingLogin()
+        if (loginHosts.isEmpty() || completingLogin || (!retry && preferences.contains("login_state"))) return
+        if (!clearPendingLogin()) { showError(login = true); return }
+        val keyPair = runCatching { AppHandoffCrypto.generateKeyPair() }.getOrElse { showError(login = true); return }
+        val bytes = ByteArray(32)
+        SecureRandom().nextBytes(bytes)
+        val state = Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+        if (!preferences.edit().putString("login_state", state).putString("login_server", currentServer)
+                .putLong("login_started_at", System.currentTimeMillis())
+                .putString("login_private_key", AppHandoffCrypto.encode(keyPair.private.encoded)).commit()) {
+            clearPendingLogin()
+            showError(login = true)
+            return
+        }
+        val server = Uri.parse(currentServer)
+        val handoff = server.buildUpon().encodedPath((server.encodedPath ?: "").trimEnd('/') + "/auth/app-handoff")
+            .clearQuery().fragment(null).appendQueryParameter("state", state)
+            .appendQueryParameter("pk", AppHandoffCrypto.publicKey(keyPair.public as ECPublicKey)).build()
+        showError(login = true)
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, handoff).addCategory(Intent.CATEGORY_BROWSABLE))
+        } catch (e: ActivityNotFoundException) {
+            clearPendingLogin()
+            showError(login = true)
+        }
+    }
+
+    private fun clearPendingLogin(): Boolean {
+        return preferences.edit().remove("login_state").remove("login_server")
+            .remove("login_started_at").remove("login_private_key").commit()
+    }
+
+    private fun expirePendingLogin(): Boolean {
+        if (!preferences.contains("login_state") && !preferences.contains("login_private_key")) return false
+        val started = preferences.getLong("login_started_at", 0)
+        val age = System.currentTimeMillis() - started
+        if (started <= 0 || age < 0 || age >= 10 * 60 * 1000L || !preferences.contains("login_private_key") ||
+            !preferences.contains("login_state") || preferences.getString("login_server", null) != currentServer) {
+            clearPendingLogin()
+            return true
+        }
+        return false
+    }
+
+    private fun handleAuthCallback(uri: Uri?): Boolean {
+        if (uri == null || !uri.isHierarchical || uri.scheme != "crybot" || uri.host != "auth" || loginHosts.isEmpty()) return false
+        val state = preferences.getString("login_state", null) ?: return false
+        if (uri.getQueryParameters("state") != listOf(state)) return true
+        if (preferences.getString("login_server", null) != currentServer) {
+            clearPendingLogin()
+            showError(login = true)
+            return true
+        }
+        val privateKey = preferences.getString("login_private_key", null)
+        if (!clearPendingLogin()) {
+            showError(login = true)
+            return true
+        }
+        val token = runCatching {
+            require(uri.getQueryParameters("v") == listOf("1"))
+            AppHandoffCrypto.decrypt(
+                requireNotNull(privateKey), state,
+                requireNotNull(uri.getQueryParameters("epk").singleOrNull()),
+                requireNotNull(uri.getQueryParameters("iv").singleOrNull()),
+                requireNotNull(uri.getQueryParameters("ct").singleOrNull())
+            )
+        }.getOrNull()
+        val maxAge = token?.let { tokenMaxAge(it) }
+        if (token == null || maxAge == null || !validServer(currentServer)) {
+            showError(login = true)
+            return true
+        }
+        completingLogin = true
+        if (!::webView.isInitialized) createWebView()
+        val server = currentServer
+        val cookies = CookieManager.getInstance()
+        cookies.setCookie(server, "CF_Authorization=$token; Path=/; Secure; HttpOnly; Max-Age=$maxAge") { accepted ->
+            cookies.flush()
+            completingLogin = false
+            if (accepted && currentServer == server) showWebView() else showError(login = true)
+        }
+        return true
+    }
+
+    private fun tokenMaxAge(token: String): Long? {
+        if (!Regex("^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$").matches(token)) return null
+        return runCatching {
+            val payload = Base64.decode(token.split('.')[1], Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+            val exp = JSONObject(String(payload, Charsets.UTF_8)).get("exp") as? Number ?: return null
+            val seconds = exp.toDouble() - System.currentTimeMillis() / 1000.0
+            if (!seconds.isFinite() || seconds < 1 || seconds >= Long.MAX_VALUE.toDouble()) null else seconds.toLong()
+        }.getOrNull()
     }
 
     private fun validServer(value: String): Boolean {
@@ -311,6 +477,11 @@ class MainActivity : Activity() {
     override fun onPause() {
         CookieManager.getInstance().flush()
         super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (expirePendingLogin() && !completingLogin && validServer(currentServer)) showWebView()
     }
 
     override fun onBackPressed() {
