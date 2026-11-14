@@ -5,6 +5,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import type { WireBot } from "../../shared/wire.ts";
 import { DATA_DIR, loadConfig } from "../config.ts";
 import { createPersonLanguages, THIS_COMPUTER } from "../host/person-languages.ts";
+import { createVisibilityHost } from "../host/visibility-host.ts";
 import { closeMessageDb } from "../message-db.ts";
 import { initialGreeting, setupChoices } from "../initial-greeting.ts";
 import { requiredScope, type RequestAuth } from "../request-auth.ts";
@@ -29,6 +30,8 @@ beforeEach(() => {
   const cfg = loadConfig();
   cfg.language = "zh";
   const store = new Store(() => ({ instanceId: "fixture", model: "fixture" }), undefined, undefined, () => cfg.language ?? "en");
+  const visibility = createVisibilityHost({ store: () => store, routines: () => null, team: true, audiencesFor: () => undefined, threadsReferencing: () => [] });
+  store.onChange(() => visibility.forgetVisibility());
   people = createPersonLanguages({ dataDir: DATA_DIR, configured: () => cfg.language });
   const suggestions = setupSuggestionsFor({
     store, config: () => cfg, shared: () => false, languageCode: () => cfg.language ?? "en",
@@ -43,6 +46,7 @@ beforeEach(() => {
     storedAvatarExists: () => false, defaultSelection: async () => ({ instanceId: "fixture", model: "fixture" }),
     checkedModelSelection: () => ({ ok: true, selection: { instanceId: "fixture", model: "fixture" } }),
     cloudOwnerSession: () => false, wireBot: (bot) => bot as unknown as WireBot,
+    visibleFor: (auth) => visibility.visibleTo(visibility.viewerFor(auth)),
     personLanguage: () => people.forPerson(THIS_COMPUTER),
     personaliseSetupCard: (bot, language) => suggestions.personalise(bot.id, language),
   };
@@ -163,4 +167,21 @@ it("offers another unused name to clients without exposing defaults", async () =
   expect(response.status).toBe(200);
   expect(Object.keys(result)).toEqual(["suggestedName"]);
   expect(["Pixel", "Nova"]).not.toContain(result.suggestedName);
+});
+
+it("ignores names of bots the caller cannot see while excluding visible and current names", async () => {
+  deps.store.createBot({ name: "Scout" });
+  auth = { kind: "session", scopes: ["client"], session: {} } as RequestAuth;
+  const random = vi.spyOn(Math, "random").mockReturnValue(0);
+  try {
+    const before = await call("/api/bot-name?exclude=Pixel");
+    expect(before).toEqual({ status: 200, data: { suggestedName: "Atlas" } });
+    const privateBot = deps.store.createBot({ name: "Atlas" });
+    deps.store.patchBot(privateBot.id, { visibility: "admins" });
+    expect(await call("/api/bot-name?exclude=Pixel")).toEqual(before);
+    auth = { kind: "session", scopes: ["admin"], session: {} } as RequestAuth;
+    expect(await call("/api/bot-name?exclude=Pixel")).toEqual({ status: 200, data: { suggestedName: "Nova" } });
+  } finally {
+    random.mockRestore();
+  }
 });

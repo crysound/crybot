@@ -1,5 +1,4 @@
 {
-  "newBot.randomName": "Random name",
   "voice.gemini.keyPlaceholder": "Вставте свій API-ключ Google AI Studio",
   "voice.gemini.model": "Модель синтезу мовлення Gemini",
   "keys.label.geminiTts": "API-ключ синтезу мовлення Gemini",
@@ -3001,6 +3000,9 @@
   "mcp.auth.loadingTools": "Вхід виконано. Під’єднання…",
   "update.card.idleNote": "Перезапустіть зараз або залиште як є: {app} сам установить оновлення, коли вас наступного разу не буде поруч і нічого не працюватиме.",
   "update.updatedItself": "{app} оновився сам до версії {version}.",
+  "newBot.randomName": "Random name",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.failed": "Не вдалося створити нового бота: {error}",
   "newBot.startsOnAsk": "{name} питатиме, перш ніж діяти. Щоб він діяв на цьому комп’ютері сам, виберіть «Погоджувати за мене» в його налаштуваннях.",
   "automations.firstRun": "Перший запуск {when}",

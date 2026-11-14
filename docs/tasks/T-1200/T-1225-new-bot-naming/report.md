@@ -93,3 +93,64 @@ PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vite
 - 个性化生成使用模拟模型响应，验证了语言指令和结果落入卡片，未调用真实 AI 服务；真实模型是否始终遵守语言指令未验证。
 - 建议名按请求时的已有名字排重，不预留名字；并发创建期间的名字占用变化没有新增锁或唯一性约束。
 - 按要求未运行 `pnpm typecheck`、`pnpm lint`、完整 `pnpm test` 或 e2e。未修改 `electron/`、`mobile/`、`.github/`，未做 git 提交。
+
+## 第 2 轮
+
+### 逐条改动
+
+1. **拆分默认名称占位文字与换名按钮文案**
+   - 新增 `newBot.anotherName`：英文为 `Another name`，简体中文为「换一个」，其他语言包暂用英文。全部 16 个语言包均已补齐，放在 `newBot.*` 文案旁。
+   - `NewBotName.tsx` 的按钮改用新 key。简体中文 `newBot.randomName` 恢复为「随机名称」，`NewBotDialog.tsx` 继续使用它作为默认设置名字输入框的占位文字。
+   - 将法语、印地语、乌克兰语文件开头的 `newBot.randomName` 移到各自 `newBot.failed`、`newBot.startsOnAsk` 文案旁。
+
+2. **建议名只排除调用者可见的智能体名字**
+   - 创建路由增加 `visibleFor(auth)` 依赖，服务入口接入现有 `visibleTo(viewerFor(auth))`。`GET /api/bot-name` 先按可见性过滤，再排除可见名字和调用者当前输入的名字。
+   - 不可见智能体的名字不参与建议名选择；重名仍沿用现有 `freeName` 和服务端创建流程处理。
+   - 隔离路由 fixture 接入真实可见性模块，新增确定性测试：固定随机选择，确认新增不可见智能体前后返回相同建议名；管理员能看到该智能体时则排除其名字，同时验证可见名字及当前输入仍被排除。
+
+3. **换名失败使用专用提示**
+   - 新增 `newBot.anotherNameFailed`：英文为 `Couldn't get another name. Try again.`，简体中文为「没换成，请再试一次」，其余语言包暂用英文，全部 16 包补齐。
+   - 换名失败时显示该提示，保留原名字与弹窗，并恢复按钮可用状态。组件测试覆盖中英文按钮和失败提示，不再将换名失败描述为创建失败。
+
+4. **语言未持久化的限制**
+   - 本轮未修改 `server/setup-suggestions.ts` 或存储结构。创建时选定的语言仍只保存在内存 `languages` Map 中；同一次服务运行期间的改名重写可沿用它。
+   - 服务重启后该记录丢失，后续改名触发设置卡重写时会回退到默认语言来源，不能保证继续使用新建者当时的界面语言。本轮仅记录此限制，不声称已解决跨重启的语言保持。
+
+### 修改文件
+
+| 文件 | 本轮内容 |
+| --- | --- |
+| `src/components/NewBotName.tsx` | 换名按钮和失败提示改用专用 key |
+| `src/components/NewBotName.test.ts` | 更新按钮断言，覆盖中英文失败提示及按钮恢复 |
+| `src/locales/{en,zh,de,es,fr,hi,it,ja,ko,pl,pt-br,ru,tr,uk,vi,zh-tw}.json` | 全部补齐两个新 key，恢复中文占位文案，调整 fr/hi/uk 原 key 位置 |
+| `server/routes/bots-create.ts` | 建议名按调用者可见性过滤 |
+| `server/index.ts` | 注入现有可见性判断 |
+| `server/routes/bots-create.test.ts` | 接入真实可见性模块并增加不可见名字回归测试 |
+| `docs/tasks/T-1200/T-1225-new-bot-naming/report.md` | 追加本轮改动、验证结果与限制 |
+
+### 测试结果与验证范围
+
+按指定命令逐个运行以下文件，没有并发测试文件：
+
+```bash
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run <文件> --maxWorkers=1 --configLoader runner
+```
+
+| 文件 | 结果 |
+| --- | --- |
+| `src/components/NewBotName.test.ts` | 6 项通过 |
+| `src/lib/new-bot.test.ts` | 20 项通过 |
+| `server/routes/bots-create.test.ts` | 24 项通过 |
+| `src/lib/i18n.test.ts` | 35 项通过，1 项已知失败 |
+
+共 **85 项通过，1 项已知失败，无新增失败**。已知失败仍为 `src/lib/i18n.test.ts:137` 的葡萄牙语包完整性断言；对比本轮开始时的 `HEAD` 与修改后的语言包，缺失 key 完全一致：
+
+- `botOverview.preference.cloud.locked`
+- `keys.section.computers.purpose.locked`
+- `settings.profile.nameFromLogin`
+
+额外检查全部 16 个 JSON 语言包：三个命名相关 key 均只出现一次，新增文案值符合要求；`git diff --check` 通过。
+
+仓库仍缺少 `docs/verification/README.md`。服务端测试使用测试初始化器创建的临时数据目录、真实 Store 和可见性模块，通过无监听端口的隔离请求 fixture 调用路由，未访问用户应用或数据。上述结果只证明组件和隔离路由行为，未进行完整服务启动、真实浏览器或实机验证。
+
+本轮未运行 typecheck、完整 `pnpm test` 或 e2e，未联网或新增依赖，未修改 `electron/`、`mobile/`、`.github/`，未做 git 提交。

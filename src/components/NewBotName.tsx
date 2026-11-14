@@ -37,8 +37,8 @@ export function NewBotNameHost() {
       const next = await request.randomName(name);
       if (current !== generation.current) return;
       setName(next);
-    } catch (cause) {
-      if (current === generation.current) setError(t("newBot.failed", { error: cause instanceof Error ? cause.message : String(cause) }));
+    } catch {
+      if (current === generation.current) setError(t("newBot.anotherNameFailed"));
     } finally {
       if (current === generation.current) setChanging(false);
     }
@@ -64,7 +64,7 @@ export function NewBotNameHost() {
             <input ref={input} value={name} maxLength={BOT_PROFILE_LIMITS.name} onChange={(event) => setName(event.target.value)}
               className="mt-1 w-full rounded-lg border border-hairline/50 bg-inset px-3 py-2 text-[14px] text-ink" />
           </label>
-          <button type="button" disabled={changing} onClick={() => void randomise()} className="shrink-0 rounded-lg px-3 py-2 text-[13px] text-ink-secondary hover:bg-raised disabled:opacity-40">{t("newBot.randomName")}</button>
+          <button type="button" disabled={changing} onClick={() => void randomise()} className="shrink-0 rounded-lg px-3 py-2 text-[13px] text-ink-secondary hover:bg-raised disabled:opacity-40">{t("newBot.anotherName")}</button>
         </div>
         {error && <p role="alert" className="mt-2 text-[13px] text-ink-secondary">{error}</p>}
         <div className="mt-4 flex justify-end gap-2">

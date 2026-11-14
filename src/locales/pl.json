@@ -5386,6 +5386,8 @@
   "newBot.sharePreset": "Udostępnij jako ustawienie wstępne…",
   "newBot.customSettings": "Ustawienia niestandardowe",
   "newBot.randomName": "Losowa nazwa",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.team": "Dział",
   "newBot.enabled": "Włączone",
   "newBot.removeRoutine": "Usuń: {name}",

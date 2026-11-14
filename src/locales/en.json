@@ -6540,6 +6540,8 @@
   "newBot.sharePreset": "Share as preset…",
   "newBot.customSettings": "Custom settings",
   "newBot.randomName": "Random name",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.team": "Department",
   "newBot.enabled": "Enabled",
   "newBot.removeRoutine": "Remove {name}",

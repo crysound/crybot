@@ -12184,6 +12184,7 @@ ROUTES.push(createBotCreateRoutes({
   routines: () => routines,
   storedAvatarExists, defaultSelection, checkedModelSelection, cloudOwnerSession, wireBot, team: CLOUD_TEAM && teamOwners.people ? { name: CLOUD_TEAM.name, language: CLOUD_TEAM.language, people: teamOwners.people } : null,
   personLanguage: (auth) => personLanguages.forPerson(auth.kind === "session" ? actorKey(auth) : THIS_COMPUTER),
+  visibleFor: (auth) => visibleTo(viewerFor(auth)),
   personaliseSetupCard: (bot, language) => setupSuggestions.personalise(bot.id, language), chiefChanged: (changed) => chiefRooms.moved(changed),
 }), createTeamOwnerRoutes({ team: CLOUD_TEAM, people: teamOwners.people, store, presence: teamPresence.of, record: (auth, row) => appendAdminAction(DATA_DIR, { ...row, actor: decisionActorFor(auth) }), sees: (auth, botId) => visibleTo(viewerFor(auth)).bot(botId), publicBot,
   profileOf: (email) => teamHost.people.profile(personKey({ id: "", email })) }));

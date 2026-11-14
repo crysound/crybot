@@ -5,7 +5,7 @@ import type { WireBot } from "../../shared/wire.ts";
 import { freshLook } from "../bot-look.ts";
 import { validateBotCwd } from "../bot-cwd.ts";
 import { parseBotProfilePatch } from "../bot-profile.ts";
-import { parseVisibility } from "../bot-visibility.ts";
+import { parseVisibility, type VisibleSet } from "../bot-visibility.ts";
 import type { createCloudRoutineAuthors } from "../cloud-lending.ts";
 import type { AppConfig } from "../config.ts";
 import type { ModelSelection } from "../contracts.ts";
@@ -47,6 +47,7 @@ export interface BotCreateRouteDeps {
   checkedModelSelection(raw: unknown, current?: { selection: ModelSelection; busy: boolean }, requireAvailableModel?: boolean): ModelSelectionCheck;
   cloudOwnerSession(auth: RequestAuth): boolean;
   wireBot(bot: BotRecord): WireBot;
+  visibleFor(auth: RequestAuth): Pick<VisibleSet, "bot">;
   personLanguage?(auth: RequestAuth): string | undefined;
   /** A Team Cloud: a new bot records who created it, and may name who it reports to. */
   team?: { name: string; language?: string; people: Pick<TeamPeople, "has"> } | null;
@@ -90,7 +91,8 @@ export function createBotCreateRoutes(deps: BotCreateRouteDeps): RouteHandler {
   return async ({ req, res, url, path, method, auth, json, readBody }) => {
     if (method === "GET" && path === "/api/bot-name") {
       const exclude = (url.searchParams.get("exclude") ?? "").slice(0, BOT_PROFILE_LIMITS.name);
-      return json(res, 200, { suggestedName: pickBotName([...store.bots.map(bot => bot.name), exclude]) });
+      const visible = deps.visibleFor(auth);
+      return json(res, 200, { suggestedName: pickBotName([...store.bots.filter(bot => visible.bot(bot.id)).map(bot => bot.name), exclude]) });
     }
     const routines = deps.routines();
     if (method === "POST" && path === "/api/bots") {

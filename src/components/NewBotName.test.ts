@@ -59,18 +59,23 @@ it("cannot submit an empty name or whitespace", async () => {
 
 it("changes the suggestion with the random-name button and confirms it", async () => {
   const { answer, randomName } = open();
-  await act(async () => button(t("newBot.randomName")).click());
+  await act(async () => button(t("newBot.anotherName")).click());
   expect(randomName).toHaveBeenCalledWith("Pixel");
   expect(input().value).toBe("Nova");
   flushSync(() => button(t("newBot.create")).click());
   expect(await answer).toBe("Nova");
 });
 
-it("keeps the name and reports a failed suggestion without closing the dialog", async () => {
+it.each([
+  ["en", "Another name", "Couldn't get another name. Try again."],
+  ["zh", "换一个", "没换成，请再试一次"],
+])("keeps the name and reports a failed suggestion without closing the dialog in %s", async (locale, label, error) => {
+  setLocale(locale);
   const { answer } = open(vi.fn(async () => { throw new Error("offline"); }));
-  await act(async () => button(t("newBot.randomName")).click());
+  await act(async () => button(label).click());
   expect(input().value).toBe("Pixel");
-  expect(document.querySelector('[role="alert"]')?.textContent).toContain("offline");
+  expect(document.querySelector('[role="alert"]')?.textContent).toBe(error);
+  expect(button(label).disabled).toBe(false);
   flushSync(() => button(t("common.cancel")).click());
   expect(await answer).toBeNull();
 });
