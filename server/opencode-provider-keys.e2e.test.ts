@@ -1,9 +1,9 @@
 import { randomBytes } from "node:crypto";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { createServer, request, type Server } from "node:http";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ChildProcess } from "node:child_process";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { spawnWithSecrets } from "./cloud-home-start.ts";
@@ -12,6 +12,7 @@ import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { freePortBlock } from "./testing/ports.ts";
 import { detectBox } from "./bot-box/detect.ts";
 import { BOX_BROKER_PORT } from "./bot-box/box.ts";
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
 const HOST = "cry-t-0123456789ab.example.test";
@@ -81,11 +82,47 @@ const written = (file: string, shape: "document" | "lines" = "document") => {
   } catch { return false; }
 };
 
+const providerStarts = () => readdirSync(home).filter((name) => /^opencode\.json\.\d+\.provider-env\.json$/.test(name));
+const providerEnvironment = (file: string) => JSON.parse(readFileSync(file, "utf8")) as Record<string, string>;
+
+async function nextProviderEnvironment(before: string[]) {
+  let file = "";
+  await expect.poll(() => {
+    file = providerStarts().find((name) => !before.includes(name) && written(join(home, name))) ?? "";
+    return Boolean(file);
+  }, { timeout: 15_000 }).toBe(true);
+  return providerEnvironment(join(home, file));
+}
+
+function expectAnthropicEnvironment(env: Record<string, string>) {
+  if (boxed) {
+    expect(env.ANTHROPIC_API_KEY).toMatch(/^cry_t0_[a-f0-9]{48}$/);
+    expect(env.ANTHROPIC_BASE_URL).toBe(`http://127.0.0.1:${BOX_BROKER_PORT}/b/${env.ANTHROPIC_API_KEY}/anthropic`);
+    expect(JSON.stringify(env)).not.toContain(OWNER_ANTHROPIC);
+  } else {
+    expect(env.ANTHROPIC_API_KEY).toBe(OWNER_ANTHROPIC);
+    expect(env.ANTHROPIC_BASE_URL).toBe(upstreamBase);
+  }
+}
+
 beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "cry-opencode-keys-"));
   dataDir = join(home, ".crybot");
   mkdirSync(dataDir, { recursive: true });
   dump = join(home, "opencode.json");
+  const cli = fixtureEnginePath(dataDir, "fixture-opencode-provider-keys.mjs");
+  writeFileSync(cli, `#!/usr/bin/env node
+import { writeFileSync } from "node:fs";
+if (process.argv[2] === "acp" && process.env.FAKE_ACP_DUMP) {
+  writeFileSync(process.env.FAKE_ACP_DUMP + "." + process.pid + ".provider-env.json", JSON.stringify({
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL,
+    VENICE_API_KEY: process.env.VENICE_API_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  }));
+}
+await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-acp-cli.ts")).href)});
+`, { mode: 0o755 });
   upstream = createServer((req, res) => {
     modelCalls.push({ path: req.url, key: req.headers["x-api-key"] });
     req.resume();
@@ -99,7 +136,7 @@ beforeAll(async () => {
     instances: {
       opencodeGo: {
         driver: "opencodeGo", displayName: "OpenCode",
-        config: { cli: join(SERVER_DIR, "testing", "fake-acp-cli.ts") },
+        config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(cli)}` },
         environment: { FAKE_ACP_MODELS: "fixture/warm", FAKE_ACP_DUMP: dump, ANTHROPIC_BASE_URL: upstreamBase },
       },
     },
@@ -148,10 +185,11 @@ it("refuses a name CryBot keeps, in one plain line, and saves nothing", async ()
 it("saves keys for any OpenCode provider on a Cloud, shows only their names, and hands them to OpenCode alone", async () => {
   expect(owner).toMatch(/^cry_sess_/);
   expect((await api("GET", "/api/config")).body.opencodeGo).toEqual({ configured: false, providerKeys: [] });
-  await expect.poll(() => written(dump), { timeout: 15_000 }).toBe(true);
-  expect(started().env.ANTHROPIC_API_KEY).toBeUndefined();
-  expect(started().env.OPENAI_API_KEY).toBeUndefined();
+  const initialEnv = await nextProviderEnvironment([]);
+  expect(initialEnv.ANTHROPIC_API_KEY).toBeUndefined();
+  expect(initialEnv.OPENAI_API_KEY).toBeUndefined();
 
+  const beforeSave = providerStarts();
   rmSync(dump, { force: true });
   const saved = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { VENICE_API_KEY: VENICE, ANTHROPIC_API_KEY: OWNER_ANTHROPIC } } });
   expect(saved.status, saved.text).toBe(200);
@@ -165,10 +203,10 @@ it("saves keys for any OpenCode provider on a Cloud, shows only their names, and
   await expect.poll(async () => (await api("GET", "/api/instances?fresh=1")).body.instances
     .find((instance: any) => instance.instanceId === "opencodeGo")?.models.options.map((option: any) => option.id), { timeout: 15_000 })
     .toContain(`venice/${VENICE_LISTED}`);
-  await expect.poll(() => written(dump), { timeout: 15_000 }).toBe(true);
-  expect(started().env.VENICE_API_KEY).toBe(VENICE);
-  expect(started().env.ANTHROPIC_API_KEY).toBe(OWNER_ANTHROPIC);
-  expect(started().env.OPENAI_API_KEY).toBeUndefined();
+  const savedEnv = await nextProviderEnvironment(beforeSave);
+  expect(savedEnv.VENICE_API_KEY).toBe(VENICE);
+  expectAnthropicEnvironment(savedEnv);
+  expect(savedEnv.OPENAI_API_KEY).toBeUndefined();
 
   const { bot } = (await api("POST", "/api/bots", { name: "Venice bot", modelSelection: { instanceId: "opencodeGo", model: "fixture/warm" } })).body;
   const thread = (await api("POST", `/api/bots/${bot.id}/tasks`, { title: "Mine" })).body.task.threadId as string;
@@ -179,14 +217,13 @@ it("saves keys for any OpenCode provider on a Cloud, shows only their names, and
   const turnPid = JSON.parse(readFileSync(prompts, "utf8").trim().split("\n").at(-1)!).pid as number;
   expect(started().pid).toBe(turnPid);
   expect(started().env.VENICE_API_KEY).toBe(VENICE);
-  const turnEnv = started().env;
+  const providerDump = readFileSync(`${dump}.${turnPid}.provider-env.json`, "utf8");
+  const turnEnv = JSON.parse(providerDump) as Record<string, string>;
+  expect(turnEnv.ANTHROPIC_API_KEY).toBe(started().env.ANTHROPIC_API_KEY);
+  expectAnthropicEnvironment(turnEnv);
   if (boxed) {
-    expect(turnEnv.ANTHROPIC_API_KEY).toMatch(/^cry_t0_[a-f0-9]{48}$/);
-    expect(turnEnv.ANTHROPIC_BASE_URL).toBe(`http://127.0.0.1:${BOX_BROKER_PORT}/b/${turnEnv.ANTHROPIC_API_KEY}/anthropic`);
     expect(readFileSync(dump, "utf8")).not.toContain(OWNER_ANTHROPIC);
-  } else {
-    expect(turnEnv.ANTHROPIC_API_KEY).toBe(OWNER_ANTHROPIC);
-    expect(turnEnv.ANTHROPIC_BASE_URL).toBe(upstreamBase);
+    expect(providerDump).not.toContain(OWNER_ANTHROPIC);
   }
   const socketPath = boxed ? join(dataDir, "box", "broker.sock") : undefined;
   expect(await modelCall(turnEnv.ANTHROPIC_BASE_URL!, turnEnv.ANTHROPIC_API_KEY!, socketPath))
@@ -203,11 +240,13 @@ it("saves keys for any OpenCode provider on a Cloud, shows only their names, and
   await expect.poll(async () => (await api("GET", "/api/bots")).body.bots.find((entry: any) => entry.id === bot.id)
     ?.tasks.find((task: any) => task.threadId === thread)?.busy, { timeout: 15_000 }).toBe(false);
 
+  const beforeRemove = providerStarts();
   rmSync(dump, { force: true });
   const removed = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { VENICE_API_KEY: "" } } });
   expect(removed.status, removed.text).toBe(200);
   expect(removed.body.opencodeGo.providerKeys).toEqual(["ANTHROPIC_API_KEY"]);
-  await expect.poll(() => written(dump), { timeout: 15_000 }).toBe(true);
-  expect(started().env.VENICE_API_KEY).toBeUndefined();
-  expect(started().env.ANTHROPIC_API_KEY).toBe(OWNER_ANTHROPIC);
+  const removedEnv = await nextProviderEnvironment(beforeRemove);
+  expect(removedEnv.VENICE_API_KEY).toBeUndefined();
+  expectAnthropicEnvironment(removedEnv);
+  expect(removedEnv.OPENAI_API_KEY).toBeUndefined();
 }, 90_000);

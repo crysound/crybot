@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { afterAll, beforeAll, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, expect, it } from "vitest";
 import { createComputerSharing } from "../electron/computer-sharing.mjs";
 import { cloudPairingSignature } from "./cloud-home.ts";
 import { WATCHER_OPTIONS_CARD_BOT_ID } from "../shared/options-card.ts";
@@ -163,9 +163,17 @@ let port = 0;
 async function boot() {
   const dataDir = join(home, ".crybot");
   const offlinePrelude = `data:text/javascript,${encodeURIComponent('const real = globalThis.fetch; globalThis.fetch = async (url, init) => String(url).startsWith("http://127.0.0.1:") ? real(url, init) : new Response("offline fixture", { status: 503 });')}`;
+  const acpDiagnostics = `data:text/javascript,${encodeURIComponent(`
+import { StderrTail } from ${JSON.stringify(pathToFileURL(join(SERVER_DIR, "drivers", "acp", "exit-report.ts")).href)};
+const write = StderrTail.prototype.write;
+StderrTail.prototype.write = function(chunk) {
+  write.call(this, chunk);
+  if (this.text) console.error("Fixture ACP stderr:", this.text);
+};
+`)}`;
   // The memory gate's seam (testing/memory-gate-hooks.mjs): this machine's memory is host-memory.json's, on every OS.
   const memoryGate = pathToFileURL(join(SERVER_DIR, "testing", "memory-gate-hooks.mjs")).href;
-  child = spawn(process.execPath, ["--import", offlinePrelude, "--import", memoryGate, join(SERVER_DIR, "index.ts")], {
+  child = spawn(process.execPath, ["--import", offlinePrelude, "--import", memoryGate, "--import", acpDiagnostics, join(SERVER_DIR, "index.ts")], {
     cwd: join(SERVER_DIR, ".."),
     env: {
       PATH: process.env.PATH, ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
@@ -192,6 +200,17 @@ afterAll(async () => {
   for (const proxy of proxies) proxy.kill();
   if (child) await waitForExit(child, { signal: "SIGTERM" });
   if (home) await removeTempDir(home);
+});
+
+afterEach(({ task }) => {
+  if (task.result?.state !== "fail") return;
+  console.error(`Cloud fixture server log:\n${log}`);
+  const native = join(home, ".crybot", "native");
+  if (!existsSync(native)) return;
+  for (const name of readdirSync(native).filter((name) => name.endsWith(".ndjson"))) {
+    const lines = readFileSync(join(native, name), "utf8").split("\n").filter((line) => line.includes('"source":"grok.acp"'));
+    if (lines.length) console.error(`Cloud fixture ACP trace (${name}):\n${lines.join("\n")}`);
+  }
 });
 
 it("offers lending on a Cloud home with the maintainer flag still off", async () => {
@@ -343,9 +362,9 @@ it("the person's Mac, lent by itself through the real connector, is usable by th
   expect(apiAnswered.status).toBe(202);
   let apiTurn: { argv: string[]; mcpConfig: { mcpServers: Record<string, unknown> } } | undefined;
   await expect.poll(() => {
-    for (const name of readdirSync(join(home, "turns"))) {
+    for (const text of readTurns().values()) {
       try {
-        const found = JSON.parse(readFileSync(join(home, "turns", name), "utf8"));
+        const found = JSON.parse(text);
         if (JSON.stringify(found.prompt).includes(apiMessage)) { apiTurn = found; return true; }
       } catch { /* still being written */ }
     }

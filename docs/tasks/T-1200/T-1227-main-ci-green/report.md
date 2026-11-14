@@ -121,3 +121,83 @@ for (const name of ['admin-audit-request-fields', 'host/session-names', 'host/da
 3. 无新增依赖需求、无已实施的越范围源码修改。缺失的验证 README 建议由协调者确认位置或在其他任务恢复，本次未擅自新增该文件。
 4. `.github/workflows/ci.yml` 未改。原 CI 已通过 bubblewrap 探测，且 self-check 基准用例通过；当前证据不支持仅靠解除 AppArmor 修复这些失败。若外部 runner 实际拒绝 user namespace，再依据具体报错加 vitest 环境准备，不能用本机沙箱限制替代 GitHub 环境证据。
 5. 没有新增 skip、没有删测试、没有改可用性探测。上表的 6 项 box 跳过来自原 `describe.skipIf`；三个 E2E 日志里的 skipped 是 beforeAll 失败后的未执行项。无 box 的团队凭据 fixture 属于测试路径固定，原独立盒内安全测试不变。self-check 和 OpenCode 的期望更新均在上文逐项解释，原安全要求继续断言，并新增精确行为检查。
+
+## 第 2 轮
+
+### 修改与根因
+
+本轮仅修改 `server/cloud-lending.e2e.test.ts`、`server/opencode-provider-keys.e2e.test.ts` 和本报告；没有修改产品代码或 `ci.yml`，没有执行 git commit / checkout / stash。工作区原有未跟踪的 `r2.md` 保持不动。
+
+1. **cloud-lending：API bot 的读取路径遗漏。** API bot 和前面的 webhook bot 都设置 `cwd: home/hook-project`。第 1 轮的 CLI wrapper 根据实际 cwd 把两者的 turn 写到该目录的 `.fixture-output/turns`；API bot 的轮询却仍直接 `readdirSync(home/turns)`。这个固定目录既不是自定义 cwd 的输出位置，也不是 `engineOutput` 的标准 bot workspace 输出位置，因此报 ENOENT 并超时。现在 API bot 复用已有 `readTurns()`，同时覆盖标准 workspace 和获授自定义工作目录，仍按该 API 请求的 prompt 匹配 turn。没有改写入逻辑、授权目录或超时；`--restricted` 和 `mcpServers` 精确等于 `["cry"]` 两条断言原样保留。
+
+2. **opencode-provider-keys：环境观测遗漏，不是已证实的产品地址缺失。**
+   - `server/drivers/acp/core.ts` 的 `hostFor` 把 engine env 交给 `spawnCli`；`server/bot-box/box.ts` 的 `wrap` 先过滤环境，再调用 broker rewrite，最终直接把 `brokered.env` 用于 spawn。
+   - `server/bot-box/broker-env.ts` 明确定义 Anthropic 的 key 为 `ANTHROPIC_API_KEY`、地址为 `ANTHROPIC_BASE_URL`。存在 owner key 时，两者同时改写为 `cry_t0_…` 和 `http://127.0.0.1:18080/b/<token>/anthropic`，原始地址和 owner key 保存在 grant。此路径不是通过 OpenCode 配置文件传递地址；`server/bot-box/broker.ts` 再把 `/messages` 拼到 grant 的 upstream（本 fixture 为 `/v1`），并注入 owner key。
+   - `server/testing/fake-acp-cli.ts` 的 `dumpEnv` 是有限名单：有 `ANTHROPIC_API_KEY`，没有 `ANTHROPIC_BASE_URL`。所以日志里的 `undefined` 只证明 dump 漏记，不能证明进程缺少该变量；未启用 box 时，原 URL 断言也会受同一遗漏影响。本轮临时进程验证已复现“进程确有 URL，而共享 fake dump 不含 URL”。
+   - 为遵守只改两个失败文件的范围，本测试生成一个放在 fixture engine root 的专用 wrapper，在加载共享 fake ACP CLI 前直接记录 `process.env` 中这两个字段到 `<dump>.<pid>.provider-env.json`。读取方使用实际 prompt 的 PID，且额外核对 key 与共享 dump 一致；不会从另一个模型探测进程取地址，也不会在读取方拼造实际值。
+   - 精确 token 格式、精确 broker URL、无 box 时的 owner key/原始 URL、共享 dump 不含 owner key 均保留；新增 provider dump 也不得含 owner key。后续 `modelCall` 仍用进程实际拿到的地址和 key，请求真实 broker Unix socket，保留上游收到 owner key、`/v1/messages`、错误 token 401、未授权 grant 403、拒绝后上游请求数不增加等全部断言。
+
+### 验证
+
+使用 Node `v24.22.3`（`/opt/node24/bin/node`），vitest 均为 `--maxWorkers=2`。`AGENTS.md` 引用的 `docs/verification/README.md` 仍不存在；全部尝试使用临时 HOME/dataDir 或既有隔离 fixture，未访问用户 live app/data。
+
+| 命令 / 检查 | 结果 | 日志 |
+| --- | --- | --- |
+| `PATH=/opt/node24/bin:$PATH pnpm exec vitest run server/cloud-lending.e2e.test.ts server/opencode-provider-keys.e2e.test.ts --maxWorkers=2 --reporter=verbose` | 两套 beforeAll 被环境阻止：lending 分配端口失败；OpenCode `listen EPERM 127.0.0.1`。9 项业务测试未执行，不计通过 | `/tmp/t1227-r2-e2e.log` |
+| `PATH=/opt/node24/bin:$PATH pnpm exec vitest run server/bot-box/broker-env.test.ts --maxWorkers=2` | 3/3 通过，覆盖真实 key 留在 grant、token 与 URL 同时改写 | `/tmp/t1227-r2-broker-env.log` |
+| 从测试文件生成的 wrapper 启动临时 fake ACP 进程，发送 `initialize`，按 dump PID 读取两个环境字段 | 通过；复现共享 dump 漏记 URL，新采集文件精确保留进程环境，ACP 回复正常；无网络监听、无真实 box | `/tmp/t1227-r2-fixture-smoke.log` |
+| `PATH=/opt/node24/bin:$PATH pnpm exec tsc -p tsconfig.server.json --noEmit` | 通过 | `/tmp/t1227-r2-tsc.log` |
+| `PATH=/opt/node24/bin:$PATH pnpm lint` | 通过 | `/tmp/t1227-r2-lint.log` |
+| `git diff --check` | 通过 | — |
+
+临时 wrapper 验证最初用 Node `spawnSync` 传 stdin 时遇到 `spawnSync ... EPERM`；改用 shell 重定向给同一个临时 wrapper 传入 ACP JSON 后通过。这个调整仅用于临时验证命令，没有改变测试或产品启动方式来绕过沙箱。
+
+### 需要协调者补跑
+
+在沙箱外使用 Node 24、MemoryMax=4G、`--maxWorkers=2`、可用 bubblewrap，分别完整运行这两个 E2E 文件，预期 lending 7/7、OpenCode 2/2。重点确认 API bot 的两个安全断言，以及盒内实际 provider URL、owner key 转发、401/403 均执行成功。当前结果不声称完整 E2E 已通过；没有新增 skip、删除或放宽断言，也没有关闭产品安全能力。
+
+## 第 3 轮
+
+2026-11-14。**本轮未完成两个 E2E 的全绿修复：OpenCode 的测试根因已确认并修改；lending 仍需沙箱外失败诊断确认，不能声称根因已完全查清或已修复。** 只改这两个测试文件及本报告；保留前两轮工作区修改和未跟踪的 `r2.md`、`r3.md`，没有 git commit / checkout / stash，没有改产品代码或安装依赖。
+
+### 修改与根因证据
+
+1. **`server/opencode-provider-keys.e2e.test.ts`：按 PID 观察 ACP 探针，在保存、turn、删除 key 后统一验证真实的 box 契约。**
+   - 这段不是应当关闭 box 的路径。`server/drivers/acp/opencode-probe.ts` 的 `probeOpenCodeSession` 显式传 `box: { allowEnv }` 给 `spawnCli`；其安全契约是 OpenCode 的模型探针也会加载配置、插件和 MCP，必须像 turn 一样隔离。`opencode-go.ts` 的 `models --verbose` / `models --refresh` 也通过 `execCliBoxed` 启动。`BoxRunner.broker` 在 isolated network 中把 owner key 改写为每进程 token，并同步改写 URL。因此删除 Venice 后仍看到 Anthropic broker token 是正确行为，没有证据表明产品误走 box。
+   - 原 `started()` 读的是所有 fake CLI 进程共用的 dump。`fake-acp-cli.ts` 在处理 `--version` 之前也会写这个 dump；`acp/core.ts` 的版本探针使用盒外 `execCli`。所以盒外版本探针可留下原始 owner key，盒内 ACP/模型探针又会留下 token，读取结果受最后一次写入影响。协调者日志中保存后 raw-key 断言通过、删除后同一断言失败，不能据此推导两次刷新有不同的隔离契约。
+   - 复用第 2 轮的 `<dump>.<pid>.provider-env.json`，增加 Venice 和 OpenAI 字段。保存/删除之前记录已有 ACP 文件，之后只等新 ACP 进程的完整 JSON；`--version` 不生成这种文件，不能覆盖观测。初始配置同样检查 ACP 实际拿不到 server 自有的 Anthropic/OpenAI key。
+   - 公共断言在有 box 时严格要求 `^cry_t0_[a-f0-9]{48}$`、精确的 `http://127.0.0.1:18080/b/<token>/anthropic` 和采集内容不含 owner key；无 box 时严格要求 owner key 与原 upstream URL。turn 仍按 prompt PID 核对共享 dump，保留两份 dump 不泄漏 owner key、真实 broker 转发得到 owner key、上游路径、错误 token 401、未授 grant 403、拒绝后上游请求数不增加等断言。删除后 Venice 必须消失，并新增 OpenAI 仍缺失的断言。没有改 box 探测或关闭 box。
+
+2. **`server/cloud-lending.e2e.test.ts`：只增加失败取证，不凭猜测改轮询或安全行为。**
+   - 协调者日志只说明 20 秒内没有 `card.requestId`，返回值一直是 `run.status === "running"`。这里的 `"working"` 是测试在找到问题卡后返回的哨兵值，不是应把期望改成 `"running"` 的产品状态改名。
+   - `fake-acp-cli.ts` 的 `lend-question` 会先 `await driveMcp(list_shared_computers)`，再发 `session/request_permission`。`driveMcp` 的等待期限是 60 秒；子进程退出没有立即结束这个等待。因此 MCP 启动/调用出错可以表现为 20 秒内没有问题卡；单凭当前 Vitest 日志不能确定停在启动、模型配置还是 MCP 调用的哪一步。
+   - 找到一项明确的本机 fixture 环境问题：当前 worktree 的 `node_modules/jmespath` 链接到 `/root/workspace/crybot/node_modules/.pnpm/jmespath@0.16.0/node_modules/jmespath/jmespath.js`。用产品的 `defaultCodeRoots()`、`planBox()`、`visibleInBox()` 和本测试相同的 HOME/dataDir 布局计算，`server/mcp-gate.ts` 为 `ro`，上述真实依赖路径为 `none`。`mcp-gate.ts` 通过 `mcp-shape.ts` 导入 jmespath。宿主机运行的前面几个 proxy 可以读取该依赖，不代表后面的 fake ACP 在盒内启动 gate 也能读取它。**这证明依赖可见性存在问题，但尚无该次失败的 ACP stderr，不能把它写成已动态确认的唯一根因。** 未为此扩大 box 挂载或关闭隔离。
+   - 增加仅作用于隔离服务器的诊断 prelude：调用原 `StderrTail.write` 后，把它已脱敏的 tail 送到 fixture server log。失败时 `afterEach` 输出该日志和已有的 Grok ACP native trace，再按原逻辑清理临时目录。这样下一次沙箱外失败能看到 engine/MCP 的错误与最后一条 ACP 消息。原轮询、20 秒期限、必须出现问题卡、interrupt 以及其余安全断言全部保留。
+   - 当前没有足够证据认定产品缺陷；没有修改产品代码。已向协调者询问是否保留旧 fixture 的服务器日志/目录，写报告时尚未得到补充信息。
+
+### 沙箱内验证
+
+Node 为 `/opt/node24/bin/node`（v24.22.3），vitest 均带 `--maxWorkers=2`。再次尝试 `systemd-run --scope -q -p MemoryMax=4G -- /opt/node24/bin/node --version`，仍报 `Failed to connect to system scope bus ... Operation not permitted`，故以下检查直接运行。`docs/verification/README.md` 仍缺失；所有验证使用既有隔离 fixture 或临时 HOME/dataDir，未访问 live app/data。
+
+| 命令 / 检查 | 结果 | 日志 |
+| --- | --- | --- |
+| `PATH=/opt/node24/bin:$PATH pnpm exec vitest run server/cloud-lending.e2e.test.ts --maxWorkers=2` | beforeAll 分配端口失败：`no free port block for offsets 0,1 in 19600..22600`；7 项未执行，不计通过 | `/tmp/t1227-r3-lending.log` |
+| `PATH=/opt/node24/bin:$PATH pnpm exec vitest run server/opencode-provider-keys.e2e.test.ts --maxWorkers=2` | beforeAll：`listen EPERM: operation not permitted 127.0.0.1`；2 项未执行，不计通过 | `/tmp/t1227-r3-opencode.log` |
+| `PATH=/opt/node24/bin:$PATH pnpm exec vitest run server/bot-box/broker-env.test.ts --maxWorkers=2` | 3/3 通过 | `/tmp/t1227-r3-broker-env.log` |
+| `/opt/node24/bin/node /tmp/t1227-r3-fixture-smoke.mjs` | 从实际测试源码生成 wrapper；raw 环境和真实 `brokerRewrite` 产物均被按 PID 精确保留，后续版本探针覆盖共享 dump 但不生成/覆盖 ACP 文件；诊断 prelude 保留原 stderr tail 并输出；另输出上述实际依赖的挂载可见性 | `/tmp/t1227-r3-fixture-smoke.log` |
+| `PATH=/opt/node24/bin:$PATH pnpm exec tsc -p tsconfig.server.json --noEmit` | 通过 | `/tmp/t1227-r3-tsc.log` |
+| `PATH=/opt/node24/bin:$PATH pnpm lint` | 通过 | `/tmp/t1227-r3-lint.log` |
+| `git diff --check` | 通过 | — |
+
+临时 smoke 只验证进程环境采集、诊断和纯挂载计划；没有实际启动 box，也不算完整 ACP 对话或 HTTP 转发通过。两套 E2E 输出的 skipped 来自 beforeAll 失败，未新增 skip。没有增加超时、删除用例或放宽安全断言。
+
+### 需要协调者处理
+
+在沙箱外使用 Node 24、MemoryMax=4G、`--maxWorkers=2`、可用 bubblewrap 分别运行：
+
+```sh
+PATH=/opt/node24/bin:$PATH systemd-run --scope -q -p MemoryMax=4G -- pnpm exec vitest run server/cloud-lending.e2e.test.ts --maxWorkers=2 --reporter=verbose
+PATH=/opt/node24/bin:$PATH systemd-run --scope -q -p MemoryMax=4G -- pnpm exec vitest run server/opencode-provider-keys.e2e.test.ts --maxWorkers=2 --reporter=verbose
+```
+
+OpenCode 预期 2/2，并确认保存/删除后的 ACP 探针以及 turn 的 token、URL、401/403 都实际执行。lending 当前仍可能原样失败；请保留新增 `Fixture ACP stderr`、`Cloud fixture server log` 和 `Cloud fixture ACP trace` 输出，用它确认是否为盒内 `ERR_MODULE_NOT_FOUND`（尤其 jmespath 的外部依赖链接）。若确认如此，应先修复协调者运行环境中现有依赖的盒内可见性，再决定是否需要测试 fixture 打包调整；本轮未擅自搬动依赖、扩展产品挂载或新增依赖。其他停点也应依据新 trace 继续定位，不能把本轮诊断改动算作 lending 修复完成。
