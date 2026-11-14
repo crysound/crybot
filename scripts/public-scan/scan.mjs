@@ -11,7 +11,7 @@ const allowDomainsPath = resolve(scriptDirectory, "allow-domains.txt");
 const denylistPath = resolve(scriptDirectory, "denylist.hmac");
 const tldsPath = resolve(scriptDirectory, "iana-tlds.txt");
 const skippedNames = new Set(["pnpm-lock.yaml", "Package.resolved"]);
-const skippedExtensions = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip", ".gz", ".jar", ".jks", ".keystore", ".p12", ".woff", ".woff2", ".ttf", ".otf"]);
+const skippedExtensions = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".icns", ".mp3", ".m4a", ".caf", ".mov", ".mp4", ".heic", ".pdf", ".zip", ".gz", ".jar", ".jks", ".keystore", ".p12", ".woff", ".woff2", ".ttf", ".otf"]);
 const reservedTlds = new Set(["example", "test", "invalid", "localhost"]);
 const ambiguousTlds = new Set(["active", "app", "base", "bot", "case", "color", "config", "css", "data", "dev", "directory", "email", "file", "find", "go", "handle", "home", "host", "id", "index", "info", "js", "json", "length", "line", "live", "local", "map", "md", "messages", "name", "nam", "output", "path", "profile", "private", "pro", "py", "result", "rule", "rs", "run", "sh", "swift", "test", "text", "threadid", "true", "ts", "url", "value", "voice"]);
 
@@ -234,7 +234,7 @@ function addedFiles(diff) {
   let inHunk = false;
   for (const line of diff.split(/\r?\n/)) {
     if (line.startsWith("diff --git ")) {
-      current = { file: parseDiffDestination(line), binary: false, lines: [] };
+      current = { file: parseDiffDestination(line), binary: false, gitlink: false, lines: [] };
       files.push(current);
       nextLine = 0; sawOldHeader = false; sawNewHeader = false; inHunk = false;
       continue;
@@ -244,6 +244,7 @@ function addedFiles(diff) {
       continue;
     }
     if (line.startsWith("deleted file mode ") && !inHunk) { current.file = null; continue; }
+    if (!inHunk && /^(?:(?:new file mode|new mode) 160000|index [0-9a-f]+\.\.[0-9a-f]+ 160000)$/.test(line)) { current.gitlink = true; continue; }
     if (!line.startsWith("-") && line.includes("\0")) current.binary = true;
     if (line.startsWith("rename to ") && !inHunk) {
       const value = line.slice("rename to ".length);
@@ -288,14 +289,14 @@ export function scan({ base, cwd = process.cwd() }) {
 export function scanDiff(diff, readHead = () => null) {
   const config = loadConfig();
   const findings = [];
-  for (const [index, { file, binary, lines }] of addedFiles(diff).entries()) {
+  for (const [index, { file, binary, gitlink, lines }] of addedFiles(diff).entries()) {
     if (!file) continue;
     const pathFindings = scanLine(file, file, 0, config);
     const pathDenied = hasDenylistedWord(file, config);
     if (pathDenied && !pathFindings.some(({ rule }) => rule === "denylist")) pathFindings.push({ file, line: 0, rule: "denylist" });
     const displayPath = pathDenied ? `<redacted-path #${index + 1}>` : file.replace(/[\x00-\x1f\x7f]/g, "?");
     const contentFindings = [];
-    if (!shouldSkipFile(file)) {
+    if (!gitlink && !shouldSkipFile(file)) {
       const head = readHead(file);
       if (binary || head?.includes(0)) {
         const content = head?.toString("utf8") ?? lines.map(({ text }) => text).join("\n");
