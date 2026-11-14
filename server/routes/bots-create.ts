@@ -1,3 +1,6 @@
+import { BOT_PROFILE_LIMITS } from "../../shared/bot-profile.ts";
+import { supportedLanguage } from "../../shared/languages.ts";
+import { pickBotName } from "../names.ts";
 import type { WireBot } from "../../shared/wire.ts";
 import { freshLook } from "../bot-look.ts";
 import { validateBotCwd } from "../bot-cwd.ts";
@@ -44,10 +47,11 @@ export interface BotCreateRouteDeps {
   checkedModelSelection(raw: unknown, current?: { selection: ModelSelection; busy: boolean }, requireAvailableModel?: boolean): ModelSelectionCheck;
   cloudOwnerSession(auth: RequestAuth): boolean;
   wireBot(bot: BotRecord): WireBot;
+  personLanguage?(auth: RequestAuth): string | undefined;
   /** A Team Cloud: a new bot records who created it, and may name who it reports to. */
-  team?: { name: string; people: Pick<TeamPeople, "has"> } | null;
+  team?: { name: string; language?: string; people: Pick<TeamPeople, "has"> } | null;
   /** Starts writing personal answers for a new bot's setup card; never awaited. */
-  personaliseSetupCard?(bot: BotRecord): void;
+  personaliseSetupCard?(bot: BotRecord, language: string): void;
   /** The Chief of Staff of a scope changed: these bots' flags did. */
   chiefChanged?(changed: readonly BotRecord[]): void;
 }
@@ -83,13 +87,21 @@ export function createBotCreateRoutes(deps: BotCreateRouteDeps): RouteHandler {
     hostedModels, cloudRoutineAuthors,
     storedAvatarExists, defaultSelection, checkedModelSelection, cloudOwnerSession, wireBot,
   } = deps;
-  return async ({ req, res, path, method, auth, json, readBody }) => {
+  return async ({ req, res, url, path, method, auth, json, readBody }) => {
+    if (method === "GET" && path === "/api/bot-name") {
+      const exclude = (url.searchParams.get("exclude") ?? "").slice(0, BOT_PROFILE_LIMITS.name);
+      return json(res, 200, { suggestedName: pickBotName([...store.bots.map(bot => bot.name), exclude]) });
+    }
     const routines = deps.routines();
     if (method === "POST" && path === "/api/bots") {
       let body = await readBody(req);
       if (!body || typeof body !== "object" || Array.isArray(body)) {
         return json(res, 400, { error: "bot must be a JSON object" });
       }
+      const { language: requestedLanguage, ...creation } = body;
+      const language = supportedLanguage(requestedLanguage) ?? supportedLanguage(deps.personLanguage?.(auth))
+        ?? cfg.language ?? deps.team?.language ?? Intl.DateTimeFormat().resolvedOptions().locale;
+      body = creation;
       if (req.headers["x-crybot-companion"] === "1") {
         const field = adminOnlyBotSetting(askedSettings(body));
         if (field) {
@@ -197,7 +209,7 @@ export function createBotCreateRoutes(deps: BotCreateRouteDeps): RouteHandler {
       const bot = store.createBot({ ...profile.patch, soul: settings.soul, section, modelSelection: selection,
         toolScope: settings.toolScope ?? undefined, color: settings.color ?? look?.color, mascotBody: settings.mascotBody ?? look?.mascotBody,
         ...(deps.team && creator ? { createdBy: creator } : {}), ...(reportsTo ? { reportsTo } : {}),
-        ...(created?.ok ? { visibility: created.visibility } : {}) }, kept.id ? { ...kept, seedMessages: false } : {});
+        ...(created?.ok ? { visibility: created.visibility } : {}) }, kept.id ? { ...kept, seedMessages: false } : { language });
       const createdRoutines: Array<{ id: string; enabled: boolean }> = [];
       try {
         const { chiefOfStaff: _chief, managedSections: _managed, toolScope: _toolScope, ...ordinary } = settings;
@@ -262,7 +274,7 @@ export function createBotCreateRoutes(deps: BotCreateRouteDeps): RouteHandler {
         try { routines!.update(routine.id, { enabled: true }); }
         catch { warnings.push(`Bot created; routine ${routine.id} could not be activated.`); }
       }
-      deps.personaliseSetupCard?.(bot);
+      deps.personaliseSetupCard?.(bot, language);
       return json(res, 201, {
         ...(warnings.length ? { warnings } : {}), ...(deps.paused(bot.id) ? { paused: true } : {}),
         bot: {

@@ -73,6 +73,7 @@ export function createPersonLanguages(deps: PersonLanguagesDeps) {
       if (people.size > MAX_PEOPLE) people.delete(people.keys().next().value!);
       save();
     },
+    forPerson: (person: string): string | undefined => people.get(person)?.language,
     forLine,
     /** A line in this conversation: its person's language when it is private to one person, else the place's, never that
      * of whoever spoke last where others read too. */

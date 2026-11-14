@@ -1,6 +1,8 @@
+import { localePacks, type LanguageCode as PackName } from "../../shared/languages";
 import en from "./en.json";
 
-export { en };
+export { en, localePacks };
+export type { PackName };
 export type LocaleKey = keyof typeof en;
 export type LocalePack = Partial<Record<LocaleKey, string>>;
 
@@ -20,33 +22,7 @@ const packLoaders = {
   ru: () => import("./ru.json"),
   it: () => import("./it.json"),
   ko: () => import("./ko.json"),
-} satisfies Record<string, () => Promise<{ default: LocalePack }>>;
-
-export type PackName = "en" | keyof typeof packLoaders;
-
-/** Every language tag the app answers to, and the pack it shows. */
-export const localePacks: Readonly<Record<string, PackName>> = {
-  en: "en",
-  de: "de",
-  es: "es",
-  fr: "fr",
-  hi: "hi",
-  ja: "ja",
-  pt: "pt-br",
-  "pt-br": "pt-br",
-  zh: "zh",
-  "zh-hant": "zh-tw",
-  "zh-hk": "zh-tw",
-  "zh-mo": "zh-tw",
-  "zh-tw": "zh-tw",
-  uk: "uk",
-  vi: "vi",
-  tr: "tr",
-  pl: "pl",
-  ru: "ru",
-  it: "it",
-  ko: "ko",
-};
+} satisfies Record<Exclude<PackName, "en">, () => Promise<{ default: LocalePack }>>;
 
 /** The packs this page has loaded, under every tag that shows them: English, and each one loadLocalePack fetched. */
 export const locales: Record<string, LocalePack> = { en };
