@@ -1460,22 +1460,35 @@ describe("short container status cache", () => {
     [healthProbe]: JSON.stringify({ schema_version: "1", overall: "ok", checks: [] }),
   });
 
+  it.each([false, true])("observes an externally created container with managed=%s despite a cached missing result", async managed => {
+    const values: Record<string, string | Error> = responses();
+    values[`docker inspect ${CONTAINER}`] = new Error("No such container");
+    const fake = runner(values);
+    expect((await containerComputerStatus(fake.run, "linux")).container).toBe("missing");
+    expect((await containerComputerStatus(fake.run, "linux", undefined, { cache: true })).container).toBe("missing");
+
+    values[`docker inspect ${CONTAINER}`] = managed ? readyInspect() : readyInspect({ Config: { Labels: {} } });
+
+    expect(await containerComputerStatus(fake.run, "linux")).toMatchObject({ container: "running", managed });
+    expect(fake.calls.filter(call => call === `docker inspect ${CONTAINER}`)).toHaveLength(3);
+  });
+
   it("shares in-flight and adjacent turn probes for five seconds without taking a screenshot", async () => {
     vi.useFakeTimers();
     try {
       const fake = runner(responses());
-      const [first, second] = await Promise.all([containerComputerStatus(fake.run, "linux"), containerComputerStatus(fake.run, "linux")]);
+      const [first, second] = await Promise.all([containerComputerStatus(fake.run, "linux", undefined, { cache: true }), containerComputerStatus(fake.run, "linux", undefined, { cache: true })]);
       expect(first.ready).toBe(true);
       expect(second).toEqual(first);
       first.ready = false;
       await vi.advanceTimersByTimeAsync(4999);
-      expect((await containerComputerStatus(fake.run, "linux")).ready).toBe(true);
+      expect((await containerComputerStatus(fake.run, "linux", undefined, { cache: true })).ready).toBe(true);
       expect(fake.calls.filter(call => call === versionProbe)).toHaveLength(1);
       expect(fake.calls.filter(call => call.startsWith("docker exec"))).toHaveLength(3);
       expect(fake.calls).not.toContain(readinessProbe);
       expect(fake.calls).not.toContain(readinessRead);
       await vi.advanceTimersByTimeAsync(1);
-      await containerComputerStatus(fake.run, "linux");
+      await containerComputerStatus(fake.run, "linux", undefined, { cache: true });
       expect(fake.calls.filter(call => call === versionProbe)).toHaveLength(2);
     } finally { vi.useRealTimers(); }
   });
@@ -1483,16 +1496,16 @@ describe("short container status cache", () => {
   it("separates targets and probe depths and invalidates on mode and image transitions", async () => {
     const fake = runner(responses());
     const other = perBotLocalVmTarget("cache-fixture");
-    await containerComputerStatus(fake.run, "linux");
-    await containerComputerStatus(fake.run, "linux", other);
-    await containerComputerStatus(fake.run, "linux", undefined, { probeDesktop: false });
+    await containerComputerStatus(fake.run, "linux", undefined, { cache: true });
+    await containerComputerStatus(fake.run, "linux", other, { cache: true });
+    await containerComputerStatus(fake.run, "linux", undefined, { cache: true, probeDesktop: false });
     expect(fake.calls.filter(call => call === `docker inspect ${CONTAINER}`)).toHaveLength(2);
     expect(fake.calls).toContain(`docker inspect ${other.containerName}`);
     invalidateContainerComputerStatus(other);
-    await containerComputerStatus(fake.run, "linux");
+    await containerComputerStatus(fake.run, "linux", undefined, { cache: true });
     expect(fake.calls.filter(call => call === versionProbe)).toHaveLength(1);
     invalidateContainerComputerStatus();
-    await containerComputerStatus(fake.run, "linux");
+    await containerComputerStatus(fake.run, "linux", undefined, { cache: true });
     expect(fake.calls.filter(call => call === versionProbe)).toHaveLength(2);
   });
 
@@ -1500,10 +1513,10 @@ describe("short container status cache", () => {
     const values = responses();
     values[`docker inspect ${CONTAINER}`] = readyInspect({ State: { Running: false } });
     const fake = runner(values);
-    expect((await containerComputerStatus(fake.run, "linux")).ready).toBe(false);
+    expect((await containerComputerStatus(fake.run, "linux", undefined, { cache: true })).ready).toBe(false);
     values[`docker inspect ${CONTAINER}`] = readyInspect();
-    expect((await containerComputerStatus(fake.run, "linux", undefined, { fresh: true })).ready).toBe(true);
-    expect((await containerComputerStatus(fake.run, "linux")).ready).toBe(true);
+    expect((await containerComputerStatus(fake.run, "linux", undefined, { cache: true, fresh: true })).ready).toBe(true);
+    expect((await containerComputerStatus(fake.run, "linux", undefined, { cache: true })).ready).toBe(true);
     expect(fake.calls.filter(call => call === `docker inspect ${CONTAINER}`)).toHaveLength(2);
   });
 
@@ -1512,12 +1525,12 @@ describe("short container status cache", () => {
     let unblock!: () => void;
     const blocked = new Promise<void>(resolve => { unblock = resolve; });
     const run: CommandRunner = async (...args) => { await blocked; return fake.run(...args); };
-    const before = containerComputerStatus(run, "linux");
+    const before = containerComputerStatus(run, "linux", undefined, { cache: true });
     invalidateContainerComputerStatus(SHARED_LOCAL_VM_TARGET);
-    const after = containerComputerStatus(run, "linux");
+    const after = containerComputerStatus(run, "linux", undefined, { cache: true });
     unblock();
     await Promise.all([before, after]);
-    await containerComputerStatus(run, "linux");
+    await containerComputerStatus(run, "linux", undefined, { cache: true });
     expect(fake.calls.filter(call => call === versionProbe)).toHaveLength(2);
   });
 
@@ -1525,9 +1538,9 @@ describe("short container status cache", () => {
     const values = responses();
     if (action === "start") values[`docker inspect ${CONTAINER}`] = readyInspect({ State: { Running: false } });
     const fake = runner(values);
-    await containerComputerStatus(fake.run, "linux");
+    await containerComputerStatus(fake.run, "linux", undefined, { cache: true });
     await expect(containerComputerAction(action, fake.run, "linux")).rejects.toBeDefined();
-    await containerComputerStatus(fake.run, "linux");
+    await containerComputerStatus(fake.run, "linux", undefined, { cache: true });
     expect(fake.calls.filter(call => call === `docker inspect ${CONTAINER}`)).toHaveLength(3);
   });
 
@@ -1543,11 +1556,11 @@ describe("short container status cache", () => {
       }
       return fake.run(command, args, timeout);
     };
-    expect((await containerComputerStatus(run, "linux")).ready).toBe(true);
+    expect((await containerComputerStatus(run, "linux", undefined, { cache: true })).ready).toBe(true);
     const stopping = containerComputerAction("stop", run, "linux");
-    await containerComputerStatus(run, "linux");
+    await containerComputerStatus(run, "linux", undefined, { cache: true });
     unblock();
     await stopping;
-    expect((await containerComputerStatus(run, "linux")).container).toBe("stopped");
+    expect((await containerComputerStatus(run, "linux", undefined, { cache: true })).container).toBe("stopped");
   });
 });

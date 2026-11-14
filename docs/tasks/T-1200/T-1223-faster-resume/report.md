@@ -329,3 +329,62 @@ git apply -R /tmp/T1223-r5-slow-f4.patch
 无论慢启动运行成功或失败，都需撤销临时补丁；全部原断言应保持通过。另需在支持子进程 stdin 的环境补跑 `server/testing/room-handoff-agent.test.ts`。
 
 最终定向夹具复跑结果：**2 failed / 5 skipped**，仍为上述 stdin/MCP 初始化问题；无 unhandled rejection 报告。正常 F4、3 秒慢启动 F4 和夹具单测的沙箱外结果待协调者补充。本轮最终 `git diff --check` 通过，未引入临时慢启动代码。
+
+## 第 6 轮：Local VM 清单与删除读取真实状态
+
+### 根因
+
+本分支把 `server/container-computer.ts:containerComputerStatus` 的所有调用统一接入 `server/container-status-cache.ts:cachedContainerStatus`；未传 `fresh` 时默认复用 5 秒缓存，影响范围超出了恢复路径。
+
+两条 HTTP 回归都先通过 `GET /api/bots/:id/local-computer` 获取目标信息，此时假 Docker 中容器尚不存在，`localVmPayload` 的查询缓存了 `container: "missing"`。随后测试通过假 Docker 状态文件模拟外部创建容器，没有应用内生命周期事件可以使缓存失效：
+
+1. **非受管容器清单为空：** `localVmInventoryPayload` 的容器发现步骤能够找到该容器，但之后的状态查询读到旧的 missing；`localVmInventoryEntry` 因此过滤掉条目，未返回应有的 `managed: false`。问题不是 Docker 发现命令没有执行。
+2. **删除 bot 未调用 Docker rm：** 删除预检查同样读到 missing，将 `localVmCleanup.removeContainer` 设为 false，后续直接跳过容器删除。`containerComputerAction` 本身虽有生命周期失效保护，却根本没有被调用。
+
+`local-vm-box.ts` 只负责 bot box 的 Docker socket 挂载限制，`lazy-container-mcp.ts` 负责工具懒加载；这两条回归不经过它们的挂载路径。
+
+### 改法与单测
+
+- `server/container-status-cache.ts`：新增显式 `cache` 选项。默认直接执行状态探测，既不读取也不写入恢复缓存。清单、bot 删除预检查、管理接口、生命周期动作及空闲停止的预检查因此恢复实时查询，无须逐个管理入口补失效调用。
+- `server/index.ts`：仅在 `attachLocalVm` 和 `readyLocalVmForTurn` 中显式传 `cache: true`，保留恢复时的并发合并、相邻轮次 5 秒复用和 `fresh: true` 就绪轮询。启动、停止、镜像和模式变更原有的 generation 失效保护保持不变；后台唤醒、租约与错误传递逻辑未改。
+- `server/container-computer.test.ts`：新增一个参数化回归测试，覆盖外部创建的受管与非受管容器。先读取 missing 并预置恢复缓存，再更换假 Docker inspect 结果，断言普通状态查询立即返回 running 和真实 managed 值，并实际重新 inspect。原缓存测试显式启用缓存，所有原有时效、合并、探测次数、结果隔离及生命周期断言保留。
+
+先红后绿：只加入新增测试、实现尚未修复时，两种 managed 情况均失败，期望 `container: "running"`、实际 `"missing"`；受管情况还期望 `managed: true`、实际 false。修复后整个文件 **118 passed**。没有修改 `server/index.test.ts`，两条 HTTP 测试断言原样保留。
+
+### 验证
+
+所有命令使用 `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048` 前缀；逐文件串行运行 Vitest，单测统一 `--maxWorkers=1 --configLoader runner`，HTTP 复现按本轮要求使用 `--maxWorkers=2`。
+
+| 文件 / 检查 | 结果 |
+| --- | --- |
+| `server/container-computer.test.ts` | 118 passed，含新增 2 例 |
+| `server/local-vm-box.test.ts` | 4 passed |
+| `server/local-vm-inventory.test.ts` | 5 passed |
+| `server/local-vm-ready.test.ts` | 9 passed |
+| `server/local-vm-resume.test.ts` | 17 passed |
+| `server/computer-idle.test.ts` | 20 passed |
+| `server/computer-call-gate.test.ts` | 10 passed |
+| `server/lazy-container-mcp.test.ts` | 11 passed |
+| `server/auto-vm-claims.test.ts` | 19 passed |
+| `scripts/testing/file-size-ratchet.test.ts` | 1 passed |
+| `server/index.test.ts -t "Local VM"` | beforeAll 中隔离监听返回 `listen EPERM`，30 秒后 hook 超时；338 skipped，没有执行行为断言 |
+| `server/local-vm-resume.fixture.test.ts` | 隔离端口分配失败：`no free port block for offsets 0,1 in 19600..22600`；7 skipped |
+| `pnpm exec tsc -p tsconfig.server.json --noEmit` | exit 0，无诊断 |
+| `pnpm exec oxlint --deny-warnings server/container-status-cache.ts server/container-computer.test.ts server/index.ts` | exit 0 |
+| `pnpm exec oxlint --deny-warnings .` | exit 1，仅既有 `server/lazy-container-mcp.ts:122:54` 的 `unicorn(no-useless-spread)` 警告 |
+| `git diff --check` | exit 0 |
+
+相关单测共 **213 passed**，另有行数棘轮 **1 passed**。全仓 lint 警告与第 5 轮相同，`git blame` 指向已有提交 `e925a77a`，本轮未修改该文件。tsc 单独运行，执行前测试进程已结束；当时 cgroup 内存上限 6442450944 字节、使用量 239656960 字节，Node 堆上限 2048 MiB。
+
+`server/index.ts` 行数 **15373 → 15373**，低于当前棘轮上限 **15515**；没有新增实现文件、依赖或 git 提交。保留工作区原有未跟踪的 `r6.md`。
+
+当前检出和可读主仓库仍缺少 `docs/verification/README.md`。HTTP 测试已实际启动其自带的临时 HOME、假 Docker 和隔离服务夹具，但在监听前置步骤失败；恢复夹具也已尝试分配隔离端口。未访问用户 live app 或数据，未更改测试以绕过沙箱限制。
+
+**待沙箱外确认：** 两条 HTTP 回归的完整通过结果，以及恢复夹具的聊天启动延迟与跨轮缓存次数。目前实现修复有根因单测和调用链证据，不能将未执行的 HTTP / 恢复速度断言记为通过。补跑命令：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run server/index.test.ts -t "Local VM" --maxWorkers=2 --configLoader runner
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run server/local-vm-resume.fixture.test.ts --maxWorkers=1 --configLoader runner
+```
+
+日志位于本轮环境 `/tmp/T1223-r6-*.log`，包括 `red`、`container`、`index`、`resume-fixture`、各相关单测、`ratchet`、`tsc-server`、`lint` 和 `lint-changed`。

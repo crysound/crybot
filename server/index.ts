@@ -8068,17 +8068,17 @@ async function beginTurn(
         let lazyReadyVm: { runtime: Runtime } | null = null;
         let wakeInBackground = false;
         if (strict) {
-          const seen = await containerComputerStatus(undefined, undefined, localVmTarget).catch(() => null);
+          const seen = await containerComputerStatus(undefined, undefined, localVmTarget, { cache: true }).catch(() => null);
           if (seen?.ready && seen.runtime && !localVmUpdates.observe(localVmTarget, seen) && !localVmImageBusy && !localVmModeChangeBusy && !localVmLifecycleBusy.has(localVmTarget.key)) lazyReadyVm = { runtime: seen.runtime };
         } else {
           if (!localVmSeen.has(localVmTarget.key) && !opts?.automationSource) return false;
-          let seen = await containerComputerStatus(undefined, undefined, localVmTarget).catch(() => null);
+          let seen = await containerComputerStatus(undefined, undefined, localVmTarget, { cache: true }).catch(() => null);
           // An old desktop is updated, never swapped for this computer: an unattended run waits for it, a chat is told.
           if (localVmUpdates.observe(localVmTarget, seen)) {
             if (!opts?.automationSource) { vmUpdateNote = localVmUpdates.kick(localVmTarget); return false; }
             try { await waitForLocalVmUpdate(localVmTarget, threadId, () => directTurnClaimIsCurrent(bot.id, dispatchClaimId, threadId)); }
             catch (error) { if (error instanceof DirectTurnSetupCancelled) throw error; skipComputer(error); return false; }
-            seen = await containerComputerStatus(undefined, undefined, localVmTarget).catch(() => null);
+            seen = await containerComputerStatus(undefined, undefined, localVmTarget, { cache: true }).catch(() => null);
           }
           if (!seen || (!autoLocalVmAttachable(seen) && !localVmDesktopPending(seen))) return false;
           if (localVmImageBusy || localVmModeChangeBusy || (localVmLifecycleBusy.has(localVmTarget.key) && !localVmReadinessPending(localVmTarget))) return false;
@@ -11648,9 +11648,9 @@ function readyLocalVmForTurn(botId: string, target: LocalVmTarget, isCurrent = (
   return readyLocalVm(target, {
     lifecycleBusy: localVmLifecycleBusy,
     provisionBusy: { get: () => localVmProvisionBusy, set: busy => { localVmProvisionBusy = busy; } },
-    status: fresh => containerComputerStatus(undefined, undefined, target, { fresh }),
+    status: fresh => containerComputerStatus(undefined, undefined, target, { cache: true, fresh }),
     startMachine: status => startStoppedPodmanMachine(status,
-      () => containerComputerStatus(undefined, undefined, target, { fresh: true }),
+      () => containerComputerStatus(undefined, undefined, target, { cache: true, fresh: true }),
       () => { invalidateContainerComputerStatus(); broadcast({ kind: "computer", botId, state: "provisioning" }); }),
     note: status => noteLocalVmSeen(target, status),
     start: action => {

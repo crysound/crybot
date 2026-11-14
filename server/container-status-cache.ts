@@ -2,7 +2,7 @@ import { clearLocalVmWakeFailure } from "./local-vm-resume.ts";
 import type { CommandRunner, ContainerComputerStatus, LocalVmTarget } from "./container-computer.ts";
 
 const STATUS_TTL_MS = 5_000;
-export type StatusOptions = { probeDesktop?: boolean; fresh?: boolean };
+export type StatusOptions = { probeDesktop?: boolean; cache?: boolean; fresh?: boolean };
 type StatusEntry = { result: Promise<ContainerComputerStatus>; expiresAt: number; generation: number };
 const statusCaches = new WeakMap<CommandRunner, Map<string, StatusEntry>>();
 let statusGeneration = 0;
@@ -21,6 +21,7 @@ export function invalidateContainerComputerStatus(target?: LocalVmTarget): void 
 }
 
 export function cachedContainerStatus(runner: CommandRunner, platform: NodeJS.Platform, target: LocalVmTarget, options: StatusOptions, probe: () => Promise<ContainerComputerStatus>): Promise<ContainerComputerStatus> {
+  if (!options.cache) return probe();
   let cache = statusCaches.get(runner);
   if (!cache) { cache = new Map(); statusCaches.set(runner, cache); }
   const key = JSON.stringify([platform, target.key, target.containerName, target.workspaceDir, target.viewerPort, target.label, options.probeDesktop !== false]);
