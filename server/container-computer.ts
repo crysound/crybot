@@ -1,5 +1,5 @@
 // Cua-backed Local VM: CRY owns only the sandbox boundary; desktop automation is Cua Driver's (`cua-driver mcp` in the container).
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { lstatSync } from "node:fs";
 import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -38,6 +38,9 @@ import {
   type HostUser,
 } from "./container-isolation.ts";
 import { SPAWNED_PROXIES } from "./proxy-paths.ts";
+import { multiScreenInitScript, SCREENS_LAYOUT_LABEL, SCREENS_FALLBACK_FILE, SCREENS_SUPERVISOR_CONFIG, SCREEN_DRIVER_ENV, SCREEN_DRIVER_OPTIONS, screensLayoutOf, validateScreenPackages } from "./container-screens.ts";
+export { screensLayoutOf } from "./container-screens.ts";
+export { SCREENS_LAYOUT_LABEL } from "./container-screens.ts";
 
 const run = promisify(execFile);
 
@@ -81,6 +84,7 @@ export interface DesktopRunOptions {
   resources: DesktopResources;
   /** The account that owns the workspace on the host. */
   hostUser: HostUser | null;
+  screensLayout?: "single" | "multi";
 }
 
 export interface LocalVmTarget {
@@ -89,6 +93,7 @@ export interface LocalVmTarget {
   workspaceDir: string;
   viewerPort: number | null;
   label: string;
+  screen?: number;
 }
 
 export const SHARED_LOCAL_VM_TARGET: LocalVmTarget = {
@@ -98,6 +103,30 @@ export const SHARED_LOCAL_VM_TARGET: LocalVmTarget = {
   viewerPort: HOST_VIEWER_PORT,
   label: "shared",
 };
+
+function checkedScreen(n: number): number {
+  if (!Number.isInteger(n) || n < 1 || n > 4) throw new RangeError("screen must be between 1 and 4");
+  return n;
+}
+
+export function sharedScreenTarget(n: number): LocalVmTarget {
+  checkedScreen(n);
+  return { ...SHARED_LOCAL_VM_TARGET, key: `shared:s${n}`, screen: n };
+}
+
+export function containerTargetOf(target: LocalVmTarget): LocalVmTarget {
+  return isScreenTarget(target) ? SHARED_LOCAL_VM_TARGET : target;
+}
+
+export function isScreenTarget(target: LocalVmTarget): target is LocalVmTarget & { screen: number } {
+  return target.key === `shared:s${target.screen}` && Number.isInteger(target.screen) && (target.screen as number) >= 1 && (target.screen as number) <= 4;
+}
+
+export function screenUser(n: number): string { return `crybot-s${checkedScreen(n)}`; }
+export function screenUid(n: number): number { return 61000 + checkedScreen(n); }
+export function screenDisplay(n: number): string { return `:${checkedScreen(n)}`; }
+export function screenSocket(n: number): string { return `/run/user/${screenUid(n)}/crybot-cua.sock`; }
+export function screenWorkdir(n: number): string { return `/home/cua/workspace/screens/s${checkedScreen(n)}`; }
 
 /** Identities come from a digest, never a bot's display name or a caller-controlled path fragment. */
 export function perBotLocalVmTarget(botId: string): LocalVmTarget {
@@ -192,7 +221,7 @@ RUN printf '%s\\n' \\
       '  if [ "$attempt" -ge 45 ]; then echo "X display :1 did not become ready within 45 seconds" >&2; exit 1; fi' \\
       '  sleep 1' \\
       'done' \\
-      'exec env CUA_DRIVER_BROWSER_NO_SANDBOX=1 CUA_DRIVER_INSTALL_CHANNEL=python_package CUA_DRIVER_RS_TELEMETRY_ENABLED=0 CUA_DRIVER_WINDOW_CHANGE_TIMEOUT_MS=200 NO_COLOR=1 ${CUA_EXECUTABLE} serve --socket ${CUA_SOCKET} --permission-mode standard --grant existing-profile --cursor-reduced-motion on' \\
+      'exec env ${SCREEN_DRIVER_ENV} ${CUA_EXECUTABLE} serve --socket ${CUA_SOCKET} ${SCREEN_DRIVER_OPTIONS}' \\
       > /usr/local/bin/start-crybot-cua-driver.sh \\
     && chmod 0755 /usr/local/bin/start-crybot-cua-driver.sh
 RUN printf '%s\\n' \\
@@ -295,6 +324,7 @@ export interface ContainerComputerStatus {
   security: "hardened" | "unsafe" | "unknown";
   persistence: "durable" | "unsafe" | "unknown";
   desktopReady: boolean;
+  screens_layout?: "single" | "multi";
   desktop_error: string | null;
   stopped_at?: string | null;
   /** A stopped desktop whose only problem is that it is stopped. */
@@ -499,13 +529,62 @@ export function cuaExecArgs(
   ];
 }
 
+export function screenIdentityArgs(
+  target: LocalVmTarget,
+  args: string[],
+  options: { interactive?: boolean; workdir?: string; env?: Record<string, string> } = {},
+): string[] {
+  if (!isScreenTarget(target)) {
+    const base = cuaExecArgs([], { container: target.containerName, interactive: options.interactive });
+    base.pop();
+    base.push(...args);
+    if (options.workdir) base.splice(base.indexOf("-u"), 0, "-w", options.workdir);
+    if (options.env) {
+      const at = base.indexOf(target.containerName);
+      base.splice(at, 0, ...Object.entries(options.env).flatMap(([key, value]) => ["-e", `${key}=${value}`]));
+    }
+    return base;
+  }
+  const n = target.screen;
+  const env = {
+    HOME: `/home/${screenUser(n)}`,
+    DISPLAY: screenDisplay(n),
+    XDG_RUNTIME_DIR: `/run/user/${screenUid(n)}`,
+    TMPDIR: `/run/user/${screenUid(n)}/tmp`,
+    CUA_DRIVER_INSTALL_CHANNEL: "python_package",
+    CUA_DRIVER_RS_TELEMETRY_ENABLED: "0",
+    ...options.env,
+  };
+  return [
+    "exec",
+    ...(options.interactive ? ["-i"] : []),
+    "-u", screenUser(n),
+    ...(options.workdir ? ["-w", options.workdir] : []),
+    ...Object.entries(env).flatMap(([key, value]) => ["-e", `${key}=${value}`]),
+    target.containerName,
+    "env", "-u", "VNC_PW", "prlimit", "--nproc=1500", "--",
+    "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
+    ...args,
+  ];
+}
+
+export function screenExecArgs(
+  target: LocalVmTarget,
+  args: string[],
+  options: { interactive?: boolean; workdir?: string; env?: Record<string, string> } = {},
+): string[] {
+  return screenIdentityArgs(target, [CUA_EXECUTABLE, ...args], options);
+}
+
 export function containerComputerStatus(
   runner: CommandRunner = sh,
   platform: NodeJS.Platform = process.platform,
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
   options: StatusOptions = {},
 ): Promise<ContainerComputerStatus> {
-  return cachedContainerStatus(runner, platform, target, options, () => probeContainerComputerStatus(runner, platform, target, options));
+  return cachedContainerStatus(runner, platform, containerTargetOf(target), options, () =>
+    probeContainerComputerStatus(runner, platform, containerTargetOf(target), options),
+  ).then(status => ({ ...status, target_key: target.key }));
 }
 
 async function probeContainerComputerStatus(
@@ -514,13 +593,14 @@ async function probeContainerComputerStatus(
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
   options: StatusOptions = {},
 ): Promise<ContainerComputerStatus> {
+  const containerTarget = containerTargetOf(target);
   const status = emptyStatus(platform, target);
   const host = currentHostUser(platform);
   const runtimeStatus = await containerRuntimeStatus(runner, platform);
   status.available = runtimeStatus.available;
   status.runtime = runtimeStatus.runtime;
   status.daemonUp = runtimeStatus.daemonUp;
-  status.create_supported = target.key === SHARED_LOCAL_VM_TARGET.key || status.runtime !== "container";
+  status.create_supported = containerTarget.key === SHARED_LOCAL_VM_TARGET.key || status.runtime !== "container";
   if (!status.runtime || !status.daemonUp) {
     status.problem = statusProblem(status);
     return status;
@@ -562,7 +642,7 @@ async function probeContainerComputerStatus(
           : null;
       status.imageMatches =
         appleImage === IMAGE && status.image_id !== null && appleImageId === status.image_id;
-      status.managed = containerOwnershipLabelsMatch(detail?.configuration?.labels, target);
+      status.managed = containerOwnershipLabelsMatch(detail?.configuration?.labels, containerTarget);
       status.persistence = appleWorkspaceMountIsSafe(detail?.configuration?.mounts, platform, target.workspaceDir)
         ? "durable"
         : "unsafe";
@@ -591,6 +671,12 @@ async function probeContainerComputerStatus(
       const detail = inspected[0];
       const rootIsHostRoot = desktopRootIsHostRoot(status.runtime, platform, host);
       status.container = detail?.State?.Running ? "running" : "stopped";
+      status.screens_layout = screensLayoutOf(detail?.Config?.Labels);
+      if (status.screens_layout === "multi" && status.container === "running") {
+        const fallback = await runner(status.runtime, ["exec", "-u", "0", target.containerName,
+          "env", "-u", "VNC_PW", "sh", "-c", `if [ -f ${SCREENS_FALLBACK_FILE} ]; then echo single; else echo multi; fi`], 8000);
+        status.screens_layout = screensLayoutOf(detail?.Config?.Labels, fallback.stdout.trim() !== "multi");
+      }
       status.stopped_at = status.container === "stopped" ? detail?.State?.FinishedAt ?? null : null;
       status.network = dockerPortsAreLocal(detail?.HostConfig?.PortBindings) ? "loopback" : "unsafe";
       status.viewer_port = dockerViewerPort(detail?.NetworkSettings?.Ports, target.viewerPort);
@@ -600,8 +686,8 @@ async function probeContainerComputerStatus(
         (!rootIsHostRoot || detail?.Config?.Labels?.[DESKTOP_FLAGS_LABEL] === DESKTOP_FLAGS_VERSION) &&
         status.image_id !== null &&
         normalizeImageId(detail?.Image) === status.image_id;
-      status.managed = containerOwnershipLabelsMatch(detail?.Config?.Labels, target);
-      if (status.managed) raisePidsLimit(target.containerName, detail?.HostConfig?.PidsLimit, runner.bind(null, status.runtime));
+      status.managed = containerOwnershipLabelsMatch(detail?.Config?.Labels, containerTarget);
+      if (status.managed) raisePidsLimit(containerTarget.containerName, detail?.HostConfig?.PidsLimit, runner.bind(null, status.runtime));
       status.persistence = dockerWorkspaceMountIsSafe(
         detail?.Mounts,
         platform,
@@ -627,15 +713,16 @@ async function probeContainerComputerStatus(
     status.network === "loopback" &&
     status.security === "hardened" &&
     status.persistence === "durable";
-  if (canProbe) {
+  if (canProbe && status.screens_layout === "multi") status.desktopReady = true;
+  if (canProbe && status.screens_layout !== "multi") {
     try {
       const expected = `cua-driver ${CUA_DRIVER_VERSION}`;
-      const version = await runner(status.runtime, cuaExecArgs(["--version"], { container: target.containerName }), 8000);
+      const version = await runner(status.runtime, screenExecArgs(target, ["--version"]), 8000);
       if (version.stdout.trim() !== expected) throw new Error(`expected ${expected}`);
-      await runner(status.runtime, cuaExecArgs(["status", "--socket", CUA_SOCKET], { container: target.containerName }), 8000);
+      await runner(status.runtime, screenExecArgs(target, ["status", "--socket", isScreenTarget(target) ? screenSocket(target.screen) : CUA_SOCKET]), 8000);
       const health = await runner(
         status.runtime,
-        cuaExecArgs(["call", "health_report", "{}", "--socket", CUA_SOCKET], { container: target.containerName }),
+        screenExecArgs(target, ["call", "health_report", "{}", "--socket", isScreenTarget(target) ? screenSocket(target.screen) : CUA_SOCKET]),
         15_000,
       );
       const report = JSON.parse(health.stdout) as { schema_version?: string; overall?: string; checks?: unknown[] };
@@ -776,6 +863,10 @@ export function containerRunArgs(
     throw new Error("Per-bot Local VMs require Docker or Podman because Apple container requires a fixed host port");
   }
   const common = ["run", "-d", "--name", target.containerName];
+  if (desktop.screensLayout === "multi" && containerTargetOf(target).key !== SHARED_LOCAL_VM_TARGET.key) {
+    throw new Error("Multi-screen layout requires the shared container");
+  }
+  const multi = desktop.screensLayout === "multi" && runtime !== "container";
   if (runtime === "podman") {
     // The supervisor starts as namespace-root then drops to cua (1000); keep-id preserves the host workspace owner instead of :U chown.
     common.push("--userns", "keep-id:uid=1000,gid=1000", "--user", "0:0");
@@ -796,15 +887,16 @@ export function containerRunArgs(
     "--label",
     `${DESKTOP_FLAGS_LABEL}=${DESKTOP_FLAGS_VERSION}`,
   );
+  if (multi) common.push("--label", `${SCREENS_LAYOUT_LABEL}=multi`);
   if (runtime === "container") {
     // Apple container already places each Linux container in a lightweight VM.
-    common.push(...resourceArgs(desktop.resources, { swap: false }), ...desktopCapArgs(runtime), "--shm-size", "512m");
+    common.push(...resourceArgs(desktop.resources, { swap: false }), ...desktopCapArgs(runtime), "--shm-size", multi ? "2g" : "512m");
   } else {
     common.push(
       "--hostname",
       target.containerName,
       ...resourceArgs(desktop.resources, { swap: true }),
-      "--pids-limit", String(PIDS_LIMIT),
+      "--pids-limit", String(multi ? 8192 : PIDS_LIMIT),
       // Pinned: a daemon with host-mode IPC/cgroup defaults would create a container the hardening check then rejects.
       "--ipc",
       "private",
@@ -812,7 +904,7 @@ export function containerRunArgs(
       "private",
       ...desktopCapArgs(runtime),
       "--shm-size",
-      "512m",
+      multi ? "2g" : "512m",
     );
   }
   if (desktopRootIsHostRoot(runtime, desktop.platform, desktop.hostUser)) common.push("--security-opt", "no-new-privileges");
@@ -830,7 +922,12 @@ export function containerRunArgs(
       : `127.0.0.1::${INTERNAL_VIEWER_PORT}`,
     IMAGE,
   );
-  if (guestIds) common.push(...guestIdsCommand(guestIds));
+  if (multi) {
+    const guestArguments = guestIds ? guestIdsCommand(guestIds).slice(4) : [];
+    common.push("sh", "-c", multiScreenInitScript({ maxScreens: 4 }), "crybot-screens", ...guestArguments);
+  } else if (guestIds) {
+    common.push(...guestIdsCommand(guestIds));
+  }
   return common;
 }
 
@@ -949,6 +1046,86 @@ export async function containerComputerExists(
   }
 }
 
+async function execContainerWithInput(runtime: Runtime, args: string[], input: string): Promise<void> {
+  const resolved = resolveCliSpawn(runtime, args);
+  await new Promise<void>((resolvePromise, reject) => {
+    const child = spawn(resolved.command, resolved.args, { env: { ...process.env, PATH: augmentedPath() }, stdio: ["pipe", "ignore", "pipe"] });
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      reject(new Error(`${runtime} exec timed out after 30 seconds`));
+    }, 30_000);
+    child.stderr.resume();
+    child.stdin.on("error", () => {});
+    child.on("error", () => { clearTimeout(timer); reject(new Error(`${runtime} exec could not start`)); });
+    child.on("close", code => {
+      clearTimeout(timer);
+      if (code === 0) resolvePromise();
+      else reject(new Error(`${runtime} exec failed (exit ${code})`));
+    });
+    child.stdin.end(input);
+  });
+}
+
+export async function startScreen(runtime: Runtime, target: LocalVmTarget, password: string): Promise<void> {
+  if (!isScreenTarget(target)) throw new Error("startScreen requires a screen target");
+  if (password.length < 8 || /[\r\n\0]/.test(password)) throw new Error("screen password requires at least 8 characters and no line breaks");
+  const n = target.screen;
+  const path = `/run/crybot/screens/s${n}/passwd`;
+  await execContainerWithInput(runtime, [
+    "exec", "-i", "-u", "0", target.containerName, "env", "-u", "VNC_PW", "sh", "-c",
+    `set -eu; umask 077; vncpasswd -f > ${path}.tmp; chown ${screenUser(n)}:${screenUser(n)} ${path}.tmp; chmod 0400 ${path}.tmp; mv -f ${path}.tmp ${path}; supervisorctl -c ${SCREENS_SUPERVISOR_CONFIG} start screen-s${n}:*`,
+  ], `${password}\n`);
+}
+
+export async function stopScreen(runtime: Runtime, target: LocalVmTarget, runner: CommandRunner = sh): Promise<void> {
+  if (!isScreenTarget(target)) throw new Error("stopScreen requires a screen target");
+  try {
+    await runner(runtime, ["exec", "-u", "0", target.containerName, "env", "-u", "VNC_PW", "supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "stop", `screen-s${target.screen}:*`], 30_000);
+  } finally {
+    await runner(runtime, ["exec", "-u", "0", target.containerName, "env", "-u", "VNC_PW", "sh", "-c",
+      `setpriv --reuid=${screenUid(target.screen)} --regid=${screenUid(target.screen)} --clear-groups pkill -KILL -u ${screenUser(target.screen)} || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }`], 30_000);
+  }
+}
+
+export type ContainerScreenState = "running" | "off" | "starting" | "stopping" | "failed";
+
+export async function screenStates(runtime: Runtime, containerName: string, runner: CommandRunner = sh): Promise<Record<number, ContainerScreenState>> {
+  let stdout: string;
+  try {
+    ({ stdout } = await runner(runtime, ["exec", "-u", "0", containerName, "env", "-u", "VNC_PW", "supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "status"], 30_000));
+  } catch (error) {
+    const failure = error as { code?: number; stdout?: unknown; killed?: boolean; signal?: string };
+    if (failure.code !== 3 || typeof failure.stdout !== "string" || failure.killed || failure.signal ||
+      !/^screen-s[1-4]:\S+\s+[A-Z]+/m.test(failure.stdout)) throw error;
+    stdout = failure.stdout;
+  }
+  const groups = new Map<number, string[]>();
+  for (const line of stdout.split(/\r?\n/)) {
+    const match = line.match(/^screen-s([1-4]):[^\s]+\s+([A-Z]+)/);
+    if (!match) continue;
+    const n = Number(match[1]);
+    groups.set(n, [...(groups.get(n) ?? []), match[2]!]);
+  }
+  const states: Record<number, ContainerScreenState> = {};
+  for (const [n, programs] of groups) {
+    states[n] = programs.some(state => ["FATAL", "BACKOFF", "EXITED"].includes(state)) ? "failed"
+      : programs.every(state => state === "RUNNING") ? "running"
+      : programs.includes("STARTING") ? "starting"
+      : programs.includes("STOPPING") ? "stopping"
+      : programs.every(state => state === "STOPPED") ? "off" : "failed";
+  }
+  return states;
+}
+
+export async function installScreenPackages(target: LocalVmTarget, names: string[], options: { runtime?: Runtime; runner?: CommandRunner } = {}): Promise<void> {
+  if (!isScreenTarget(target)) throw new Error("installScreenPackages requires a screen target");
+  validateScreenPackages(names);
+  const runtime = options.runtime ?? (await containerRuntimeStatus()).runtime;
+  if (!runtime) throw new Error("No container runtime is available");
+  await (options.runner ?? sh)(runtime, ["exec", "-u", "0", "-e", `CRYBOT_PACKAGE_SCREEN=s${target.screen}`,
+    target.containerName, "env", "-u", "VNC_PW", "crybot-pkg", ...names], 300_000);
+}
+
 export type ScreenshotCheck = { ok: boolean; mime: "image/png" | "image/jpeg" };
 
 /** A truncated base64 transfer must never become a "successful" preview frame. */
@@ -979,23 +1156,26 @@ export async function containerComputerFrame(
     throw Object.assign(new Error(status.problem ?? "The Local VM is not ready"), { status: 409 });
   }
   try {
-    const screenshot = "/tmp/crybot-preview.png";
+    const screenshot = isScreenTarget(target)
+      ? `/run/user/${screenUid(target.screen)}/crybot-preview.png`
+      : "/tmp/crybot-preview.png";
     await runner(
       status.runtime,
-      cuaExecArgs([
+      screenExecArgs(target, [
         "call",
         "get_desktop_state",
         "{}",
         "--socket",
-        CUA_SOCKET,
+        isScreenTarget(target) ? screenSocket(target.screen) : CUA_SOCKET,
         "--screenshot-out-file",
         screenshot,
-      ], { container: target.containerName }),
+      ]),
       30_000,
     );
     const { stdout } = await runner(
       status.runtime,
-      ["exec", target.containerName, "base64", "-w0", screenshot],
+      isScreenTarget(target) ? screenIdentityArgs(target, ["base64", "-w0", screenshot])
+        : ["exec", target.containerName, "base64", "-w0", screenshot],
       30_000,
     );
     const data = stdout.trim();
@@ -1077,6 +1257,15 @@ export async function containerExec(
   const runtime = options.runtime ?? (await containerRuntimeStatus()).runtime;
   if (!runtime) throw Object.assign(new Error("No container runtime is available for the Local VM"), { status: 409 });
   const seconds = Math.min(Math.max(Math.floor(options.timeoutSeconds ?? EXEC_DEFAULT_SECONDS), 1), EXEC_MAX_SECONDS);
+  if (isScreenTarget(target)) {
+    const result = await (options.exec ?? defaultExecRunner)(
+      runtime,
+      screenIdentityArgs(target, ["timeout", "-k", "5", String(seconds), "sh", "-lc", command], { workdir: screenWorkdir(target.screen) }),
+      { timeout: (seconds + 20) * 1000 },
+    );
+    const timedOut = result.code === 124 || result.code === 137;
+    return { exitCode: result.code, stdout: clipExecOutput(result.stdout), stderr: clipExecOutput(result.stderr), timedOut };
+  }
   const result = await (options.exec ?? defaultExecRunner)(
     runtime,
     [
@@ -1107,9 +1296,10 @@ export function containerComputerMcp(
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
   lazy: false | { toolScope?: ToolScope } = false,
 ): ContainerMcpLaunch {
+  const screenArgs = isScreenTarget(target) ? [screenUser(target.screen), screenDisplay(target.screen)] : [];
   return {
     command: process.execPath,
-    args: [containerMcpPath, runtime, target.containerName, CUA_SOCKET],
+    args: [containerMcpPath, runtime, target.containerName, isScreenTarget(target) ? screenSocket(target.screen) : CUA_SOCKET, ...screenArgs],
     // The control pair rides in env, not argv, which `ps` shows for the bridge's whole life.
     env: {
       ELECTRON_RUN_AS_NODE: "1",
