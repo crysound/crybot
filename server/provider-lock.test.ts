@@ -21,15 +21,17 @@ it("migrates all persisted bot and task references, including backups, to the fi
   vi.stubEnv("CRYBOT_PROVIDER_LOCK", "1");
   const store = new Store(() => ({ instanceId: "removed", model: "claude-sonnet-5" }));
   const bot = store.createBot({}, { seedMessages: false });
-  store.patchBot(bot.id, { fallback: [{ instanceId: "missing-backup", model: "claude-sonnet-5" }] });
+  store.patchBot(bot.id, { fallback: [{ instanceId: "missing-backup", model: "claude-sonnet-5" }], resumeCursors: { removed: "foreign-bot-session" } });
   const task = store.createTask(bot.id, "Fixture task")!;
-  store.patchTask(bot.id, task.threadId, { modelSelection: { instanceId: "missing-task", model: "claude-sonnet-5" } });
+  store.patchTask(bot.id, task.threadId, { modelSelection: { instanceId: "missing-task", model: "claude-sonnet-5" }, resumeCursors: { "missing-task": "foreign-task-session" } });
   const kept = store.createBot({ modelSelection: { instanceId: "second", model: "claude-sonnet-5" } }, { seedMessages: false });
   expect(migrateLockedProviderReferences(store, instanceConfigs(endpoints))).toBe(1);
   const reloaded = new Store(() => ({ instanceId: "", model: "" }));
   expect(reloaded.bot(bot.id)?.modelSelection).toEqual({ instanceId: "gateway", model: "claude-sonnet-5" });
   expect(reloaded.bot(bot.id)?.fallback).toEqual([{ instanceId: "gateway", model: "claude-sonnet-5" }]);
   expect(reloaded.taskByThread(bot.id, task.threadId)?.modelSelection).toEqual({ instanceId: "gateway", model: "claude-sonnet-5" });
+  expect(reloaded.bot(bot.id)?.resumeCursors).toEqual({});
+  expect(reloaded.taskByThread(bot.id, task.threadId)?.resumeCursors).toEqual({});
   expect(reloaded.bot(kept.id)?.modelSelection?.instanceId).toBe("second");
   expect(migrateLockedProviderReferences(reloaded, instanceConfigs(endpoints))).toBe(0);
 });
@@ -50,6 +52,21 @@ it("persists the default, bot template, recovery and helper selections", () => {
   expect(saved.automaticRecovery?.backup).toEqual({ instanceId: "gateway", model: "claude-sonnet-5" });
   expect(saved.helper).toEqual({ instanceId: "gateway", model: "claude-sonnet-5" });
   expect(providerLockConfigPatch(saved, instanceConfigs(saved))).toEqual({});
+});
+
+it("migrates a legacy bot without a resumeCursors field", () => {
+  vi.stubEnv("CRYBOT_PROVIDER_LOCK", "1");
+  const store = new Store(() => ({ instanceId: "removed", model: "claude-sonnet-5" }));
+  const bot = store.createBot({}, { seedMessages: false });
+  const task = store.createTask(bot.id, "Legacy cursor fixture")!;
+  store.patchTask(bot.id, task.threadId, { resumeCursors: { removed: "foreign-session", gateway: "endpoint-session" } });
+  Reflect.deleteProperty(bot, "resumeCursors");
+  expect(Object.hasOwn(bot, "resumeCursors")).toBe(false);
+  expect(migrateLockedProviderReferences(store, instanceConfigs(endpoints))).toBe(1);
+  const reloaded = new Store(() => ({ instanceId: "", model: "" }));
+  expect(reloaded.bot(bot.id)?.modelSelection.instanceId).toBe("gateway");
+  expect(reloaded.taskByThread(bot.id, task.threadId)?.resumeCursors).toEqual({ gateway: "endpoint-session" });
+  expect(migrateLockedProviderReferences(reloaded, instanceConfigs(endpoints))).toBe(0);
 });
 
 it.each(["0", "1"])("leaves references alone with no endpoint (lock %s)", (lock) => {
@@ -104,4 +121,20 @@ it("limits updater plans to Claude while leaving the unlocked plans intact", () 
   expect(unlocked.some((plan) => plan.driverKind === "codex")).toBe(true);
   vi.stubEnv("CRYBOT_PROVIDER_LOCK", "1");
   expect(enginePlans(providerUpdateDrivers(BUILT_IN_DRIVERS)).map((plan) => plan.driverKind)).toEqual(["claudeAgent"]);
+});
+
+it.each(["0", "1"])("discards only migrated native cursors at bot and task levels (lock %s)", (lock) => {
+  vi.stubEnv("CRYBOT_PROVIDER_LOCK", lock);
+  const store = new Store(() => ({ instanceId: "gateway", model: "claude-sonnet-5" }));
+  const bot = store.createBot({}, { seedMessages: false });
+  const task = store.createTask(bot.id, "Cursor fixture")!;
+  const cursors = { "cursor-only-provider": "foreign-session", gateway: "endpoint-session", second: "second-session" };
+  store.patchBot(bot.id, { resumeCursors: { ...cursors } });
+  store.patchTask(bot.id, task.threadId, { resumeCursors: { ...cursors } });
+  expect(migrateLockedProviderReferences(store, instanceConfigs(endpoints))).toBe(lock === "1" ? 1 : 0);
+  const reloaded = new Store(() => ({ instanceId: "", model: "" }));
+  const expected = lock === "1" ? { gateway: "endpoint-session", second: "second-session" } : cursors;
+  expect(reloaded.bot(bot.id)?.resumeCursors).toEqual(expected);
+  expect(reloaded.taskByThread(bot.id, task.threadId)?.resumeCursors).toEqual(expected);
+  expect(migrateLockedProviderReferences(reloaded, instanceConfigs(endpoints))).toBe(0);
 });

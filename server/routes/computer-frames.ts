@@ -103,13 +103,13 @@ export function createComputerFramesRoutes(deps: ComputerFramesRouteDeps, frames
     },
     working,
     held: (owner) => computerControl.snapshot(owner).held,
-    paused: () => deps.computerProviderConfigTransitions.has("box") || !boat.boatConfigured(cfg),
+    paused: () => deps.computerProviderConfigTransitions.has("box") || !boat.boatOffered(cfg),
   });
   return async ({ res, url, path, method, json }) => {
     if (method !== "GET" || path !== "/api/computers/frames") return PASS;
     res.setHeader("cache-control", "private, no-store");
     if (providerLockEnabled()) return json(res, 200, { configured: false, available: false, now: Date.now(), computers: [] });
-    const configured = boat.boatConfigured(cfg);
+    const configured = boat.boatOffered(cfg);
     if (configured) await cache.watch();
     const have = parseHave(url.searchParams.get("have"));
     const computers: MapComputer[] = mapComputers({

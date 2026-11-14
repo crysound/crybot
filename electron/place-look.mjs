@@ -1,3 +1,4 @@
+import { workspaceHandler } from "./remote-only.mjs";
 import nativeText from "./native-text.cjs";
 // The colour of the place a page shows: drawn faintly at the top of its sidebar and on its circle in the rail, and
 // changed from its own Settings. A Cloud's colour (My Cloud, another of the person's own, a team's) is the Admin's, so
@@ -78,7 +79,8 @@ export function pageLook(look) {
  * rail, which changes the colour of any place it lists with a colour to show (`workspaces:recolor`, its circle's id and
  * a swatch): `owns(event)` its page asks, `places()` railPlaces' list now, `saved(id)` that place (This computer's too).
  */
-export function installPlaceLook({ ipcMain, guard, place, session, setColor, save, rail = null, t = nativeText.englishText.t }) {
+export function installPlaceLook({ ipcMain, config = {}, guard, place, session, setColor, save, rail = null, t = nativeText.englishText.t }) {
+  const register = (channel, handler) => ipcMain.handle(channel, workspaceHandler(config, handler));
   const look = () => placeLook(place(), session());
   /** `entry`'s place (none: a server of theirs only the Admin lists) takes `swatch`; `now()` is its look at each step. */
   const recolor = async (entry, now, swatch) => {
@@ -93,9 +95,9 @@ export function installPlaceLook({ ipcMain, guard, place, session, setColor, sav
     if (entry) save(entry.id, swatchColor(swatch));
     return { outcome: "saved", look: pageLook(now()) };
   };
-  ipcMain.handle("workspaces:look", guard(() => pageLook(look())));
-  ipcMain.handle("workspaces:color", guard((_event, swatch) => recolor(place(), look, swatch)));
-  if (rail) ipcMain.handle("workspaces:recolor", (event, id, swatch) => {
+  register("workspaces:look", guard(() => pageLook(look())));
+  register("workspaces:color", guard((_event, swatch) => recolor(place(), look, swatch)));
+  if (rail) register("workspaces:recolor", (event, id, swatch) => {
     if (!rail.owns(event)) throw new Error("workspaces:recolor is only available to the window's rail");
     if (!rail.places().some(listed => listed.id === id && listed.paint)) return Promise.reject(new Error(t("native.places.noLongerHere")));
     const entry = rail.saved(id);

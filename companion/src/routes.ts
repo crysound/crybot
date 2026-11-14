@@ -91,6 +91,7 @@ const ALLOWED: ReadonlyArray<{ method: string; path: RegExp }> = [
   // Sidecar-owned: the proxy answers it locally.
   { method: "GET", path: /^\/api\/companion\/endpoints$/ },
 
+  { method: "GET", path: /^\/api\/bot-name$/ },
   { method: "GET", path: /^\/api\/bots$/ },
   { method: "POST", path: /^\/api\/bots$/ },
   { method: "PATCH", path: /^\/api\/bots\/[\w-]+$/ },

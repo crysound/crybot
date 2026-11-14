@@ -1,4 +1,4 @@
-import { loadDesktopWindow, remoteOnlyLoadFailed } from "./remote-only.mjs";
+import { loadDesktopWindow, remoteOnlyLoadFailed, reloadDesktopWindow, desktopEnvironmentsToSave, desktopEnvironmentSaveFailure, workspaceActionsAllowed, workspaceHandler, desktopStartupUrl } from "./remote-only.mjs";
 import { readDesktopBuildConfig, defaultServerEnvironment, localServerEnvironment, loginNavigationAllowed } from "./desktop-build-config.mjs";
 import { app, autoUpdater as nativeAutoUpdater, BrowserWindow, Tray, WebContentsView, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, net, powerMonitor, powerSaveBlocker, safeStorage, screen, session, shell, systemPreferences, utilityProcess, nativeTheme } from "electron";
 import { createRequire } from "node:module";
@@ -1403,21 +1403,16 @@ function refreshApplicationMenu() {
 
 function mainWindowTitle() { return workspaceWindowTitle(environmentsState, desktopRemoteAccess, homeWindow.cloudOrigin(), nativeT); }
 
-function reloadServerPage(ignoreCache) {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
-  let sameOrigin = false;
-  try { sameOrigin = new URL(mainWindow.webContents.getURL()).origin === new URL(desktopBuild.defaultServerUrl).origin; } catch {}
-  if (sameOrigin) {
-    if (ignoreCache) mainWindow.webContents.reloadIgnoringCache();
-    else mainWindow.webContents.reload();
-  } else void navigateMainWindow(desktopBuild.defaultServerUrl);
+function reloadServerPage(ignoreCache, focusedWindow) {
+  return reloadDesktopWindow(focusedWindow, mainWindow, desktopBuild, ignoreCache, navigateMainWindow);
 }
 
 function persistEnvironments(next) {
-  if (desktopBuild.remoteOnly) next = defaultServerEnvironment(next, desktopBuild, true, randomUUID);
+  next = desktopEnvironmentsToSave(next, desktopBuild, randomUUID);
   try { environmentsStore.write(next); } catch (error) {
-    if (!desktopBuild.remoteOnly) throw error;
-    slog(`remote-only environments save failed: ${error?.message ?? error}`);
+    const message = desktopEnvironmentSaveFailure(desktopBuild, error);
+    if (message === null) throw error;
+    slog(message);
   }
   environmentsState = next;
   refreshApplicationMenu();
@@ -1540,7 +1535,7 @@ async function switchLocalEnvironmentTo(targetDir, targetId, quiet = false) {
 }
 
 async function switchEnvironment(id, stale = () => false) {
-  if (desktopBuild.remoteOnly) return;
+  if (!workspaceActionsAllowed(desktopBuild)) return;
   if (id === LOCAL_ID && cleanWorkspace.profile()) return void await (homeWindow.cloudOrigin() ? localProfiles.open(cleanWorkspace.profile()) : localProfiles.computer()); if (id !== LOCAL_ID && !environmentsState.environments.some((entry) => entry.id === id)) return; if (id === environmentsState.activeId && !homeWindow.asking()) { if (placeSwitch.replacing()) { homeWindow.stay(); homePlaces.remember(placeSwitch.before()); } return; }
   const entry = environmentsState.environments.find((candidate) => candidate.id === id);
   if (entry?.team || entry?.cloud) return void await showHome({ place: entry.team ? { team: entry.team.id, name: entry.name } : { cloud: entry.cloud.id, name: entry.name } });
@@ -2483,7 +2478,7 @@ chromeRail.install(ipcMain);
 function railChanged() { chromeRail.refresh(); rail.changed(); }
 const accountPages = [() => (mainWindow && !mainWindow.isDestroyed() && senderIsLocal({ sender: mainWindow.webContents }) ? mainWindow.webContents : null), () => ({ send: channel => chromeRail.send(channel) })];
 const accountRing = createDesktopRing(); const accounts = installAccounts({ ipcMain, ownPage: event => chromeRail.owns(event) || cloudPageAsking(event) === "local", placePage: event => cloudPageAsking(event) !== null || ownCloudPage(event) !== null || homeWindow.homePage(event) || (Boolean(ownHome?.home()) && activeEnvironment(environmentsState)?.origin === ownHome.home().origin && workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin())), account: () => (app.isPackaged && !desktopRemoteAccess ? cloudAccount : null), client: getCloudAccount, ring: accountRing, t: nativeT, holdSheet: open => chromeRail.holdOpen(open), tellSheet: () => chromeRail.send("accounts:open-sheet"), tell: () => { for (const page of accountPages) page()?.send("accounts:changed"); } });
-const rail = installRail({ t: nativeT, ipcMain, switchAccount: id => accountRing()?.switchTo(id), account: () => (app.isPackaged && !desktopRemoteAccess ? cloudAccount : null),
+const rail = installRail({ t: nativeT, ipcMain, config: desktopBuild, switchAccount: id => accountRing()?.switchTo(id), account: () => (app.isPackaged && !desktopRemoteAccess ? cloudAccount : null),
   guard: handler => (event, ...args) => (chromeRail.owns(event) ? handler(event, ...args) : workspaceOnly(handler)(event, ...args)),
   lists: event => chromeRail.owns(event), trusted: event => chromeRail.owns(event) || senderIsLocal(event), beside: () => chromeRail.shown(),
   targets: () => [mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null, { send: channel => chromeRail.send(channel), isDestroyed: () => false }],
@@ -2493,7 +2488,7 @@ const rail = installRail({ t: nativeT, ipcMain, switchAccount: id => accountRing
 const desktopNotifications = installDesktopNotifications({ ipcMain, Notification, nativeImage, fetch: (...args) => session.defaultSession.fetch(...args), window: () => mainWindow, mayNotify: (contents, url) => appPermissions?.check(contents, "notifications", url, { isMainFrame: true }) === true, reveal: revealForLink, openPlace: origin => (origin === homeWindow.cloudOrigin() ? showHome({ place: "cloud" }) : workspaceMenuAction(() => switchEnvironment(origin === rendererOrigin() ? LOCAL_ID : environmentsState.environments.find(entry => entry.origin === origin)?.id))) });
 // A place's colour (place-look.mjs): the Admin's for a Cloud, this app's for This computer and a server connected by
 // hand; changed on the place's own page or from the window's rail, whatever that server runs.
-installPlaceLook({ ipcMain, guard: workspaceOnly, place: () => savedPlace(environmentsState), session: () => ({ clouds: desktopRemoteAccess ? null : cloudAccount?.state().clouds ?? null, homeOrigin: myCloud() }),
+installPlaceLook({ ipcMain, guard: workspaceOnly, config: desktopBuild, place: () => savedPlace(environmentsState), session: () => ({ clouds: desktopRemoteAccess ? null : cloudAccount?.state().clouds ?? null, homeOrigin: myCloud() }),
   setColor: (id, swatch) => getCloudAccount().setCloudColor(id, swatch), save: (id, color) => persistEnvironments(withPlaceColor(environmentsState, id, color)),
   rail: { owns: event => chromeRail.owns(event), places: railList, saved: id => savedPlace(environmentsState, id) }, t: nativeT });
 const lendingDialogs = createLendingDialogs({ dialog, window: () => mainWindow, validate: validateSharedFolders, isHome: isHomeFolder, t: nativeT });
@@ -2549,11 +2544,12 @@ installServerStatus({ ipcMain, guard: localWorkspaceOnly, status: savedServerSta
 
 // A cloud page may open the native chooser, never choose a destination or edit the saved list.
 // Once My Cloud is home the switcher lists only whole places, and shows only when there is more than My Cloud.
+const workspaceIpcOnly = handler => workspaceHandler(desktopBuild, workspaceOnly(handler));
 const homeAlone = () => Boolean(homeWindow.cloudOrigin()) && !otherPlaces(environmentsState, homeWindow.cloudOrigin()) && !localProfiles.places({ activeLocal: false }).length;
-ipcMain.handle("workspaces:state", workspaceOnly(event => ({ ...workspaceSummary(environmentsState), ...(homeAlone() && homeWindow.homePage(event) ? { home: true } : {}), ...(cleanWorkspace.profile() && senderIsLocal(event) ? { profile: cleanWorkspace.profile(), ...(localProfiles.name(cleanWorkspace.profile()) ? { profileName: localProfiles.name(cleanWorkspace.profile()) } : {}) } : {}) })));
-ipcMain.handle("workspaces:line", workspaceOnly(event => (cleanWorkspace.active() && senderIsLocal(event) ? (cleanWorkspace.profile() ? { kind: "profile", ...(localProfiles.name(cleanWorkspace.profile()) ? { name: localProfiles.name(cleanWorkspace.profile()) } : {}) } : { kind: "clean", ...(accountRing.waiting().some(row => row.id === oneHome.journal()?.cloud?.account) ? { saved: true } : {}) }) : homePlaces.line())));
+ipcMain.handle("workspaces:state", workspaceIpcOnly(event => ({ ...workspaceSummary(environmentsState), ...(homeAlone() && homeWindow.homePage(event) ? { home: true } : {}), ...(cleanWorkspace.profile() && senderIsLocal(event) ? { profile: cleanWorkspace.profile(), ...(localProfiles.name(cleanWorkspace.profile()) ? { profileName: localProfiles.name(cleanWorkspace.profile()) } : {}) } : {}) })));
+ipcMain.handle("workspaces:line", workspaceIpcOnly(event => (cleanWorkspace.active() && senderIsLocal(event) ? (cleanWorkspace.profile() ? { kind: "profile", ...(localProfiles.name(cleanWorkspace.profile()) ? { name: localProfiles.name(cleanWorkspace.profile()) } : {}) } : { kind: "clean", ...(accountRing.waiting().some(row => row.id === oneHome.journal()?.cloud?.account) ? { saved: true } : {}) }) : homePlaces.line())));
 let workspaceMenuOpen = false;
-ipcMain.handle("workspaces:menu", workspaceOnly(async (event, from) => {
+ipcMain.handle("workspaces:menu", workspaceIpcOnly(async (event, from) => {
   if (desktopBuild.remoteOnly || workspaceMenuOpen || homeAlone()) return;
   workspaceMenuOpen = true;
   try {
@@ -2909,10 +2905,10 @@ app.whenReady().then(async () => {
   const deliveredOrganizationEntry = !desktopBuild.remoteOnly && await deliverOrganizationEntry();
   const deliveredCloudEntry = !desktopBuild.remoteOnly && await cloudEntry.ready();
   if (!hiddenStart && !restoredOrganizationEntry && !deliveredOrganizationEntry && !deliveredCloudEntry) {
-    const remote = desktopBuild.remoteOnly ? null : activeRemote(environmentsState);
-    if (desktopBuild.remoteOnly || (remote && handSaved(remote))) {
+    const startupUrl = desktopStartupUrl(desktopBuild, environmentsState, handSaved);
+    if (startupUrl) {
       if (!mainWindow || mainWindow.isDestroyed()) createWindow({ deferNavigation: true });
-      await navigateMainWindow(desktopBuild.remoteOnly ? desktopBuild.defaultServerUrl : remote.origin);
+      await navigateMainWindow(startupUrl);
     } else await showStartPlace();
   } if (hostedAvailable) void cloudAccountRestored().then(() => teamLinks.ready());
   // Registering from an unreadable store would mint a second installation identity.

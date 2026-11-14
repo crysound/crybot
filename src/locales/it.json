@@ -5240,6 +5240,8 @@
   "newBot.sharePreset": "Condividi come preimpostazione…",
   "newBot.customSettings": "Impostazioni personalizzate",
   "newBot.randomName": "Nome casuale",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.team": "Reparto",
   "newBot.enabled": "Attivo",
   "newBot.removeRoutine": "Rimuovi {name}",
