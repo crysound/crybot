@@ -44,3 +44,20 @@ it("width previews locally and persists once on release, including keyboard chan
     expect(set).toHaveBeenLastCalledWith({ width: 270 }); expect(set).toHaveBeenCalledTimes(2);
   } finally { await act(async () => root.unmount()); host.remove(); delete (window as { cry?: unknown }).cry; }
 });
+
+it("restores the saved width when persisting a preview fails", async () => {
+  const saved = { enabled: true, fullscreen: true, width: 200 };
+  const set = vi.fn().mockRejectedValue(new Error("inactive page"));
+  Object.assign(window, { cry: { islandSettings: { state: async () => saved, set } } });
+  const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
+  try {
+    await act(async () => root.render(createElement(IslandSettings)));
+    const slider = host.querySelector<HTMLInputElement>("input")!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, "260");
+    await act(async () => slider.dispatchEvent(new Event("input", { bubbles: true })));
+    expect(host.querySelector("output")?.textContent).toBe("260px");
+    await act(async () => slider.dispatchEvent(new Event("pointerup", { bubbles: true })));
+    expect(slider.value).toBe("200");
+    expect(host.querySelector("output")?.textContent).toBe("200px");
+  } finally { await act(async () => root.unmount()); host.remove(); delete (window as { cry?: unknown }).cry; }
+});
