@@ -3603,6 +3603,7 @@
   "computer.chooseCloudOpen": "Chọn Desktop đám mây để mở",
   "computer.chooseCloudManage": "Chọn Desktop đám mây để quản lý",
   "computer.createVm": "Tạo desktop riêng của {name}",
+  "computer.wakeVm": "Wake the desktop",
   "computer.replaceVm": "Thay thế desktop riêng của {name}",
   "computer.openVmSetup": "Mở thiết lập desktop riêng",
   "computer.openVpsSettings": "Mở cài đặt VPS",
@@ -5940,5 +5941,6 @@
   "computer.recovery.replaceTitle": "Xóa máy tính đám mây này và cho bot một máy mới. Các tệp chỉ có trên máy này sẽ bị mất.",
   "settings.profile.nameFromLogin": "Từ tài khoản đăng nhập của bạn",
   "botOverview.preference.cloud.locked": "một máy chủ đã cấu hình",
-  "keys.section.computers.purpose.locked": "Máy chủ riêng và thông tin đăng nhập trang web của bạn."
+  "keys.section.computers.purpose.locked": "Máy chủ riêng và thông tin đăng nhập trang web của bạn.",
+  "vm.setup.step4Wake": "Wake the private desktop"
 }

@@ -23,6 +23,7 @@ import { localizeComputerProblem } from "@/lib/computer-messages";
 import { computerInventoryRequest, jsonPostRequest, type ComputerApiRequest } from "@/lib/computer-requests";
 import { useStore } from "@/state/store";
 import { VpsComputersCard } from "./VpsComputersCard"; import { KeysLink } from "./keys/KeysLink";
+import { localVmSetupStep4Title } from "./local-vm-setup-step";
 
 type Action = "pull" | "run" | "start" | "stop" | "remove" | "recreate";
 
@@ -50,6 +51,7 @@ interface Status {
   viewer_url: string;
   idle_timeout_ms: number;
   stop_reason?: "idle" | null;
+  resumable?: boolean;
   mode: "shared" | "per-bot" | "pool";
   max_instances: number;
   commands: {
@@ -1327,13 +1329,12 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
 
           <Step
             n={4}
-            title={
-              perBot
-                ? t("vm.setup.step4PerBot")
-                : needsRecreate
-                  ? t("vm.setup.step4Recreate")
-                  : t("vm.setup.step4")
-            }
+            title={t(localVmSetupStep4Title({
+              mode: status?.mode ?? "shared",
+              container: status?.container ?? "missing",
+              resumable: status?.resumable === true,
+              needsRecreate,
+            }))}
             done={!perBot && ready}
           >
             {perBot ? (

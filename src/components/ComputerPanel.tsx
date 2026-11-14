@@ -274,6 +274,9 @@ export function ComputerPanel({
     return () => controller.abort();
   }, [connectionKey, livePlace, computerSelectionPersisted, threadPath, retry]);
   const vmResumable = phase === "vm-unavailable" && vmStatus?.resumable === true;
+  const canWakeVm = vmResumable && vmStatus?.mode !== "pool" && (
+    canManageVm || (livePlace === "auto" && bot.computer === "vm")
+  );
   const vmReadinessAttempts = useRef(0);
   const vmActionController = useRef<AbortController | null>(null);
   useEffect(() => {
@@ -1428,7 +1431,7 @@ export function ComputerPanel({
                 <p className="text-[12px]">{t(vmStatus?.stop_reason === "idle" ? "vm.stopped.idle" : "vm.stopped.detail")}</p>
               )}
               {phase === "vm-unavailable" && (
-                canManageVm && vmResumable && vmStatus.mode !== "pool" ? (
+                canWakeVm ? (
                   <button
                     onClick={() => void runVmAction("vm-start")}
                     disabled={pending !== null}
@@ -1436,7 +1439,9 @@ export function ComputerPanel({
                     className="mt-1 flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[12px] font-medium text-white hover:brightness-110 disabled:opacity-50"
                   >
                     {pending === "vm-start" && <Loader2 size={13} className="animate-spin" />}
-                    {t(pending === "vm-start" ? "vm.setup.starting" : "vm.setup.start")}
+                    {t(pending === "vm-start"
+                      ? "vm.setup.starting"
+                      : canManageVm ? "vm.setup.start" : "computer.wakeVm")}
                   </button>
                 ) : canManageVm && vmStatus?.mode === "per-bot" && vmStatus.image && vmStatus.create_supported ? (
                   <button

@@ -4526,6 +4526,7 @@
   "computer.chooseCloudOpen": "Wybierz pulpit w chmurze do otwarcia",
   "computer.chooseCloudManage": "Wybierz pulpit w chmurze do zarządzania",
   "computer.createVm": "Utwórz prywatny pulpit bota {name}",
+  "computer.wakeVm": "Wake the desktop",
   "computer.replaceVm": "Zastąp prywatny pulpit bota {name}",
   "computer.openVmSetup": "Otwórz konfigurację prywatnego pulpitu",
   "computer.openVpsSettings": "Otwórz ustawienia VPS",
@@ -7197,5 +7198,6 @@
   "computer.recovery.replaceTitle": "Usuwa ten komputer w chmurze i daje botowi nowy. Pliki, które są tylko na nim, zostaną utracone.",
   "settings.profile.nameFromLogin": "Z konta używanego do logowania",
   "botOverview.preference.cloud.locked": "skonfigurowany serwer",
-  "keys.section.computers.purpose.locked": "Twój własny serwer i logowanie do witryn."
+  "keys.section.computers.purpose.locked": "Twój własny serwer i logowanie do witryn.",
+  "vm.setup.step4Wake": "Wake the private desktop"
 }

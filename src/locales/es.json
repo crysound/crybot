@@ -4171,6 +4171,7 @@
   "computer.chooseCloudOpen": "Elige Escritorio en la nube para abrirlo",
   "computer.chooseCloudManage": "Elige Escritorio en la nube para gestionarlo",
   "computer.createVm": "Crear el escritorio privado de {name}",
+  "computer.wakeVm": "Wake the desktop",
   "computer.replaceVm": "Reemplazar el escritorio privado de {name}",
   "computer.openVmSetup": "Abrir la configuración del escritorio privado",
   "computer.openVpsSettings": "Abrir ajustes del VPS",
@@ -6436,5 +6437,6 @@
   "computer.recovery.replaceTitle": "Elimina esta computadora en la nube y le da una nueva al bot. Los archivos que solo están en ella se pierden.",
   "settings.profile.nameFromLogin": "De tu cuenta de inicio de sesión",
   "botOverview.preference.cloud.locked": "un servidor configurado",
-  "keys.section.computers.purpose.locked": "Tu propio servidor e inicios de sesión en sitios web."
+  "keys.section.computers.purpose.locked": "Tu propio servidor e inicios de sesión en sitios web.",
+  "vm.setup.step4Wake": "Wake the private desktop"
 }

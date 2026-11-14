@@ -43,6 +43,7 @@ vi.mock("react", async (original) => ({
     const index = fixture.index++;
     if (!(index in fixture.values)) {
       let value = typeof initial === "function" ? initial() : initial;
+      if (index === 2 && "autoSurface" in fixture.seed) value = fixture.seed.autoSurface;
       if (value === "checking" && phaseIndex < 0) phaseIndex = index;
       for (const [name, offset] of Object.entries(PHASE_OFFSETS)) {
         if (phaseIndex >= 0 && index === phaseIndex + offset && name in fixture.seed) value = fixture.seed[name];
@@ -611,6 +612,40 @@ describe("Technical controls", () => {
     fixture.advanced = true;
     fixture.values = [];
     expect(render(makeBot({ computer: "vm" })).html).toContain("Private desktop settings");
+  });
+
+  it("wakes an auto-selected stopped shared desktop", async () => {
+    fixture.seed = {
+      autoSurface: { key: "scout:thread-scout:auto:box:claude", surface: "vm" },
+      phase: "vm-unavailable",
+      vmStatus: {
+        mode: "shared", container: "stopped", resumable: true, stop_reason: "idle",
+        image: true, create_supported: true, ready: false,
+      },
+    };
+    fixture.api = vi.fn(async (...args: unknown[]) => args[0] === "/api/local-computer/start"
+      ? { mode: "shared", container: "running", ready: true, problem: null }
+      : {});
+    const rendered = render(makeBot());
+    const wake = rendered.button("Wake the desktop");
+    expect(wake).toBeDefined();
+    expect(rendered.html).not.toContain("Create Scout's private desktop");
+    expect(rendered.html).not.toContain("Open private desktop setup");
+    expect(rendered.html).not.toContain("Create and start the private desktop");
+    await (wake!.props.onClick as () => Promise<void>)();
+    expect(fixture.api).toHaveBeenCalledWith("/api/local-computer/start", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("keeps the explicit private desktop controls unchanged", () => {
+    fixture.seed = {
+      phase: "vm-unavailable",
+      vmStatus: {
+        mode: "shared", container: "stopped", resumable: true, stop_reason: "idle",
+        image: true, create_supported: true, ready: false,
+      },
+    };
+    const rendered = render(makeBot({ computer: "vm" }));
+    expect(rendered.button("Start the private desktop")).toBeDefined();
   });
 
   it("shows Take control, Full screen and Sleep under a ready cloud screen", () => {
