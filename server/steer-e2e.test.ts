@@ -41,7 +41,8 @@ posixOnly("mid-turn steering e2e", () => {
   const getBot = async (id: string) => (await api("GET", "/api/bots")).body.bots.find((b: any) => b.id === id);
   const askedAt = (botId: string, threadId: string) => (JSON.parse(readFileSync(join(home, ".crybot", "bots.json"), "utf8")) as any[])
     .find((bot) => bot.id === botId).tasks.find((task: any) => task.threadId === threadId).askedAt;
-  const PAIRED = { name: "Safari on Mac", id: expect.stringMatching(/^p_[\w-]{22}$/) };
+  const PAIRED = { name: "Member", id: expect.stringMatching(/^p_[\w-]{22}$/) };
+  const PAIRED_LABEL = "Safari on Mac";
   const asPairedPerson = async () => {
     const opened = await api("POST", "/api/auth/pairing", {});
     expect(opened.status).toBe(200);
@@ -52,7 +53,7 @@ posixOnly("mid-turn steering e2e", () => {
     });
     const session = await paired.json() as any;
     expect(paired.status).toBe(200);
-    expect(session.session.label).toBe(PAIRED.name);
+    expect(session.session.label).toBe(PAIRED_LABEL);
     return async (method: string, path: string, body?: unknown): Promise<{ status: number; body: any }> => {
       const res = await fetch(`${BASE}${path}`, {
         method,

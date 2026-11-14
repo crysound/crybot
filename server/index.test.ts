@@ -1640,13 +1640,13 @@ describe("harness HTTP API", () => {
 
     const theirs = await person.call("POST", `/api/bots/${bot.id}/messages`, { text: "from the paired person" });
     expect(theirs.status).toBe(202);
-    expect(theirs.body.message).toMatchObject({ role: "user", sender: { name: "Safari on Mac" } });
+    expect(theirs.body.message).toMatchObject({ role: "user", sender: { name: "Member" } });
 
     // A message steers into a turn its engine is running; one sent while that turn is still being set up waits for it.
     await expect.poll(() => claudePrompts().some((line) => line.includes("from the paired person")), { timeout: 10_000 }).toBe(true);
     const steered = await person.call("POST", `/api/bots/${bot.id}/messages`, { text: "and one more" });
     expect(steered.status).toBe(202);
-    expect(steered.body.message).toMatchObject({ steered: true, sender: { name: "Safari on Mac" } });
+    expect(steered.body.message).toMatchObject({ steered: true, sender: { name: "Member" } });
 
     // A second bot, so this owner send cannot be folded into the turn above by a steer.
     const second = await api("POST", "/api/bots", {
@@ -1667,8 +1667,8 @@ describe("harness HTTP API", () => {
     const myMessages = bots.find((b: any) => b.id === second.body.bot.id)?.messages ?? [];
     const personKey = theirMessages.find((m: any) => m.text === "from the paired person")?.sender?.id;
     expect(personKey).toMatch(/^p_[\w-]{22}$/);
-    expect(theirMessages.find((m: any) => m.text === "from the paired person")?.sender).toEqual({ name: "Safari on Mac", id: personKey });
-    expect(theirMessages.find((m: any) => m.text === "and one more")?.sender).toEqual({ name: "Safari on Mac", id: personKey });
+    expect(theirMessages.find((m: any) => m.text === "from the paired person")?.sender).toEqual({ name: "Member", id: personKey });
+    expect(theirMessages.find((m: any) => m.text === "and one more")?.sender).toEqual({ name: "Member", id: personKey });
     expect(myMessages.find((m: any) => m.text === "from the owner")?.sender).toBeUndefined();
     } finally {
       // Stop the fixture turns and remove the bots and session: anything left running fails a later test.

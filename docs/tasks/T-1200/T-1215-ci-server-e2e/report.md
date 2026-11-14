@@ -300,3 +300,48 @@ T-1207 证据：`git show --format= --name-status 7124ef58` 确实删除 `cloudf
 - `git diff --check`：通过。
 
 未提交。`docs/verification/README.md` 仍不在当前 checkout，验证未接触用户 live 数据。
+
+
+## 第 8 轮（2026-11-14）
+
+本轮只处理 main 合入 T-1217/T-1218 后留下的 8 个测试文件，并复核两个 ratchet。
+
+### 原因与修改
+
+- server/index.test.ts：配对会话没有 displayName、团队名或 email 时按 T-1217 回退 Member，发送者断言改为 Member，设备 label 仍断言为 Safari on Mac。
+- server/steer-e2e.test.ts：配对发送者的六处断言改为 Member，并单独保留设备 label 为 Safari on Mac。
+- server/chat-followups-restart.test.ts：配对发送者断言改为 Member，session.label 仍为 Safari on Mac，没有 sender.id 的历史 name-only 行仍保留旧值。
+- server/card-answerers.e2e.test.ts：T-1217 的 email 前缀回退把 ada@example.test 和 bob@example.test 显示为 Ada 和 Bob，三处卡片姓名断言改为具体值。
+- server/bot-visibility.e2e.test.ts：三处表情回应姓名断言改为 Ada/Bob，保持具体姓名和 person key 断言。
+- server/recent-work.e2e.test.ts：最近工作行没有丢失；server/index.ts 的房间路径把多说话者 PersonName 传给 recentWork 时使用 "the team"，server/recent-work.ts 仍生成完整行，因此断言改为 1:1 with the team，没有改产品代码。
+- server/bot-box/env.test.ts：CRYBOT_APP_SCHEME 只在服务器的 server/app-handoff.ts 读取，加入测试内的 SERVER_ONLY_CRYBOT。
+- server/data-format-released.json：按 PATH=/opt/node24/bin:$PATH node scripts/record-data-format.mjs 正规重生成，版本从 1.0.2 更新到 package 的 1.0.3，writes/reads 保持 1/1。
+
+### 逐文件验证
+
+Vitest 命令均使用 PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm exec vitest run <文件> --maxWorkers=1；由于 Vite 在本 worktree 的 node_modules/.vite-temp 写入受 EROFS 限制，实际启动时追加 --configLoader runner，没有修改配置或安装依赖。
+
+| 文件 | 结果 |
+| --- | --- |
+| server/bot-box/env.test.ts | 9/9 通过 |
+| server/data-format.test.ts | 11 个非监听测试通过；4 个 server 启动测试在 freePortBlock 报 no free port block for offsets 0,1 in 19600..22600；原有 1 个 root 权限测试 skip |
+| scripts/testing/file-size-ratchet.test.ts | 1/1 通过 |
+| scripts/testing/index-route-ratchet.test.ts | 1/1 通过 |
+| server/index.test.ts | 监听 127.0.0.1 报 EPERM，beforeAll 超时，338 个测试均未执行 |
+| server/steer-e2e.test.ts | 子服务监听 127.0.0.1:25760 报 EPERM，24 个测试均未执行 |
+| server/chat-followups-restart.test.ts | freePortBlock 报无可用端口块，未启动 fixture |
+| server/card-answerers.e2e.test.ts | 子服务监听 127.0.0.1:33664 报 EPERM，8 个测试均未执行 |
+| server/bot-visibility.e2e.test.ts | freePortBlock 报无可用端口块，14 个测试均未执行 |
+| server/recent-work.e2e.test.ts | freePortBlock 报无可用端口块，未进入断言 |
+
+按要求没有重复尝试受沙箱端口/监听限制的测试，需在 Actions 或可监听环境逐文件复跑。
+
+### 全仓检查
+
+- PATH=/opt/node24/bin:$PATH pnpm typecheck：通过。
+- PATH=/opt/node24/bin:$PATH pnpm lint：通过。
+- PATH=/opt/node24/bin:$PATH pnpm i18n:check：通过，16 个语言包有效。
+- PATH=/opt/node24/bin:$PATH pnpm check:brand：通过，6600 个文件、0 个禁用引用。
+- git diff --check：通过。
+
+没有提交、安装依赖、运行完整 pnpm test，也没有改 CI/构建文件。docs/verification/README.md 在当前 checkout 中不存在，因此无法执行其中规定的额外验证流程。
