@@ -10214,7 +10214,7 @@
   "vm.screens.noActivity": "暫無活動",
   "vm.screens.queue": "等待螢幕的智慧體",
   "vm.screens.queueDetail": "有螢幕空出後會自動連線。螢幕閒置 10 分鐘後釋放。",
-  "vm.screens.queued": "正在排隊，第 {position} 位",
+  "vm.screens.queued": "已排隊 · 第 {position} 位",
   "vm.screens.waited": "已等待 {seconds} 秒",
   "vm.screens.take": "接管這塊螢幕",
   "vm.screens.count": "螢幕數",
@@ -10222,5 +10222,7 @@
   "vm.screens.available": "可用",
   "vm.screens.unassignedBot": "這個代理程式目前沒有指派螢幕，下次執行時會自動指派。",
   "vm.screens.idleMinutes": "已閒置 {minutes} 分鐘",
-  "vm.screens.waitedMinutes": "已等待 {minutes} 分鐘"
+  "vm.screens.idleMinute": "已閒置 {minutes} 分鐘",
+  "vm.screens.waitedMinutes": "已等待 {minutes} 分鐘",
+  "vm.screens.waitedMinute": "已等待 {minutes} 分鐘"
 }

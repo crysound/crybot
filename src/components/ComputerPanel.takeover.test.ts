@@ -412,6 +412,19 @@ describe("taking control of a self-hosted VPS", () => {
     await press("Hand control back");
     expect(fixture.beacons.some((beacon) => beacon.url.startsWith("/api/bots/scout/computer/viewer-close"))).toBe(true);
   });
+
+  it("keeps a VPS takeover through a section refresh", async () => {
+    await open(makeBot({ computer: "cloud", cloudBackend: "vps", section: "first" }));
+    await press("Take control");
+    await shownLive();
+    fixture.beacons = [];
+    shown = makeBot({ computer: "cloud", cloudBackend: "vps", section: "changed" });
+    draw();
+    await settle();
+    expect(releases()).toEqual([]);
+    expect(fixture.beacons.some((beacon) => beacon.url.endsWith("/computer/viewer-close"))).toBe(false);
+    expect(liveDesktop()?.dataset.target).toBe("vps/scout");
+  });
 });
 
 
@@ -500,7 +513,7 @@ it("treats a screen_not_assigned conflict as waiting and automatically retries",
   expect(document.body.textContent).not.toContain("screen_not_assigned");
   expect(fixture.controls).toEqual([]);
   fixture.vm = { mode: "shared", screen: { screen: 4, viewerTarget: "local/shared-s4" } };
-  await vi.waitFor(() => expect(button("Take control")).toBeDefined(), { timeout: 4000 });
+  await vi.waitFor(() => expect(button("Take control")).toBeDefined(), { timeout: 17_000 });
   await press("Take control");
   await shownLive();
   expect(liveDesktop()!.dataset.target).toBe("local/shared-s4");

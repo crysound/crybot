@@ -5953,7 +5953,7 @@
   "vm.screens.noActivity": "Chưa có hoạt động",
   "vm.screens.queue": "Hàng đợi màn hình",
   "vm.screens.queueDetail": "Tự động kết nối khi có màn hình trống. Màn hình không hoạt động sẽ được giải phóng sau 10 phút.",
-  "vm.screens.queued": "Đang chờ màn hình · Vị trí {position}",
+  "vm.screens.queued": "Đã xếp hàng · Vị trí {position}",
   "vm.screens.waited": "Đã chờ {seconds} giây",
   "vm.screens.take": "Tiếp quản màn hình này",
   "vm.screens.count": "Số màn hình",
@@ -5961,5 +5961,7 @@
   "vm.screens.available": "Sẵn sàng",
   "vm.screens.unassignedBot": "Tác nhân này chưa được gán màn hình. Màn hình sẽ tự động được gán ở lần chạy tiếp theo.",
   "vm.screens.idleMinutes": "Không hoạt động {minutes} phút",
-  "vm.screens.waitedMinutes": "Đang chờ {minutes} phút"
+  "vm.screens.idleMinute": "Không hoạt động {minutes} phút",
+  "vm.screens.waitedMinutes": "Đang chờ {minutes} phút",
+  "vm.screens.waitedMinute": "Đang chờ {minutes} phút"
 }

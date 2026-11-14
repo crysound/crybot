@@ -161,7 +161,7 @@ it.each([2, null, "conflict"])("resolves a remote Local VM screen before taking 
     expect(fixture.controls[0]).toMatchObject({ action: "take", target: "local/shared-s2" });
     expect(fixture.joinBodies).toEqual([{ target: "local/shared-s2" }]);
   } else {
-    await vi.waitFor(() => expect(document.querySelector("[role=alert]")?.textContent).toContain(screen === "conflict" ? "Waiting for a screen" : "Position 3"));
+    await vi.waitFor(() => expect(document.querySelector("[role=alert]")?.textContent).toContain(screen === "conflict" ? "This bot has no screen assigned yet" : "Position 3"));
     expect(fixture.controls).toEqual([]);
     expect(fixture.joins).toEqual([]);
     expect(fixture.viewerCloses).toBe(0);

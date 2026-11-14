@@ -3933,7 +3933,7 @@
   "vm.screens.noActivity": "Noch keine Aktivität",
   "vm.screens.queue": "Warteschlange",
   "vm.screens.queueDetail": "Verbindet sich automatisch, sobald ein Bildschirm frei wird. Inaktive Bildschirme werden nach 10 Minuten freigegeben.",
-  "vm.screens.queued": "Warten auf einen Bildschirm · Position {position}",
+  "vm.screens.queued": "Eingereiht · Position {position}",
   "vm.screens.waited": "Seit {seconds} s wartend",
   "vm.screens.take": "Diesen Bildschirm übernehmen",
   "vm.screens.count": "Anzahl der Bildschirme",
@@ -3941,5 +3941,7 @@
   "vm.screens.available": "Verfügbar",
   "vm.screens.unassignedBot": "Dieser Bot hat noch keinen Bildschirm. Beim nächsten Lauf wird automatisch einer zugewiesen.",
   "vm.screens.idleMinutes": "Seit {minutes} Min. inaktiv",
-  "vm.screens.waitedMinutes": "Seit {minutes} Min. in der Warteschlange"
+  "vm.screens.idleMinute": "Seit {minutes} Min. inaktiv",
+  "vm.screens.waitedMinutes": "Seit {minutes} Min. in der Warteschlange",
+  "vm.screens.waitedMinute": "Seit {minutes} Min. in der Warteschlange"
 }

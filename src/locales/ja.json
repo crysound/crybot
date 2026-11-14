@@ -8037,7 +8037,7 @@
   "vm.screens.noActivity": "まだ操作はありません",
   "vm.screens.queue": "画面待ち",
   "vm.screens.queueDetail": "画面が空くと自動で接続します。操作のない画面は 10 分後に解放されます。",
-  "vm.screens.queued": "画面待ち · 順番 {position}",
+  "vm.screens.queued": "キュー済み · {position}番",
   "vm.screens.waited": "{seconds} 秒待機中",
   "vm.screens.take": "この画面の操作を引き継ぐ",
   "vm.screens.count": "画面数",
@@ -8045,5 +8045,7 @@
   "vm.screens.available": "空き",
   "vm.screens.unassignedBot": "このエージェントには画面が割り当てられていません。次回の実行時に自動で割り当てられます。",
   "vm.screens.idleMinutes": "{minutes}分間アイドル",
-  "vm.screens.waitedMinutes": "{minutes}分待機中"
+  "vm.screens.idleMinute": "{minutes}分間アイドル",
+  "vm.screens.waitedMinutes": "{minutes}分待機中",
+  "vm.screens.waitedMinute": "{minutes}分待機中"
 }

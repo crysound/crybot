@@ -4037,7 +4037,7 @@
   "vm.screens.noActivity": "Активності ще немає",
   "vm.screens.queue": "Черга на екран",
   "vm.screens.queueDetail": "Підключення відбудеться автоматично, коли звільниться екран. Неактивні екрани звільняються через 10 хвилин.",
-  "vm.screens.queued": "Очікування екрана · Місце {position}",
+  "vm.screens.queued": "У черзі · Місце {position}",
   "vm.screens.waited": "Очікування {seconds} с",
   "vm.screens.take": "Керувати цим екраном",
   "vm.screens.count": "Кількість екранів",
@@ -4045,5 +4045,7 @@
   "vm.screens.available": "Доступний",
   "vm.screens.unassignedBot": "Цьому агенту ще не призначено екран. Екран призначиться автоматично під час наступного запуску.",
   "vm.screens.idleMinutes": "Бездіяльність {minutes} хв",
-  "vm.screens.waitedMinutes": "Очікування {minutes} хв"
+  "vm.screens.idleMinute": "Бездіяльність {minutes} хв",
+  "vm.screens.waitedMinutes": "Очікування {minutes} хв",
+  "vm.screens.waitedMinute": "Очікування {minutes} хв"
 }

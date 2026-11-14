@@ -4,6 +4,8 @@
 
 状态：前端实现和本地组件验证已完成；整体验收尚未完成。两张真实截图、全量中继／服务 E2E、Actions 仍未完成。未提交 git，未推送，未开 PR。
 
+更正：上面关于第 1 轮未提交、`.git` 只读以及工作树显示 `master` 的记录属于当时环境；第 1、2 轮改动现已提交，本轮仅保留第 3 轮工作树改动。
+
 ## 实现
 
 - 新增 `src/components/LocalVmScreens.tsx`，消费约定的 `ScreenListPayload`。显示屏号、运行状态、智能体、人工接管状态、空闲秒数和排队顺序／已等待时间；单屏布局直接返回空内容。
@@ -115,3 +117,31 @@ node docs/tasks/T-1200/T-1228-screens-ui/capture.mjs
 沙箱禁止监听端口，浏览器截图和完整中继／服务 E2E 仍无法在本机完成，以 Actions 为准；上一节的截图脚本已记录 Chromium 启动限制，没有伪造截图。本轮没有改动 `server/`、`desktop-connection.ts` 正则、`IMAGE_LAYER_VERSION` 或原生手机端。
 
 按任务约定，`computer-takeover.ts` 的 `leave()` 是否在 release 中携带 `target` 留给接线任务并由 E2E 覆盖；`ScreenListPayload` 仍暂留前端组件，接线时改为导入共享定义。
+
+## 第 3 轮返工（2026-11-14）
+
+### 实现
+
+- `ComputerPanel` 的接管会话键只在当前 bot 收到明确的 `screen.viewerTarget` 时追加屏目标；VPS、单屏和独占模式沿用原会话键。屏目标 ref 按 bot 和电脑模式清理，`liveTarget` 不再用旧 ref 兜底，VM 在未分配、状态未确认或切 bot 时返回空目标。VPS 的状态重拉保留接管画面和 viewer-close 路径，不发送 release。
+- 409 `screen_not_assigned` 按未分配处理：清除旧 `screen`／`queue_position`，重试间隔改为 15 秒，等待提示节点保持挂载。远程桌面面板在 `screen === null` 或 409 时使用未分配 bot 文案。
+- 新增 `local-vm-screen-state` 的目标、会话、冲突清理和状态文案辅助函数及单测；抽出 `LocalVmIdleTimeoutSetting`，恢复 `ComputerPanel` 中的多语句格式。文件行数为 `ComputerPanel.tsx` 1761（上限 1782）、`LocalComputerSection.tsx` 1358（上限 1437）。
+- 空闲和等待时长在 1 分钟显示单数英文（`1 minute`），其他语言补齐对应键；其余 14 种语言的排队行改用短的「已排队」前缀。
+
+### 第 3 轮验证
+
+| 命令 | 结果 |
+| --- | --- |
+| `pnpm exec vitest run src/components/LocalVmScreens.test.tsx` | 12 项通过 |
+| `pnpm exec vitest run src/components/LocalComputerSection.test.ts` | 52 项通过 |
+| `pnpm exec vitest run src/components/ComputerPanel.takeover.test.ts` | 27 项通过，含 VPS 状态刷新不 release／不关闭 viewer |
+| `pnpm exec vitest run src/lib/desktop-connection.test.ts` | 7 项通过 |
+| `pnpm exec vitest run src/components/remote-desktop-panel.open.test.ts` | 9 项通过 |
+| `pnpm exec vitest run src/lib/local-vm-screen-state.test.ts` | 5 项通过 |
+| `pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts` | 1 项通过 |
+| `pnpm exec tsc -b` | 通过 |
+| `pnpm exec tsc -p tsconfig.server.json` | 通过 |
+| `pnpm i18n:check` | 通过，16 种语言目录有效 |
+| `pnpm check:brand` | 通过，0 个禁止引用 |
+| `pnpm lint` | 仅剩基线告警：`scripts/public-scan/scan.mjs:297`、`server/lazy-container-mcp.ts:122` |
+
+本轮未修改 `server/`、`desktop-connection.ts` 正则、`IMAGE_LAYER_VERSION` 或原生手机端。沙箱禁止监听端口，浏览器截图和完整服务 E2E 仍以 Actions 为准。

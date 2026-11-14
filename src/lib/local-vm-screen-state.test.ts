@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { localVmPollInterval, localVmViewerTarget, localVmWaitState, type LocalVmStatus } from "./local-vm-screen-state";
+import { localVmPollInterval, localVmTakeoverSession, localVmUnassignedStatus, localVmViewerTarget, localVmWaitState, type LocalVmStatus } from "./local-vm-screen-state";
 
 const status = (patch: Partial<LocalVmStatus> = {}): LocalVmStatus => ({
   mode: "shared", max_instances: 1, image: true, create_supported: true, container: "running",
@@ -23,5 +23,17 @@ describe("local VM screen state", () => {
     expect(localVmViewerTarget(status({ screen: { screen: 3, viewerTarget: "local/shared-s3" } }))).toBe("local/shared-s3");
     expect(localVmViewerTarget(status())).toBe("local/shared");
     expect(localVmViewerTarget(status({ screen: null }))).toBeNull();
+  });
+
+  it("does not carry a previous bot's screen into a new takeover session", () => {
+    expect(localVmTakeoverSession("bot-a", "computer", null)).toBe("bot-a:computer");
+    expect(localVmTakeoverSession("bot-b", "computer", "local/shared-s2")).toBe("bot-b:computer:local/shared-s2");
+  });
+
+  it("clears queue information after an unassigned conflict", () => {
+    const cleared = localVmUnassignedStatus(status({ screen: null, queue_position: 3 }));
+    expect(cleared?.screen).toBeNull();
+    expect(cleared?.queue_position).toBeUndefined();
+    expect(localVmPollInterval(cleared!)).toBeGreaterThanOrEqual(15_000);
   });
 });

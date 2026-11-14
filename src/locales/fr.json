@@ -3762,7 +3762,7 @@
   "vm.screens.noActivity": "Aucune activité pour le moment",
   "vm.screens.queue": "File d’attente",
   "vm.screens.queueDetail": "Connexion automatique dès qu’un écran se libère. Les écrans inactifs sont libérés après 10 minutes.",
-  "vm.screens.queued": "En attente d’un écran · Position {position}",
+  "vm.screens.queued": "En file · Position {position}",
   "vm.screens.waited": "En attente depuis {seconds} s",
   "vm.screens.take": "Prendre le contrôle de cet écran",
   "vm.screens.count": "Nombre d’écrans",
@@ -3770,5 +3770,7 @@
   "vm.screens.available": "Disponible",
   "vm.screens.unassignedBot": "Cet agent n'a pas encore d'écran attribué. Un écran sera attribué à sa prochaine exécution.",
   "vm.screens.idleMinutes": "Inactif depuis {minutes} min",
-  "vm.screens.waitedMinutes": "En attente depuis {minutes} min"
+  "vm.screens.idleMinute": "Inactif depuis {minutes} min",
+  "vm.screens.waitedMinutes": "En attente depuis {minutes} min",
+  "vm.screens.waitedMinute": "En attente depuis {minutes} min"
 }

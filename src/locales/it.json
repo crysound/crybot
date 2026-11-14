@@ -7068,7 +7068,7 @@
   "vm.screens.noActivity": "Nessuna attività finora",
   "vm.screens.queue": "Coda di attesa",
   "vm.screens.queueDetail": "Si connette automaticamente quando uno schermo si libera. Gli schermi inattivi vengono liberati dopo 10 minuti.",
-  "vm.screens.queued": "In attesa di uno schermo · Posizione {position}",
+  "vm.screens.queued": "In coda · Posizione {position}",
   "vm.screens.waited": "In attesa da {seconds} s",
   "vm.screens.take": "Controlla questo schermo",
   "vm.screens.count": "Numero di schermi",
@@ -7076,5 +7076,7 @@
   "vm.screens.available": "Disponibile",
   "vm.screens.unassignedBot": "Questo agente non ha ancora uno schermo assegnato. Ne riceverà uno al prossimo avvio.",
   "vm.screens.idleMinutes": "Inattivo da {minutes} min",
-  "vm.screens.waitedMinutes": "In attesa da {minutes} min"
+  "vm.screens.idleMinute": "Inattivo da {minutes} min",
+  "vm.screens.waitedMinutes": "In attesa da {minutes} min",
+  "vm.screens.waitedMinute": "In attesa da {minutes} min"
 }

@@ -3616,7 +3616,7 @@
   "vm.screens.noActivity": "अभी कोई गतिविधि नहीं",
   "vm.screens.queue": "स्क्रीन की कतार",
   "vm.screens.queueDetail": "स्क्रीन खाली होने पर अपने आप जुड़ जाएगा। निष्क्रिय स्क्रीन 10 मिनट बाद खाली कर दी जाती हैं।",
-  "vm.screens.queued": "स्क्रीन का इंतज़ार · कतार में {position}",
+  "vm.screens.queued": "कतार में · {position}",
   "vm.screens.waited": "{seconds} सेकंड से इंतज़ार",
   "vm.screens.take": "इस स्क्रीन का नियंत्रण लें",
   "vm.screens.count": "स्क्रीन की संख्या",
@@ -3624,5 +3624,7 @@
   "vm.screens.available": "उपलब्ध",
   "vm.screens.unassignedBot": "इस एजेंट को अभी स्क्रीन नहीं मिली है। अगली बार चलने पर स्क्रीन अपने आप मिलेगी।",
   "vm.screens.idleMinutes": "{minutes} मिनट से निष्क्रिय",
-  "vm.screens.waitedMinutes": "{minutes} मिनट से प्रतीक्षा"
+  "vm.screens.idleMinute": "{minutes} मिनट से निष्क्रिय",
+  "vm.screens.waitedMinutes": "{minutes} मिनट से प्रतीक्षा",
+  "vm.screens.waitedMinute": "{minutes} मिनट से प्रतीक्षा"
 }

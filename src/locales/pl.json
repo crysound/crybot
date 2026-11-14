@@ -7210,7 +7210,7 @@
   "vm.screens.noActivity": "Brak aktywności",
   "vm.screens.queue": "Kolejka do ekranu",
   "vm.screens.queueDetail": "Połączenie nastąpi automatycznie, gdy zwolni się ekran. Bezczynne ekrany są zwalniane po 10 minutach.",
-  "vm.screens.queued": "Oczekiwanie na ekran · Pozycja {position}",
+  "vm.screens.queued": "W kolejce · Pozycja {position}",
   "vm.screens.waited": "Oczekiwanie od {seconds} s",
   "vm.screens.take": "Przejmij ten ekran",
   "vm.screens.count": "Liczba ekranów",
@@ -7218,5 +7218,7 @@
   "vm.screens.available": "Dostępny",
   "vm.screens.unassignedBot": "Ten agent nie ma jeszcze przypisanego ekranu. Ekran zostanie przydzielony przy następnym uruchomieniu.",
   "vm.screens.idleMinutes": "Bezczynny od {minutes} min",
-  "vm.screens.waitedMinutes": "Oczekiwanie od {minutes} min"
+  "vm.screens.idleMinute": "Bezczynny od {minutes} min",
+  "vm.screens.waitedMinutes": "Oczekiwanie od {minutes} min",
+  "vm.screens.waitedMinute": "Oczekiwanie od {minutes} min"
 }

@@ -7722,7 +7722,7 @@
   "vm.screens.noActivity": "아직 활동 없음",
   "vm.screens.queue": "화면 대기열",
   "vm.screens.queueDetail": "화면이 비면 자동으로 연결됩니다. 유휴 화면은 10분 후 해제됩니다.",
-  "vm.screens.queued": "화면 대기 중 · {position}번째",
+  "vm.screens.queued": "대기열 · {position}번째",
   "vm.screens.waited": "{seconds}초 대기 중",
   "vm.screens.take": "이 화면 제어하기",
   "vm.screens.count": "화면 수",
@@ -7730,5 +7730,7 @@
   "vm.screens.available": "사용 가능",
   "vm.screens.unassignedBot": "이 에이전트에는 아직 화면이 할당되지 않았습니다. 다음 실행 시 자동으로 할당됩니다.",
   "vm.screens.idleMinutes": "{minutes}분 동안 유휴",
-  "vm.screens.waitedMinutes": "{minutes}분 동안 대기"
+  "vm.screens.idleMinute": "{minutes}분 동안 유휴",
+  "vm.screens.waitedMinutes": "{minutes}분 동안 대기",
+  "vm.screens.waitedMinute": "{minutes}분 동안 대기"
 }

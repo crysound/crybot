@@ -55,9 +55,11 @@ export async function saveScreens(screens: number): Promise<void> {
   if (!response.ok) throw new Error(body.error ?? t("vm.policyError"));
 }
 
-const durationText = (seconds: number, secondKey: LocaleKey, minuteKey: LocaleKey) => {
+const durationText = (seconds: number, secondKey: LocaleKey, minuteKey: LocaleKey, minuteOneKey: LocaleKey) => {
   const value = Math.max(0, Math.floor(seconds));
-  return t(value >= 60 ? minuteKey : secondKey, { [value >= 60 ? "minutes" : "seconds"]: value >= 60 ? Math.floor(value / 60) : value });
+  const minutes = Math.floor(value / 60);
+  const key = value < 60 ? secondKey : minutes === 1 ? minuteOneKey : minuteKey;
+  return t(key, { [value < 60 ? "seconds" : "minutes"]: value < 60 ? value : minutes });
 };
 
 export function LocalVmScreens({ payload }: { payload: ScreenListPayload }) {
@@ -87,7 +89,7 @@ function ScreenList({ payload }: { payload: ScreenListPayload }) {
             <span className="mt-2 block truncate text-[13px] text-ink">{screen.bot?.name ?? t("vm.screens.available")}</span>
             <span className="mt-1 block text-[12px] text-ink-secondary">
               {screen.controlledByPerson ? t("vm.screens.controlled")
-                : screen.idleSeconds !== null ? durationText(screen.idleSeconds, "vm.screens.idle", "vm.screens.idleMinutes")
+                : screen.idleSeconds !== null ? durationText(screen.idleSeconds, "vm.screens.idle", "vm.screens.idleMinutes", "vm.screens.idleMinute")
                   : t("vm.screens.noActivity")}
             </span>
           </button>
@@ -103,7 +105,7 @@ function ScreenList({ payload }: { payload: ScreenListPayload }) {
               <li key={entry.bot.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
                 <span className="font-medium text-ink">{entry.bot.name}</span>
                 <span className="text-ink-secondary">{t("vm.screens.queued", { position: entry.position })}</span>
-                <span className="text-ink-secondary">{durationText(entry.waitingSeconds, "vm.screens.waited", "vm.screens.waitedMinutes")}</span>
+                <span className="text-ink-secondary">{durationText(entry.waitingSeconds, "vm.screens.waited", "vm.screens.waitedMinutes", "vm.screens.waitedMinute")}</span>
               </li>
             ))}
           </ol>

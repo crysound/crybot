@@ -10574,7 +10574,7 @@
   "vm.screens.noActivity": "Ainda sem atividade",
   "vm.screens.queue": "Fila de espera",
   "vm.screens.queueDetail": "Conecta automaticamente quando uma tela fica livre. Telas inativas são liberadas após 10 minutos.",
-  "vm.screens.queued": "Aguardando uma tela · Posição {position}",
+  "vm.screens.queued": "Na fila · Posição {position}",
   "vm.screens.waited": "Aguardando há {seconds} s",
   "vm.screens.take": "Controlar esta tela",
   "vm.screens.count": "Número de telas",
@@ -10582,5 +10582,7 @@
   "vm.screens.available": "Disponível",
   "vm.screens.unassignedBot": "Este agente ainda não tem uma tela atribuída. Uma tela será atribuída automaticamente na próxima execução.",
   "vm.screens.idleMinutes": "Ocioso há {minutes} min",
-  "vm.screens.waitedMinutes": "Aguardando há {minutes} min"
+  "vm.screens.idleMinute": "Ocioso há {minutes} min",
+  "vm.screens.waitedMinutes": "Aguardando há {minutes} min",
+  "vm.screens.waitedMinute": "Aguardando há {minutes} min"
 }

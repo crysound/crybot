@@ -69,9 +69,13 @@ it("shows all screens, owners, idle time, person control and the ordered queue",
 
 it("shows idle and queue durations in minutes after one minute", () => {
   const data = payload();
+  data.slots[1]!.idleSeconds = 60;
   data.slots[0]!.idleSeconds = 420;
-  data.queue[0]!.waitingSeconds = 125;
+  data.queue[0]!.waitingSeconds = 60;
+  data.queue.push({ bot: { id: "bot-6", name: "Agent 6" }, position: 2, waitingSeconds: 125 });
   render(data);
+  expect(document.body.textContent).toContain("Idle for 1 minute");
+  expect(document.body.textContent).toContain("Waiting for 1 minute");
   expect(document.body.textContent).toContain("Idle for 7 minutes");
   expect(document.body.textContent).toContain("Waiting for 2 minutes");
 });

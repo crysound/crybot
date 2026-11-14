@@ -186,7 +186,7 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
       if (!window.cry?.desktopViewer) throw new Error(t("remoteDesktop.viewerUnavailable"));
       const status = localVm ? await api(`/api/bots/${bot.id}/local-computer`) : null;
       if (status?.queue_position) throw new Error(t("vm.screens.queued", { position: status.queue_position }));
-      if (status?.screen === null) throw new Error(t("vm.screens.unassigned"));
+      if (status?.screen === null) throw new Error(t("vm.screens.unassignedBot"));
       const target = localVm ? status?.screen?.viewerTarget : bot.cloudBackend === "vps" ? `vps/${bot.id}` : undefined;
       viewerRequested = true;
       await openProviderDesktop({
@@ -215,7 +215,7 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
         }).catch(() => {});
       }
       setError(cause instanceof ApiError && cause.status === 409 && cause.body?.error === "screen_not_assigned"
-        ? t("vm.screens.unassigned") : panelErrorText(cause instanceof Error ? cause : String(cause)));
+        ? t("vm.screens.unassignedBot") : panelErrorText(cause instanceof Error ? cause : String(cause)));
     } finally {
       setPending(false);
     }
