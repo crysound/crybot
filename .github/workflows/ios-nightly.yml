@@ -123,7 +123,11 @@ jobs:
           exit "$status"
       - name: Export and validate screenshots
         if: always()
-        run: scripts/export-screenshots.sh DerivedData/screenshots "$CRYBOT_SNAPSHOT_FEATURES" DerivedData/*.xcresult
+        run: |
+          status=0
+          scripts/export-screenshots.sh DerivedData/screenshots "$CRYBOT_SNAPSHOT_FEATURES" DerivedData/*.xcresult || status=1
+          python3 scripts/assert-screenshots.py DerivedData/screenshots none --require-launch iPhone16 iPhoneSE iPhoneProMax || status=1
+          exit "$status"
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4

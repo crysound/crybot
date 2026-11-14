@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import importlib.util
+import contextlib
+import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -22,19 +25,45 @@ class ScreenshotChecks(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        self.scripts = self.root / 'mobile/ios/scripts'
+        self.scripts.mkdir(parents=True)
+        for name in ('export-screenshots.sh', 'assert-screenshots.py'):
+            shutil.copy2(SCRIPTS / name, self.scripts / name)
+        self.tests = self.root / 'mobile/ios/CryBotTests'
+        self.tests.mkdir()
+
+    def snapshot_class(self, feature):
+        (self.tests / f'{feature}.swift').write_text(f'final class {feature}SnapshotTests: SnapshotCase {{}}')
 
     def png(self, name):
         path = self.root / name
         path.write_bytes(b'\x89PNG\r\n\x1a\n')
         return path
 
-    def test_selection_requires_png(self):
+    def test_existing_snapshot_class_requires_its_own_png(self):
+        self.snapshot_class('Inbox')
+        self.snapshot_class('Chat')
         module.assert_screenshots(self.root, '')
         module.assert_screenshots(self.root, 'none')
         with self.assertRaisesRegex(ValueError, 'no PNG'):
-            module.assert_screenshots(self.root, 'Inbox')
+            module.assert_screenshots(self.root, 'Inbox', self.tests)
         self.png('inbox-list.png')
-        module.assert_screenshots(self.root, 'Inbox')
+        module.assert_screenshots(self.root, 'inbox', self.tests)
+        with self.assertRaisesRegex(ValueError, 'no PNG screenshots: Chat'):
+            module.assert_screenshots(self.root, 'Inbox,Chat', self.tests)
+
+    def test_missing_snapshot_class_warns_without_requiring_png(self):
+        (self.tests / 'Inbox.swift').write_text('final class InboxTests: XCTestCase {}')
+        warning = io.StringIO()
+        with contextlib.redirect_stderr(warning):
+            module.assert_screenshots(self.root, 'Inbox', self.tests)
+        self.assertIn('Warning: no InboxSnapshotTests class', warning.getvalue())
+
+    def test_export_without_snapshot_class_warns_and_succeeds(self):
+        result = subprocess.run(['bash', str(self.scripts / 'export-screenshots.sh'),
+                                 str(self.root / 'screenshots'), 'Inbox'], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Warning: no InboxSnapshotTests class', result.stderr)
 
     def test_all_requires_each_of_twelve_not_just_count(self):
         for name in NAMES:
@@ -57,6 +86,7 @@ class ScreenshotChecks(unittest.TestCase):
             module.assert_screenshots(self.root, 'all')
 
     def test_ui_attachment_cannot_hide_missing_selected_app_snapshots(self):
+        self.snapshot_class('Inbox')
         executable = self.root / 'xcrun'
         executable.write_text(r'''#!/usr/bin/env bash
 set -euo pipefail
@@ -69,7 +99,7 @@ fi
         ui = self.root / 'CryBotUITests.xcresult'
         app.mkdir()
         ui.mkdir()
-        result = subprocess.run(['bash', str(SCRIPTS / 'export-screenshots.sh'), str(self.root / 'screenshots'),
+        result = subprocess.run(['bash', str(self.scripts / 'export-screenshots.sh'), str(self.root / 'screenshots'),
                                  'Inbox', str(app), str(ui)],
                                 env={**os.environ, 'PATH': f'{self.root}:{os.environ["PATH"]}'},
                                 capture_output=True, text=True)
@@ -89,13 +119,54 @@ exit 1
         first.mkdir()
         second.mkdir()
         log = self.root / 'calls.log'
-        result = subprocess.run(['bash', str(SCRIPTS / 'export-screenshots.sh'), str(self.root / 'screenshots'),
+        result = subprocess.run(['bash', str(self.scripts / 'export-screenshots.sh'), str(self.root / 'screenshots'),
                                  'all', str(first), str(second)],
                                 env={**os.environ, 'PATH': f'{self.root}:{os.environ["PATH"]}', 'EXPORT_LOG': str(log)},
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(len(log.read_text().splitlines()), 2)
         self.assertIn('no PNG', result.stderr)
+
+    def test_selected_feature_uses_manifest_names_only_for_existing_pngs(self):
+        self.snapshot_class('Inbox')
+        png = self.png('opaque.png')
+        (self.root / 'manifest.json').write_text(json.dumps([{
+            'exportedFileName': png.name, 'suggestedHumanReadableName': 'inbox-list-16-light.png'
+        }]))
+        module.assert_screenshots(self.root, 'Inbox', self.tests)
+        png.unlink()
+        with self.assertRaisesRegex(ValueError, 'no PNG'):
+            module.assert_screenshots(self.root, 'Inbox', self.tests)
+
+    def test_launch_requires_each_device_and_accepts_manifest_names(self):
+        devices = ['iPhone16', 'iPhoneSE', 'iPhoneProMax']
+        for device in devices:
+            directory = self.root / f'CryBotUITests-{device}'
+            directory.mkdir()
+            self.png(f'CryBotUITests-{device}/opaque.png')
+            (directory / 'manifest.json').write_text(json.dumps([{
+                'exportedFileName': 'opaque.png',
+                'suggestedHumanReadableName': f'harness-launch-{device}-light.png'
+            }]))
+        module.assert_launch_screenshots(self.root, devices)
+        for device in devices:
+            png = self.root / f'CryBotUITests-{device}/opaque.png'
+            png.unlink()
+            self.png(f'CryBotUITests-{device}/unrelated.png')
+            with self.assertRaisesRegex(ValueError, f'Missing harness-launch.*CryBotUITests-{device}'):
+                module.assert_launch_screenshots(self.root, devices)
+            self.png(f'CryBotUITests-{device}/opaque.png')
+
+    def test_launch_cli_fails_when_a_device_directory_is_absent(self):
+        for device in ('iPhone16', 'iPhoneSE'):
+            (self.root / f'CryBotUITests-{device}').mkdir()
+            self.png(f'CryBotUITests-{device}/harness-launch-{device}-light.png')
+        result = subprocess.run([sys.executable, str(self.scripts / 'assert-screenshots.py'), str(self.root),
+                                 'none', '--require-launch', 'iPhone16', 'iPhoneSE', 'iPhoneProMax'],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('Missing harness-launch screenshots:', result.stderr)
+        self.assertIn('CryBotUITests-iPhoneProMax', result.stderr)
 
 
 if __name__ == '__main__':

@@ -33,6 +33,20 @@ final class ServerTextRendererTests: XCTestCase {
         }
     }
 
+    func testHeldCodesRenderFromGeneratedTable() throws {
+        let messages = [
+            "native": "The provider requires your approval for this action.",
+            "sandbox": "This loosens the AI's own safety limits, so only Full access can approve it automatically.",
+            "outbound": "This sends something on your behalf, so it asks you first.",
+            "undeliveredFull": "Full access couldn't deliver this approval.",
+            "undelivered": "Approve for me couldn't answer this one."
+        ]
+        for (suffix, text) in messages {
+            let line = ServerTextLine(textCode: "approval.held.\(suffix)")
+            XCTAssertEqual(try renderer("en").render(line, fallback: "Fallback"), text)
+        }
+    }
+
     func testIntegerNumbersHaveNoDecimalSuffix() throws {
         let line = ServerTextLine(textCode: "chat.notice.codexUnsupportedMore", textParams: [
             "tools": .string("alpha, beta"), "count": .number(3)
@@ -99,6 +113,20 @@ final class ServerTextRendererTests: XCTestCase {
             "resetsAt": .number(0), "timeZone": .string("Unknown/Zone")
         ])
         XCTAssertEqual(try renderer("zh-Hant").render(line, fallback: "Original English"), "Original English")
+    }
+
+    func testResetHourHasTwoDigitsInTwelveAndTwentyFourHourLocales() throws {
+        let path = try XCTUnwrap(Bundle.main.path(forResource: "en", ofType: "lproj"))
+        let bundle = try XCTUnwrap(Bundle(path: path))
+        let line = ServerTextLine(textCode: "routines.server.limitWait", textParams: [
+            "resetsAt": .number(0), "timeZone": .string("Asia/Tokyo")
+        ])
+        for language in ["en_US", "en_GB", "zh_Hans"] {
+            let renderer = ServerTextRenderer(bundle: bundle, locale: Locale(identifier: language))
+            let text = renderer.render(line)
+            XCTAssertTrue(text.contains("09:00"), text)
+            XCTAssertTrue(text.hasSuffix("(Asia/Tokyo)"), text)
+        }
     }
 
     func testFallsBackToOriginalTextAndCode() {

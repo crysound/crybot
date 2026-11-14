@@ -58,11 +58,9 @@ public struct ServerTextRenderer {
         if case .number(let milliseconds) = params["resetsAt"],
            case .string(let zone) = params["timeZone"] {
             guard milliseconds.isFinite, let timeZone = TimeZone(identifier: zone) else { return nil }
-            let formatter = DateFormatter()
-            formatter.locale = locale
-            formatter.timeZone = timeZone
-            formatter.setLocalizedDateFormatFromTemplate("MMMdjjmm")
-            values["resets"] = "\(formatter.string(from: Date(timeIntervalSince1970: milliseconds / 1000))) (\(zone))"
+            let format = Date.FormatStyle(locale: locale, timeZone: timeZone)
+                .month(.abbreviated).day().hour(.twoDigits(amPM: .abbreviated)).minute(.twoDigits)
+            values["resets"] = "\(Date(timeIntervalSince1970: milliseconds / 1000).formatted(format)) (\(zone))"
         }
         return values
     }

@@ -141,3 +141,191 @@ Swift parse not run. macOS compilation and XCTest require Actions.
 - 请协调者推分支后补 Mobile builds、iOS Linux（43 接入后）、Public scan 运行链接，确认 PR 实际跑 HarnessFlowTests；手动触发 nightly，记录三机执行数、harness-launch 截图及总耗时；核对全量 12 张 harness-basic 的 List/ScrollView/UIKit 内容。
 - iOS 18 的真实 runtime 下载、创建、包锁和非阻塞测试结果也以 Actions 为准。截图导出检查支持 xcresulttool manifest 的 exportedFileName/suggestedHumanReadableName 映射，但本地没有真实 xcresult，最终命名兼容性必须由第一次 macOS 运行确认。
 - 给任务 43 的生成器检查命令：`node mobile/ios/scripts/gen-strings.mjs --check`。其余自测命令见上表；协调者仍需补真实“选中不存在 FlowTests”的失败演示链接。
+
+
+## 第 3 轮小修（2026-11-14）
+
+开工先执行 `crybot-link-deps`，输出 `crybot-link-deps: linked 73 entries`；已阅读 brief、r2 和原生规格，在前两轮分支改动基础上完成本轮修改。未提交 git，未安装依赖，未改允许范围以外的源码。`docs/verification/README.md` 在当前 checkout 中仍不存在；本轮没有服务端或会话实现变更，脚本自测使用临时目录、假 xcrun/xcodebuild，路径测试使用临时 Git 仓库的暂存 diff（不创建提交），未接触用户运行中的 App 或数据。
+
+### 改动文件
+
+| 文件 | 第 3 轮改动 |
+|---|---|
+| `.github/workflows/mobile.yml` | PR diff 禁用非 ASCII 路径转义，并把空选择规范化为 none。 |
+| `.github/workflows/ios-nightly.yml` | 导出后逐机检查三份 CryBotUITests 目录的 harness-launch，即使 App 截图检查失败也继续检查并汇总退出状态。 |
+| `mobile/ios/scripts/ui-test-selection.sh` | 脚本和两份 iOS 工作流改动归 all，功能名只接受 ASCII 字母数字，空选择输出 none。 |
+| `mobile/ios/scripts/ui-test-selection.test.sh` | 覆盖流水线路径、非法功能名、空格及非 ASCII 路径、none。 |
+| `mobile/ios/scripts/export-screenshots.sh` | 将对应的 CryBotTests 源码目录显式传给截图校验器。 |
+| `mobile/ios/scripts/assert-screenshots.py` | 根据实际 SnapshotTests 类逐功能要求 PNG，无类则警告；增加三台机型的启动截图检查，保留 all 的 12 张检查。 |
+| `mobile/ios/scripts/assert-screenshots.test.py` | 10 个临时夹具用例覆盖有类零图失败、无类零图继续、跨功能/跨机型不可补图、manifest 和导出错误。 |
+| `mobile/ios/scripts/gen-strings.mjs` | 旧表清理限定为 Features/<名字>/Web<名字>.xcstrings，ServerText 命名空间加入 approval.held。 |
+| `mobile/ios/scripts/gen-strings.test.mjs` | 增加手写表不删除、不报遗留及英文 5 个 heldCode 键的生成检查。 |
+| `mobile/ios/CryBot/Strings/ServerText.xcstrings` | 重新生成 394 个键，新增 5 个 approval.held.* 及已有翻译。 |
+| `mobile/ios/CryBot/Strings/ServerTextRenderer.swift` | resets 改用 Date.FormatStyle 显式要求两位小时，保留本地化月日、12/24 小时制和服务端时区。 |
+| `mobile/ios/CryBotTests/Support/ServerTextRendererTests.swift` | 补 5 个 heldCode 完整英文文案及 en_US/en_GB/zh_Hans 两位小时 XCTest 断言。 |
+| `mobile/ios/scripts/workflows.test.mjs` | 增加 PR none、真实 Git 空格/非 ASCII 路径及 nightly 三机启动截图检查的工作流回归。 |
+| `mobile/ios/scripts/README.md` | 写明按类存在性要求截图、三机启动截图检查、合法功能名、none 和生成表清理边界。 |
+| `docs/tasks/T-1200/T-1221-test-harness/report.md` | 追加本节，保留前两轮记录。 |
+
+### 8 项逐项结果
+
+| 项 | 实现及本地结果 |
+|---|---|
+| 1 | 扫描 CryBotTests 中的 Swift 类声明，不依赖源文件名。选中的功能不存在 <名字>SnapshotTests 时警告并继续；存在时必须有对应功能前缀的 PNG，多个功能分别检查，其他功能和 UI 图不能掩盖缺图。支持 manifest 映射且要求 PNG 文件实际存在。all 仍要求 harness-basic 三尺寸×深浅×普通/axl 共 12 个名字。两种情况均有自测，包含调用实际导出脚本的用例。 |
+| 2 | mobile/ios/scripts/**、mobile.yml、ios-nightly.yml 都选 all；Bash 用例通过，当前分支 diff 选择输出 all/空行。 |
+| 3 | 工作流使用 git -c core.quotePath=false diff --name-only；功能名正则为 ^[A-Za-z0-9]+$，非法名称归 all。覆盖含空格、中文、重音字母、连字符、下划线、逗号的功能名；合法功能内的非 ASCII 子目录和含空格文件名仍按功能选。临时 Git 仓库设置 core.quotePath=true，使用工作流的命令覆盖选项读取暂存 diff，确认 Unicode 路径不会变成空选择。 |
+| 4 | 选择脚本无匹配时输出 none；工作流读入后也将空首行转为 none。普通空 PR 选择和模拟脚本输出空行均有用例。 |
+| 5 | 仅清理功能目录直属的 Web<目录名>.xcstrings；WebHost/WebHost.xcstrings、WebHost/WebHostMenu.xcstrings 以及嵌套子目录中的表保留原内容，--check 不报遗留；真正的 WebInbox 旧表仍被检测和清理。 |
+| 6 | nightly 对 CryBotUITests-iPhone16、CryBotUITests-iPhoneSE、CryBotUITests-iPhoneProMax 分别要求至少一张 harness-launch-*。逐个机型缺图、整个目录缺失、manifest 指向已删除 PNG 都不能通过；App 导出检查失败后仍执行启动图检查。 |
+| 7 | approval.held.* 的 native、sandbox、outbound、undeliveredFull、undelivered 共 5 键进入 ServerText；生成器从实际英文目录验证 5 键，Swift 测试通过既有 render(ServerTextLine(textCode: ...)) 接口断言完整英文且不使用 fallback。Swift 测试执行待 Actions。 |
+| 8 | 使用 hour(.twoDigits(amPM: .abbreviated))，与网页 Intl.DateTimeFormat 的 hour: "2-digit" 对齐。补 09:00 在 en_US、en_GB、zh_Hans 的断言；毫秒时间戳和 Asia/Tokyo 时区不变。月份/标点/空白仍由各平台本地化数据决定；Swift 实际输出待 Actions，不声称本地运行通过。 |
+
+### 本地验收命令与原始输出
+
+一次只运行一个测试文件，无 systemd。以下六项指定检查全部退出 0。Node 默认测试隔离模式显示文件级计数，所以另以 --test-isolation=none 显示用例明细：生成器 8/8，工作流 12/12。Python 截图检查 10/10。
+
+```text
+$ node --test mobile/ios/scripts/gen-strings.test.mjs
+✔ mobile/ios/scripts/gen-strings.test.mjs (914.639294ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 932.239967
+Exit code: 0
+```
+
+```text
+$ node mobile/ios/scripts/gen-strings.mjs --check
+Exit code: 0
+```
+
+```text
+$ bash mobile/ios/scripts/ui-test-selection.test.sh
+ui-test-selection: ok (isolated paths, feature flow directory, shared files, pipeline paths, ASCII feature names, spaces, Unicode, none, stdin, help)
+Exit code: 0
+```
+
+```text
+$ bash mobile/ios/scripts/assert-tests-ran.test.sh
+assert-tests-ran: ok (executed/skipped counts, required, malformed/missing summary)
+Exit code: 0
+```
+
+```text
+$ python3 mobile/ios/scripts/assert-screenshots.test.py
+..........
+----------------------------------------------------------------------
+Ran 10 tests in 0.171s
+
+OK
+/data/tmp/tmpop243edm: 12 PNG screenshots
+All 12 harness-basic screenshots are present
+/data/tmp/tmpop243edm: 12 PNG screenshots
+/data/tmp/tmp4j6iqalf: 0 PNG screenshots
+/data/tmp/tmp4j6iqalf: 0 PNG screenshots
+/data/tmp/tmp4j6iqalf: 0 PNG screenshots
+/data/tmp/tmp4j6iqalf: 1 PNG screenshots
+/data/tmp/tmp4j6iqalf: 1 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhone16: 1 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhoneSE: 1 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhoneProMax: 1 PNG screenshots
+All required devices have harness-launch screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhone16: 1 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhoneSE: 1 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhoneProMax: 1 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhone16: 2 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhoneSE: 1 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhoneProMax: 1 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhone16: 2 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhoneSE: 2 PNG screenshots
+/data/tmp/tmp_687si47/CryBotUITests-iPhoneProMax: 1 PNG screenshots
+/data/tmp/tmpgt1s2wr9: 12 PNG screenshots
+All 12 harness-basic screenshots are present
+/data/tmp/tmpgt1s2wr9: 11 PNG screenshots
+/data/tmp/tmpg567y2bx: 0 PNG screenshots
+/data/tmp/tmpyjy2x8bk: 1 PNG screenshots
+/data/tmp/tmpyjy2x8bk: 0 PNG screenshots
+Exit code: 0
+```
+
+```text
+$ node --test mobile/ios/scripts/workflows.test.mjs
+✔ mobile/ios/scripts/workflows.test.mjs (1000.191025ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1008.650131
+Exit code: 0
+```
+
+```text
+$ node --test --test-isolation=none mobile/ios/scripts/gen-strings.test.mjs
+✔ Web interpolation uses English positions, repeated names and escaped literal percents (1.434611ms)
+✔ maps all renamed language codes and keeps English positions across languages (0.45907ms)
+✔ ServerText retains named placeholders across languages (0.573521ms)
+✔ missing English key fails generation even if a translation exists (46.974523ms)
+✔ skips source-hashes.json, includes serverError and maps locale files (2.892212ms)
+✔ --check fails for stale content and succeeds after regeneration (161.285935ms)
+✔ --check and generation only clean exactly named generated feature tables (200.853124ms)
+✔ ServerText includes all five production heldCode messages (156.933173ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 592.927465
+Exit code: 0
+```
+
+```text
+$ node --test --test-isolation=none mobile/ios/scripts/workflows.test.mjs
+✔ workflow YAML and every embedded shell script parse (91.628696ms)
+✔ main push uses none; manual main and other push use all; PR logs both scope lines (27.98886ms)
+✔ selection script failure fails the workflow step without publishing empty selection (10.862678ms)
+✔ PR with no selected feature publishes none, including an empty script result (24.490438ms)
+✔ real git diff preserves spaces and Unicode paths for PR selection (76.116354ms)
+✔ all runs the full UI target; selected flows run; only empty/none scope skips (118.386945ms)
+✔ a missing or entirely skipped UI class fails the required guard (81.244338ms)
+✔ nightly tries all three destinations before returning failure (103.886924ms)
+✔ nightly checks launch screenshots for all three devices even if snapshot export fails (26.417959ms)
+✔ daily and weekly cron do not overlap; exports run after failures; artifact names differ (1.292051ms)
+✔ iOS 18 downloads a concrete version only when no runtime is available (62.302075ms)
+✔ iOS 18 creates a missing iPhone 16 (43.835462ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 727.54242
+Exit code: 0
+```
+
+附加检查：`bash -n mobile/ios/scripts/ui-test-selection.sh mobile/ios/scripts/ui-test-selection.test.sh mobile/ios/scripts/export-screenshots.sh` 和 `git diff --check` 均退出 0、无输出；workflows.test.mjs 同时解析两份 YAML 并逐段检查内嵌 shell。`git -c core.quotePath=false diff --name-only | mobile/ios/scripts/ui-test-selection.sh` 输出第一行 `all`、第二行空。
+
+Swift 探测脚本 `/tmp/t1221-r3-swift-parse.sh` 先找 PATH 中的 swiftc，再检查 /opt/swift/usr/bin/swiftc；如果可用，逐个运行本轮两个改动文件的 `swiftc -parse -module-cache-path "$PWD/mobile/ios/.linux-cache/clang" "$file"`。实际输出原文：
+
+```text
+swiftc unavailable: not on PATH; /opt/swift/usr/bin/swiftc does not exist.
+Swift parse not run. macOS compilation and XCTest require Actions.
+```
+
+没有 Swift 工具链，故本轮未执行 parse、编译或 XCTest；没有 Xcode/macOS，也没有模拟器截图结果。沙箱禁止监听端口，e2e 未运行。以上本地脚本结果不代替 Actions 的构建、测试和真实附件导出。
+
+### 覆盖表与协调者交接
+
+- 当前 checkout 仍无 `server/testing/ios-contract/coverage.ts`；本轮是测试基础设施及服务端文案渲染修正，不新增业务覆盖项，也未修改覆盖表。
+- 不需要新增依赖或 project.yml 行，无超范围源码改动。给任务 43 的命令仍为 `node mobile/ios/scripts/gen-strings.mjs --check`。
+- 请协调者推分支后补 Mobile builds、iOS Linux、Public scan 和 nightly 的运行链接；真实 Swift 编译/XCTest、12 张 harness-basic 内容、三台机型 harness-launch、实际执行数与耗时以 Actions 为准。前轮要求的“不存在 FlowTests”真实失败演示仍需协调者补链接。
+- 本轮没有运行 Actions，没有提交或推送 git。除这些环境相关验收外，8 项修改和相应本地脚本自测已完成。

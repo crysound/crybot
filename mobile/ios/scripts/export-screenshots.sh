@@ -13,5 +13,6 @@ for result in "$@"; do
   mkdir -p "$destination"
   xcrun xcresulttool export attachments --path "$result" --output-path "$destination" || status=1
 done
-python3 "$(dirname "$0")/assert-screenshots.py" "$snapshot_output" "$features" || status=1
+python3 "$(dirname "$0")/assert-screenshots.py" "$snapshot_output" "$features" \
+  --tests-directory "$(dirname "$0")/../CryBotTests" || status=1
 exit "$status"

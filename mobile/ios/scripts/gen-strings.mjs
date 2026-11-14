@@ -47,7 +47,7 @@ function featureKeys(root) {
 function serverKeys(root, catalogs) {
   const file = path.join(root, 'shared/server-text.ts');
   const source = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-  const candidates = new Set(['chat.notice', 'routines.server', 'serverError']);
+  const candidates = new Set(['chat.notice', 'routines.server', 'serverError', 'approval.held']);
   for (const match of source.matchAll(/["'`]([A-Za-z][A-Za-z0-9_.-]*\.[A-Za-z0-9_.-]+)["'`]/g)) candidates.add(match[1]);
   const english = catalogs.get('en') ?? {};
   return Object.keys(english).filter(key => [...candidates].some(prefix => key === prefix || key.startsWith(`${prefix}.`)));
@@ -90,9 +90,10 @@ export function main(argv) {
   const expected = new Set(outputs.map(([file]) => file));
   const featuresDir = path.join(root, 'mobile/ios/CryBot/Features');
   if (fs.existsSync(featuresDir)) {
-    for (const entry of fs.readdirSync(featuresDir, { recursive: true })) {
-      const file = path.join(featuresDir, entry);
-      if (!/^Web.*\.xcstrings$/.test(path.basename(file)) || expected.has(file)) continue;
+    for (const entry of fs.readdirSync(featuresDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const file = path.join(featuresDir, entry.name, `Web${entry.name}.xcstrings`);
+      if (!fs.existsSync(file) || expected.has(file)) continue;
       changed = true;
       if (check) console.error(`Stale output: ${path.relative(root, file)}; run node mobile/ios/scripts/gen-strings.mjs to update.`);
       else fs.unlinkSync(file);

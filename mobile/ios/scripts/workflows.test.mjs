@@ -86,6 +86,39 @@ test('selection script failure fails the workflow step without publishing empty 
   assert.equal(result.env, '');
 });
 
+test('PR with no selected feature publishes none, including an empty script result', t => {
+  const { scripts, run, writeTool } = fixture(t);
+  writeTool('git', '[[ "$1" == -c && "$2" == core.quotePath=false && "$3" == diff && "$4" == --name-only ]]\nprintf "%s\\n" "$CHANGED_PATH"\n');
+  const env = { GITHUB_EVENT_NAME: 'pull_request', CHANGED_PATH: 'docs/readme.md' };
+  const result = run(selection, env);
+  assert.equal(result.status, 0, result.log);
+  assert.equal(result.env, 'CRYBOT_SNAPSHOT_FEATURES=none\nCRYBOT_UI_ONLY_TESTING=\n');
+  fs.writeFileSync(path.join(scripts, 'ui-test-selection.sh'), '#!/usr/bin/env bash\nprintf "\\n\\n"\n');
+  assert.equal(run(selection, env).env, result.env);
+});
+
+test('real git diff preserves spaces and Unicode paths for PR selection', t => {
+  for (const [file, expected] of [
+    ['mobile/ios/CryBot/Features/Inbox/子目录/View with spaces.swift', 'Inbox'],
+    ['mobile/ios/CryBot/Features/收件箱/View.swift', 'all'],
+    ['mobile/ios/CryBot/Features/Two Words/View.swift', 'all'],
+  ]) {
+    const { dir, run } = fixture(t);
+    fs.rmSync(path.join(dir, 'bin/git'));
+    fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+    fs.writeFileSync(path.join(dir, file), 'fixture');
+    for (const args of [['init', '-q'], ['config', 'core.quotePath', 'true'], ['add', '--', file]]) {
+      const result = spawnSync('git', ['-C', dir, ...args], { stdio: 'ignore' });
+      assert.ifError(result.error);
+      assert.equal(result.status, 0);
+    }
+    const source = selection.replace('"${{ github.event.pull_request.base.sha }}" HEAD', '--cached');
+    const result = run(source, { GITHUB_EVENT_NAME: 'pull_request' });
+    assert.equal(result.status, 0, result.log);
+    assert.match(result.env, new RegExp(`CRYBOT_SNAPSHOT_FEATURES=${expected}\\n`));
+  }
+});
+
 test('all runs the full UI target; selected flows run; only empty/none scope skips', t => {
   const { run } = fixture(t);
   for (const [features, args, expected] of [
@@ -123,6 +156,19 @@ test('nightly tries all three destinations before returning failure', t => {
   assert.match(result.calls, /id=se-device/);
   assert.match(result.calls, /id=max-device/);
   assert.equal((result.log.match(/1 tests executed/g) ?? []).length, 3);
+});
+
+test('nightly checks launch screenshots for all three devices even if snapshot export fails', t => {
+  const { run, scripts, writeTool } = fixture(t);
+  fs.writeFileSync(path.join(scripts, 'export-screenshots.sh'), '#!/usr/bin/env bash\nexit "${EXPORT_STATUS}"\n', { mode: 0o755 });
+  writeTool('python3', 'printf "%s\\n" "$*" >> "$CALLS"\nexit "$LAUNCH_STATUS"\n');
+  const source = step(nightly.jobs.nightly, 'Export and validate screenshots').run;
+  for (const [exportStatus, launchStatus, expected] of [['0', '0', 0], ['1', '0', 1], ['0', '1', 1]]) {
+    const result = run(source, { CRYBOT_SNAPSHOT_FEATURES: 'all',
+      EXPORT_STATUS: exportStatus, LAUNCH_STATUS: launchStatus });
+    assert.equal(result.status, expected, result.log);
+    assert.equal(result.calls.trim(), 'scripts/assert-screenshots.py DerivedData/screenshots none --require-launch iPhone16 iPhoneSE iPhoneProMax');
+  }
 });
 
 test('daily and weekly cron do not overlap; exports run after failures; artifact names differ', () => {

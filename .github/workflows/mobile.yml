@@ -130,9 +130,10 @@ jobs:
         id: test-scope
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
-            git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD > "$RUNNER_TEMP/crybot-changed-files.txt"
+            git -c core.quotePath=false diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD > "$RUNNER_TEMP/crybot-changed-files.txt"
             scripts/ui-test-selection.sh < "$RUNNER_TEMP/crybot-changed-files.txt" > "$RUNNER_TEMP/crybot-test-scope.txt"
             { IFS= read -r 'scope[0]'; IFS= read -r 'scope[1]'; } < "$RUNNER_TEMP/crybot-test-scope.txt"
+            scope[0]=${scope[0]:-none}
           elif [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF}" == "refs/heads/main" ]]; then
             scope=(none "")
           else

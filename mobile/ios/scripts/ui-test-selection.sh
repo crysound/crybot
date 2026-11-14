@@ -7,16 +7,17 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
 Usage: ui-test-selection.sh [changed-file ...]
 With no arguments, read repository-relative paths, one per line, from stdin.
 Outputs exactly two lines:
-  1. Comma-separated snapshot feature names, all, or empty for no selection.
+  1. Comma-separated snapshot feature names, all, or none for no selection.
   2. Space-separated -only-testing:CryBotUITests/<Feature>FlowTests arguments,
      only for features whose CryBotUITests/<Feature>/ directory exists.
 CryBot/Features/<Feature>/ and feature test directories select that feature.
-Shared app/test sources, resources, Packages and project/lock changes select all.
+Shared app/test sources, resources, Packages, project/lock, scripts and iOS workflows select all.
+Feature names must match [A-Za-z0-9]+; other names select all.
 Support and Shell are shared, not features. Unrelated paths select nothing.
 For all, line 2 is empty; callers must run -only-testing:CryBotUITests.
 Examples:
   ui-test-selection.sh mobile/ios/CryBot/Features/Inbox/View.swift
-  git diff --name-only BASE HEAD | ui-test-selection.sh
+  git -c core.quotePath=false diff --name-only BASE HEAD | ui-test-selection.sh
 HELP
   exit 0
 fi
@@ -34,9 +35,9 @@ for path in "$@"; do
       name="${path#mobile/ios/}"
       name="${name#CryBot/Features/}"; name="${name#CryBotTests/}"; name="${name#CryBotUITests/}"
       name="${name%%/*}"
-      if [[ "$name" == Support || "$name" == Shell ]]; then all=true
+      if [[ "$name" == Support || "$name" == Shell || ! "$name" =~ ^[A-Za-z0-9]+$ ]]; then all=true
       else features+="$name"$'\n'; fi ;;
-    mobile/ios/CryBot/*|mobile/ios/CryBotTests/*|mobile/ios/CryBotUITests/*|mobile/ios/Shared/*|mobile/ios/CryBotWatch/*|mobile/ios/CryBotWatchTests/*|mobile/ios/Packages/*|mobile/ios/project.yml|mobile/ios/Package.resolved)
+    mobile/ios/CryBot/*|mobile/ios/CryBotTests/*|mobile/ios/CryBotUITests/*|mobile/ios/Shared/*|mobile/ios/CryBotWatch/*|mobile/ios/CryBotWatchTests/*|mobile/ios/Packages/*|mobile/ios/project.yml|mobile/ios/Package.resolved|mobile/ios/scripts/*|.github/workflows/mobile.yml|.github/workflows/ios-nightly.yml)
       all=true ;;
   esac
 done
@@ -54,4 +55,4 @@ else
     fi
   done <<< "$sorted"
 fi
-printf '%s\n' "$features_line" "$flow_args"
+printf '%s\n' "${features_line:-none}" "$flow_args"

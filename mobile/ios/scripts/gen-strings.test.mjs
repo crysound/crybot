@@ -92,14 +92,35 @@ test('--check fails for stale content and succeeds after regeneration', t => {
   assert.equal(run().status, 0);
   assert.equal(run('--check').status, 0);
 });
-test('--check finds obsolete Web tables after removal of key manifests', t => {
+test('--check and generation only clean exactly named generated feature tables', t => {
   const { root, write, run } = fixture(t);
   assert.equal(run().status, 0);
   fs.unlinkSync(path.join(root, 'mobile/ios/CryBot/Features/Inbox/web-keys.json'));
-  write('mobile/ios/CryBot/Features/Inbox/Strings/WebOld.xcstrings', {});
+  const handwritten = [
+    'mobile/ios/CryBot/Features/WebHost/WebHost.xcstrings',
+    'mobile/ios/CryBot/Features/WebHost/WebHostMenu.xcstrings',
+    'mobile/ios/CryBot/Features/Inbox/Strings/WebInbox.xcstrings',
+  ];
+  for (const file of handwritten) write(file, { handwritten: file });
   assert.equal(run('--check').status, 1);
   assert.match(run('--check').stderr, /Stale output/);
+  assert.doesNotMatch(run('--check').stderr, /WebHost|\/Strings\/WebInbox/);
   assert.equal(run().status, 0);
   assert.equal(run('--check').status, 0);
   assert.equal(fs.existsSync(path.join(root, 'mobile/ios/CryBot/Features/Inbox/WebInbox.xcstrings')), false);
+  for (const file of handwritten) {
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, file))), { handwritten: file });
+  }
+});
+
+test('ServerText includes all five production heldCode messages', () => {
+  const root = fileURLToPath(new URL('../../../', import.meta.url));
+  const english = JSON.parse(fs.readFileSync(path.join(root, 'src/locales/en.json'), 'utf8'));
+  const keys = Object.keys(english).filter(key => key.startsWith('approval.held.')).sort();
+  assert.deepEqual(keys, ['approval.held.native', 'approval.held.outbound', 'approval.held.sandbox',
+    'approval.held.undelivered', 'approval.held.undeliveredFull']);
+  const server = JSON.parse(generate(root).find(([file]) => file.endsWith('ServerText.xcstrings'))[1]);
+  for (const key of keys) {
+    assert.equal(server.strings[key].localizations.en.stringUnit.value, english[key]);
+  }
 });

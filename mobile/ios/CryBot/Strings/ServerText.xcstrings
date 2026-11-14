@@ -1,6 +1,469 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "approval.held.native": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Anbieter verlangt für diese Aktion deine Freigabe."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The provider requires your approval for this action."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El proveedor exige tu aprobación para esta acción."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le fournisseur exige votre autorisation pour cette action."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस कार्रवाई के लिए प्रदाता आपकी मंज़ूरी माँगता है।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il fornitore richiede la tua approvazione per questa azione."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアクションにはプロバイダーがあなたの承認を求めています。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "제공자가 이 작업에 승인을 요구해요."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dostawca wymaga twojego zatwierdzenia dla tej akcji."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O provedor exige a sua aprovação para esta ação."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Провайдер требует вашего подтверждения для этого действия."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağlayıcı bu eylem için onayınızı istiyor."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Провайдер вимагає вашого погодження на цю дію."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhà cung cấp yêu cầu bạn phê duyệt thao tác này."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這項操作需要你向服務供應商核准。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提供方要求你批准这个操作。"
+          }
+        }
+      }
+    },
+    "approval.held.outbound": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This sends something on your behalf, so it asks you first."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invia qualcosa per conto tuo, quindi chiede prima a te."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この操作はあなたの代わりに外部へ送信するため、先に確認します。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "사용자를 대신해 무언가를 보내므로 먼저 물어봐요."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To wysyła coś w twoim imieniu, dlatego najpierw pyta ciebie."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta ação envia algo em seu nome, por isso precisa da sua aprovação antes."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Это действие отправляет данные от вашего имени, поэтому сначала запрашивается ваше подтверждение."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這會代表你傳送內容，因此會先詢問你。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这会以你的名义发送内容，因此会先询问你。"
+          }
+        }
+      }
+    },
+    "approval.held.sandbox": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das lockert die eigenen Sicherheitsgrenzen der KI, deshalb kann nur Voller Zugriff es automatisch genehmigen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This loosens the AI's own safety limits, so only Full access can approve it automatically."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esto relaja los propios límites de seguridad de la IA, así que solo Acceso total puede aprobarlo automáticamente."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cela assouplit les propres limites de sécurité de l'IA : seul Accès complet peut l'autoriser automatiquement."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इससे AI की अपनी सुरक्षा सीमाएँ ढीली होती हैं, इसलिए इसे अपने आप सिर्फ़ पूर्ण पहुँच मंज़ूर कर सकती है।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo allenta i limiti di sicurezza dell'AI, quindi solo Accesso completo può approvarlo in automatico."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "これは AI 自身の安全上の制限をゆるめるため、自動で承認できるのはフルアクセスだけです。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 자체의 안전 제한을 완화하는 작업이라 전체 접근에서만 자동으로 승인할 수 있어요."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To poluzowuje własne limity bezpieczeństwa AI, więc tylko Pełny dostęp może to zatwierdzić automatycznie."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isso reduz as restrições de segurança da própria IA. Por isso, só “Acesso total” pode aprovar esta ação automaticamente."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Это ослабляет собственные ограничения безопасности AI, поэтому подтвердить автоматически может только режим «Полный доступ»."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu işlem AI'ın kendi güvenlik sınırlarını gevşetir, bu nedenle bunu yalnızca Tam erişim otomatik olarak onaylayabilir."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Це послаблює власні обмеження безпеки ШІ, тому лише Повний доступ може погодити це автоматично."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thao tác này nới lỏng giới hạn an toàn của chính AI, vì vậy chỉ có Toàn quyền truy cập mới có thể tự động phê duyệt."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這會放寬 AI 本身的安全限制，因此只有「完整存取權」才能自動核准。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这会放宽 AI 自身的安全限制，因此只有完全访问才能自动批准。"
+          }
+        }
+      }
+    },
+    "approval.held.undelivered": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für mich freigeben konnte diese Anfrage nicht beantworten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approve for me couldn't answer this one."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aprobar por mí no pudo responder a esta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approuver à ma place n'a pas pu répondre à celle-ci."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मेरी ओर से मंज़ूरी दें इसका जवाब नहीं दे सका।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approva per me non ha potuto rispondere a questa."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動で承認はこれに答えられませんでした。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "대신 승인하기가 이 요청에는 답하지 못했어요."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tryb „Zatwierdzaj za mnie” nie mógł odpowiedzieć na to pytanie."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Aprovar por mim” não conseguiu responder a este pedido."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Режим «Одобрять за меня» не смог обработать этот запрос."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Benim için onayla buna yanıt veremedi."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Погоджувати за мене» не змогло відповісти на це."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tính năng \"Tự động duyệt cho bạn\" không thể xử lý yêu cầu này."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「替我核准」無法回應這一項。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "代我批准无法回应这一条。"
+          }
+        }
+      }
+    },
+    "approval.held.undeliveredFull": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voller Zugriff konnte diese Freigabe nicht zustellen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full access couldn't deliver this approval."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acceso total no pudo entregar esta aprobación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accès complet n'a pas pu transmettre cette autorisation."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पूर्ण पहुँच यह मंज़ूरी नहीं पहुँचा सकी।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accesso completo non ha potuto consegnare questa approvazione."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フルアクセスはこの承認を届けられませんでした。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "전체 접근이 이 승인을 전달하지 못했어요."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pełny dostęp nie mógł przekazać tego zatwierdzenia."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Acesso total” não conseguiu enviar esta aprovação."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Режиму «Полный доступ» не удалось доставить это подтверждение."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam erişim bu onayı teslim edemedi."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Повний доступ не зміг доставити це погодження."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toàn quyền truy cập không thể gửi phê duyệt này."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「完整存取權」無法送出這項核准。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完全访问未能送达这次批准。"
+          }
+        }
+      }
+    },
     "chat.notice.acpEmpty": {
       "extractionState": "manual",
       "localizations": {
