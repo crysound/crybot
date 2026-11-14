@@ -2185,6 +2185,8 @@
   "newBot.presetKeeps": "Modell, Arbeitsort, Freigabestufe und verbundene Apps bleiben so, wie sie hier eingestellt sind.",
   "newBot.customSettings": "Eigene Einstellungen",
   "newBot.randomName": "Zufälliger Name",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.edit": "Bearbeiten",
   "newBot.loading": "Einstellungen werden geladen…",
   "newBot.failed": "Neuer Bot konnte nicht erstellt werden: {error}",

@@ -6230,6 +6230,8 @@
   "newBot.sharePreset": "分享為預設組態…",
   "newBot.customSettings": "自訂設定",
   "newBot.randomName": "隨機名稱",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.team": "部門",
   "newBot.enabled": "已啟用",
   "newBot.removeRoutine": "移除 {name}",

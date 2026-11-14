@@ -184,7 +184,7 @@ export interface SetupSuggestionsDeps {
   withinBudget(): boolean;
   /** sideJobs.text("setup-suggestions", botId). */
   writer(botId: string): SideJobText | null;
-  facts(bot: BotRecord): SuggestionBasis;
+  facts(bot: BotRecord, language?: string): SuggestionBasis;
   apps(bot: BotRecord): SuggestionApps;
   log?(line: string): void;
 }
@@ -209,6 +209,7 @@ type Outcome = "shown" | "nothing to go on" | "unusable reply" | "failed" | "lat
 
 export function createSetupSuggestions(deps: SetupSuggestionsDeps) {
   const jobs = new Map<string, CardJob>();
+  const languages = new Map<string, string>();
   const called = new Map(deps.store.bots.map((bot) => [bot.id, calledKey(bot)]));
 
   const unanswered = (bot: BotRecord): Message | null => {
@@ -294,7 +295,7 @@ export function createSetupSuggestions(deps: SetupSuggestionsDeps) {
     if (!bot || jobs.get(botId) !== job) return;
     try {
       if (!unanswered(bot)) return end(botId, job, "answered first");
-      const basis = deps.facts(bot);
+      const basis = deps.facts(bot, languages.get(bot.id));
       const apps = deps.apps(bot);
       if (!worthAsking(basis, apps)) return end(botId, job, "nothing to go on", setupChoices(basis.languageCode));
       const writer = deps.withinBudget() ? deps.writer(bot.id) : null;
@@ -322,6 +323,7 @@ export function createSetupSuggestions(deps: SetupSuggestionsDeps) {
   deps.store.onChange((change) => {
     if (change.type === "bot.deleted") {
       called.delete(change.botId);
+      languages.delete(change.botId);
       drop(change.botId);
     } else if (change.type === "message" && change.message.role === "user") {
       for (const [botId, job] of jobs) if (job.threadId === change.threadId) settle(botId, job, null);
@@ -339,14 +341,15 @@ export function createSetupSuggestions(deps: SetupSuggestionsDeps) {
 
   return {
     /** Marks the card as waiting before it returns, so the new bot's first transcript carries the mark. */
-    personalise(botId: string): void {
+    personalise(botId: string, language?: string): void {
+      if (language) languages.set(botId, language);
       try {
         const bot = deps.store.bot(botId);
         const greeting = bot && deps.enabled() ? openSetupOffer(deps.store, bot.id, bot.threadId) : null;
         if (!bot || !greeting || jobs.has(bot.id) || greeting.setupChoicesPending || !deps.canSetUp(bot) || !deps.withinBudget()) return;
         const writer = deps.writer(bot.id);
         if (!writer) return;
-        const basis = deps.facts(bot);
+        const basis = deps.facts(bot, languages.get(bot.id));
         const apps = deps.apps(bot);
         if (!worthAsking(basis, apps)) return;
         deps.store.patchMessage(bot.threadId, greeting.id, { setupChoicesPending: true });
@@ -363,7 +366,7 @@ export function createSetupSuggestions(deps: SetupSuggestionsDeps) {
  * addresses or anything the person wrote in a chat. */
 export function suggestionBasis(bot: BotRecord, place: { bots: readonly BotRecord[]; shared: boolean; aboutMe?: string; languageCode: string; canBrowse: boolean }): SuggestionBasis {
   let language = "English";
-  try { language = new Intl.DisplayNames(["en"], { type: "language" }).of(place.languageCode) ?? "English"; } catch { language = "English"; }
+  try { language = new Intl.DisplayNames(["en"], { type: "language" }).of(place.languageCode === "zh" ? "zh-Hans" : place.languageCode) ?? "English"; } catch { language = "English"; }
   const aboutMe = place.shared ? undefined : aboutMeExcerpt(place.aboutMe, redactSecretsInText);
   return {
     ...(typedName(bot.name) ? { name: bot.name } : {}),
@@ -420,8 +423,8 @@ export function setupSuggestionsFor(host: SetupSuggestionsHost) {
     canSetUp: (bot) => host.engine(bot)?.agentsMcp === true,
     withinBudget: host.withinBudget,
     writer: host.writer,
-    facts: (bot) => suggestionBasis(bot, { bots: host.store.bots, shared: host.shared(), aboutMe: host.config().profile?.aboutMe,
-      languageCode: host.languageCode(), canBrowse: host.engine(bot)?.browserMcp === true && host.browserOn() && bot.browser !== false }),
+    facts: (bot, language) => suggestionBasis(bot, { bots: host.store.bots, shared: host.shared(), aboutMe: host.config().profile?.aboutMe,
+      languageCode: language ?? host.languageCode(), canBrowse: host.engine(bot)?.browserMcp === true && host.browserOn() && bot.browser !== false }),
     apps: (bot) => {
       if (!host.engine(bot)?.composioMcp || bot.composio === false || !host.apps.configured()) return null;
       const allowed = bot.connectorTools ? new Set(Object.keys(bot.connectorTools)) : null;

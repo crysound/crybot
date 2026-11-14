@@ -8,6 +8,7 @@ vi.mock("@/state/thread-navigation", async (importOriginal) => ({
 import type { Action, Bot } from "@/state/store";
 import { setTeamChats } from "@/state/team-chats";
 import { setTeamPeople, type TeamPeople } from "@/state/team-people";
+import { setLocale } from "./i18n";
 import { botLimitReason, closeBotLimit, createdPausedBot } from "./bot-limit";
 import { makeNewBot, setNewBotNameAsker, type BotDefaultsAnswer } from "./new-bot";
 
@@ -22,6 +23,7 @@ function server(answer: Partial<BotDefaultsAnswer> = {}, fail?: { on: "POST" | "
     const method = init?.method ?? "GET";
     const body = JSON.parse(String(init?.body ?? "{}"));
     calls.push({ method, path, body });
+    if (path.startsWith("/api/bot-name")) return { suggestedName: "Nova" };
     if (path === "/api/bot-defaults") {
       return { defaults: { profile: {}, memory: {}, skills: [], routines: [] }, modelSelection: { instanceId: "claude", model: "sonnet" }, suggestedName: "Pixel", ...answer };
     }
@@ -43,7 +45,7 @@ async function newBot(request: never, action: Partial<Extract<Action, { type: "n
   return dispatch.mock.calls.map(([sent]) => sent);
 }
 
-beforeEach(() => { fixture.openBot.mockReset(); });
+beforeEach(() => { fixture.openBot.mockReset(); setLocale("en"); });
 afterEach(() => { vi.unstubAllGlobals(); setTeamPeople(null); setTeamChats(null); closeBotLimit(); setNewBotNameAsker(null); });
 
 describe("New bot", () => {
@@ -74,7 +76,7 @@ describe("New bot", () => {
     setTeamPeople({ ...team, admin: false });
     const { calls, request } = server();
     const sent = await newBot(request, { section: "Sales" });
-    expect(calls).toEqual([{ method: "POST", path: "/api/bots", body: {} }]);
+    expect(calls).toEqual([{ method: "POST", path: "/api/bots", body: { language: "en" } }]);
     expect(sent[0]).toMatchObject({ type: "botAdded", bot: { id: "created" } });
   });
 
@@ -97,16 +99,52 @@ describe("New bot", () => {
     expect(sent.slice(0, 2), "nothing is under way while the person types").toEqual([{ type: "botCreationPending", on: false }, { type: "botCreationPending", on: true }]);
     const cancelled = server();
     expect(await newBot(cancelled.request)).toEqual([{ type: "botCreationPending", on: false }]);
-    expect(cancelled.calls).toEqual([]);
+    expect(cancelled.calls.map(call => call.method)).toEqual(["GET"]);
+    expect(cancelled.created()).toBeUndefined();
   });
 
-  it("off a team, never asks: the bot is made at once with a suggested name", async () => {
+  it("off a team, asks for the name with a prefilled suggestion", async () => {
     const ask = vi.fn(async () => "Quotes");
     setNewBotNameAsker(ask);
     const { request, created } = server();
     await newBot(request);
-    expect(ask).not.toHaveBeenCalled();
-    expect(created()).toMatchObject({ name: "Pixel" });
+    expect(ask).toHaveBeenCalledWith({ suggestedName: "Pixel", randomName: expect.any(Function) });
+    expect(created()).toMatchObject({ name: "Quotes" });
+  });
+
+  it("cancels personal creation without posting a bot", async () => {
+    setNewBotNameAsker(async () => null);
+    const { request, created } = server();
+    await newBot(request);
+    expect(created()).toBeUndefined();
+  });
+
+  it("changes the suggested name and avoids occupied names", async () => {
+    const taken = [{ name: "Pixel" }, { name: "Nova" }] as Bot[];
+    setNewBotNameAsker(async ({ suggestedName, randomName }) => {
+      expect(suggestedName).toBe("Pixel 2");
+      const next = await randomName(suggestedName);
+      expect(next).toBe("Nova 2");
+      expect(await randomName(next)).toBe("Nova 3");
+      return next;
+    });
+    const { request, created } = server();
+    await newBot(request, {}, taken);
+    expect(created()).toMatchObject({ name: "Nova 2" });
+  });
+
+  it.each(["personal", "member", "paired"])("sends the current interface language for %s creation", async (kind) => {
+    setLocale("zh");
+    if (kind === "member") setTeamPeople({ ...team, admin: false });
+    if (kind === "paired") vi.stubGlobal("window", { cry: { remoteClient: { active: true } } });
+    setNewBotNameAsker(async ({ suggestedName }) => suggestedName);
+    const { request, created, calls } = server();
+    await newBot(request);
+    expect(created()).toMatchObject({ language: "zh" });
+    if (kind !== "personal") {
+      expect(calls.map(call => call.path)).toEqual(["/api/bot-name", "/api/bots"]);
+      expect(created()).toEqual({ name: "Nova", language: "zh" });
+    }
   });
 
   it("names the bot so it never repeats one already here", async () => {
@@ -170,7 +208,7 @@ describe("New bot", () => {
     vi.stubGlobal("window", { cry: { remoteClient: { active: true } } });
     const { calls, request } = server();
     const sent = await newBot(request, { section: "Sales" });
-    expect(calls).toEqual([{ method: "POST", path: "/api/bots", body: { section: "Sales" } }]);
+    expect(calls).toEqual([{ method: "POST", path: "/api/bots", body: { language: "en" } }]);
     expect(sent.map((action) => action.type)).toEqual(["botAdded"]);
   });
 });
