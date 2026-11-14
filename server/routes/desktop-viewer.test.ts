@@ -12,8 +12,9 @@ import { resolveRequestAuth, type RequestAuth } from "../request-auth.ts";
 import { json, readBody } from "../harness/http.ts";
 import { SHARED_LOCAL_VM_TARGET, perBotLocalVmTarget, poolLocalVmTarget, type ContainerComputerStatus } from "../container-computer.ts";
 import { createDesktopViewer, desktopViewerUrl, type DesktopTarget } from "./desktop-viewer.ts";
-import { viewerTargetId } from "../../shared/desktop-viewer.ts";
+import { DESKTOP_VIEWER_TARGET, screenOfViewerTarget, viewerTargetId } from "../../shared/desktop-viewer.ts";
 import { localDesktopTarget, localVmViewerStatus } from "../desktop-viewer-targets.ts";
+import { PASS } from "./table.ts";
 
 let dir: string;
 let sessions: SessionRegistry;
@@ -35,8 +36,10 @@ let now: number;
 let targetLookups: number;
 let handled: () => void;
 let leases: Set<string>;
+let screenPassword: ((screen: number) => string | null) | undefined;
 const leaseKey = (id: string, botId: string, lease: string) => `${id} ${botId} ${lease}`;
-let targets = [SHARED_LOCAL_VM_TARGET, perBotLocalVmTarget("test-bot"), poolLocalVmTarget(1)];
+const screenTargets = [1, 2, 3, 4].map(screen => ({ ...SHARED_LOCAL_VM_TARGET, key: `shared:s${screen}`, label: `shared-s${screen}` }));
+let targets = [SHARED_LOCAL_VM_TARGET, perBotLocalVmTarget("test-bot"), poolLocalVmTarget(1), ...screenTargets];
 const peers = new Set<Duplex>();
 const base = "/api/desktop-viewer/local/shared";
 const remoteHeaders = { host: "workspace.example", origin: "https://workspace.example", "x-forwarded-proto": "https" };
@@ -86,7 +89,8 @@ beforeEach(async () => {
   vpsTarget = undefined;
   targetLookups = 0; handled = () => {};
   leases = new Set();
-  targets = [SHARED_LOCAL_VM_TARGET, perBotLocalVmTarget("test-bot"), poolLocalVmTarget(1)];
+  screenPassword = screen => `screen-secret-${screen}`;
+  targets = [SHARED_LOCAL_VM_TARGET, perBotLocalVmTarget("test-bot"), poolLocalVmTarget(1), ...screenTargets];
   desktop = createServer((_req, res) => res.writeHead(404).end());
   desktop.on("upgrade", (req, socket) => {
     peers.add(socket);
@@ -113,6 +117,7 @@ beforeEach(async () => {
           } as ContainerComputerStatus;
         },
         touch: target => touched.push(target.key),
+        screenPassword,
       });
     },
     live: auth => auth.kind === "loopback" || sessions.isLive(auth.session.id),
@@ -127,7 +132,8 @@ beforeEach(async () => {
     const url = new URL(req.url!, "http://localhost");
     const gate = resolveRequestAuth(req, { sessions, cookieName: "test_session", url, streamPath: "/api/events", loopbackTrust: "service" });
     if (!gate.auth) return json(res, gate.status, { error: gate.error });
-    await viewer.route({ req, res, url, path: url.pathname, method: req.method!, auth: gate.auth, json, readBody });
+    const result = await viewer.route({ req, res, url, path: url.pathname, method: req.method!, auth: gate.auth, json, readBody });
+    if (result === PASS) json(res, 404, { error: "not found" });
     handled();
   };
   app = createServer((req, res) => void handle(req, res));
@@ -159,6 +165,22 @@ it("proxies opaque bytes and keeps workspace credentials out of the VM", async (
   expect(touched).toContain("shared");
 });
 
+it("accepts only the four shared screen targets and sends each token upstream", async () => {
+  for (let screen = 1; screen <= 4; screen++) {
+    const target = `local/shared-s${screen}`;
+    expect(DESKTOP_VIEWER_TARGET.test(target)).toBe(true);
+    expect(screenOfViewerTarget(target)).toBe(screen);
+    expect((await get(`/api/desktop-viewer/${target}`)).body).toEqual({ password: `screen-secret-${screen}` });
+    expect((await open(`/api/desktop-viewer/${target}/websockify`)).status).toBe(101);
+    expect(seenPath).toBe(`/websockify?token=s${screen}`);
+  }
+  for (const target of ["local/shared-s0", "local/shared-s5"]) {
+    expect(DESKTOP_VIEWER_TARGET.test(target)).toBe(false);
+    expect(screenOfViewerTarget(target)).toBeNull();
+    expect((await get(`/api/desktop-viewer/${target}`)).status).toBe(404);
+  }
+});
+
 it("protects HTTP and upgrade requests with the existing session and scope checks", async () => {
   for (const [extra, expected] of [
     [{ cookie: "" }, 403], [{ cookie: `test_session=${member.token}` }, 403],
@@ -170,12 +192,22 @@ it("protects HTTP and upgrade requests with the existing session and scope check
   expect(inspected).toEqual([]);
 });
 
+it.each([undefined, () => null])("refuses a screen without an injected password (%s)", async password => {
+  screenPassword = password;
+  const path = "/api/desktop-viewer/local/shared-s1";
+  expect((await get(path)).status).toBe(409);
+  expect((await open(`${path}/websockify`)).status).toBe(409);
+  expect(seenPath).toBeUndefined();
+  expect((await get(base)).body).toEqual({ password: "fixture-secret" });
+});
+
 it("returns fresh credentials only to admins and selects shared, per-bot and pool targets", async () => {
   for (const target of targets) {
     const path = `/api/desktop-viewer/${viewerTargetId(target)}`;
     const response = await get(path);
     expect(response.headers["cache-control"]).toContain("no-store");
-    expect(response.body).toEqual({ password: "fixture-secret" });
+    const screen = /^shared:s([1-4])$/.exec(target.key)?.[1];
+    expect(response.body).toEqual({ password: screen ? `screen-secret-${screen}` : "fixture-secret" });
     expect((await open(`${path}/websockify`)).status).toBe(101);
   }
   expect(inspected).toContain(targets[1].key);
@@ -360,6 +392,17 @@ it("opens the shared desktop to a phone lease that holds it", async () => {
   const answer = await open(`/api/desktop-viewer/${target}/websockify?${query}`);
   expect(answer.status).toBe(101);
   expect(inspected).toEqual(["shared", "shared"]);
+});
+
+it.each([1, 2, 3, 4])("opens screen s%i to a phone lease that holds it", async screen => {
+  const target = `local/shared-s${screen}`;
+  leases.add(leaseKey(target, "test-bot", lease));
+  const query = `botId=test-bot&threadId=th-1&controlLeaseId=${lease}`;
+  const auth = { authorization: `Bearer ${admin.token}` };
+  expect((await get(`/api/desktop-viewer/${target}?${query}`, auth)).body).toEqual({ password: `screen-secret-${screen}` });
+  expect((await open(`/api/desktop-viewer/${target}/websockify?${query}`, auth)).status).toBe(101);
+  expect(seenPath).toBe(`/websockify?token=s${screen}`);
+  expect(inspected).toEqual([`shared:s${screen}`, `shared:s${screen}`]);
 });
 
 it("keeps a TCP keepalive on a viewer's socket, so a phone that vanishes is found", async () => {

@@ -10,10 +10,29 @@ export interface DesktopResources {
 }
 
 export const DEFAULT_DESKTOP_RESOURCES: DesktopResources = { memoryGb: 4, cpus: 2 };
+export const SHARED_DESKTOP_RESOURCES: DesktopResources = { memoryGb: 8, cpus: 3 };
+export const MULTI_SCREEN_PIDS_LIMIT = 8192;
+export const MULTI_SCREEN_SHM = "2g";
 export const MIN_DESKTOP_MEMORY_GB = 2;
 export const MAX_DESKTOP_MEMORY_GB = 128;
 export const MIN_DESKTOP_CPUS = 1;
 export const MAX_DESKTOP_CPUS = 64;
+
+function resourceInteger(value: number, minimum: number, fallback: number): number {
+  return Number.isFinite(value) ? Math.max(minimum, Math.floor(value)) : fallback;
+}
+
+export function clampDesktopResources(resources: DesktopResources, host: DesktopResources, reservedMemoryGb: 0 | 2 = 2): DesktopResources {
+  const memoryGb = resourceInteger(host.memoryGb, MIN_DESKTOP_MEMORY_GB, DEFAULT_DESKTOP_RESOURCES.memoryGb);
+  const cpus = resourceInteger(host.cpus, MIN_DESKTOP_CPUS, DEFAULT_DESKTOP_RESOURCES.cpus);
+  const availableMemory = Math.floor(memoryGb - reservedMemoryGb);
+  const memoryLimit = availableMemory >= MIN_DESKTOP_MEMORY_GB
+    ? availableMemory : Math.min(DEFAULT_DESKTOP_RESOURCES.memoryGb, memoryGb);
+  return {
+    memoryGb: Math.min(resourceInteger(resources.memoryGb, MIN_DESKTOP_MEMORY_GB, DEFAULT_DESKTOP_RESOURCES.memoryGb), memoryLimit),
+    cpus: Math.min(resourceInteger(resources.cpus, MIN_DESKTOP_CPUS, DEFAULT_DESKTOP_RESOURCES.cpus), cpus),
+  };
+}
 
 /** Memory and swap share one limit, so a desktop gets no swap: past its budget the kernel kills processes in it rather than
  * letting it thrash the host. */
