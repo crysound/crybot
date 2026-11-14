@@ -75,3 +75,87 @@ git diff --check
 2. 在 Xcode 和 Android SDK 环境编译，两端真机走完整飞书授权链路，并覆盖取消重试、错误 state、重复回跳、空 loginHosts 和安卓进程回收。
 3. 合并另一个修改 `cf-access.ts` 的任务时保留本次末尾导出，并确认新的身份校验规则与接力复验一致；本次没有重构已有校验逻辑。
 4. 默认发行使用 `crybot`；若部署改设 `CRYBOT_APP_SCHEME`，需同步调整两端协议注册和回调匹配并重新构建。
+
+## 第 2 轮
+
+### 1. 逐项处理结果与文件
+
+- **高风险：回跳明文 JWT。** 两端每次登录都生成新的 P-256 密钥对，把 65 字节 X9.63 未压缩公钥作为无填充 base64url `pk` 发给现有接力路由。服务端严格检查唯一 pk、编码和曲线点，使用每次响应独立的临时密钥、ECDH、HKDF-SHA256 和 AES-256-GCM；salt、AAD 均是 state 的 UTF-8 字节，info 固定为 `crybot-app-handoff-v1`。回跳只输出 `v=1&state=...&epk=...&iv=...&ct=...`，ct 末尾附 16 字节 tag。没有新增接口或依赖，也没有为 Access 增加例外路径。检查了接力生成、校验、解密代码，没有输出 JWT 的日志语句；成功页和回跳 URL 的明文缺失由测试断言。
+- **两端解密及一次性消费。** iOS 私钥仅保存在内存，使用 CryptoKit；安卓使用平台 JCA/JCE，自己转换 P-256 点并给坐标补齐到 32 字节，HKDF 手写 extract 和单块 expand。安卓为冷启动恢复在私有 SharedPreferences 保存 PKCS#8 私钥，沿用 manifest 的 `allowBackup=false`。回调先消费 state 并清除保存的私钥，再解密和写 Cookie；重复字段、缺失字段、错误版本或解密失败均进入已有中英文错误面板，保留「登录」重试按钮。没有明文 token 参数兼容分支。
+- **低风险：Activity 持有 URL。** `onCreate`、`onNewIntent` 共用 `consumeAuthIntent()`，无论成功、失败还是不接受的回调，都在 `finally` 中执行 `setIntent(Intent())`。
+- **审核建议 1：Access 拒绝。** 删除 `server/index.ts` 中 refusal 非空时仍转交接力处理器的特例，保留原有 401/403 JSON 返回。处理器测试改为直接调用处理器，认证会话准备单独进行，不再用忽略 Access refusal 的 fixture 模拟路由挂载。
+- **审核建议 2：服务器子路径。** iOS 使用 `percentEncodedPath`，安卓使用 `encodedPath`，去掉原路径末尾的斜杠后追加 `/auth/app-handoff`，保留已有子路径和百分号编码，重建接力查询参数并清除 fragment。
+- **审核建议 3：安卓过期状态。** 保存 `login_started_at`，10 分钟到期、时钟回拨、缺失旧格式字段或服务器不匹配时，一起删除 state、服务器绑定、开始时间及私钥。冷启动先清理再决定展示内容；`onNewIntent`、重新发起登录和 `onResume` 也检查过期，过期后恢复正常加载网页。
+- **审核建议 4：安卓弹窗。** 记录唯一 popup WebView，有弹窗时拒绝再次创建；导航、`onCloseWindow` 和 Activity 销毁时清理。销毁任务投递到已挂载的 container，避免未挂载的 popup 自身 `post` 等待挂载而不执行。身份源授权取消、冷启动和真实 WebView 事件仍需真机核验。
+
+| 文件 | 本轮修改 |
+| --- | --- |
+| `server/app-handoff.ts` | 增加合法 P-256 公钥解析和可注入临时私钥、nonce 的纯加密函数，输出加密回跳。 |
+| `server/app-handoff.test.ts` | 更新全部成功页断言，增加公钥错误、解密、认证篡改、随机性及固定 v1 向量验证，共 59 项测试。 |
+| `server/index.ts` | 仅删除 Access refusal 的接力特例一行。 |
+| `mobile/ios/CryBot/ViewController.swift` | 生成和消费内存私钥、发送 pk、CryptoKit 解密、拒绝不合法回调并保留子路径。 |
+| `mobile/android/app/src/main/kotlin/com/crysound/crybot/AppHandoffCrypto.kt` | 新增仅依赖平台 API 的 EC 点编码/校验、密钥生成和恢复、HKDF 与 GCM 解密。 |
+| `mobile/android/app/src/main/kotlin/com/crysound/crybot/MainActivity.kt` | 接入加密协议、限时保存和删除私钥、清除 Intent、修复子路径及弹窗生命周期。 |
+| `docs/self-hosting.md` | 写明完整 v1 协议、字段字节格式、生命周期和两端 API，链接固定向量及标量导入方法。 |
+| `docs/tasks/T-1200/T-1218-mobile-login-handoff/report.md` | 在原报告末尾追加本轮结果和限制。 |
+
+`cf-access.ts` 本轮没有改动；继续复用上一轮的末尾导出。中英文错误面板和登录按钮复用上一轮文案。未修改 brief、用户提供的 r2/review 文件及禁止范围；没有 git 提交。
+
+### 2. 验证命令与结果
+
+按要求一次一个测试文件，使用已有 Node 24：
+
+```sh
+PATH=/opt/node24/bin:$PATH pnpm vitest run server/app-handoff.test.ts --maxWorkers=1 --configLoader runner
+PATH=/opt/node24/bin:$PATH pnpm vitest run server/cf-access.test.ts --maxWorkers=1 --configLoader runner
+```
+
+结果：接力 **59/59 通过**，Access **16/16 通过**。调整非法 state 用例使其携带合法 pk、避免错误被其他校验掩盖后，单独重跑接力测试仍为 **59/59 通过**。没有运行 `pnpm typecheck`、完整 `pnpm test` 或其他测试文件。
+
+新增覆盖：pk 缺失、空值、重复、填充、换行、错误长度、压缩点、错误点前缀、零坐标和越界坐标均为 400；成功 HTML 的自动跳转与按钮指向同一已转义 URL，二者均无明文 JWT；对应私钥能解出原始 JWT，另一把私钥不能；单独改变 AAD（HKDF salt 保持原值）不能解密，改变回跳 state 也不能；篡改 epk、iv、ct 均失败；重复请求使用不同临时公钥、nonce、密文。原有 Access 开关、JWT 校验、有效期、头/Cookie 优先级、scheme、语言及响应头测试保留。
+
+`protocolVector` 固定 App 标量 1、服务端标量 2、nonce `000102030405060708090a0b`，记录完整输入、两端公钥、ECDH 共享密钥、AES 密钥及密文/tag；纯加密函数输出与固定答案严格比对。另用 WebCrypto 的 JWK/raw 密钥导入、ECDH、HKDF 和 AES-GCM 独立验证中间值及原始明文，不调用生产加密函数进行解密。向量 JWT 是公开、无有效签名的测试材料，所有身份和域名均为占位。
+
+```sh
+PATH=/opt/node24/bin:$PATH pnpm exec oxlint --deny-warnings server/app-handoff.ts server/app-handoff.test.ts
+git diff --check
+```
+
+结果：lint 和差异空白检查通过。人工检查两端空 loginHosts 的分支、登录错误文案、所有新 API 调用、私钥和 Intent 清理路径、子路径拼接及弹窗销毁。
+
+再次尝试启动仓库提供的隔离服务：
+
+```sh
+/opt/node24/bin/node --input-type=module <<'JS'
+import { launchVerificationServer } from './scripts/control-cry.ts';
+const fixture = await launchVerificationServer({}, AbortSignal.timeout(20000));
+try {
+  const response = await fetch(fixture.info.url + '/auth/app-handoff?state=' + 'x'.repeat(32));
+  if (response.status !== 404) throw new Error(`Expected 404, got ${response.status}`);
+  console.log('isolated server: Access disabled handoff returns 404');
+} finally {
+  await fixture.close();
+}
+JS
+```
+
+结果：启动前分配端口失败，`no free port block for offsets 0,1 in 19600..22600`；随后单独监听系统分配的回环临时端口，返回 `EPERM`。当前工作树仍无 `AGENTS.md` 引用的 `docs/verification/README.md`。因此**没有完成真实监听服务集成验证或真实登录链路验证**。已通过的行为测试使用独立临时会话目录、测试签名密钥、假 JWKS 和内存 HTTP fixture；没有访问网络、用户实时服务或真实数据。
+
+### 3. Swift / Kotlin 静态检查与没把握之处
+
+本机没有可用的 Swift/Kotlin 编译工具及平台 SDK，未编译或运行两端。逐行按 API 签名检查：
+
+- iOS 部署目标 16.0 满足 CryptoKit 可用版本；检查 `P256.KeyAgreement.PrivateKey()`、公钥 `x963Representation`、`PublicKey(x963Representation:)`、`sharedSecretFromKeyAgreement(with:)`、`hkdfDerivedSymmetricKey(using:salt:sharedInfo:outputByteCount:)`、`AES.GCM.Nonce(data:)`、`SealedBox(nonce:ciphertext:tag:)`、`AES.GCM.open(_:using:authenticating:)` 的参数和 throwing 调用。ciphertext 排除最后 16 字节，tag 取最后 16 字节；所有二进制字段执行无填充 base64url 往返校验。
+- iOS 两个回调入口仍共用一次性状态；先清除 state/私钥引用再 cancel 会话，completion 中的 state 检查避免取消事件覆盖成功。未知版本、缺失/重复字段、非法公钥和 GCM 认证失败均不进入 Cookie 写入。
+- 安卓 minSdk 26 可使用 `java.util.Base64`；检查 `KeyPairGenerator.initialize(ECGenParameterSpec)`、`AlgorithmParameters.getParameterSpec`、`ECPoint`/`ECPublicKeySpec`/`PKCS8EncodedKeySpec`、`KeyFactory`、`KeyAgreement.init/doPhase/generateSecret`、`Mac.init/doFinal`、`Cipher.init/updateAAD/doFinal`。`GCMParameterSpec(128, nonce)` 的 128 是 tag 位数，nonce 为 12 字节；JCE 输入直接使用密文拼接 tag。
+- 安卓点坐标以正号 BigInteger 读取，显式检查坐标范围和曲线方程；输出时去除符号补位并左补零至 32 字节。HKDF 使用 state UTF-8 作 extract 的 HMAC key，expand 的输入为 info UTF-8 后附单字节 0x01，输出 32 字节。
+- 安卓检查了同步持久化/删除、过期后加载分支、两个 Intent 入口的 finally 清理、`onCloseWindow(WebView)` 签名及唯一 popup 的销毁防重入。失败分支不记录私钥、密文或 JWT。
+
+仍没把握、需要平台工具确认：Swift 编译器对 CryptoKit 的 Data/DataProtocol 泛型推导和 Foundation 可写路径属性的实际编译结果；安卓各系统 provider 的 EC 参数解析、PKCS#8 导入、ECDH 输出及 GCM 组合是否与向量完全一致；iOS 系统认证会话取消/双回调的真实时序；安卓回收进程后 SharedPreferences 恢复及立即删除的表现、未挂载弹窗的 close 回调；两端真实 Cookie 注入和授权 App → 系统浏览器 → 自定义协议的路由。静态检查和 WebCrypto 向量不能代替这些验证。
+
+### 4. 需要协调者处理
+
+1. 在具备回环监听权限的环境补做隔离服务集成验证，核对 Access 拒绝仍为原有 JSON、允许后进入加密接力；确认或补齐缺失的验证 README。挂载顺序的外部验证沿用 review-1 的分工。
+2. 在 Xcode / Android SDK 环境编译并用同一 `protocolVector` 验证两端解密；真机覆盖完整授权链路、错误版本/参数/密文、取消重试、重复回调、子路径、空 loginHosts、安卓十分钟过期/冷启动和空弹窗关闭。
+3. 部署时同步更新服务端和手机 App；v1 要求 pk 且不接受明文 token 回跳，旧 App 无法与新接力协议互通。
+4. `cf-access.ts` 校验逻辑收拢及 `CF_Binding` Cookie 核对仍由协调者按 review-1 处理，本轮未扩展这些范围。

@@ -1,7 +1,37 @@
+import { createCipheriv, createECDH, ECDH, hkdfSync, randomBytes } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { JWTVerifyGetKey } from "jose";
 import { createCfAccessTokenVerifier } from "./cf-access.ts";
 import { parseCookies } from "./request-auth.ts";
+
+function parsePublicKey(value: string): Buffer | null {
+  if (!/^[A-Za-z0-9_-]{87}$/.test(value)) return null;
+  const key = Buffer.from(value, "base64url");
+  if (key.length !== 65 || key[0] !== 4 || key.toString("base64url") !== value) return null;
+  try {
+    return Buffer.from(ECDH.convertKey(key, "prime256v1"));
+  } catch {
+    return null;
+  }
+}
+
+export function encryptAppHandoff(token: string, state: string, publicKey: Uint8Array, entropy: { privateKey: Uint8Array; nonce: Uint8Array }) {
+  const ephemeral = createECDH("prime256v1");
+  ephemeral.setPrivateKey(entropy.privateKey);
+  if (entropy.nonce.length !== 12) throw new Error("Invalid handoff nonce length");
+  const stateBytes = Buffer.from(state, "utf8");
+  const key = hkdfSync("sha256", ephemeral.computeSecret(publicKey), stateBytes, "crybot-app-handoff-v1", 32);
+  const cipher = createCipheriv("aes-256-gcm", key, entropy.nonce, { authTagLength: 16 });
+  cipher.setAAD(stateBytes);
+  const ciphertext = Buffer.concat([cipher.update(token, "utf8"), cipher.final(), cipher.getAuthTag()]);
+  return {
+    v: "1",
+    state,
+    epk: ephemeral.getPublicKey().toString("base64url"),
+    iv: Buffer.from(entropy.nonce).toString("base64url"),
+    ct: ciphertext.toString("base64url"),
+  };
+}
 
 function escapeHtml(value: string) {
   return value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("'", "&#39;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
@@ -28,11 +58,17 @@ export function createAppHandoff(enabled: boolean, env: NodeJS.ProcessEnv = proc
     const states = url.searchParams.getAll("state");
     const state = states[0] ?? "";
     if (states.length !== 1 || state.match(/^[A-Za-z0-9_-]{32,128}$/)?.[0] !== state) { res.writeHead(400).end(); return; }
+    const publicKeys = url.searchParams.getAll("pk");
+    const publicKey = publicKeys.length === 1 ? parsePublicKey(publicKeys[0]) : null;
+    if (!publicKey) { res.writeHead(400).end(); return; }
     const token = req.headers["cf-access-jwt-assertion"] ?? parseCookies(req.headers.cookie).get("CF_Authorization");
     if (typeof token !== "string" || !token) { res.writeHead(401).end(); return; }
     const payload = await verify(token);
     if (!payload?.exp || payload.exp - Date.now() / 1000 < 60) { res.writeHead(401).end(); return; }
-    const callback = escapeHtml(`${scheme}://auth?${new URLSearchParams({ state, token })}`);
+    const ephemeral = createECDH("prime256v1");
+    ephemeral.generateKeys();
+    const encrypted = encryptAppHandoff(token, state, publicKey, { privateKey: ephemeral.getPrivateKey(), nonce: randomBytes(12) });
+    const callback = escapeHtml(`${scheme}://auth?${new URLSearchParams(encrypted)}`);
     const chinese = prefersChinese(req.headers["accept-language"]);
     const label = escapeHtml(chinese ? "返回 Cry Bot" : "Return to Cry Bot");
     res.writeHead(200, {

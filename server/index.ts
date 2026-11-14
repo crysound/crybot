@@ -12567,7 +12567,6 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     const publicProbe = method === "GET" && (path === "/api/health" || path === "/api/brand" || path === "/.well-known/crybot/environment" || /^\/\.well-known\/crybot\/domain-check\/[a-f0-9]{64}$/.test(path));
     if (cfAccess && !publicProbe) {
       const refusal = await cfAccess(req, res, url, sessions, SESSION_COOKIE);
-      if (refusal && method === "GET" && path === "/auth/app-handoff") return appHandoff(req, res, url);
       if (refusal) return json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
     }
     if (method === "GET" && path === "/auth/app-handoff") return appHandoff(req, res, url);

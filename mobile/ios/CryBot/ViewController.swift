@@ -1,5 +1,6 @@
 import Foundation
 import AuthenticationServices
+import CryptoKit
 import Security
 import UIKit
 import WebKit
@@ -13,6 +14,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
     private var serverWasInjected = false
     private var authenticationSession: ASWebAuthenticationSession?
     private var pendingLoginState: String?
+    private var pendingLoginKey: P256.KeyAgreement.PrivateKey?
     private var completingLogin = false
 
     override func viewDidLoad() {
@@ -156,12 +158,15 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
             showError(login: true)
             return
         }
-        let state = Data(bytes).base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
-        url.path = "/auth/app-handoff"
-        url.queryItems = [URLQueryItem(name: "state", value: state)]
+        let state = base64URL(Data(bytes))
+        let privateKey = P256.KeyAgreement.PrivateKey()
+        while url.percentEncodedPath.hasSuffix("/") { url.percentEncodedPath.removeLast() }
+        url.percentEncodedPath += "/auth/app-handoff"
+        url.queryItems = [URLQueryItem(name: "state", value: state), URLQueryItem(name: "pk", value: base64URL(privateKey.publicKey.x963Representation))]
         url.fragment = nil
         guard let handoffURL = url.url else { showError(login: true); return }
         pendingLoginState = state
+        pendingLoginKey = privateKey
         let session = ASWebAuthenticationSession(url: handoffURL, callbackURLScheme: "crybot") { [weak self] callback, _ in
             DispatchQueue.main.async {
                 guard let self, self.pendingLoginState == state else { return }
@@ -181,6 +186,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
 
     private func failLogin() {
         pendingLoginState = nil
+        pendingLoginKey = nil
         completingLogin = false
         let session = authenticationSession
         authenticationSession = nil
@@ -190,17 +196,19 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
 
     func handleAuthCallback(_ url: URL) -> Bool {
         guard url.scheme == "crybot", url.host == "auth",
-              let state = pendingLoginState,
-              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+              let state = pendingLoginState else { return false }
+        guard let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
               items.filter({ $0.name == "state" }).count == 1,
-              items.first(where: { $0.name == "state" })?.value == state else { return false }
+              items.first(where: { $0.name == "state" })?.value == state else { failLogin(); return true }
+        let privateKey = pendingLoginKey
         pendingLoginState = nil
+        pendingLoginKey = nil
         completingLogin = true
         let session = authenticationSession
         authenticationSession = nil
         session?.cancel()
-        guard items.filter({ $0.name == "token" }).count == 1,
-              let token = items.first(where: { $0.name == "token" })?.value,
+        guard let privateKey,
+              let token = decryptHandoff(items, state: state, privateKey: privateKey),
               let expiry = tokenExpiry(token), let host = URL(string: serverURL)?.host,
               let cookie = HTTPCookie(properties: [
                 .name: "CF_Authorization", .value: token, .domain: host, .path: "/",
@@ -215,6 +223,41 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
             }
         }
         return true
+    }
+
+    private func base64URL(_ data: Data) -> String {
+        return data.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+    }
+
+    private func decodeBase64URL(_ value: String) -> Data? {
+        guard !value.isEmpty, value.range(of: "^[A-Za-z0-9_-]+$", options: .regularExpression) == value.startIndex..<value.endIndex else { return nil }
+        var padded = value.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        padded += String(repeating: "=", count: (4 - padded.count % 4) % 4)
+        guard let data = Data(base64Encoded: padded), base64URL(data) == value else { return nil }
+        return data
+    }
+
+    private func decryptHandoff(_ items: [URLQueryItem], state: String, privateKey: P256.KeyAgreement.PrivateKey) -> String? {
+        func parameter(_ name: String) -> String? {
+            let matches = items.filter { $0.name == name }
+            return matches.count == 1 ? matches.first?.value : nil
+        }
+        guard parameter("v") == "1",
+              let epk = parameter("epk"), let publicBytes = decodeBase64URL(epk), publicBytes.count == 65, publicBytes.first == 4,
+              let iv = parameter("iv"), let nonceBytes = decodeBase64URL(iv), nonceBytes.count == 12,
+              let ct = parameter("ct"), let encrypted = decodeBase64URL(ct), encrypted.count > 16 else { return nil }
+        do {
+            let publicKey = try P256.KeyAgreement.PublicKey(x963Representation: publicBytes)
+            let secret = try privateKey.sharedSecretFromKeyAgreement(with: publicKey)
+            let stateBytes = Data(state.utf8)
+            let key = secret.hkdfDerivedSymmetricKey(using: SHA256.self, salt: stateBytes, sharedInfo: Data("crybot-app-handoff-v1".utf8), outputByteCount: 32)
+            let nonce = try AES.GCM.Nonce(data: nonceBytes)
+            let box = try AES.GCM.SealedBox(nonce: nonce, ciphertext: encrypted.dropLast(16), tag: encrypted.suffix(16))
+            let plaintext = try AES.GCM.open(box, using: key, authenticating: stateBytes)
+            return String(data: plaintext, encoding: .utf8)
+        } catch {
+            return nil
+        }
     }
 
     private func tokenExpiry(_ token: String) -> Date? {
