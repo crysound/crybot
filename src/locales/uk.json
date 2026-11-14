@@ -2146,6 +2146,7 @@
   "computer.chooseCloudOpen": "Оберіть «Хмарний робочий стіл», щоб відкрити",
   "computer.chooseCloudManage": "Оберіть «Хмарний робочий стіл», щоб керувати",
   "computer.createVm": "Створити приватний робочий стіл {name}",
+  "computer.wakeVm": "Wake the desktop",
   "computer.replaceVm": "Замінити приватний робочий стіл {name}",
   "computer.openVmSetup": "Відкрити налаштування приватного робочого столу",
   "computer.openVpsSettings": "Відкрити налаштування VPS",
@@ -4024,5 +4025,6 @@
   "computer.recovery.replaceTitle": "Видалити цей хмарний комп'ютер і дати боту новий. Файли, які є лише на ньому, буде втрачено.",
   "settings.profile.nameFromLogin": "З вашого облікового запису",
   "botOverview.preference.cloud.locked": "налаштований сервер",
-  "keys.section.computers.purpose.locked": "Ваш власний сервер і вхід на сайти."
+  "keys.section.computers.purpose.locked": "Ваш власний сервер і вхід на сайти.",
+  "vm.setup.step4Wake": "Wake the private desktop"
 }

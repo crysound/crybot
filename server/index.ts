@@ -5,7 +5,7 @@ import { createSessionNames } from "./host/session-names.ts";
 import { createDataDirLeaseExit } from "./host/data-dir-lease-exit.ts";
 import { providerLockEnabled, providerUpdateDrivers, lockedProviderConfigs, providerLockConfigPatch, migrateLockedProviderReferences, migrateLockedRoutineReferences } from "./provider-lock.ts";
 import { createAppHandoffGate } from "./app-handoff.ts";
-import { createAppLinks } from "./app-links.ts";
+import { appGate, auditLogin, auditSessionRevoke, createAppLinks } from "./app-links.ts";
 import { desktopUpdateFiles } from "./routes/desktop-update-files.ts";
 import { startFailureText } from "./start-failure-text.ts";
 import { reserveGmailDrafts } from "./gmail-draft-policy.ts";
@@ -512,7 +512,7 @@ import {
 } from "./presets.ts";
 import { OrgLibrary } from "./org-library.ts";
 import { shouldMountLocalComputer } from "./local-routing.ts";
-import { autoLocalVmAttachable, localVmDesktopPending, type ContainerComputerStatus } from "./container-computer.ts";
+import { autoLocalVmAttachable, localVmDesktopPending, localVmWakeAction, type ContainerComputerStatus } from "./container-computer.ts";
 import { startStoppedPodmanMachine } from "./podman-machine.ts";
 import { keepTransient, startAutoVmClaim, withinBudget, type AutoVmClaimSlot, type AutoVmClaimTable } from "./auto-vm-claims.ts";
 import { CONTROL_ACT_WITHIN_MS, CONTROL_WAIT_MS, controlRefusal } from "./computer-control-client.ts";
@@ -5993,7 +5993,8 @@ async function computerPreviewSurface(bot: BotRecord, threadId?: string) {
     if (remote.ready || vpsDesktopOutdated(remote)) return "cloud";
   }
   const target = localVmTargetForStatus(bot.id, threadId);
-  if (!CLOUD_HOME && instance?.adapter.capabilities.computerMcp && localVmSeen.has(target.key)) {
+  const sharedVmMayExist = localVmMode(cfg) === "shared" && target.key === SHARED_LOCAL_VM_TARGET.key;
+  if (!CLOUD_HOME && instance?.adapter.capabilities.computerMcp && (localVmSeen.has(target.key) || sharedVmMayExist)) {
     const vm = await containerComputerStatus(undefined, undefined, target).catch(() => null);
     if (vm && (autoLocalVmAttachable(vm) || localVmUpdates.observe(target, vm))) return "vm";
   }
@@ -6044,8 +6045,10 @@ async function selectableComputers(bot: BotRecord) {
         const target = localVmTargetForStatus(bot.id);
         const status = await containerComputerStatus(undefined, undefined, target);
         ready = status.ready;
-        canCreate = !ready && autoLocalVmAttachable(status);
-        if (ready || canCreate) noteLocalVmSeen(target, status);
+        const wakeAction = localVmWakeAction(status);
+        canStart = wakeAction === "start";
+        canCreate = wakeAction === "run";
+        if (ready || wakeAction !== null) noteLocalVmSeen(target, status);
         const updating = localVmUpdates.observe(target, status);
         ownDesktopAwaitsUpdate ||= updating;
         reason = (updating ? LOCAL_VM_UPDATING_PROBLEM : status.problem) ?? reason;
@@ -12519,7 +12522,6 @@ ROUTES.push(createLiveRoutes({
     return liveSettingsFor(cfg);
   },
 }));
-
 const appLinks = createAppLinks();
 const appHandoffGate = createAppHandoffGate();
 const toolResults = new ToolResults();
@@ -12536,8 +12538,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
   let m: RegExpMatchArray | null = null;
   let releaseWorkspaceRequest: (() => void) | undefined;
   try {
-    if (await desktopUpdateFiles(req, res, process.env.CRYBOT_DESKTOP_UPDATES_DIR)) return;
-    if (appLinks(req, res, url)) return;
+    if (await desktopUpdateFiles(req, res, process.env.CRYBOT_DESKTOP_UPDATES_DIR) || appGate(req, res, path, false, true) || appLinks(req, res, url)) return;
     if (await appHandoffGate(req, res, url, method, path, sessions, SESSION_COOKIE, json)) return;
     if (await feishuExchangeRoute({
       config: FEISHU_CONFIG,
@@ -12613,7 +12614,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         return preview ? json(res, 200, { ...preview, ...(CLOUD_TEAM ? { team: CLOUD_TEAM.name } : {}) }) : json(res, 401, userError("serverError.pair.linkExpired"));
       }
       if (browser && !wantsCookie) return json(res, 400, { error: "a browser sign-in sets this browser's cookie; send cookie: true" });
-      const result = sessions.exchange({ code, label, attemptId, browser, source: requestSource(req), fallbackLabel: labelFromUserAgent(req.headers["user-agent"]) });
+      const result = auditLogin(req, sessions.exchange({ code, label, attemptId, browser, source: requestSource(req), fallbackLabel: labelFromUserAgent(req.headers["user-agent"]) }));
       if (!result.ok) {
         console.warn(`pairing refused from ${requestSource(req)}: ${result.error}`);
         return json(res, result.status, refusalBody(result));
@@ -12639,7 +12640,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const label = typeof body?.deviceName === "string" ? body.deviceName : "";
       const attemptId = typeof body?.pairRequestId === "string" ? body.pairRequestId : undefined;
       const relayRefusal = phoneRelay?.pairingRefusal(req, credential); if (relayRefusal) return json(res, 400, { error: relayRefusal });
-      const paired = sessions.exchange({ code: credential, label, attemptId, source: requestSource(req), fallbackLabel: labelFromUserAgent(req.headers["user-agent"]) });
+      const paired = auditLogin(req, sessions.exchange({ code: credential, label, attemptId, source: requestSource(req), fallbackLabel: labelFromUserAgent(req.headers["user-agent"]) }));
       if (!paired.ok) {
         console.warn(`pairing refused from ${requestSource(req)}: ${paired.error}`);
         return json(res, paired.status, refusalBody(paired));
@@ -12744,7 +12745,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       return json(res, 200, sessions.issueStreamTicket(auth.session.id));
     }
     if (method === "POST" && path === "/api/auth/logout") {
-      if (auth.kind === "session") sessions.revoke(auth.session.id);
+      if (auth.kind === "session") auditSessionRevoke(req, sessions.revoke(auth.session.id), auth.session.label);
       res.setHeader("set-cookie", clearSessionCookie(SESSION_COOKIE));
       return json(res, 200, { ok: true });
     }
@@ -12836,7 +12837,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     }
     m = path.match(/^\/api\/auth\/sessions\/([\w-]+)$/);
     if (m && method === "DELETE") {
-      const revoked = sessions.revoke(m[1]);
+      const revoked = auditSessionRevoke(req, sessions.revoke(m[1]), auth.kind === "session" ? auth.session.label : undefined);
       if (auth.kind === "session" && auth.session.id === m[1]) res.setHeader("set-cookie", clearSessionCookie(SESSION_COOKIE));
       return json(res, revoked ? 200 : 404, revoked ? { ok: true } : { error: "no such session" });
     }

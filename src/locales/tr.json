@@ -3603,6 +3603,7 @@
   "computer.chooseCloudOpen": "Açmak için Bulut masaüstü seçeneğini belirleyin",
   "computer.chooseCloudManage": "Yönetmek için Bulut masaüstü seçeneğini belirleyin",
   "computer.createVm": "{name} adlı botun özel masaüstünü oluştur",
+  "computer.wakeVm": "Wake the desktop",
   "computer.replaceVm": "{name} adlı botun özel masaüstünü değiştir",
   "computer.openVmSetup": "Özel masaüstü kurulumunu aç",
   "computer.openVpsSettings": "VPS ayarlarını aç",
@@ -5940,5 +5941,6 @@
   "computer.recovery.replaceTitle": "Bu bulut bilgisayarı siler ve bota yenisini verir. Yalnızca üzerinde olan dosyalar kaybolur.",
   "settings.profile.nameFromLogin": "Oturum açtığınız hesaptan",
   "botOverview.preference.cloud.locked": "yapılandırılmış bir sunucu",
-  "keys.section.computers.purpose.locked": "Kendi sunucunuz ve web sitesi oturumlarınız."
+  "keys.section.computers.purpose.locked": "Kendi sunucunuz ve web sitesi oturumlarınız.",
+  "vm.setup.step4Wake": "Wake the private desktop"
 }
