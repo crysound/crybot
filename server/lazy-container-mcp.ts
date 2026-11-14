@@ -119,7 +119,7 @@ export function serveLazyContainerRequests(requests: ReturnType<typeof lazyConta
     pending.add(work);
     void work.finally(() => pending.delete(work));
   });
-  input.on("close", () => { void Promise.allSettled([...pending]).finally(() => requests.close()); });
+  input.on("close", () => { void Promise.allSettled(pending).finally(() => requests.close()); });
 }
 
 function abortable<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {

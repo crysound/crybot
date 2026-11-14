@@ -122,6 +122,8 @@ export type RequestOutcome = "allowed-once" | "rejected" | "answered" | "unavail
 
 // Sessions start implicitly on the first turn; resumeCursor carries the provider-native continuation (e.g. a Claude session id).
 export interface SendTurnInput {
+  /** Server-only capability; resolves credentials immediately before a dedicated turn process starts. Never serialize the result. */
+  feishuCli?: import("./feishu-cli/turn.ts").FeishuCliAccess;
   threadId: ThreadId;
   /** Drivers namespace process-level resources (broker socket, CLI session) by botId too: threadIds may coincide across bots. */
   botId?: string;
@@ -312,8 +314,9 @@ export interface ProviderAdapter {
    * - "steered": accepted into the live turn.
    * - "refused": provably not delivered; the caller may queue it.
    * - "indeterminate": maybe delivered; the caller must NOT re-queue, or it could run twice.
-   * A driver that cannot read an attached image refuses the whole steer. */
-  steer?(threadId: ThreadId, text: string, images?: readonly TurnImageInput[]): Promise<SteerOutcome>;
+   * A driver that cannot read an attached image refuses the whole steer.
+   * `person` is the authenticated human sender, never an identity inferred from message text. */
+  steer?(threadId: ThreadId, text: string, images?: readonly TurnImageInput[], person?: string): Promise<SteerOutcome>;
   hasSession(threadId: ThreadId): boolean;
   /** The local process running this thread's engine, while there is one: a long tool call's own processes are under it. */
   enginePid?(threadId: ThreadId): number | undefined;
