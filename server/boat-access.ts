@@ -8,7 +8,7 @@ export const boatConfigured = (cfg: AppConfig) => Boolean(boatAccount(cfg));
 export const boatOffered = (cfg: AppConfig) => !providerLockEnabled() && boatConfigured(cfg);
 
 export function assertBoatAllowed(): void {
-  if (providerLockEnabled()) throw Object.assign(new Error("Boat is unavailable while CRYBOT_PROVIDER_LOCK=1"), { status: 403 });
+  if (providerLockEnabled()) throw Object.assign(new Error("Cloud desktop is unavailable while CRYBOT_PROVIDER_LOCK=1"), { status: 403 });
 }
 
 /** Configured-or-not for Settings, never the token. */
