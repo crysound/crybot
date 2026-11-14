@@ -1584,6 +1584,7 @@
   "settings.profile.subtitle": "會顯示在側邊欄，並隨時自動儲存。",
   "settings.profile.sharedSubtitle": "你的個人資訊與共用背景資訊，並隨時自動儲存。",
   "settings.profile.name": "你的名稱",
+  "settings.profile.nameFromLogin": "來自登入帳號",
   "settings.profile.avatar.choose": "選擇相片",
   "settings.profile.avatar.uploading": "正在上傳…",
   "settings.profile.avatar.remove": "移除相片",
