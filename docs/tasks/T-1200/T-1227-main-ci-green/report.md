@@ -201,3 +201,46 @@ PATH=/opt/node24/bin:$PATH systemd-run --scope -q -p MemoryMax=4G -- pnpm exec v
 ```
 
 OpenCode 预期 2/2，并确认保存/删除后的 ACP 探针以及 turn 的 token、URL、401/403 都实际执行。lending 当前仍可能原样失败；请保留新增 `Fixture ACP stderr`、`Cloud fixture server log` 和 `Cloud fixture ACP trace` 输出，用它确认是否为盒内 `ERR_MODULE_NOT_FOUND`（尤其 jmespath 的外部依赖链接）。若确认如此，应先修复协调者运行环境中现有依赖的盒内可见性，再决定是否需要测试 fixture 打包调整；本轮未擅自搬动依赖、扩展产品挂载或新增依赖。其他停点也应依据新 trace 继续定位，不能把本轮诊断改动算作 lending 修复完成。
+
+## 第 4 轮
+
+### 环境变量归类
+
+逐个检查了服务端读取点和盒内代理的启动方式。以下 11 个变量只由服务端读取，已加入 `SERVER_ONLY_CRYBOT`：
+
+- `CRYBOT_APP_HOST`：`server/feishu-login.ts` 将它作为 App 回调主机名，路由和重定向判断在服务端完成。
+- `CRYBOT_HOSTED_WORKSPACE`：服务端用它判断托管工作区并关闭自托管飞书登录；盒内引擎不读取它。
+- `CRYBOT_FEISHU_APP_ID`：服务端 OAuth 配置读取飞书应用 ID。
+- `CRYBOT_FEISHU_APP_SECRET`：服务端 OAuth 换 token 时读取应用密钥；密钥不能进入 bot 盒子。
+- `CRYBOT_FEISHU_APP_SECRET_FILE`：服务端读取密钥文件并使用其内容，文件路径和内容都不能进入盒子。
+- `CRYBOT_FEISHU_TENANTS`：服务端解析允许的 tenant 列表并校验登录身份。
+- `CRYBOT_FEISHU_ALLOW`：服务端解析 union ID 白名单并决定是否接受登录。
+- `CRYBOT_FEISHU_ADMINS`：服务端解析管理员 union ID 列表并决定会话作用域。
+- `CRYBOT_FEISHU_SESSION_MAX_DAYS`：服务端计算设备会话期限，并与通用会话上限取较小值。
+- `CRYBOT_FEISHU_TOKEN_ENDPOINT`：服务端发起 OAuth token 请求时选择端点。
+- `CRYBOT_FEISHU_USER_INFO_ENDPOINT`：服务端取得登录用户资料时选择端点。
+
+以下 2 个变量由容器 MCP 代理在盒内读取，已加入 `BOX_ENV_CRYBOT_NAMES`：
+
+- `CRYBOT_CONTAINER_LAZY`：`server/container-mcp.ts` 在盒内启动时用它决定是否启用延迟容器控制连接。
+- `CRYBOT_CONTAINER_TOOL_SCOPE`：`server/lazy-container-mcp.ts` 在盒内解析工具作用域，限制代理暴露的工具；服务端也会检查该值来构造网关，但实际代理仍需在盒内读取它。
+
+因此飞书应用密钥、密钥文件路径、白名单和托管工作区设置均不会因通用 `CRYBOT_` 前缀进入 bot 环境；容器代理的两个运行时开关仍能随对应 MCP 启动。
+
+### OpenCode e2e 根因和改法
+
+r3 的 fixture 用 `<dump>.<pid>.provider-env.json` 作为 ACP 启动记录。保存或删除 provider key 会触发 provider 配置重载并启动新的 ACP；在盒子或受限 runner 中，旧进程结束后新进程可能复用同一个 PID。新进程于是覆盖同名记录，`before` 列表看不到新文件，`nextProviderEnvironment` 在 15 秒后错误超时。日志只显示“没有新文件”，根因是测试观测文件名依赖 PID，不是被测代码没有重启 OpenCode，也不是 key 没有交给 OpenCode。
+
+新增 `server/testing/opencode-provider-environment.ts`，每次 `acp` 启动生成 UUID `startId`，把实际 ACP 环境写入 `<dump>.<startId>.provider-env.json`；fixture 的共享 dump 和 prompt 记录同时带上该 ID。e2e 按 UUID 等待新启动记录，并在 turn 中同时核对 PID、`startId`、共享 dump 和 provider 环境，保留盒内 token/URL、无盒时原始 key/URL、未授权 401/403 以及上游收到原始 key 等断言。没有放宽“key 交给 OpenCode”的证明。
+
+### 本轮验证
+
+单文件、串行执行：
+
+- `server/bot-box/env.test.ts`：10/10 通过。
+- `server/testing/opencode-provider-environment.test.ts`：2/2 通过，覆盖忽略非 ACP 命令、每次启动记录唯一 ID、同 PID 下环境记录互不覆盖。
+- `server/testing/fakes-self-contained.test.ts`：18/18 通过，确认共享 fake ACP 文件仍能自包含运行。
+- `pnpm exec oxlint` 针对本轮改动文件：通过。
+- `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc --noEmit -p tsconfig.server.json`：通过。
+- `server/opencode-provider-keys.e2e.test.ts`：本机 beforeAll 因沙箱禁止监听 `127.0.0.1`（`listen EPERM`）未进入业务断言，以 Actions 为准。
+- `server/drivers/acp/opencode-go.test.ts`：本机沙箱中的 fake ACP 父进程监视器提前看到父进程不可用，子进程以 0 退出，导致 50 项连锁失败；这不是本轮改动涉及的断言，未据此修改产品代码或放宽测试。

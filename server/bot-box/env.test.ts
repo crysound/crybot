@@ -6,6 +6,9 @@ import { BOX_ENV_NAMES, BOX_ENV_NEVER, BOX_ENV_CRYBOT_NAMES, BOX_ENV_CRYBOT_PREF
 /** Every other `CRYBOT_` name the server's code knows: decided to stay on the server, never in a bot's environment. A name
  * ending in `_` is a family (`CRYBOT_CLOUD_*`). */
 const SERVER_ONLY_CRYBOT: ReadonlySet<string> = new Set([
+  "CRYBOT_APP_HOST", "CRYBOT_HOSTED_WORKSPACE",
+  "CRYBOT_FEISHU_ADMINS", "CRYBOT_FEISHU_ALLOW", "CRYBOT_FEISHU_APP_ID", "CRYBOT_FEISHU_APP_SECRET", "CRYBOT_FEISHU_APP_SECRET_FILE",
+  "CRYBOT_FEISHU_SESSION_MAX_DAYS", "CRYBOT_FEISHU_TENANTS", "CRYBOT_FEISHU_TOKEN_ENDPOINT", "CRYBOT_FEISHU_USER_INFO_ENDPOINT",
   "CRYBOT_ANDROID_CERT_SHA256", "CRYBOT_ANDROID_PACKAGE", "CRYBOT_APPLE_APP_IDS", "CRYBOT_APP_LINK_ORIGIN",
   "CRYBOT_ACP_LIMIT_QUIET_MS", "CRYBOT_ACP_NO_SIGNS_STOP_MS", "CRYBOT_ACP_PLAN_LINES", "CRYBOT_ACP_QUIET_NOTICE_MS",
   "CRYBOT_ACP_QUIET_TICK_MS", "CRYBOT_ACP_SESSION_IDLE_", "CRYBOT_ACP_SHARED_RECYCLE_MS", "CRYBOT_ADMIN_", "CRYBOT_ADMIN_MEMBERSHIP",
@@ -122,6 +125,11 @@ describe("the box's environment allow-list", () => {
 
   it("keeps what Antigravity's runtime is started with: its harness, its file storage switch and the browser hook", () => {
     for (const name of ["ANTIGRAVITY_HARNESS_PATH", "AGY_ACP_FORCE_FILE_STORAGE", "BROWSER", "GEMINI_HOME"]) expect(boxEnvironmentAllows(name), name).toBe(true);
+  });
+
+  it("preserves the lazy container proxy's activation and tool scope", () => {
+    const env = { CRYBOT_CONTAINER_LAZY: "1", CRYBOT_CONTAINER_TOOL_SCOPE: JSON.stringify({ browser: false }) };
+    expect(boxEnvironment(env)).toEqual(env);
   });
 
   it("keeps the keys one spawn vouches for, under any name, past the allow-list and the deny, never past the never-list or CRYBOT_", () => {

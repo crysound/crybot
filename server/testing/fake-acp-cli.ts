@@ -324,7 +324,7 @@ const dumpEnv = Object.fromEntries(
     "KIRO_API_KEY",
   ].flatMap((key) => (process.env[key] === undefined ? [] : [[key, process.env[key]]] as const)),
 );
-const dumpState: Record<string, unknown> = { argv, env: dumpEnv, pid: process.pid };
+const dumpState: Record<string, unknown> = { argv, env: dumpEnv, pid: process.pid, startId: process.env.FAKE_ACP_START_ID };
 const writeDumpAtomic = (path: string, contents: string): void => {
   const tmp = `${path}.${process.pid}.tmp`;
   const delays = [5, 10, 20, 40, 80];
@@ -1042,7 +1042,7 @@ function handle(msg: any) {
     case "session/prompt": {
       if (process.env.FAKE_ACP_DUMP && (modes.length || models.length)) {
         appendFileSync(`${process.env.FAKE_ACP_DUMP}.prompts.jsonl`, JSON.stringify({
-          pid: process.pid, sessionId: msg.params?.sessionId, mode: currentMode, model: currentModel,
+          pid: process.pid, startId: process.env.FAKE_ACP_START_ID, sessionId: msg.params?.sessionId, mode: currentMode, model: currentModel,
         }) + "\n");
       }
       emitConfigUpdates("session/prompt", msg.params.sessionId);

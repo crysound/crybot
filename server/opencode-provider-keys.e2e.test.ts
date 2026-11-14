@@ -72,7 +72,7 @@ async function adminPairing(): Promise<string> {
   return (await api("POST", "/api/auth/pair", { code: granted.code })).body.token;
 }
 
-const started = () => JSON.parse(readFileSync(dump, "utf8")) as { pid: number; env: Record<string, string> };
+const started = () => JSON.parse(readFileSync(dump, "utf8")) as { pid: number; startId: string; env: Record<string, string> };
 /** Existence alone can catch a half-written file on a busy runner (SyntaxError: Unexpected end). */
 const written = (file: string, shape: "document" | "lines" = "document") => {
   try {
@@ -82,8 +82,8 @@ const written = (file: string, shape: "document" | "lines" = "document") => {
   } catch { return false; }
 };
 
-const providerStarts = () => readdirSync(home).filter((name) => /^opencode\.json\.\d+\.provider-env\.json$/.test(name));
-const providerEnvironment = (file: string) => JSON.parse(readFileSync(file, "utf8")) as Record<string, string>;
+const providerStarts = () => readdirSync(home).filter((name) => /^opencode\.json\.[a-f0-9-]{36}\.provider-env\.json$/.test(name));
+const providerEnvironment = (file: string) => JSON.parse(readFileSync(file, "utf8")) as { startId: string; pid: number; env: Record<string, string> };
 
 async function nextProviderEnvironment(before: string[]) {
   let file = "";
@@ -91,7 +91,7 @@ async function nextProviderEnvironment(before: string[]) {
     file = providerStarts().find((name) => !before.includes(name) && written(join(home, name))) ?? "";
     return Boolean(file);
   }, { timeout: 15_000 }).toBe(true);
-  return providerEnvironment(join(home, file));
+  return providerEnvironment(join(home, file)).env;
 }
 
 function expectAnthropicEnvironment(env: Record<string, string>) {
@@ -112,15 +112,9 @@ beforeAll(async () => {
   dump = join(home, "opencode.json");
   const cli = fixtureEnginePath(dataDir, "fixture-opencode-provider-keys.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
-import { writeFileSync } from "node:fs";
-if (process.argv[2] === "acp" && process.env.FAKE_ACP_DUMP) {
-  writeFileSync(process.env.FAKE_ACP_DUMP + "." + process.pid + ".provider-env.json", JSON.stringify({
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-    ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL,
-    VENICE_API_KEY: process.env.VENICE_API_KEY,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  }));
-}
+import { recordOpenCodeProviderEnvironment } from ${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "opencode-provider-environment.ts")).href)};
+const startId = recordOpenCodeProviderEnvironment(process.argv, process.env, process.pid);
+if (startId) process.env.FAKE_ACP_START_ID = startId;
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-acp-cli.ts")).href)});
 `, { mode: 0o755 });
   upstream = createServer((req, res) => {
@@ -214,11 +208,17 @@ it("saves keys for any OpenCode provider on a Cloud, shows only their names, and
   rmSync(prompts, { force: true });
   expect((await api("POST", `/api/bots/${bot.id}/messages`, { text: "Hello.", threadId: thread })).status).toBe(202);
   await expect.poll(() => written(prompts, "lines"), { timeout: 15_000 }).toBe(true);
-  const turnPid = JSON.parse(readFileSync(prompts, "utf8").trim().split("\n").at(-1)!).pid as number;
+  const { pid: turnPid, startId: turnStartId } = JSON.parse(readFileSync(prompts, "utf8").trim().split("\n").at(-1)!) as { pid: number; startId: string };
+  expect(turnStartId).toMatch(/^[a-f0-9-]{36}$/);
   expect(started().pid).toBe(turnPid);
+  expect(started().startId).toBe(turnStartId);
   expect(started().env.VENICE_API_KEY).toBe(VENICE);
-  const providerDump = readFileSync(`${dump}.${turnPid}.provider-env.json`, "utf8");
-  const turnEnv = JSON.parse(providerDump) as Record<string, string>;
+  const providerFile = `${dump}.${turnStartId}.provider-env.json`;
+  const providerDump = readFileSync(providerFile, "utf8");
+  const turnRecord = providerEnvironment(providerFile);
+  expect(turnRecord.startId).toBe(turnStartId);
+  expect(turnRecord.pid).toBe(turnPid);
+  const turnEnv = turnRecord.env;
   expect(turnEnv.ANTHROPIC_API_KEY).toBe(started().env.ANTHROPIC_API_KEY);
   expectAnthropicEnvironment(turnEnv);
   if (boxed) {
