@@ -360,7 +360,4 @@ export function cloudPageSenderAllowed(event, { contents, homeOrigin, activeOrig
   try { return new URL(event.senderFrame.url).origin === homeOrigin; } catch { return false; }
 }
 
-export function teamPlan(state) {
-  return state?.status === "connected" && !state.machine && state.entitlement?.plan === "pro" &&
-    ["team", "business"].includes(state.entitlement.tier);
-}
+export { teamPlan } from "./cloud-team-plan.mjs";

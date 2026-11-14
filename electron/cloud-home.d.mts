@@ -170,4 +170,4 @@ export declare function withCloudHome<T extends { environments: Array<{ id: stri
 export declare function cloudHomeConnectUrl(target: CloudHomeTarget, now: number, open?: "phone" | null, route?: string | null): string;
 export declare function cloudPageSenderAllowed(event: unknown, context: { contents: unknown; homeOrigin: string | null; activeOrigin: string | null | undefined }): boolean;
 
-export declare function teamPlan(state: unknown): boolean;
+export { teamPlan } from "./cloud-team-plan.mjs";
