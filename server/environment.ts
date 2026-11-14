@@ -16,6 +16,7 @@ import { dirname, join } from "node:path";
 
 import { cliPrefix } from "./cli-invocation.ts";
 import { SERVER_ROOT } from "./proxy-paths.ts";
+import type { FeishuLoginConfig } from "./feishu-login.ts";
 
 export interface EnvironmentDescriptor {
   environmentId: string;
@@ -57,9 +58,12 @@ export interface EnvironmentDescriptor {
     install?: ServerInstall;
     /** Whether /pair offers "sign in with your email" (an allow-list is set). */
     emailSignIn?: boolean;
+    /** Whether native Feishu sign-in is available. */
+    feishuSignIn?: true;
     /** GET /api/threads/:id/job answers, long-polled (the headless CLI needs it). */
     jobs: true;
   };
+  feishu?: { appId: string; authorizeEndpoint: string; appReturnUrl: string; webStartPath: string };
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -169,8 +173,8 @@ export function serverInstall(env: NodeJS.ProcessEnv = process.env, script = pro
  * /api/auth/session answer, never in the description anyone may read before pairing. */
 export const OWNER_LENDING = Object.freeze({ sharedComputers: true, lendingDetails: true, commandTimeouts: true, longCommands: true, fileEdits: true, lentMcp: true } as const);
 
-export function environmentDescriptor(input: { environmentId: string; desktopManaged: boolean; emailSignIn?: boolean; sharedComputers?: boolean; cloudHome?: boolean; cloudTeam?: boolean; ownHome?: boolean; label?: string }): EnvironmentDescriptor {
-  return {
+export function environmentDescriptor(input: { environmentId: string; desktopManaged: boolean; emailSignIn?: boolean; sharedComputers?: boolean; cloudHome?: boolean; cloudTeam?: boolean; ownHome?: boolean; label?: string; feishu?: FeishuLoginConfig | null; publicOrigin?: string }): EnvironmentDescriptor {
+  const descriptor: EnvironmentDescriptor = {
     environmentId: input.environmentId,
     label: input.label?.trim() || process.env.CRYBOT_ENVIRONMENT_LABEL?.trim() || process.env.CRYBOT_SERVER_NAME?.trim() || hostname(),
     platform: process.platform,
@@ -189,7 +193,14 @@ export function environmentDescriptor(input: { environmentId: string; desktopMan
       selfUpdate: input.desktopManaged ? "desktop-managed" : "operator",
       ...(input.desktopManaged ? {} : { install: serverInstall() }),
       emailSignIn: input.emailSignIn === true,
+      ...(input.feishu ? { feishuSignIn: true as const } : {}),
       jobs: true,
     },
   };
+  if (input.feishu) { const origin = input.feishu.appHost ? `https://${input.feishu.appHost}` : (input.publicOrigin ?? "https://example.com").replace(/\/$/, ""); descriptor.feishu = { appId: input.feishu.appId, authorizeEndpoint: "https://accounts.feishu.cn/open-apis/authen/v1/authorize", appReturnUrl: `${origin}/auth/feishu/app-return`, webStartPath: "/auth/feishu/start" }; }
+  return descriptor;
+}
+
+export function unifiedEnvironmentDescriptor(input: Parameters<typeof environmentDescriptor>[0]): EnvironmentDescriptor {
+  return environmentDescriptor(input);
 }
