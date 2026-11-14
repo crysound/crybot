@@ -25,8 +25,9 @@ it("survives a real server crash: queued sends keep receipts, cancellation and u
   };
   // A second person on a paired device: what they queue stays theirs through the wait, the crash and the restart. A row
   // written straight to the database below keeps the older name-only shape.
-  const PAIRED = { name: "Safari on Mac", id: expect.stringMatching(/^p_[\w-]{22}$/) };
+  const PAIRED = { name: "Member", id: expect.stringMatching(/^p_[\w-]{22}$/) };
   const PAIRED_ROW = { name: "Safari on Mac" };
+  const PAIRED_LABEL = "Safari on Mac";
   let pairedToken = "";
   const asPairedPerson = async (path: string, body: unknown) => {
     const response = await fetch(`${url}${path}`, {
@@ -100,7 +101,7 @@ it("survives a real server crash: queued sends keep receipts, cancellation and u
     });
     const paired = await pairing.json() as any;
     expect(pairing.status, JSON.stringify(paired)).toBe(200);
-    expect(paired.session.label).toBe(PAIRED.name);
+    expect(paired.session.label).toBe(PAIRED_LABEL);
     pairedToken = paired.token;
     const bot = (await api("POST", "/api/bots", { name: "Durable follow-ups" }, 201)).bot;
     const uncertain = (await api("POST", "/api/bots", { name: "Uncertain follow-up" }, 201)).bot;

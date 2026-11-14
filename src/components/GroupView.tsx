@@ -1,3 +1,4 @@
+import { USER_COLLAPSE_CHARS, USER_COLLAPSE_LINES } from "@/lib/user-message-collapse";
 import { useSessionDisplayName } from "@/lib/session-profile";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { formattedReplyWidth, isFormattedReply, splitReplyBlocks } from "@/lib/formatted-reply";
@@ -129,9 +130,6 @@ export function RoomToolChip({ message, roomId, threadId, live = false }: { mess
     </div>
   );
 }
-
-const USER_COLLAPSE_CHARS = 600;
-const USER_COLLAPSE_LINES = 8;
 
 function RoomTextMessage({
   group,

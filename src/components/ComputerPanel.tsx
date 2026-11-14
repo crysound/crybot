@@ -3,7 +3,6 @@ import { canWorkOnCloud } from "../../shared/cloud-computer";
 import { viewerTargetId } from "../../shared/desktop-viewer";
 import { Switch } from "./SettingsPrimitives";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { z } from "zod";
 import { waitForLocalVmReady } from "@/lib/local-vm-readiness";
 import { CalendarClock, ChevronRight, Columns2, Globe, Hand, Loader2, Maximize2, Monitor, Moon, Power, Settings, X } from "lucide-react";
 import { api, ApiError, currentTaskBot, useStore, type Bot, type ConfigStatus } from "@/state/store";
@@ -32,7 +31,7 @@ const DataPanel = lazy(() => import("./data/DataPanel").then((module) => ({ defa
 const loadLiveDesktop = () => import("./LiveDesktop").then((module) => ({ default: module.LiveDesktop }));
 const LiveDesktop = lazy(loadLiveDesktop);
 import { browserAvailable, browserUnavailableReason, builtInBrowserEnabled, usbPhoneTakeoverEnabled } from "@/lib/feature-flags";
-import { parseComputerHelp, transitionComputerControlLease, type ComputerControlAction } from "@/lib/computer-control";
+import { computerControlSnapshotSchema, transitionComputerControlLease, type ComputerControlAction } from "@/lib/computer-control";
 import { openProviderDesktop, useComputerTakeover } from "./computer-takeover";
 import { SignInBanner } from "./SignInRequestCard";
 import { FullScreenButton } from "./FullScreenButton"; import { LocalScreenPreview } from "./LocalScreenPreview";
@@ -108,13 +107,6 @@ interface LocalVmStatus {
   viewer_url: string;
   target_key: string;
 }
-
-const computerControlSnapshotSchema = z.object({
-  held: z.boolean().optional().default(false),
-  helpReason: z.string().nullable().optional().default(null),
-  help: z.unknown().optional().transform(parseComputerHelp),
-  owned: z.boolean().optional(),
-}).passthrough();
 
 export function ComputerPanel({
   bot: profileBot,

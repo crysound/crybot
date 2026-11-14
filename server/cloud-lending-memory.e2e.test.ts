@@ -1,5 +1,6 @@
 // On a Cloud home nothing a guest's conversation produced may reach a bot's memory, log, recall, brief or folders. No
 // guest can connect any more, so the gates are kept for what a guest left behind, written in while the server is stopped.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes, randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
@@ -205,18 +206,18 @@ beforeAll(async () => {
   mkdirSync(heldDir());
   const fake = pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href;
   // `held`: every turn stays open, so the test can use the bot's tools mid-turn.
-  const held = join(home, "held-claude.mjs");
+  const held = fixtureEnginePath(dataDir, "held-claude.mjs");
   writeFileSync(held, `#!/usr/bin/env node
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
-if (process.argv[2] !== "--version") { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(heldDir(), "turn-"))} + process.pid + ".json"; process.env.FAKE_CLAUDE_MODE = "hang"; }
+if (process.argv[2] !== "--version") { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(heldDir(), "turn-"))} + crypto.randomUUID() + ".json"; process.env.FAKE_CLAUDE_MODE = "hang"; }
 await import(${JSON.stringify(fake)});
 `, { mode: 0o755 });
   // `done`: every turn completes, and memory capture's one-shot proposes the
   // injected instruction as a decision to remember (a decision needs no quoted words).
   writeFileSync(join(home, "capture.json"), JSON.stringify({ facts: [{ text: INJECTED, kind: "decision" }] }));
   const completing = (name: string, replies: string[]) => {
-    const cli = join(home, `${name}-claude.mjs`);
+    const cli = fixtureEnginePath(dataDir, `${name}-claude.mjs`);
     writeFileSync(cli, `#!/usr/bin/env node
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_TEXT_FILE = ${JSON.stringify(join(home, "capture.json"))};
@@ -230,16 +231,16 @@ await import(${JSON.stringify(fake)});
     return cli;
   };
   const done = completing("done", []);
-  const turns = join(home, "turns-claude.mjs");
+  const turns = fixtureEnginePath(dataDir, "turns-claude.mjs");
   writeFileSync(turns, `#!/usr/bin/env node
 import { existsSync } from "node:fs";
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
-if (process.argv[2] !== "--version" && existsSync(${JSON.stringify(join(home, "hold-turns"))})) { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(heldDir(), "turn-"))} + process.pid + ".json"; process.env.FAKE_CLAUDE_MODE = "hang"; }
+if (process.argv[2] !== "--version" && existsSync(${JSON.stringify(join(home, "hold-turns"))})) { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(heldDir(), "turn-"))} + crypto.randomUUID() + ".json"; process.env.FAKE_CLAUDE_MODE = "hang"; }
 await import(${JSON.stringify(fake)});
 `, { mode: 0o755 });
   // Answers with a question, so handed-on work parks on it; from then on as `turns`.
-  const parks = join(home, "parks-claude.mjs");
+  const parks = fixtureEnginePath(dataDir, "parks-claude.mjs");
   writeFileSync(parks, readFileSync(turns, "utf8").replace("process.env.FAKE_CLAUDE_VERSION", `process.env.FAKE_CLAUDE_REPLIES = ${JSON.stringify(JSON.stringify(["NEEDS INPUT: Which file should I edit?"]))};\nprocess.env.FAKE_CLAUDE_VERSION`), { mode: 0o755 });
   // The brief engine answers in the conversation a guest left behind, then
   // in the owner's own, in that order.
@@ -248,11 +249,11 @@ await import(${JSON.stringify(fake)});
     memory: { captureQuietMs: 1_000 },
     instances: {
       ...Object.fromEntries(["codex", "cursor", "githubCopilot", "openaiCompat", "qwen", "hermes", "pi", "claude"].map((id) => [id, { driver: "not-a-real-driver" }])),
-      held: { driver: "claudeAgent", displayName: "Held", config: { cli: held } },
-      done: { driver: "claudeAgent", displayName: "Done", config: { cli: done } },
-      brief: { driver: "claudeAgent", displayName: "Brief", config: { cli: brief } },
-      turns: { driver: "claudeAgent", displayName: "Turns", config: { cli: turns } },
-      parks: { driver: "claudeAgent", displayName: "Parks", config: { cli: parks } },
+      held: { driver: "claudeAgent", displayName: "Held", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(held)}` } },
+      done: { driver: "claudeAgent", displayName: "Done", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(done)}` } },
+      brief: { driver: "claudeAgent", displayName: "Brief", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(brief)}` } },
+      turns: { driver: "claudeAgent", displayName: "Turns", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(turns)}` } },
+      parks: { driver: "claudeAgent", displayName: "Parks", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(parks)}` } },
     },
   }));
   const port = await freePortBlock([0, 1]);

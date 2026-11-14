@@ -10,10 +10,12 @@ import { locales } from "./index";
 
 const RETIRED: ReadonlyArray<readonly [string, RegExp, string]> = [
   ["CRY Cloud", /CRY Cloud/i, "Cry Bot Cloud"],
-  ["Cry Bot Cloud", /Cry Bot Cloud/i, "Cry Bot Cloud"],
+  ["upstream Cloud name", /\b(?:Open\u004dausBot|\u004daus ?Bot) (?:Cloud|Pro)\b/i, "Cry Bot Cloud"],
+  ["upstream brand", /\b(?:Open\u004dausBot|\u004daus ?Bot)\b/i, "Cry Bot"],
+  ["upstream abbreviation", /\b\u004fMB\b/, "Cry Bot"],
   ["Cry Bot Pro", /Cry Bot Pro\b/, "Cry Bot Cloud"],
   // \b before "_" fails, so environment names such as CRYBOT_PUBLIC_IPV4 pass.
-  ["CRY", /\bOMB\b/, "Cry Bot"],
+  ["CRY", /\bCRY\b/, "Cry Bot"],
   ["Cloud box", /Cloud box/i, "cloud desktop"],
   ["Hosted desktop", /Hosted desktop/i, "cloud desktop"],
   ["Cloud VM", /Cloud VM/i, "cloud desktop"],
@@ -58,7 +60,6 @@ const isSource = (name: string) => /\.(?:ts|tsx|mjs|cjs|js)$/.test(name) && !/\.
 const ALLOWED: ReadonlyArray<{ file: string; snippet?: string; why: string }> = [
   { file: "shared/credential-request.ts", snippet: "when Boat is selected", why: "the card that asks for a person's own Boat key" },
   { file: "server/boat-create-idempotency.ts", snippet: "unnamed Boat", why: "own-key repair: boat.dev's own name for a machine" },
-  { file: "src/lib/boat-offer.ts", snippet: "Cry Bot introduced me", why: "the email a person sends Boat to claim its credit" },
   { file: "server/workspace-backup.ts", snippet: "CRY-WORKSPACE-1", why: "a backup file's format marker" },
   { file: "electron/company-backups.mjs", snippet: "CRY-WORKSPACE-1", why: "a backup file's format marker" },
 ];
@@ -112,12 +113,12 @@ describe("one name per thing", () => {
     expect(offending).toEqual([]);
   });
 
-  const productNames = RETIRED.filter(([, , use]) => use === "Cry Bot Cloud");
+  const productNames = RETIRED.filter(([, , use]) => use === "Cry Bot Cloud" || use === "Cry Bot");
   it("translations never show CRY, T3 or an old name for Cry Bot Cloud, keep its name as it is, and say Boat only where the English does", () => {
     const offending = Object.entries(locales).filter(([code]) => code !== "en").flatMap(([code, pack]) =>
       Object.entries(pack)
         .filter(([key]) => !PENDING_KEY_PREFIXES.some((prefix) => key.startsWith(prefix)))
-        .filter(([key, value]) => /\bOMB\b|\bT3\b/.test(value!) || productNames.some(([, pattern]) => pattern.test(value!))
+        .filter(([key, value]) => /\bT3\b/.test(value!) || productNames.some(([, pattern]) => pattern.test(value!))
           || (/Cry Bot Cloud/.test((en as Record<string, string>)[key]!) && !/Cry Bot Cloud/.test(value!))
           || (/boat/i.test(value!) && !/\bboats?\b/i.test((en as Record<string, string>)[key]!)))
         .map(([key]) => `${code}: ${key}`));
@@ -138,13 +139,16 @@ describe("one name per thing", () => {
   });
 
   it("the public docs name Cry Bot Cloud and the Cloud as the app does", () => {
-    const names = new Set(["CRY Cloud", "Cry Bot Cloud", "Cry Bot Pro", "Connect to my Cloud", "your Cloud", "my Cloud"]);
+    const names = new Set(["CRY Cloud", "upstream Cloud name", "upstream brand", "upstream abbreviation", "Cry Bot Pro", "Connect to my Cloud", "your Cloud", "my Cloud"]);
     const cloudNames = RETIRED.filter(([word]) => names.has(word));
     const pages = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
+      if (name === "specs" || name === "tasks") return [];
       const path = join(dir, name);
       return statSync(path).isDirectory() ? pages(path) : /\.mdx?$/.test(name) ? [path] : [];
     });
-    const offending = pages(join(ROOT, "apps/docs/content")).flatMap((path) =>
+    const docs = [join(ROOT, "README.md"), ...pages(join(ROOT, "docs"))];
+    expect(docs).toContain(join(ROOT, "docs/self-hosting.md"));
+    const offending = docs.flatMap((path) =>
       readFileSync(path, "utf8").split("\n").flatMap((text, index) => cloudNames
         .filter(([, pattern]) => pattern.test(text))
         .map(([word, , use]) => `${relative(ROOT, path).split("\\").join("/")}:${index + 1}: "${word}" (say ${use})`)));
@@ -185,7 +189,9 @@ describe("one name per thing", () => {
 
   it("the check catches each retired word, and lets own-key Boat and env names through", () => {
     for (const bad of [
-      "Sign in to CRY Cloud", "Sign in to Cry Bot Cloud", "Get Cry Bot Pro", "Cry Bot Pro plans",
+      "Sign in to CRY Cloud", "Get Cry Bot Pro", "Cry Bot Pro plans",
+      "Sign in to Open\u004dausBot Cloud", "Sign in to \u004dausBot Cloud", "Get \u004dausBot Pro",
+      "Restart Open\u004dausBot", "Restart \u004daus Bot", "Restart \u004dausbot", "Sign in to \u004fMB Cloud", "restart \u004fMB",
       "restart CRY", "Cloud box", "Hosted desktop", "Run it in its cloud VM", "Boat cloud runner",
       "Open your Cloud dashboard", "Connect to my Cloud", "Your Cloud is ready", "Let my Cloud use this Mac",
       "Local (this computer)", "Choose Cloud to wake", "Auto, Cloud or Browser", "including one from T3",
