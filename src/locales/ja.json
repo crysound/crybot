@@ -1,4 +1,10 @@
 {
+  "chat.notice.computerWakeFailed": "コンピューターを復帰できませんでした（{reason}）",
+  "chat.notice.previousComputerWakeFailed": "前のターンでコンピューターを復帰できませんでした（{reason}）",
+  "chat.notice.wakingComputer": "コンピューターを復帰しています…",
+  "server.computer.wakeFailed": "コンピューターを復帰できませんでした（{reason}）",
+  "server.computer.previousWakeFailed": "前のターンでコンピューターを復帰できませんでした（{reason}）",
+  "server.computer.waking": "コンピューターを復帰しています…",
   "connectedWorkspaces.localTitle": "このコンピューターの環境",
   "connectedWorkspaces.missing": "見つかりません",
   "connectedWorkspaces.current": "使用中",

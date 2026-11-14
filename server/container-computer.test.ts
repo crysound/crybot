@@ -1413,6 +1413,10 @@ describe("localVmRecreatableOnDemand", () => {
 
 describe("Auto's Local VM eligibility", () => {
   const base = { runtime: "podman", daemonUp: true, image: true, container: "missing", create_supported: true, ready: false } as unknown as Parameters<typeof autoLocalVmAttachable>[0];
+  it("does not select a running failed desktop ahead of another available computer", () => {
+    expect(autoLocalVmAttachable({ ...base, container: "running", imageMatches: true, managed: true,
+      network: "loopback", security: "hardened", persistence: "durable", problem: "fixture desktop unavailable" })).toBe(false);
+  });
   it("attaches a ready desktop or one whose prepared image can be recreated, and nothing else", () => {
     expect(autoLocalVmAttachable({ ...base, ready: true, container: "running" })).toBe(true);
     expect(autoLocalVmAttachable(base)).toBe(true);

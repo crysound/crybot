@@ -49,7 +49,8 @@ export function createComputerCallGate<C extends Capability>(deps: {
           try { await settledWithin(lazyClaim.begin, deadline - Date.now(), signal); }
           finally { stopWaiting(); signal?.removeEventListener("abort", stopWaiting); }
           if (lazyClaim.localVm && lazyClaim.startsComputer && lazyClaim.claimed) askedAt += Date.now() - waitStarted;
-          if (lazyClaim.claimed || lazyClaim.failed) continue;
+          if (lazyClaim.failed) return { held: true, helpOpen: false, blockedReason: lazyClaimFailedText(lazyClaim) };
+          if (lazyClaim.claimed) continue;
           if (lazyClaim.retryReason) return { held: true, helpOpen: false, blockedReason: lazyClaimRetryText(lazyClaim) };
         }
         held = { held: true, helpOpen: false, blockedReason: deps.waiting(threadId, generation) ?? lazyClaim.pendingReason ?? CONTROL_BUSY };

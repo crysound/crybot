@@ -1,4 +1,10 @@
 {
+  "chat.notice.computerWakeFailed": "Impossibile riattivare il computer ({reason})",
+  "chat.notice.previousComputerWakeFailed": "Impossibile riattivare il computer per il turno precedente ({reason})",
+  "chat.notice.wakingComputer": "Riattivazione del computer…",
+  "server.computer.wakeFailed": "Impossibile riattivare il computer ({reason})",
+  "server.computer.previousWakeFailed": "Impossibile riattivare il computer per il turno precedente ({reason})",
+  "server.computer.waking": "Riattivazione del computer…",
   "voice.gemini.keyPlaceholder": "Incolla la tua chiave API di Google AI Studio",
   "voice.gemini.model": "Modello vocale Gemini",
   "keys.label.geminiTts": "Chiave API vocale Gemini",

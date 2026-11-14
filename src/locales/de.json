@@ -1,4 +1,10 @@
 {
+  "chat.notice.computerWakeFailed": "Der Computer konnte nicht aufgeweckt werden ({reason})",
+  "chat.notice.previousComputerWakeFailed": "Der Computer konnte für den vorherigen Durchgang nicht aufgeweckt werden ({reason})",
+  "chat.notice.wakingComputer": "Computer wird aufgeweckt…",
+  "server.computer.wakeFailed": "Der Computer konnte nicht aufgeweckt werden ({reason})",
+  "server.computer.previousWakeFailed": "Der Computer konnte für den vorherigen Durchgang nicht aufgeweckt werden ({reason})",
+  "server.computer.waking": "Computer wird aufgeweckt…",
   "voice.gemini.keyPlaceholder": "Google AI Studio API-Schlüssel einfügen",
   "voice.gemini.model": "Gemini-Sprachmodell",
   "keys.label.geminiTts": "Gemini-Sprach-API-Schlüssel",

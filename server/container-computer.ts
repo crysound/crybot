@@ -372,11 +372,13 @@ export function localVmWakeAction(status: ContainerComputerStatus): "run" | "sta
 }
 
 export function autoLocalVmAttachable(status: ContainerComputerStatus): boolean {
-  return status.ready === true || localVmWakeAction(status) !== null || (
-    Boolean(status.runtime) && status.daemonUp && status.image && status.container === "running" &&
+  return status.ready === true || localVmWakeAction(status) !== null;
+}
+
+export function localVmDesktopPending(status: ContainerComputerStatus): boolean {
+  return !status.ready && Boolean(status.runtime) && status.daemonUp && status.image && status.container === "running" &&
     existingContainerProblem(status) === null && status.network === "loopback" &&
-    status.security === "hardened" && status.persistence === "durable"
-  );
+    status.security === "hardened" && status.persistence === "durable";
 }
 
 function statusProblem(status: ContainerComputerStatus): string | null {

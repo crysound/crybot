@@ -17,6 +17,19 @@ function fixture() {
 }
 afterEach(() => vi.useRealTimers());
 
+it.each([undefined, "This Cloud's cloud computer hours for this month are used up; they reset on 1 December."])("preserves a cloud start refusal when rejection ends the turn (limit: %s)", async limit => {
+  const { slot, claims, gate, deps } = fixture();
+  Object.assign(slot, { localVm: false, label: "the cloud computer", limit,
+    claim: async () => { throw new Error("the sandbox image is unavailable"); },
+    onRejected: () => { deps.isActive.mockReturnValue(false); claims.delete(owner.threadId); },
+  });
+  expect(await gate(owner)).toEqual({ held: true, helpOpen: false, blockedReason: limit
+    ? `The cloud computer could not be started. ${limit} This call was not performed. Do not retry computer work in this turn; tell the person what you could not do.`
+    : "The cloud computer could not be started: the sandbox image is unavailable. This call was not performed. Do not retry computer work in this turn; tell the person what you could not do." });
+  expect(deps.claimResource).not.toHaveBeenCalled();
+  expect(await gate(owner)).toMatchObject({ held: true, blockedReason: "This turn no longer has this computer, so this call was not performed." });
+});
+
 it("allows and executes the first computer call after its own seven-second background wake", async () => {
   vi.useFakeTimers();
   const { slot, claims, gate } = fixture();

@@ -3,6 +3,7 @@ import { localVmResumeNotices, recentLocalVmWakeFailure } from "./local-vm-resum
 import { readyLocalVm } from "./local-vm-ready.ts";
 import { SHARED_LOCAL_VM_TARGET, invalidateContainerComputerStatus, type ContainerComputerStatus } from "./container-computer.ts";
 import { startAutoVmClaim, type AutoVmClaimSlot } from "./auto-vm-claims.ts";
+import "./server-line-packs.ts";
 
 function fixture(target: string) {
   const stopped = { runtime: "podman", daemonUp: true, image: true, container: "stopped", ready: false,
@@ -12,7 +13,7 @@ function fixture(target: string) {
     status: vi.fn(async (_fresh?: boolean) => stopped),
     startMachine: vi.fn(async (status: ContainerComputerStatus) => status), note: () => {},
     start: vi.fn(async (): Promise<ContainerComputerStatus> => { throw new Error("desktop failed"); }),
-    touchIdle: () => {}, existingCount: async () => 0, maxInstances: () => 1, isCurrent: () => true, waitMs: 10_000,
+    touchIdle: () => {}, existingCount: async () => 0, maxInstances: () => 1, isCurrent: () => true, waitMs: 10_000, waitForRunningDesktop: true,
   };
   const slot: AutoVmClaimSlot = { owner: { threadId: "thread", generation: "turn" },
     claim: async () => { await readyLocalVm({ ...SHARED_LOCAL_VM_TARGET, key: target }, readiness); } };
@@ -24,6 +25,17 @@ function fixture(target: string) {
   } };
 }
 afterEach(() => vi.useRealTimers());
+
+it.each([false, true])("writes wake failures in the conversation's language (late: %s)", async late => {
+  const { slot, deps, fail } = fixture(`translated-${late}`);
+  deps.live.mockReturnValue(!late);
+  Object.assign(slot, localVmResumeNotices({ ...deps, language: () => "zh-CN" }));
+  slot.onWaiting?.();
+  expect(deps.append).toHaveBeenCalledWith(expect.objectContaining({ name: "notice: 正在唤醒电脑…" }), false);
+  await fail();
+  expect(deps.append).toHaveBeenCalledWith(expect.objectContaining({ name: late
+    ? "notice: 上一轮的电脑唤醒失败（desktop failed）" : "notice: 电脑唤醒失败（desktop failed）" }), late);
+});
 
 it("records a reason and fails closed without reporting or interrupting a chat", async () => {
   const { slot, deps, fail } = fixture("pure-chat");

@@ -1,4 +1,10 @@
 {
+  "chat.notice.computerWakeFailed": "Не вдалося розбудити комп’ютер ({reason})",
+  "chat.notice.previousComputerWakeFailed": "Не вдалося розбудити комп’ютер для попереднього ходу ({reason})",
+  "chat.notice.wakingComputer": "Пробудження комп’ютера…",
+  "server.computer.wakeFailed": "Не вдалося розбудити комп’ютер ({reason})",
+  "server.computer.previousWakeFailed": "Не вдалося розбудити комп’ютер для попереднього ходу ({reason})",
+  "server.computer.waking": "Пробудження комп’ютера…",
   "voice.gemini.keyPlaceholder": "Вставте свій API-ключ Google AI Studio",
   "voice.gemini.model": "Модель синтезу мовлення Gemini",
   "keys.label.geminiTts": "API-ключ синтезу мовлення Gemini",

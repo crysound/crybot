@@ -15,11 +15,33 @@ function fixture() {
     status: vi.fn(async (_fresh?: boolean) => stopped),
     startMachine: vi.fn(async (status: ContainerComputerStatus) => status),
     note: vi.fn(), start: vi.fn(async (_action: "start" | "run") => ready), touchIdle: vi.fn(),
-    existingCount: vi.fn(async () => 0), maxInstances: () => 1, isCurrent: () => current, waitMs: 10_000,
+    existingCount: vi.fn(async () => 0), maxInstances: () => 1, isCurrent: () => current, waitMs: 10_000, waitForRunningDesktop: true,
   };
   return { deps, stopped, running, ready, cancel: () => { current = false; } };
 }
 afterEach(() => vi.useRealTimers());
+
+it("returns an existing failed desktop immediately for a regular claim", async () => {
+  const { deps, running } = fixture();
+  const failed = { ...running, problem: "fixture desktop unavailable" };
+  deps.status.mockResolvedValue(failed);
+  expect(await readyLocalVm(SHARED_LOCAL_VM_TARGET, { ...deps, waitForRunningDesktop: false })).toBe(failed);
+  expect(deps.status).toHaveBeenCalledOnce();
+  expect(deps.start).not.toHaveBeenCalled();
+  expect(deps.lifecycleBusy.size).toBe(0);
+});
+
+it("still waits for the desktop it starts for a regular claim", async () => {
+  vi.useFakeTimers();
+  const { deps, running, ready } = fixture();
+  deps.start.mockResolvedValue(running);
+  const waking = readyLocalVm(SHARED_LOCAL_VM_TARGET, { ...deps, waitForRunningDesktop: false });
+  await vi.advanceTimersByTimeAsync(1);
+  deps.status.mockResolvedValue(ready);
+  await vi.advanceTimersByTimeAsync(1999);
+  expect(await waking).toBe(ready);
+  expect(deps.start).toHaveBeenCalledOnce();
+});
 
 it("holds the lock during startup, releases it for desktop polling, and shares the pending wake", async () => {
   vi.useFakeTimers();

@@ -1,5 +1,5 @@
 import { LocalVmWakeError, localVmWakeStep } from "./local-vm-resume.ts";
-import { autoLocalVmAttachable, localVmWakeAction, type Runtime, type ContainerComputerStatus, type LocalVmTarget } from "./container-computer.ts";
+import { localVmDesktopPending, localVmWakeAction, type Runtime, type ContainerComputerStatus, type LocalVmTarget } from "./container-computer.ts";
 
 interface ReadinessDependencies {
   lifecycleBusy: Set<string>;
@@ -13,6 +13,7 @@ interface ReadinessDependencies {
   maxInstances(): number;
   isCurrent(): boolean;
   waitMs: number;
+  waitForRunningDesktop: boolean;
 }
 
 const pending = new Map<string, Promise<ContainerComputerStatus>>();
@@ -45,7 +46,7 @@ async function prepareLocalVm(target: LocalVmTarget, deps: ReadinessDependencies
     deps.note(status);
     if (!deps.isCurrent() || status.ready || !status.runtime) return status;
     const action = localVmWakeAction(status);
-    if (!action && !autoLocalVmAttachable(status)) return status;
+    if (!action && (!deps.waitForRunningDesktop || !localVmDesktopPending(status))) return status;
     if (action) {
       if (action === "run" && !pooled && !ownsProvision) return status;
       if (action === "run" && target.key.startsWith("bot:")) {

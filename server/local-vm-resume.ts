@@ -1,4 +1,5 @@
 import { transientClaimFailure, type AutoVmClaimSlot } from "./auto-vm-claims.ts";
+import { serverLine } from "./server-lines.ts";
 
 export class LocalVmWakeError extends Error {}
 
@@ -20,9 +21,9 @@ export function recentLocalVmWakeFailure(target: string): string | undefined {
   return undefined;
 }
 
-export function localVmWakeFailureNotice(reason: string, late = false) {
+export function localVmWakeFailureNotice(reason: string, late = false, language?: string) {
   return {
-    name: `notice: ${late ? "The computer could not wake for the previous turn" : "The computer could not wake"} (${reason})`,
+    name: `notice: ${serverLine(language, late ? "server.computer.previousWakeFailed" : "server.computer.wakeFailed", { reason })}`,
     nameCode: late ? "chat.notice.previousComputerWakeFailed" : "chat.notice.computerWakeFailed",
     nameParams: { reason }, ok: false,
   };
@@ -30,6 +31,7 @@ export function localVmWakeFailureNotice(reason: string, late = false) {
 
 export function localVmResumeNotices(deps: {
   target: string;
+  language?: () => string | undefined;
   slot(): AutoVmClaimSlot | undefined;
   live(): boolean;
   cancelled(error: unknown): boolean;
@@ -37,14 +39,14 @@ export function localVmResumeNotices(deps: {
   reject(failure: string, error?: unknown): void;
 }): Pick<AutoVmClaimSlot, "onWaiting" | "onRejected"> {
   return {
-    onWaiting: () => deps.append({ name: "notice: Waking the computer…", nameCode: "chat.notice.wakingComputer", ok: true }, false),
+    onWaiting: () => deps.append({ name: `notice: ${serverLine(deps.language?.(), "server.computer.waking")}`, nameCode: "chat.notice.wakingComputer", ok: true }, false),
     onRejected: (reason, error) => {
       if (deps.cancelled(error)) return;
       for (const [target, failure] of failures) if (failure.until <= Date.now()) failures.delete(target);
       if (error instanceof LocalVmWakeError && !transientClaimFailure(error)) failures.set(deps.target, { reason, until: Date.now() + 60_000 });
       const live = deps.live();
       if (live && (deps.slot()?.waitingCalls ?? 0) > 0) deps.reject(reason, error);
-      else deps.append(localVmWakeFailureNotice(reason, !live), !live);
+      else deps.append(localVmWakeFailureNotice(reason, !live, deps.language?.()), !live);
     },
   };
 }

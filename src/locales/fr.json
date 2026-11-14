@@ -1,4 +1,10 @@
 {
+  "chat.notice.computerWakeFailed": "Impossible de réveiller l’ordinateur ({reason})",
+  "chat.notice.previousComputerWakeFailed": "Impossible de réveiller l’ordinateur pour le tour précédent ({reason})",
+  "chat.notice.wakingComputer": "Réveil de l’ordinateur…",
+  "server.computer.wakeFailed": "Impossible de réveiller l’ordinateur ({reason})",
+  "server.computer.previousWakeFailed": "Impossible de réveiller l’ordinateur pour le tour précédent ({reason})",
+  "server.computer.waking": "Réveil de l’ordinateur…",
   "voice.gemini.keyPlaceholder": "Collez votre clé API Google AI Studio",
   "voice.gemini.model": "Modèle de synthèse vocale Gemini",
   "keys.label.geminiTts": "Clé API de synthèse vocale Gemini",

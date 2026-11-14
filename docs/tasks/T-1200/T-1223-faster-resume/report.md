@@ -190,3 +190,62 @@ PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc 
 行数（**本轮起点 → 完工**）：`server/index.ts` **15523 → 15523**，与本轮开始保存的文件逐字节相同。本轮未新增文件；本轮涉及的实现和测试文件最大 221 行，任务此前新增的文件也均不足 1000 行。`git diff --check` 通过。
 
 当前检出及可读主仓库均缺少用户引用的 `r2.md` 和 AGENTS.md 引用的 `docs/verification/README.md`，已读取 `brief.md`、本轮要求和本报告保留的第二轮内容，并沿用已有隔离 fixture。验证限制仍是上述端口权限；本轮不声称真实 Podman/CUA 或完整服务器 fixture 已通过。
+
+## 第 4 轮
+
+基于合并提交 `cb81f81d` 修改，未 git 提交、联网或安装依赖。仅修改本轮失败涉及的实现、语言包、对应回归单测和本报告；没有改动既有测试期望，也没有改动工作区原有未跟踪的 `r4.md`。
+
+### 根因与修复
+
+1. **`server/chat-notices.test.ts`：notice 目录遗漏。** 前两轮只把 `computerWakeFailed`、`previousComputerWakeFailed`、`wakingComputer` 写进 en/zh 包，却没加入 `server/chat-notices.ts` 的 `CHAT_NOTICE`。测试实际将 en.json 的全部 `chat.notice.*`（扣除两个客户端键）与该常量比较，因而多出三项。现按已有 notice 方式登记三条，并补齐其余 14 个语言包的相应文案。
+
+2. **`src/locales/server-lines.test.ts`：状态行绕过服务端语言入口。** `server/local-vm-resume.ts` 的 `localVmWakeFailureNotice` 在 `name` 中直接拼接英文；`nameCode` 虽能供客户端翻译，却不能替代服务端落盘状态行的语言规则。现使用 `server.computer.wakeFailed`、`server.computer.previousWakeFailed`、`server.computer.waking`，通过 `serverLine` 写入行；`index.ts` 的即时、后台、迟到和冷却提示均传入 `threadLanguage(threadId)`（它是 `personLanguages.forThread`，内部调用 `forLine`，遵循私聊对象/共享环境语言规则）。16 个语言包都提供这三个 `server.` 键。保留原 notice code、reason 参数及迟到 turnId。新增当前/迟到中文提示单测，覆盖唤醒中和失败状态行。
+
+3. **`server/cloud-computer-slow-start.e2e.test.ts` 两例：gate 的轮次检查盖掉失败原因。** 提取到 `server/computer-call-gate.ts` 时新增了循环入口的 `isActive`/abort 检查。等待 promise 结束后，原实现对 `failed` 执行 `continue`；失败回调已经触发 interrupt，于是循环入口先返回 “This turn no longer has this computer…”，来不及读取启动错误。这不是冷却或 readinessOnly 的问题。现从本次已等待的 slot 直接返回 `lazyClaimFailedText`，保留 Cloud 限额、底层 cause 和 backOnAuto 信息；成功后仍重新检查能力，后续新调用也仍拒绝过期轮次。新增两例分别验证配额拒绝、镜像启动失败，失败回调同时使轮次失活并删除表中 slot，等待中的调用仍收到具体原因。
+
+4. **`server/group-local-vm.e2e.test.ts` 四例分别处理：**
+
+   - **missing-auto 错选 VM：** 本任务把 `server/container-computer.ts:autoLocalVmAttachable` 放宽到“容器仍在运行、但桌面不 ready”。`index.ts:selectableComputers` 用同一函数计算 `canCreate`，于是故障 VM 被视为可用，Auto 在 cloud 之前选中它。恢复该公共函数在 main 的“ready、可 start 或可 run”条件；将后台唤醒允许等待的运行中桌面判定拆为 `localVmDesktopPending`，在已见目标记录、唤醒挂载/readiness 中使用，保留后台唤醒资格而不影响选择菜单。补充单测，确认已有安全配置但桌面故障的运行中 VM 不成为 Auto 的可选电脑。
+   - **readiness claim 失败后无法及时释放：** `server/local-vm-ready.ts:prepareLocalVm` 对“没有启动动作、已经在运行但故障”的桌面也进入 90 秒轮询。main 在该位置立即返回未就绪状态，由调用方释放租约并走失败收尾；新轮询拖过了 fixture 的等待预算。增加明确的 `waitForRunningDesktop` 依赖：普通/strict/房间 claim 默认关闭，仅后台唤醒打开。普通 claim 对已有故障立即返回；它自己刚 start/run 的桌面仍按原有行为等待。新增两例分别固定这两个边界，原后台运行中桌面等待及合并调用方测试保持原期望通过。
+   - **eager Auto VM 占用等待未停车：** `index.ts:attachLocalVm` 把 `claimAutoLocalVm` 整体移入后台，连 `bindTurnComputer` 的占用等待也随之移到派发后；引擎已启动，`ComputerWaitParked` 又被后台 notice 当取消过滤，原派发 catch 无法设置 `busy:false / parked.computer`。现对真正要后台唤醒的轮次，先 await 原来的独占 `bindTurnComputer`，再登记 lazy claim 并启动后台唤醒。占用等待仍在派发前完成或抛出停车异常；没有占用时只领取资源，不等待机器启动/桌面就绪。冷却命中时跳过这一步，不新增占用或启动动作。
+   - **rejected lazy claim 返回 Another thread 且不收尾：** 已 ready 的 lazy 轮次在首个工具调用前桌面故障，也被上述新 readiness 轮询卡住。gate 的调用预算比 90 秒短，先返回通用 CONTROL_BUSY；真正的 claim rejection 和 interrupt 迟迟不发生。普通 claim 恢复即时未就绪返回后，原 `dropLease → onRejected → surfaceLazyClaimRejection → interrupt` 链路及时执行；第 3 项的 gate 修复同时保证正在等待的调用拿到终止错误，而不是轮次失效提示。
+
+5. **`evals/evals.test.ts:lazy-claim-rejection`：与第 4 项最后一例同源。** 普通 lazy claim 不再轮询已故障桌面，故障走原终止收尾链路，而非等 90 秒。此场景的 HTTP 行为必须由沙箱外补跑确认，本轮不将静态推导写成已通过。
+
+### 验证结果
+
+所有 Vitest 调用均一次一个文件，统一使用：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run <文件> --maxWorkers=2 --configLoader runner
+```
+
+| 文件 | 本轮结果 |
+| --- | --- |
+| `server/chat-notices.test.ts` | 13 passed |
+| `src/locales/server-lines.test.ts` | 8 passed |
+| `server/cloud-computer-slow-start.e2e.test.ts` | 隔离 relay 无法 listen，beforeAll 超时；6 skipped，`EPERM 127.0.0.1` |
+| `server/group-local-vm.e2e.test.ts` | 隔离 relay 无法 listen，beforeAll 超时；47 skipped，`EPERM 127.0.0.1` |
+| `evals/evals.test.ts` | 场景目录检查 1 passed；6 场景均在 fixture 启动前失败，`no free port block for offsets 0,1 in 19600..22600`，包括 lazy-claim-rejection |
+| `server/local-vm-resume.fixture.test.ts` | beforeAll 无法分配隔离端口；7 skipped，同上 no free port block |
+| `server/computer-call-gate.test.ts` | 10 passed（原 8 + 新增 2） |
+| `server/lazy-container-mcp.test.ts` | 11 passed |
+| `server/local-vm-ready.test.ts` | 9 passed（原 7 + 新增 2） |
+| `server/local-vm-resume.test.ts` | 17 passed（原 15 + 新增 2） |
+| `server/auto-vm-claims.test.ts` | 19 passed |
+| `server/screen-frame-gate.test.ts` | 83 passed |
+| `server/container-computer.test.ts` | 116 passed（原 115 + 新增 1；补查公共 Auto 判定与状态缓存） |
+
+共 286 个单测通过，另有 eval 场景目录检查 1 个通过。未修改 fixture、测试期望或沙箱设置来绕过监听限制。上述两个 e2e、evals 和 resume fixture 都已实际尝试启动隔离环境，未访问用户 live app 或数据；需协调者在沙箱外及 Actions 上补跑，当前不能声称其行为断言已经变绿。日志保存在本轮环境 `/tmp/T1223-r4-*.log`。
+
+Server tsc 使用以下命令，最终结果见本节末尾：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc -p tsconfig.server.json --noEmit
+```
+
+执行前确认逐文件测试已结束，并读取当前 service cgroup：`memory.max=5368709120`（5 GiB），最终检查时 `memory.current=258080768`（约 246 MiB），系统 `MemAvailable=7977672 kB`（约 7.6 GiB），再单独运行 tsc，堆上限 3072 MiB。
+
+行数（本轮起点 → 完工）：`server/index.ts` **15421 → 15420**。`server/container-computer.ts` 为 1174，低于仓库 ratchet 上限 1175；未改 ratchet。没有新增实现文件。当前检出与可读主仓库仍缺少 `r2.md` 和 `docs/verification/README.md`，已读取 brief、r3 及本报告保留的前轮说明，并沿用测试自带的临时 HOME/数据目录/假引擎/假容器隔离流程。
+
+最终 server tsc **通过（exit 0，无诊断）**；本轮涉及的 10 个 TypeScript 文件的 `pnpm exec oxlint --deny-warnings <文件列表>` **通过（exit 0）**；`git diff --check` **通过**。最后复核保留了第三轮的 readinessOnly 提示、网络重试、目标级冷却失效及合并 readiness 逻辑；完整服务器停车/恢复、失败收尾与速度断言仍以上述沙箱外补跑为准。

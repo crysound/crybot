@@ -510,7 +510,7 @@ import {
 } from "./presets.ts";
 import { OrgLibrary } from "./org-library.ts";
 import { shouldMountLocalComputer } from "./local-routing.ts";
-import { autoLocalVmAttachable, type ContainerComputerStatus } from "./container-computer.ts";
+import { autoLocalVmAttachable, localVmDesktopPending, type ContainerComputerStatus } from "./container-computer.ts";
 import { startStoppedPodmanMachine } from "./podman-machine.ts";
 import { keepTransient, startAutoVmClaim, withinBudget, type AutoVmClaimSlot, type AutoVmClaimTable } from "./auto-vm-claims.ts";
 import { CONTROL_ACT_WITHIN_MS, CONTROL_WAIT_MS, controlRefusal } from "./computer-control-client.ts";
@@ -5654,7 +5654,7 @@ const browserSeats = createBrowserSeats({ resources: turnResources, claim: claim
 const localVmSeen = new Set<string>();
 /** An old desktop waiting for its update is still the bot's place, so it counts as seen: Auto never takes it for absent. */
 function noteLocalVmSeen(target: LocalVmTarget, status: ContainerComputerStatus | null | undefined): void {
-  if (status && (localVmUpdates.observe(target, status) || autoLocalVmAttachable(status))) localVmSeen.add(target.key);
+  if (status && (localVmUpdates.observe(target, status) || autoLocalVmAttachable(status) || localVmDesktopPending(status))) localVmSeen.add(target.key);
 }
 let localVmImageBusy = false;
 let localVmProvisionBusy = false;
@@ -8002,7 +8002,7 @@ async function beginTurn(
         activeInternalGenerationByThread.get(claimThreadId) === resourceOwner.generation &&
         turnResourceOwners.get(claimThreadId)?.generation === resourceOwner.generation && threadBusy(bot.id, claimThreadId);
       /** Idempotent per turn; a lazy attach leases the target it mounted against, not whatever resolves when the first screen call arrives. */
-      const claimAutoLocalVm = async (claimThreadId: string, pinnedTarget?: LocalVmTarget): Promise<{ target: LocalVmTarget; runtime: Runtime }> => {
+      const claimAutoLocalVm = async (claimThreadId: string, pinnedTarget?: LocalVmTarget, waitForRunningDesktop = false): Promise<{ target: LocalVmTarget; runtime: Runtime }> => {
         const localVmTarget = pinnedTarget ?? localVmThreadTargets.get(claimThreadId) ?? { ...localVmTargetForThread(bot.id, claimThreadId) };
         const pendingWake = localVmReadinessPending(localVmTarget);
         if (pendingWake) await pendingWake;
@@ -8033,7 +8033,7 @@ async function beginTurn(
         };
         let localVm: Awaited<ReturnType<typeof readyLocalVmForTurn>>;
         try {
-          localVm = await readyLocalVmForTurn(bot.id, localVmTarget, isCurrent);
+          localVm = await readyLocalVmForTurn(bot.id, localVmTarget, isCurrent, waitForRunningDesktop);
         } catch (error) {
           dropLease();
           throw error;
@@ -8057,31 +8057,29 @@ async function beginTurn(
         return { target: localVmTarget, runtime: localVm.runtime };
       };
 
-      const surfaceLazyClaimRejection = (label: string) => {
-        return (failure: string, error?: unknown) => {
-          if (!ownsLiveTurn(threadId)) return;
-          if (resourceOwner.computerParkedOn) {
-            void interruptParkedTurn(bot.id, threadId).catch(() => {});
-            return;
-          }
-          const placeFailure = error instanceof PlaceUnavailableError ? error : undefined;
-          const slot = autoVmClaims.get(threadId);
-          if (placeFailure && clearFailedAutoPin(bot.id, threadId, placeFailure.place) && slot?.owner.generation === resourceOwner.generation) slot.backOnAuto = true;
-          const message = placeFailure?.message ?? `computer unavailable — ${label} could not be claimed for this turn (${failure})`;
-          store.appendMessage(threadId, {
-            role: "bot",
-            kind: "activity",
-            tool: failedTurnTool(message, placeFailure ? { place: placeFailure.row } : {}),
-          });
-          if (opts?.automationSource === undefined && !opts?.commsDepth && !opts?.cardContinuation) {
-            notify(buildNotification("turn-failed", bot, threadId, redactSecretsInText(message), { avatarUrl: bot.avatarUrl }));
-            reportIncident({ kind: "could-not-start", bot, threadId, detail: message });
-            // Claude settles the interrupt below as exit_before_result; the completion fold must not report it a second time.
-            resourceOwner.lazyClaimFailureReported = true;
-          }
-          opts?.onDispatchError?.(message);
-          void interruptDirectThread(bot.id, threadId).catch(() => {});
-        };
+      const surfaceLazyClaimRejection = (label: string) => (failure: string, error?: unknown) => {
+        if (!ownsLiveTurn(threadId)) return;
+        if (resourceOwner.computerParkedOn) {
+          void interruptParkedTurn(bot.id, threadId).catch(() => {});
+          return;
+        }
+        const placeFailure = error instanceof PlaceUnavailableError ? error : undefined;
+        const slot = autoVmClaims.get(threadId);
+        if (placeFailure && clearFailedAutoPin(bot.id, threadId, placeFailure.place) && slot?.owner.generation === resourceOwner.generation) slot.backOnAuto = true;
+        const message = placeFailure?.message ?? `computer unavailable — ${label} could not be claimed for this turn (${failure})`;
+        store.appendMessage(threadId, {
+          role: "bot",
+          kind: "activity",
+          tool: failedTurnTool(message, placeFailure ? { place: placeFailure.row } : {}),
+        });
+        if (opts?.automationSource === undefined && !opts?.commsDepth && !opts?.cardContinuation) {
+          notify(buildNotification("turn-failed", bot, threadId, redactSecretsInText(message), { avatarUrl: bot.avatarUrl }));
+          reportIncident({ kind: "could-not-start", bot, threadId, detail: message });
+          // Claude settles the interrupt below as exit_before_result; the completion fold must not report it a second time.
+          resourceOwner.lazyClaimFailureReported = true;
+        }
+        opts?.onDispatchError?.(message);
+        void interruptDirectThread(bot.id, threadId).catch(() => {});
       };
 
       /** A poller started after its own turn.completed would never stop: same still-running guard as dispatch. */
@@ -8124,7 +8122,7 @@ async function beginTurn(
             catch (error) { if (error instanceof DirectTurnSetupCancelled) throw error; skipComputer(error); return false; }
             seen = await containerComputerStatus(undefined, undefined, localVmTarget).catch(() => null);
           }
-          if (!seen || !autoLocalVmAttachable(seen)) return false;
+          if (!seen || (!autoLocalVmAttachable(seen) && !localVmDesktopPending(seen))) return false;
           if (localVmImageBusy || localVmModeChangeBusy || (localVmLifecycleBusy.has(localVmTarget.key) && !localVmReadinessPending(localVmTarget))) return false;
           if (seen.runtime && (seen.ready || seen.container !== "missing")) {
             lazyReadyVm = { runtime: seen.runtime };
@@ -8132,6 +8130,8 @@ async function beginTurn(
           }
         }
         try {
+          const failure = wakeInBackground ? recentLocalVmWakeFailure(localVmTarget.key) : undefined;
+          if (wakeInBackground && !failure) await bindTurnComputer(resourceOwner, `computer:vm:${localVmTarget.key}`, true);
           if (lazyReadyVm) {
             const wakeRequest = directRequestOwners.get(threadId);
             integrations.localComputer = containerComputerMcp(
@@ -8146,21 +8146,20 @@ async function beginTurn(
               label: "the Local VM",
               localVm: true,
               ...(wakeInBackground ? { startsComputer: true as const,
-                ...localVmResumeNotices({ target: localVmTarget.key, slot: () => autoVmClaims.get(threadId),
+                ...localVmResumeNotices({ target: localVmTarget.key, language: () => threadLanguage(threadId), slot: () => autoVmClaims.get(threadId),
                   live: () => ownsLiveTurn(threadId), cancelled: error => error instanceof DirectTurnSetupCancelled || error instanceof ComputerWaitParked,
                   append: (tool, late) => { if (store.taskByThread(bot.id, threadId)) store.appendMessage(threadId, { role: "bot", kind: "activity", tool, ...(late && wakeRequest?.turnId ? { turnId: wakeRequest.turnId } : {}) }); },
                   reject: surfaceLazyClaimRejection("the Local VM"),
                 }),
               } : { onRejected: surfaceLazyClaimRejection("the Local VM") }),
               claim: async () => {
-                await claimAutoLocalVm(threadId, localVmTarget);
+                await claimAutoLocalVm(threadId, localVmTarget, wakeInBackground);
                 if (previewCapture && ownsLiveTurn(threadId)) adoptClaimedCapture(previewCapture);
               },
             });
-            const failure = wakeInBackground ? recentLocalVmWakeFailure(localVmTarget.key) : undefined;
             if (failure) {
               Object.assign(autoVmClaims.get(threadId)!, { failed: true, failure });
-              store.appendMessage(threadId, { role: "bot", kind: "activity", tool: localVmWakeFailureNotice(failure) });
+              store.appendMessage(threadId, { role: "bot", kind: "activity", tool: localVmWakeFailureNotice(failure, false, threadLanguage(threadId)) });
             } else if (wakeInBackground) startAutoVmClaim(autoVmClaims, threadId, resourceOwner.generation);
             return true;
           }
@@ -11687,7 +11686,7 @@ async function localVmPayload(target: LocalVmTarget, auth: RequestAuth) {
   };
 }
 
-function readyLocalVmForTurn(botId: string, target: LocalVmTarget, isCurrent = () => true) {
+function readyLocalVmForTurn(botId: string, target: LocalVmTarget, isCurrent = () => true, waitForRunningDesktop = false) {
   return readyLocalVm(target, {
     lifecycleBusy: localVmLifecycleBusy,
     provisionBusy: { get: () => localVmProvisionBusy, set: busy => { localVmProvisionBusy = busy; } },
@@ -11702,7 +11701,7 @@ function readyLocalVmForTurn(botId: string, target: LocalVmTarget, isCurrent = (
     },
     touchIdle: () => localVmIdleFor(target).touch(),
     existingCount: runtime => existingPerBotLocalVmCount(runtime),
-    maxInstances: () => localVmMaxInstances(cfg), isCurrent, waitMs: LOCAL_VM_DESKTOP_WAIT_MS,
+    maxInstances: () => localVmMaxInstances(cfg), isCurrent, waitMs: LOCAL_VM_DESKTOP_WAIT_MS, waitForRunningDesktop,
   });
 }
 
