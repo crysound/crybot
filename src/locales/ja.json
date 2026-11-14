@@ -6029,6 +6029,8 @@
   "newBot.sharePreset": "プリセットとして共有…",
   "newBot.customSettings": "カスタム設定",
   "newBot.randomName": "ランダムな名前",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.team": "部署",
   "newBot.enabled": "有効",
   "newBot.removeRoutine": "{name}を削除",
