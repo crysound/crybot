@@ -4,8 +4,7 @@ import { createDataDirLeaseExit } from "./host/data-dir-lease-exit.ts";
 import { providerLockEnabled, providerUpdateDrivers, lockedProviderConfigs, providerLockConfigPatch, migrateLockedProviderReferences, migrateLockedRoutineReferences } from "./provider-lock.ts";
 // Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
 import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
-import { cfAccessRefusal, createCfAccess } from "./cf-access.ts";
-import { createAppHandoff } from "./app-handoff.ts";
+import { createAppHandoffGate } from "./app-handoff.ts";
 import { desktopUpdateFiles } from "./routes/desktop-update-files.ts";
 import { startFailureText } from "./start-failure-text.ts";
 import { reserveGmailDrafts } from "./gmail-draft-policy.ts";
@@ -12548,8 +12547,7 @@ ROUTES.push(createLiveRoutes({
   },
 }));
 
-const cfAccess = createCfAccess();
-const appHandoff = createAppHandoff(cfAccess !== null);
+const appHandoffGate = createAppHandoffGate();
 const toolResults = new ToolResults();
 const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
   if (CLOUD_TEAM) holdBodyDeadline(req, res);
@@ -12565,9 +12563,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
   let releaseWorkspaceRequest: (() => void) | undefined;
   try {
     if (await desktopUpdateFiles(req, res, process.env.CRYBOT_DESKTOP_UPDATES_DIR)) return;
-    const refusal = await cfAccessRefusal(cfAccess, method, path, req, res, url, sessions, SESSION_COOKIE);
-    if (refusal) return json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
-    if (method === "GET" && path === "/auth/app-handoff") return appHandoff(req, res, url);
+    if (await appHandoffGate(req, res, url, method, path, sessions, SESSION_COOKIE, json)) return;
     if (method === "GET" && path === "/api/health/hosted") {
       res.setHeader("cache-control", "no-store");
       const hosted = hostedWorkspaceConfiguration();

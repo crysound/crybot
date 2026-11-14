@@ -285,3 +285,18 @@ T-1207 证据：`git show --format= --name-status 7124ef58` 确实删除 `cloudf
 - `git diff --check`：通过。
 
 本沙箱禁止绑定 `127.0.0.1`，所以 `server/data-format.test.ts` 的 4 个真实 server 用例在 `freePortBlock` 处失败，11 个非监听测试通过；`server/starter-bots.e2e.test.ts`、`server/respond-replay.e2e.test.ts`、`server/testing/reserved-server.test.ts` 和 `server/steer-e2e.test.ts` 分别在端口分配或监听处得到 `EPERM`。`server/parallel-threads.e2e.test.ts` 同样在服务启动阶段无输出等待后终止。未把这些沙箱限制记作产品断言失败，需由协调者在 Actions/可监听环境按 r5 验收重新运行。未提交。
+
+## 第 6 轮（2026-11-14）
+
+合入 T-1218 后，`server/index.ts` 为 15518 行，超过 `scripts/testing/file-size-ratchet.test.ts` 登记的 15515 行。将 Cloudflare Access 拦截与 app-handoff 路由的组合门面移入 `server/app-handoff.ts` 的 `createAppHandoffGate()`：门面先调用原 `cfAccessRefusal()`，再仅处理 `GET /auth/app-handoff`，因此 Access 校验顺序和公开探测路径保持不变。`server/index.ts` 只保留一次门面调用，降至 15514 行；未调高 ratchet 登记。
+
+串行验证（Node 24，`--maxWorkers=1`）：
+
+- `pnpm vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1 --configLoader runner`：1 file / 1 test 通过。
+- `pnpm vitest run server/cf-access.test.ts --maxWorkers=1 --configLoader runner`：19 tests 通过。
+- `pnpm vitest run server/app-handoff.test.ts --maxWorkers=1 --configLoader runner`：60 tests 通过。
+- `pnpm typecheck`：通过。
+- `pnpm lint`：通过。
+- `git diff --check`：通过。
+
+未提交。`docs/verification/README.md` 仍不在当前 checkout，验证未接触用户 live 数据。
