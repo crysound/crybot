@@ -239,3 +239,157 @@ E6 使用了上述 PATH 前缀，其余 Vitest 命令均按 `V` 展开。基线�
 - `git diff --check`：退出 0（`diff-check-final.log`）。
 - `rg -ni 'openmausbot' companion/src/e2e/vectors relay/test/vectors`：0 行（`vector-residue.log`）。
 - 只做了与改动相关的定向运行，没有运行全仓测试或全量 tsc；lint 和 Vitest 不等同于完整类型检查。
+
+## 第 2 轮（审核返工）
+
+日期：2026-11-14；基于 `dded30f`。本轮不提交 git；未改 `.github/`、`docs/specs/`、NOTICE、LICENSE，保留用户已有的 `r2.md`。下列结果只针对隔离测试，未接触运行中的用户服务或数据。
+
+### 必改及建议的处理
+
+1. **显示名及对应测试**：指定的 `desktop-computer`、`claude-elicitation`（7 个用例）、`mcp-gate`、`chat-mcp-tools`、`phones.e2e`、`loop-guard.e2e`、`mcp-cards.e2e`、`desktop-computer.e2e`、`cloud-lending-browser.e2e`、`group-local-vm.e2e` 的显示文案期望已改为 `Cry Bot`，断言逻辑不变。`shared/your-computer.ts` 两条提示统一，并同步桌面控制/聊天视图的显示期望。
+   - 按要求全量扫描 `server src shared companion electron scripts` 的 TS/TSX/MJS，并对字符串、模板、正则及 JSX 文本逐项复核；清理发现的 shared 提示语、客户端错误匹配、companion 错误及控制页、Electron 通知/错误/窗口文案、验证脚本文案和相关测试期望。Widget 的示例应用标题改为 `Cry Bot Mobile`。追踪原生窗口测试的实际生产者，另同步三个 `.cjs` 文件中的窗口/登录提示；连接标题的主机名期望对齐夹具已有的 `server.example.test`。
+   - 保留标识符及翻译键、协议字节（包括 `PHONE_SECRET_INFO`）、URL、安装/备份路径、User-Agent、MCP 名称、Windows 登录任务名、证书测试 CN、向量元数据、临时模型探测仓库的 git 身份；不改读取历史消息的解析式及其历史/恶意输入样本，以及禁止旧拼写的负向断言。注释和非产品显示的测试标题不作无关改写。逐项分类见 `/tmp/t1207-rest2/brand-audit.log`；完整 grep 结果见 `residue-after.log`。
+   - 验证发现手机连接帮助 manifest 仍只含旧拼写触发词：补充带空格的三个触发词、保留旧词兼容，同步该帮助正文显示名；输入匹配测试同时覆盖新旧拼写。没有改选择技能的实现。
+2. **Fish 前缀**：客户端改为 `[Cry Bot]`，与服务端现有常量一致；客户端发送期望同步。服务端测试新增跨端常量相等断言，并验证 `defuse()` 对新旧前缀、大小写、零宽字符和重复空格的伪造更新均转义开括号。没有改防护实现。
+3. **恢复 SMTP 安全测试**：从 `4a11408` 恢复 `server/sign-in-mail.test.ts` 的全部 8 个用例；仅为缺少配置的 `createEmailSignIn` 调用显式传入 `env: { CRYBOT_SIGNIN_SMTP_URL: URL_ }`，保留注入的 `mailTransport`，同步邮件主题显示名。原有 38 个 `expect()` 全保留，覆盖一次性验证码、有效期、错误次数、重发节流、SMTP 失败及 STARTTLS 要求。
+   - `server/email-signin.test.ts` 的 7 个用例全部恢复，**没有删除托管流程用例**。原有用例本身均验证仍在使用的路由/会话安全语义，只有旧 control-plane 邮件夹具过时。
+   - 用 `startFakeSmtp`、`testCertificate` 替换已删除的 control-plane 夹具。子服务器在临时 HOME 中运行，配置 SMTP 和独立测试证书信任，从对应收件人的 SMTP 邮件解析真实验证码。保持 JSON-only、名单拒绝、管理员/成员权限、域名单、来源锁定、降级撤销全部邮件会话与 SSE/stream ticket、配对设备不受影响、外部移除名单后旧 cookie 永不复活的断言。
+   - 一次性 SMTP 验证码不能复用旧 stub 的固定 OTP；锁定测试在另一来源申请新验证码，额外确认已锁来源拿到正确码仍为 429，而另一来源成功。错误码选择保证不偶然等于随机验证码。原有 50 个 `expect()` 变为 55 个，没有降低安全要求；夹具失败时也能清理已创建资源。示例域名使用 `team.example.test`。
+4. **恢复团队策略测试**：从 `4a11408` 恢复 `server/cloud-team-policy.test.ts` 的全部 20 个用例、81 个 `expect()`。签名实现仍在，保留签名向量用例，按当前 `cry-team-policy-v1` 构造独立重算 HMAC-SHA256；指纹向量不变。`remoteAccessPaths(false)` 的 `/api/auth/pair`、`/api/pair`、`/api/auth/pairing`、`/api/auth/email/start`、`/api/auth/email/verify` 拦截契约完整保留。
+5. **两项建议**：手机密钥用例标题明确为 deterministic Node HPKE，移除误导性的 CryptoKit 历史注释，向量和加解密实现均未改。`CompanyBackupSettings.test.ts` 从 `4a11408` 完整恢复 33 个用例、188 个 `expect()`，仅同步 `Fully quit Cry Bot`；选中备份校验、精确输入 REPLACE、恢复标记持久化失败不覆盖数据等断言全部保留。
+
+### 策略签名向量的可复现生成
+
+以下命令使用 Node 标准库独立计算，与源码同样采用请求体 SHA-256/base64url，再以五段 LF 分隔文本做 HMAC-SHA256/base64url；密钥是 UTF-8 的 43 个 `s`，末尾没有额外换行。输入均为公开测试数据，不涉及真实密钥。
+
+```sh
+/opt/node24/bin/node --input-type=module <<'JS' > /tmp/t1207-rest2/policy-vector.log 2>&1
+import { createHash, createHmac } from 'node:crypto';
+const body = '{"v":1,"loaded":null,"problem":null}';
+const bodyHash = createHash('sha256').update(body).digest('base64url');
+const signed = ['cry-team-policy-v1', 'cm-test-home', '1792670400', 'nonce-nonce-nonce-1', bodyHash].join('\n');
+console.log(createHmac('sha256', 's'.repeat(43)).update(signed).digest('base64url'));
+JS
+```
+
+输出：`JVsynawDsAzL5a-kvJ-dhKN9G30Snd91_tZ3b8pfzrs`。不再声称该值已在未检出的上游仓库中固定。
+
+### 本轮验证环境
+
+- 直接使用 `/opt/node24/bin/node`，不用 systemd-run。Vitest 始终 `--maxWorkers=1 --configLoader runner`，每次 1–3 文件，批次串行；Node 原生测试也每批至多 3 文件，`--test-isolation=none --test-concurrency=1`。
+- 日志全部位于 `/tmp/t1207-rest2/`，仅查看 tail/grep 摘要。常规 Vitest setup 给每文件创建临时 HOME、删除继承的数据目录；邮件路由另外启动独立 HOME 的服务器/SMTP 夹具，原生测试沿用自身临时夹具。
+- `docs/verification/README.md` 本检出仍不存在；不能声称完成其中未能读取的验收流程。真实 SMTP 用例实际返回 `listen EPERM: operation not permitted 127.0.0.1`；其他测试也遇到 Unix socket/子进程 EPERM。邮件路由夹具停在 OpenSSL 测试证书创建失败，7 个用例未执行。不为沙箱改 skip、超时设置或断言。
+- 扩展批次设置外部 55 秒上限，超时后终止该批次进程组并等待退出，再运行下一批；不把无最终汇总的批次算作通过。命令清单与退出结果见 `batches.json`、`batch-results.json`。
+
+### 测试命令和关键输出
+
+下表 `V <文件>` 展开为：
+
+```sh
+/opt/node24/bin/node node_modules/vitest/vitest.mjs run <文件> --maxWorkers=1 --configLoader runner > /tmp/t1207-rest2/<日志>.log 2>&1
+```
+
+`N <文件>` 展开为：
+
+```sh
+/opt/node24/bin/node --test --test-isolation=none --test-concurrency=1 <文件> > /tmp/t1207-rest2/<日志>.log 2>&1
+```
+
+批次驱动器另外给子进程 PATH 前置 `/opt/node24/bin`。`baseline-*` 仅在 `git archive HEAD` 得到的 `/tmp/t1207-rest2/baseline` 独立树中运行，只用于归因，不算当前树通过数。`fix-*` 是修正/拆分后的最终复跑，覆盖相同文件的早期结果。`skipped` 是仓库既有条件或夹具失败所致，本轮没有新增 skip。
+
+| 日志 | 命令的完整文件参数 | 关键输出 / 退出状态 |
+|---|---|---|
+| `core-tests.log` | `V server/live-fish.test.ts src/lib/live-call-fish.test.ts server/cloud-team-policy.test.ts` | Test Files  3 passed (3); Tests  62 passed (62); exit 0 |
+| `restored-tests.log` | `V server/sign-in-mail.test.ts src/components/CompanyBackupSettings.test.ts server/phone-secret.test.ts` | Test Files  1 failed \| 2 passed (3); Tests  1 failed \| 68 passed (69); Errors  1 error; exit 1; listen EPERM |
+| `email-desktop-tests.log` | `V server/email-signin.test.ts server/desktop-computer.test.ts server/drivers/claude-elicitation.test.ts` | Test Files  1 failed \| 2 passed (3); Tests  23 passed \| 7 skipped (30); exit 1; OpenSSL 测试证书夹具失败 |
+| `v01.log` | `V companion/test/proxy-response.test.ts companion/test/upstream-failure.test.ts electron/capabilities.test.mjs` | 外部 55s 限时；无完整汇总，不计通过 |
+| `v02.log` | `V electron/cua-restart.test.mjs electron/diagnostics.test.mjs scripts/generate-locale.test.mjs` | Test Files  2 failed \| 1 passed (3); Tests  4 failed \| 106 passed (110); exit 1; spawnSync git EPERM |
+| `v03.log` | `V scripts/testing/deploy-update.test.ts scripts/verify-engines-ui.test.mjs server/boat-inventory.test.ts` | 外部 55s 限时；无完整汇总，不计通过 |
+| `v04.log` | `V server/bot-box/box.test.ts server/bot-visibility.test.ts server/cloud-health.test.ts` | Test Files  1 failed \| 2 passed (3); Tests  3 failed \| 65 passed (68); exit 1; listen EPERM |
+| `v05.log` | `V server/cloud-home-server.test.ts server/composio-auth-configs.test.ts server/custom-domain.test.ts` | Test Files  2 failed \| 1 passed (3); Tests  104 passed \| 25 skipped (129); Errors  1 error; exit 1; 隔离端口分配失败; listen EPERM |
+| `v06.log` | `V server/default-bot.test.ts server/drivers/acp/opencode-go.test.ts server/drivers/chat-mcp-tools.test.ts` | 外部 55s 限时；无完整汇总，不计通过 |
+| `v07.log` | `V server/harness-mcp-proxy.test.ts server/headless/run.test.ts server/host/person-inbox.test.ts` | Test Files  1 failed \| 2 passed (3); Tests  42 passed \| 17 skipped (59); Errors  1 error; exit 1; listen EPERM |
+| `v08.log` | `V server/host/proactive-crybot.test.ts server/host/published-apps.test.ts server/host/team-messages.test.ts` | Test Files  3 passed (3); Tests  57 passed (57); exit 0 |
+| `v09.log` | `V server/independent-threads-api.test.ts server/local-computer.test.ts server/mcp-gate.test.ts` | Test Files  3 failed (3); Tests  41 failed \| 22 passed \| 1 skipped (64); exit 1; 隔离端口分配失败; listen EPERM; 子进程在回复前退出 |
+| `v10.log` | `V server/model-providers-docs.test.ts server/own-home.test.ts server/paired-thread-targets-api.test.ts` | Test Files  2 failed \| 1 passed (3); Tests  4 passed \| 3 skipped (7); exit 1; 隔离端口分配失败; 缺少文档源文件 |
+| `v11.log` | `V server/peer-provenance.test.ts server/records-block.test.ts server/registry-save.test.ts` | Test Files  3 passed (3); Tests  111 passed (111); exit 0 |
+| `v12.log` | `V server/routes/internal-mcp.test.ts server/runtime/envelope.test.ts server/setup-suggestions.test.ts` | Test Files  3 passed (3); Tests  182 passed (182); exit 0 |
+| `v13.log` | `V server/skill-library.test.ts server/system-prompt.test.ts server/team-backup.test.ts` | Test Files  2 failed \| 1 passed (3); Tests  2 failed \| 95 passed (97); exit 1 |
+| `v14.log` | `V server/team-memory.test.ts server/testing/fake-claude-dump.test.ts server/today.test.ts` | Test Files  1 failed \| 2 passed (3); Tests  5 failed \| 47 passed (52); exit 1 |
+| `v15.log` | `V server/your-computer-consent.test.ts shared/cloud-computer-recovery.test.ts shared/grok-import.test.ts` | Test Files  3 passed (3); Tests  27 passed (27); exit 0 |
+| `v16.log` | `V shared/logins.test.ts shared/meetings.test.ts shared/sign-in-request.test.ts` | Test Files  3 passed (3); Tests  45 passed (45); exit 0 |
+| `v17.log` | `V shared/team-setup.test.ts shared/your-computer.test.ts src/components/AccountMove.test.ts` | Test Files  3 passed (3); Tests  28 passed (28); exit 0 |
+| `v18.log` | `V src/components/AppNotices.test.ts src/components/CallView.mode-menu.test.ts src/components/ChatMoreMenu.test.ts` | Test Files  3 passed (3); Tests  95 passed (95); exit 0 |
+| `v19.log` | `V src/components/ChatView.controls.test.ts src/components/ChatView.missing-thread.test.ts src/components/ChatView.progress-lines.test.ts` | Test Files  3 passed (3); Tests  63 passed (63); exit 0 |
+| `v20.log` | `V src/components/CloudSendStrip.test.ts src/components/EngineSetup.cursor.test.ts src/components/HelperIntro.test.ts` | Test Files  3 passed (3); Tests  28 passed (28); exit 0 |
+| `v21.log` | `V src/components/PlacesRail.test.ts src/components/SidebarProfileMenu.test.ts src/components/TaskPicker.test.ts` | Test Files  1 failed \| 2 passed (3); Tests  1 failed \| 106 passed (107); exit 1 |
+| `v22.log` | `V src/components/TeamSideSwitch.dom.test.ts src/components/bot-archive.test.ts src/components/bot-settings/PromptPreview.test.ts` | Test Files  3 passed (3); Tests  41 passed (41); exit 0 |
+| `v23.log` | `V src/components/bot-settings/ProposalStatus.test.ts src/components/conversation-share/ConversationShareDialogs.dom.test.ts src/components/keys/key-catalog.test.ts` | Test Files  3 passed (3); Tests  31 passed (31); exit 0 |
+| `v24.log` | `V src/components/onboarding/WelcomeFlow.test.ts src/lib/computer-messages.test.ts src/lib/own-team-bot.test.ts` | Test Files  3 passed (3); Tests  20 passed (20); exit 0 |
+| `v25.log` | `V src/lib/phone-setup.test.ts src/lib/server-word-contracts.test.ts src/lib/skins.test.ts` | Test Files  3 passed (3); Tests  411 passed (411); exit 0 |
+| `v26.log` | `V src/locales/server-lines.test.ts src/state/team-side.test.ts` | Test Files  2 passed (2); Tests  34 passed (34); exit 0 |
+| `n01.log` | `N electron/bot-move-main.node-test.mjs electron/cloud-connections.node-test.mjs electron/cloud-list.node-test.mjs` | ℹ tests 37; ℹ suites 0; ℹ pass 36; ℹ fail 1; ℹ cancelled 0; ℹ skipped 0; exit 1 |
+| `n02.log` | `N electron/cloud-logins.node-test.mjs electron/cloud-send-check.node-test.mjs electron/cloud-send.node-test.mjs` | ℹ tests 45; ℹ suites 0; ℹ pass 45; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; exit 0 |
+| `n03.log` | `N electron/company-backup-schedule.node-test.mjs electron/data-dir-lease.node-test.mjs electron/environment-switch.node-test.mjs` | 外部 55s 限时；无完整汇总，不计通过 |
+| `n04.log` | `N electron/environments.node-test.mjs electron/error-pages.node-test.mjs electron/host-screen-lease.node-test.mjs` | ℹ tests 36; ℹ suites 0; ℹ pass 35; ℹ fail 1; ℹ cancelled 0; ℹ skipped 0; exit 1 |
+| `n05.log` | `N electron/lend-automatically.node-test.mjs electron/lending-guards.node-test.mjs electron/lent-mcp.node-test.mjs` | ℹ tests 52; ℹ suites 0; ℹ pass 45; ℹ fail 7; ℹ cancelled 0; ℹ skipped 0; exit 1; listen EPERM |
+| `n06.log` | `N electron/managed-desktop.node-test.mjs electron/move-status.node-test.mjs electron/one-home-gone.node-test.mjs` | ℹ tests 71; ℹ suites 0; ℹ pass 71; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; exit 0 |
+| `n07.log` | `N electron/one-home-main.node-test.mjs electron/one-home.node-test.mjs electron/open-at-login.node-test.mjs` | ℹ tests 39; ℹ suites 0; ℹ pass 39; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; exit 0 |
+| `n08.log` | `N electron/own-home-main.node-test.mjs electron/place-look.node-test.mjs electron/screen-status.node-test.mjs` | ℹ tests 23; ℹ suites 0; ℹ pass 23; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; exit 0 |
+| `n09.log` | `N electron/talk-main.node-test.mjs electron/talk-panel.node-test.mjs electron/talk-session.node-test.mjs` | ℹ tests 67; ℹ suites 0; ℹ pass 66; ℹ fail 1; ℹ cancelled 0; ℹ skipped 0; exit 1; MockTimers 已启用；随后按文件拆分复跑 |
+| `n10.log` | `N electron/team-move-bring.node-test.mjs electron/update-errors.node-test.mjs electron/updater-coordinator.node-test.mjs` | ℹ tests 63; ℹ suites 0; ℹ pass 63; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; exit 0 |
+| `e01.log` | `V scripts/testing/automations-journey.ui.e2e.test.ts scripts/testing/cloud-sleep-wake.e2e.test.ts scripts/testing/control-cry-ui.e2e.test.ts` | Test Files  1 failed \| 2 skipped (3); Tests  7 skipped (7); exit 1; 隔离端口分配失败 |
+| `e02.log` | `V scripts/testing/cron-routines-ui.e2e.test.ts scripts/testing/one-workspace-ui.e2e.test.ts scripts/testing/team-own-chat.e2e.test.ts` | Test Files  1 failed \| 2 skipped (3); Tests  20 skipped (20); exit 1; 隔离端口分配失败 |
+| `e03.log` | `V scripts/testing/team-side-switch-ui.e2e.test.ts scripts/testing/workspace-backup-ui.e2e.test.ts server/browser/egress/hostile-pages.e2e.test.ts` | Test Files  3 skipped (3); Tests  12 skipped (12); exit 0 |
+| `e04.log` | `V server/cloud-connected-apps.e2e.test.ts server/cloud-credit.e2e.test.ts server/cloud-guest-shell.e2e.test.ts` | 外部 55s 限时；无完整汇总，不计通过 |
+| `e05.log` | `V server/cloud-lending-browser.e2e.test.ts server/cloud-lending-chrome.e2e.test.ts server/cloud-lending-memory.e2e.test.ts` | Test Files  3 failed (3); Tests  68 skipped (68); exit 1; 隔离端口分配失败; listen EPERM |
+| `e06.log` | `V server/cloud-lending.e2e.test.ts server/cloud-lent-mcp.e2e.test.ts server/cloud-lent-screen.e2e.test.ts` | Test Files  3 failed (3); Tests  9 skipped (9); exit 1; 隔离端口分配失败 |
+| `e07.log` | `V server/cloud-onepassword.e2e.test.ts server/cloud-personal.e2e.test.ts server/cloud-routine-level.e2e.test.ts` | Test Files  3 failed (3); Tests  26 skipped (26); exit 1; 隔离端口分配失败 |
+| `e08.log` | `V server/cloud-sharing.e2e.test.ts server/cloud-sync.e2e.test.ts server/cloud-team-admin.e2e.test.ts` | Test Files  3 failed (3); Tests  1 failed \| 6 skipped (7); exit 1; 隔离端口分配失败 |
+| `e09.log` | `V server/cloud-team-crybot-own-chat.e2e.test.ts server/cloud-team-crybot-reach.e2e.test.ts server/cloud-team-first-look.e2e.test.ts` | Test Files  3 failed (3); Tests  13 skipped (13); exit 1; 隔离端口分配失败 |
+| `e10.log` | `V server/cloud-team-phones.e2e.test.ts server/cloud-team-privacy-holes.e2e.test.ts server/cloud-team-private-default.e2e.test.ts` | Test Files  3 failed (3); Tests  29 skipped (29); exit 1; 隔离端口分配失败 |
+| `e11.log` | `V server/cloud-team-published-apps.e2e.test.ts server/cloud-team-sleep.e2e.test.ts server/desktop-computer.e2e.test.ts` | 外部 55s 限时；无完整汇总，不计通过 |
+| `e12.log` | `V server/direct-coordination.e2e.test.ts server/group-local-vm.e2e.test.ts server/lent-folders.e2e.test.ts` | Test Files  3 failed (3); Tests  45 failed \| 48 skipped (93); Errors  1 error; exit 1; 隔离端口分配失败; listen EPERM |
+| `e13.log` | `V server/live-azure-access.e2e.test.ts server/live-call.e2e.test.ts server/loop-guard.e2e.test.ts` | 外部 55s 限时；无完整汇总，不计通过 |
+| `e14.log` | `V server/mcp-cards.e2e.test.ts server/opencode-provider-keys.e2e.test.ts server/parallel-threads.e2e.test.ts` | 外部 55s 限时；无完整汇总，不计通过 |
+| `e15.log` | `V server/person-first.e2e.test.ts server/phones.e2e.test.ts server/place-view.e2e.test.ts` | Test Files  3 failed (3); Tests  1 failed \| 16 skipped (17); Errors  1 error; exit 1; 隔离端口分配失败; listen EPERM |
+| `e16.log` | `V server/proactive-routines.e2e.test.ts server/runtime-roots.e2e.test.ts server/starter-bots.e2e.test.ts` | 外部 55s 限时；无完整汇总，不计通过 |
+| `e17.log` | `V server/use-my-mac.e2e.test.ts server/x-research.e2e.test.ts` | 外部 55s 限时；无完整汇总，不计通过 |
+| `fix-v01.log` | `V server/skill-library.test.ts src/components/TaskPicker.test.ts shared/widget.test.ts` | Test Files  3 passed (3); Tests  71 passed (71); exit 0 |
+| `fix-v02.log` | `V server/default-bot.test.ts electron/capabilities.test.mjs scripts/verify-engines-ui.test.mjs` | Test Files  3 passed (3); Tests  58 passed (58); exit 0 |
+| `fix-v03.log` | `V server/system-prompt.test.ts` | Test Files  1 passed (1); Tests  57 passed (57); exit 0 |
+| `fix-n01.log` | `N electron/cloud-list.node-test.mjs electron/environments.node-test.mjs electron/desktop-workspace.node-test.mjs` | ℹ tests 56; ℹ suites 0; ℹ pass 56; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; exit 0 |
+| `fix-n02.log` | `N electron/preload.node-test.mjs` | ℹ tests 13; ℹ suites 0; ℹ pass 13; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; exit 0 |
+| `fix-n03.log` | `N electron/company-backup-schedule.node-test.mjs` | ℹ tests 23; ℹ suites 0; ℹ pass 23; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; exit 0 |
+| `fix-n04.log` | `N electron/talk-main.node-test.mjs` | 外部 55s 限时；无完整汇总，不计通过 |
+| `fix-n05.log` | `N electron/talk-panel.node-test.mjs` | ℹ tests 21; ℹ suites 0; ℹ pass 21; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; exit 0 |
+| `fix-n06.log` | `N electron/talk-session.node-test.mjs` | ℹ tests 28; ℹ suites 0; ℹ pass 28; ℹ fail 0; ℹ cancelled 0; ℹ skipped 0; exit 0 |
+| `fix-e01.log` | `V server/desktop-computer.e2e.test.ts` | Test Files  1 failed (1); Tests  2 failed \| 1 skipped (3); exit 1; 隔离端口分配失败 |
+| `baseline-v01.log` | `V electron/diagnostics.test.mjs server/testing/fake-claude-dump.test.ts` | Test Files  2 failed (2); Tests  6 failed \| 78 passed (84); exit 1 |
+| `baseline-n01.log` | `N electron/lending-guards.node-test.mjs electron/lent-mcp.node-test.mjs` | ℹ tests 26; ℹ suites 0; ℹ pass 19; ℹ fail 7; ℹ cancelled 0; ℹ skipped 0; exit 1; listen EPERM |
+
+### 结果边界及基线对照
+
+- 必改的非端口验证：Fish 两端、防伪前缀及团队策略共 **62 passed**；桌面控制和 Claude elicitation 共 **23 passed**；手机向量 **28 passed**；恢复的备份组件 **33 passed**。SMTP 单测 **7 passed / 1 blocked**（完整文件实际为 1 failed，见真实 SMTP 的 EPERM），邮件路由测试 **7 未执行**（beforeAll 的证书夹具失败）。共享文案契约、locale 文案契约和新增手机帮助触发词复跑通过，详见上表。
+- `mcp-gate.test.ts` 的子进程在回复前退出；`chat-mcp-tools.test.ts`、OpenCode 等子进程测试批次无完整汇总。独立探针 `child-probe.log` 中 Node 子进程退出 0，但原本应输出的固定 marker 没有出现；`openssl-probe.log` 同时记录 `error: "EPERM"` 和 OpenSSL 版本输出，因此不能将该环境视为正常的子进程执行环境。未改这些测试以适应沙箱。
+- 指定的 `phones.e2e`、`cloud-lending-browser.e2e`、`group-local-vm.e2e`、单独复跑的 `desktop-computer.e2e` 均因隔离端口/socket 或服务器夹具无法启动而未通过。`loop-guard.e2e`、`mcp-cards.e2e` 所在批次到达外部 55 秒限时，没有最终汇总；它们依赖隔离服务器/子进程，不能宣称执行完断言。`group-local-vm` 的 darwin 分支只做了文案修正，本 Linux 沙箱不提供 macOS 分支运行证据。
+- 其他带端口/子进程的扩展批次同样未通过或未完成，表中逐批保留真实退出值与输出；依赖浏览器/宿主机开关的 UI e2e 使用仓库原有 skip 条件，未开启后再绕过端口限制。**exit 0 且全部 skipped 的批次不等于通过行为验证**。
+- `server/model-providers-docs.test.ts` 因检出缺少 `apps/docs/content/docs/providers/model-providers.mdx` 而加载失败；未为此删除测试或新增文档替身。
+- 在 `HEAD` 的独立 archive 副本复现了 `electron/diagnostics.test.mjs` 的凭据环境变量清单不一致，以及 `server/testing/fake-claude-dump.test.ts` 的 5 个捕获/子进程失败：合计 **6 failed / 78 passed**，失败用例与当前树相同。没有更改凭据过滤实现或安全断言。
+- `electron/lending-guards.node-test.mjs` 与 `electron/lent-mcp.node-test.mjs` 的相同 7 个驱动器/子进程/监听失败也在基线复现：**7 failed / 19 passed**；当前 `n05` 包含额外通过文件，不能直接用该组总数与基线两文件总数相减。
+- Native 测试在关闭文件进程隔离后，`n09` 出现共享 MockTimers 已启用的运行干扰。拆成单文件后，talk-panel **21 passed**、talk-session **28 passed**；talk-main 显示 18 条通过但进程未在 55 秒内退出，未取得完整汇总，仍列为未完成，不把它归因成已确认的产品故障或已确认的沙箱问题。
+- 扫描对应的 **140 个改动/恢复测试文件均出现在实际尝试的命令中**，无遗漏（`test-coverage-audit.log`）；其中失败、仓库既有 skip、外部限时和未执行断言的情况如实保留。两个批次驱动器均已返回结束状态，没有通过中断驱动器来提前开始另一批测试。
+
+### 本轮收尾检查
+
+| 命令 | 关键输出 | 日志 |
+|---|---|---|
+| `/opt/node24/bin/node scripts/check-brand-residue.mjs` | `6470 files checked; 0 forbidden references.`；exit 0 | `brand-final.log` |
+| `/opt/node24/bin/node scripts/generate-locale.mjs --check` | `locale catalogs valid (16 languages, 10550 English strings)`；exit 0 | `locale-final.log` |
+| `/opt/node24/bin/node node_modules/oxlint/bin/oxlint --deny-warnings <改动文件和 4 个恢复文件>` | exit 0，无警告输出；文件参数见 `changed-files-final.log` | `lint-final.log` |
+| `git diff --check`；恢复文件另用 `git diff --no-index --check /dev/null <文件>` | 前者 exit 0；后者无空白诊断，exit 1 表示文件相对 `/dev/null` 有内容差异 | `diff-check-final.log`、`restored-whitespace.log` |
+| 指定目录 `grep -rn "CryBot" ... --include=*.ts --include=*.tsx --include=*.mjs` | 逐项复核；剩余为前述标识符、机器契约、旧输入/负向断言和注释/测试标题 | `residue-after.log`、`brand-audit.log` |
+| 策略签名独立生成两次后 `cmp` | 相同输出，exit 0 | `policy-vector.log`、`policy-vector-repeat.log`、`policy-vector-repro.log` |
+| `git diff --name-only -- .github docs/specs NOTICE LICENSE` | 无输出 | `protected-paths.log` |
+
+未运行全仓测试或完整 tsc；没有将 lint、单测或当前环境下的失败/skip 当成真实服务验收通过。所有新增测试数据和域名均为测试示例。

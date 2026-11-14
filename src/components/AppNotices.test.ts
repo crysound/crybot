@@ -29,7 +29,7 @@ vi.mock("@/lib/analytics", () => ({ emailGateDone: () => false, track: vi.fn() }
 vi.mock("@/lib/updater", () => ({ useUpdaterState: () => f.updater }));
 // Who CryBot belongs to: unknown (as before the session answers) unless a test says otherwise.
 vi.mock("@/lib/default-bot", async original => ({ ...await original<typeof import("@/lib/default-bot")>(), useViewerEmail: () => f.viewerEmail }));
-vi.mock("@/lib/brand", () => ({ brandStatus: () => ({ brand: { name: "CryBot" }, source: f.brand, file: "" }), productName: () => "CryBot" }));
+vi.mock("@/lib/brand", () => ({ brandStatus: () => ({ brand: { name: "Cry Bot" }, source: f.brand, file: "" }), productName: () => "Cry Bot" }));
 vi.mock("./Avatar", async original => ({ ...await original<typeof import("./Avatar")>(), MascotAvatar: () => null }));
 vi.mock("./lazy-screens", async original => ({ ...await original<typeof import("./lazy-screens")>(), GrokMoveDialog: () => "THE MOVE DIALOG" }));
 vi.mock("@/components/EngineLibrary", () => ({ engineReady: (instance: { snapshot: { state: string; authenticated?: boolean } }) =>
@@ -396,7 +396,7 @@ describe("no Use my Mac popup", () => {
 });
 
 describe("the Move from Grok Bot popup", () => {
-  const TITLE = "Move from Grok Bot", WHATS_NEW = "Meet the new CryBot Cloud", DIALOG = "THE MOVE DIALOG";
+  const TITLE = "Move from Grok Bot", WHATS_NEW = "Meet the new Cry Bot Cloud", DIALOG = "THE MOVE DIALOG";
   let modal: boolean;
 
   const reads = () => vi.mocked(api).mock.calls.map(([path]) => path).filter(path => path === "/api/setup-import/grok");
@@ -426,7 +426,7 @@ describe("the Move from Grok Bot popup", () => {
     for (const part of ['role="dialog"', 'aria-modal="true"', "data-grok-move-popup"]) expect(html).toContain(part);
 
     expect(launchNotice()).toBe(GROK_MOVE_NOTICE);
-    expect(launchDialogShown(), "CryBot's card waits for a later launch").toBe("notices");
+    expect(launchDialogShown(), "Cry Bot's card waits for a later launch").toBe("notices");
     expect(await settle()).toContain(TITLE);
 
     expect(reads(), "showing it looks at neither Downloads nor the Grok Bot app").toEqual([]);

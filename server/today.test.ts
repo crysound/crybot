@@ -83,7 +83,7 @@ function seededDay() {
   w.runs.push({ id: "run-leads", routineId: "r-leads", routineName: "Lead sweep", botId: w.pepper.id, status: "failed", manual: false,
     triggerSource: "webhook", scheduledFor: at(8), finishedAt: at(8), error: "Could not create a task for this run" });
   w.runs.push({ id: "run-kpi", routineId: "r-kpi", routineName: "Weekly KPI report", botId: w.atlas.id, status: "missed", manual: false,
-    triggerSource: "schedule", scheduledFor: at(6), error: "CryBot was not running at 06:00" });
+    triggerSource: "schedule", scheduledFor: at(6), error: "Cry Bot was not running at 06:00" });
   w.runs.push({ id: "run-stopped", routineId: "r-brief", routineName: "Morning briefing", botId: w.atlas.id, status: "cancelled", manual: true, scheduledFor: at(7), finishedAt: at(7, 5) });
   w.runs.push({ id: "run-live", routineId: "r-brief", routineName: "Morning briefing", botId: w.atlas.id, status: "running", manual: true, scheduledFor: at(14, 50), startedAt: at(14, 50) });
   w.routineList.push({ botId: w.atlas.id }, { botId: w.pepper.id });
@@ -120,7 +120,7 @@ describe("today's report", () => {
       { at: at(10, 2), botId: w.atlas.id, threadId: w.atlas.threadId, title: "Sent the refund reply to Sam. It went out at 10:01.", ok: true, outcomes: { emailSent: 1 }, startedBy: "person" },
       { at: at(9, 2, 30), botId: w.atlas.id, threadId: w.briefing.threadId, routineId: "r-brief", title: "Morning briefing", ok: true, startedBy: "schedule", outcomes: { emailRead: 2, draft: 1, report: 1 } },
       { at: at(8), botId: w.pepper.id, routineId: "r-leads", title: "Lead sweep", ok: false, error: "Could not create a task for this run", startedBy: "webhook", outcomes: {} },
-      { at: at(6), botId: w.atlas.id, routineId: "r-kpi", title: "Weekly KPI report", ok: false, error: "CryBot was not running at 06:00", startedBy: "schedule", outcomes: {} },
+      { at: at(6), botId: w.atlas.id, routineId: "r-kpi", title: "Weekly KPI report", ok: false, error: "Cry Bot was not running at 06:00", startedBy: "schedule", outcomes: {} },
     ]);
     expect(moreLines).toBe(0);
   });

@@ -257,7 +257,7 @@ describe("spawnCli goes through the box", () => {
     expect(boxed.argv).toContain("--unshare-net");
     expect(boxed.argv).toContain("/run/cry/egress.sock");
     const engines = npmEnginesPrefix(join(dir, "data"));
-    expect(boxed.argv, "the engines CryBot installed, read-only").toContain(`--ro-bind-try\n${engines}\n${engines}\n`);
+    expect(boxed.argv, "the engines Cry Bot installed, read-only").toContain(`--ro-bind-try\n${engines}\n${engines}\n`);
     expect((await run("crybot")).boxed).toBe(false);
     expect((await run("bot", false)).boxed).toBe(false);
     expect(botBox.report().boxed).toBe(1);

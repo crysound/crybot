@@ -133,7 +133,7 @@ describe("CryBot keeps an eye on the day, hidden from the sidebar", () => {
     expect(widgetActions(card.widget.root as WidgetRoot).map((entry) => entry.label)).toEqual(expect.arrayContaining(["Draft a reply to Ada", "Dismiss Ada's email", "Join"]));
     expect(rows.some((message) => message.automation?.runId === run.id)).toBe(false);
     const told = (await api("GET", "/api/notifications")).notifications as any[];
-    expect(told.findLast((entry) => entry.kind === "brief"), "the notification opens CryBot's chat").toMatchObject({ botId: chief.id, threadId: chief.threadId });
+    expect(told.findLast((entry) => entry.kind === "brief"), "the notification opens Cry Bot's chat").toMatchObject({ botId: chief.id, threadId: chief.threadId });
   });
 
   it("the same mail again is nothing new: no second turn", async () => {

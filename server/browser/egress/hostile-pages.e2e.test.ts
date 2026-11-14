@@ -165,7 +165,7 @@ describe.skipIf(!chrome)("S6: a hostile page in a bot's browser", () => {
         setTimeout(() => resolve(found), 5000);
       })`);
     });
-    expect(hits, "CryBot's stand-in saw nothing").toEqual([]);
+    expect(hits, "Cry Bot's stand-in saw nothing").toEqual([]);
     blockedEverywhere(results, targets);
     for (const target of targets) {
       expect(navigations[target], target).toMatch(/ERR_(SOCKS|PROXY|TUNNEL|ADDRESS|UNSAFE|BLOCKED|NAME)/);
@@ -276,7 +276,7 @@ describe.skipIf(!chrome)("S6: a hostile page in a bot's browser", () => {
       blockedEverywhere(results, targets);
       for (const target of targets) expect(navigations[target], target).toMatch(/ERR_/);
       expect(connects, "the computer connected nowhere").toEqual([]);
-      expect(hits, "CryBot's stand-in saw nothing").toEqual([]);
+      expect(hits, "Cry Bot's stand-in saw nothing").toEqual([]);
       const reasons = (host: string) => new Set(refusals.filter((refusal) => refusal.host === host).map((refusal) => `${refusal.port} ${refusal.reason}`));
       for (const host of ["lan.test", "nat64.test", "own.test"]) expect(reasons(host), host).toEqual(new Set(["80 home-network"]));
       expect(reasons("mac-loopback.test")).toEqual(new Set(["80 home-network", "443 home-network"]));

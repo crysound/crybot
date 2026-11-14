@@ -24,7 +24,7 @@ it("the first list a new member asks for shows their own CryBot with its main ch
   const first = await team.as(mira, "GET", "/api/bots?messages=20");
   expect(first.status).toBe(200);
   const own = (first.body.bots as Bot[]).find((bot) => bot.defaultBot?.person === "mira@acme.test");
-  expect(own, "their own CryBot is in the first list").toBeDefined();
+  expect(own, "their own Cry Bot is in the first list").toBeDefined();
   expect(own!.threadId).toBeTruthy();
   expect(own!.tasks?.map((task) => task.threadId)).toContain(own!.threadId);
   expect(own!.messages?.length, "its hello is there").toBeGreaterThan(0);

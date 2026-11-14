@@ -408,7 +408,7 @@ const PUBLIC_ACCOUNT_MESSAGES = [
   /^The secure connection request (?:was not accepted|was not allowed)\./,
   /^That code (?:is not valid|expired)\./,
   /^Your sign-in expired\./,
-  /^CryBot could not reach its secure connection service\./,
+  /^Cry Bot could not reach its secure connection service\./,
   /^Too many attempts were made\./,
   /^This computer was reconnected too often\./,
   /^This account has reached its computer limit\./,

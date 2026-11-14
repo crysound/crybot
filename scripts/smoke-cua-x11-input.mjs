@@ -55,7 +55,7 @@ windowManager.once("error", (error) => {
   }
 }
 
-const title = `CryBot CUA input safety ${process.pid}`;
+const title = `Cry Bot CUA input safety ${process.pid}`;
 const xev = spawn(
   "xev",
   ["-name", title, "-geometry", "320x180+40+40"],

@@ -39,7 +39,7 @@ async function api(method: string, path: string, body?: unknown) {
 }
 
 async function adminPairing(): Promise<string> {
-  const body = JSON.stringify({ label: "CryBot app (Cloud)", ttlSeconds: 300 });
+  const body = JSON.stringify({ label: "Cry Bot app (Cloud)", ttlSeconds: 300 });
   const timestamp = String(Math.floor(Date.now() / 1000)), nonce = randomBytes(16).toString("base64url");
   const response = await fetch(`${base}/api/cloud/pairing`, { method: "POST", headers: {
     host: HOST, "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "https", "content-type": "application/json",
@@ -154,7 +154,7 @@ it("refuses a name CryBot keeps, in one plain line, and saves nothing", async ()
   const before = readFileSync(join(dataDir, "config.json"), "utf8");
   const refused = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { CRYBOT_CLOUD_BOAT_TOKEN: "x-token", VENICE_API_KEY: VENICE } } });
   expect(refused.status).toBe(400);
-  expect(refused.body.error).toBe("CryBot keeps CRYBOT_CLOUD_BOAT_TOKEN for itself, so OpenCode can't be given it here. Put this key in opencode.json instead.");
+  expect(refused.body.error).toBe("Cry Bot keeps CRYBOT_CLOUD_BOAT_TOKEN for itself, so OpenCode can't be given it here. Put this key in opencode.json instead.");
   expect(readFileSync(join(dataDir, "config.json"), "utf8")).toBe(before);
   const opencodeKey = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { OPENCODE_API_KEY: "zen" } } });
   expect(opencodeKey.status).toBe(400);

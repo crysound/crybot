@@ -62,7 +62,7 @@ async function main() {
   const desktopEntry = path.join(applications, "com.crysound.crybot.desktop.desktop");
   writeFileSync(
     desktopEntry,
-    `[Desktop Entry]\nName=CryBot\nExec=${launched} %U\nType=Application\n`,
+    `[Desktop Entry]\nName=Cry Bot\nExec=${launched} %U\nType=Application\n`,
   );
 
   // Isolate every path the updater writes to.

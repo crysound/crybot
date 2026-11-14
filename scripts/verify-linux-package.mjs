@@ -470,7 +470,7 @@ try {
   requireFile(scalableIcon);
   const desktop = readFileSync(desktopFile, "utf8");
   for (const expected of [
-    "Name=CryBot",
+    "Name=Cry Bot",
     "Exec=/opt/CryBot/crybot %U",
     "Icon=crybot",
     "StartupWMClass=com.crysound.crybot.desktop",

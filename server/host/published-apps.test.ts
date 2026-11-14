@@ -15,7 +15,7 @@ const TOKEN = "nfp_published_apps_host_token_0123456789";
 
 const bots = [
   { id: "mira", name: "Mira", threadId: "main", tasks: [{ threadId: "main" }, { threadId: "ada-chat" }, { threadId: "ben-chat" }] },
-  { id: "adas-bot", name: "Ada's CryBot", threadId: "ada-bot-chat", defaultBot: { person: ADA }, tasks: [{ threadId: "ada-bot-chat" }] },
+  { id: "adas-bot", name: "Ada's Cry Bot", threadId: "ada-bot-chat", defaultBot: { person: ADA }, tasks: [{ threadId: "ada-bot-chat" }] },
   { id: "bens-own", name: "Ledger", threadId: "ledger-main", createdBy: BEN, tasks: [{ threadId: "ledger-main" }] },
 ];
 const rooms = [{ id: "launch", threadId: "room-thread", memberIds: ["mira"] }];
@@ -122,7 +122,7 @@ describe("the list on a person's own server", () => {
   it("puts a record under the bot whose folder holds it, whatever bot the record claims to be", async () => {
     record("adas-bot", "forged", site("forged", { botId: "mira", botName: "Mira" }));
     const forged = (await apps().list(visibleFor(OWNER, false), OWNER)).find((app) => app.title === "forged site")!;
-    expect(forged).toMatchObject({ id: "netlify-adas-bot-id-forged", bot: { id: "adas-bot", name: "Ada's CryBot" } });
+    expect(forged).toMatchObject({ id: "netlify-adas-bot-id-forged", bot: { id: "adas-bot", name: "Ada's Cry Bot" } });
   });
 
   it("reads each bot's folders once for requests that come together", async () => {

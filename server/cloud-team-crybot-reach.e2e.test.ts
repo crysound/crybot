@@ -95,7 +95,7 @@ beforeAll(async () => {
   await share(archive, { everyone: "view", people: {} });
   await share(payroll, { everyone: "none", people: { [BEN.email]: "chat" } });
   crybot = (await botsOf(mira)).find((bot) => bot.defaultBot?.person === MIRA.email)!;
-  expect(crybot, "every member has their own CryBot").toBeDefined();
+  expect(crybot, "every member has their own Cry Bot").toBeDefined();
   const chat = await team.as(mira, "POST", `/api/bots/${crybot.id}/tasks`, { title: "Mine" });
   expect(chat.status, JSON.stringify(chat.body)).toBe(201);
   mine = chat.body.task.threadId as string;
@@ -160,7 +160,7 @@ it("hands work to Sales privately: the result comes back to Mira whole, and Ben 
   await expect.poll(settled, { timeout: 30_000 }).toBe(true);
 
   const work = turn("S-WORK");
-  expect(sent(work)).toMatch(/\[From @CryBot \(bot\) · assignment \S+ for Mira · on their behalf at your level\]/);
+  expect(sent(work)).toMatch(/\[From @Cry Bot \(bot\) · assignment \S+ for Mira · on their behalf at your level\]/);
   expect(sent(turn("M-RESUMED")), "her result comes back whole: this is her own chat").toContain("Q3 was 120k");
   const seen = (await botsOf(mira)).find((bot) => bot.id === sales.id)!.tasks!.find((task) => task.threadId === work.threadId)!;
   expect(seen, "Sales' chat with Mira is listed for her").toBeDefined();

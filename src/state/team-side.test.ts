@@ -49,7 +49,7 @@ describe("the side of a conversation is the server's answer", () => {
     setTeamChats({ ...ADA, opened: ["scout-main"] });
     expect(sideOfThread(scout(), "scout-main")).toBe("team");
     expect(teamThreadOf({ tasks: [{ threadId: "t1", sharedChat: true, private: true }] }), "a private chat is never the team thread").toBeNull();
-    expect(teamThreadOf(crybot()), "a person's own CryBot has none").toBeNull();
+    expect(teamThreadOf(crybot()), "a person's own Cry Bot has none").toBeNull();
   });
 
   it("moves a conversation its person shared to Team at once, even on a page whose session still lists it as theirs", () => {
@@ -99,7 +99,7 @@ describe("what each side of the sidebar lists", () => {
     expect(view.switchable).toBe(true);
     expect(ids(view.bots)).toEqual(["scout", "mine"]);
     expect(view.bots[0]!.tasks.map((task) => task.threadId)).toEqual(["ada-own"]);
-    expect(view.bots[1]!.tasks.length, "their own CryBot keeps all its chats").toBe(2);
+    expect(view.bots[1]!.tasks.length, "their own Cry Bot keeps all its chats").toBe(2);
     expect(view.groups).toEqual([]);
   });
 

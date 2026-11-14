@@ -160,7 +160,7 @@ describe("locale draft validation", () => {
     expect(portuguese).not.toContain("and AI unchanged");
 
     expect(translationPrompt({ first: "One" }, "German", "de")).toContain(
-      "Keep placeholders such as {name} exactly, including duplicates. Keep CryBot, CryBot Cloud, CLI, and AI unchanged.",
+      "Keep placeholders such as {name} exactly, including duplicates. Keep Cry Bot, Cry Bot Cloud, CLI, and AI unchanged.",
     );
   });
 });

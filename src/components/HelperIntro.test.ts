@@ -54,10 +54,10 @@ const { SIMPLE_BOT_BUBBLE } = await import("./chat-bubble");
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const claude = (ready: boolean): InstanceInfo => ({ instanceId: "claude", driverKind: "claudeAgent", displayName: "Claude",
   snapshot: { state: ready ? "available" : "unavailable", authenticated: ready }, models: { default: "m", options: [] } });
-const bot = (extra: Partial<Bot> = {}): Bot => ({ id: "bot", threadId: "t", name: "CryBot", title: "", description: "", notifications: true,
+const bot = (extra: Partial<Bot> = {}): Bot => ({ id: "bot", threadId: "t", name: "Cry Bot", title: "", description: "", notifications: true,
   color: "chrome", unread: false, modelSelection: { instanceId: "claude", model: "m" }, messages: [], defaultBot: {}, chiefOfStaff: true, ...extra });
-const intro: Message = { id: "intro", role: "bot", kind: "options", at: 1, helperIntro: true, text: "Hey! I'm CryBot. I'm new here.",
-  card: { title: "Hey! I'm CryBot. I'm new here.", subtitle: "", options: ["What are my bots up to?"] } };
+const intro: Message = { id: "intro", role: "bot", kind: "options", at: 1, helperIntro: true, text: "Hey! I'm Cry Bot. I'm new here.",
+  card: { title: "Hey! I'm Cry Bot. I'm new here.", subtitle: "", options: ["What are my bots up to?"] } };
 const saved = (facts: HelperFollowupFacts): Message => ({ id: "f", role: "bot", kind: "text", at: 2, text: "English", helperFollowup: facts });
 
 let host: HTMLDivElement, root: Root;
@@ -104,19 +104,19 @@ afterEach(async () => {
 describe("what CryBot says first", () => {
   it("as the Chief: who it is, what it does here, and that it is looking around, never by the person's name", () => {
     const said = [
-      "Hey! I'm CryBot. I'm new here.",
+      "Hey! I'm Cry Bot. I'm new here.",
       "I'm here to be your Chief of Staff. I can manage your other bots. Task me with anything. I'll make sure it gets to the right bot.",
       "I'm taking a look around to see if there's anything I can pick up for you. I'll follow up in a moment.",
     ];
-    expect(introLines({ name: "CryBot", chief: true })).toEqual(said);
-    expect(introLines({ name: "CryBot", chief: true, person: "Ada" })).toEqual(said);
-    expect(introLines({ name: "CryBot", chief: true, team: "Acme" })[1]).toBe(`${said[1]} On Acme, I'm here for you and look after your own bots.`);
+    expect(introLines({ name: "Cry Bot", chief: true })).toEqual(said);
+    expect(introLines({ name: "Cry Bot", chief: true, person: "Ada" })).toEqual(said);
+    expect(introLines({ name: "Cry Bot", chief: true, team: "Acme" })[1]).toBe(`${said[1]} On Acme, I'm here for you and look after your own bots.`);
   });
 
   it("keeps a helper's lines for a CryBot that is not the Chief", () => {
-    expect(introLines({ name: "CryBot", chief: false })[0]).toBe("Hi! I'm CryBot, your helper for everything here.");
-    expect(introLines({ name: "CryBot", chief: false, person: "Ada" })[0]).toBe("Hi Ada! I'm CryBot, your helper for everything here.");
-    const member = introLines({ name: "CryBot", chief: false, team: "Acme" });
+    expect(introLines({ name: "Cry Bot", chief: false })[0]).toBe("Hi! I'm Cry Bot, your helper for everything here.");
+    expect(introLines({ name: "Cry Bot", chief: false, person: "Ada" })[0]).toBe("Hi Ada! I'm Cry Bot, your helper for everything here.");
+    const member = introLines({ name: "Cry Bot", chief: false, team: "Acme" });
     expect(member[1]).toBe("Ask me how to do anything here. I can set up bots, apps and routines with you. On Acme, I'm here for you and look after your own bots.");
   });
 
@@ -289,7 +289,7 @@ describe("in Advanced mode", () => {
 
   it("is the one bubble it always was: who it is, the setup still to do, and asks", async () => {
     await show();
-    expect(host.textContent).toContain(t("helperIntro.title", { name: "CryBot" }));
+    expect(host.textContent).toContain(t("helperIntro.title", { name: "Cry Bot" }));
     expect(host.textContent).toContain(t("helperIntro.chief"));
     expect(host.querySelector('[data-helper-ask="helperIntro.ask.overview"]')).not.toBeNull();
     expect(chips()).toEqual(["bots", "apps", "phone"]);

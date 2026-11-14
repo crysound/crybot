@@ -60,7 +60,7 @@ function makeDerived(): ReturnType<typeof import("./useBotSettingsDerived").useB
     browserAllowed: true,
     browserEnabled: false,
     browserSelectable: false,
-    browserDisabledReason: "The built-in browser needs the CryBot desktop app",
+    browserDisabledReason: "The built-in browser needs the Cry Bot desktop app",
     sectionName: "General",
     currentChief: undefined,
     botRoutines: [],
