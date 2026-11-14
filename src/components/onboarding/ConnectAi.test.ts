@@ -19,7 +19,6 @@ vi.mock("@/state/store", () => ({
   useStore: () => ({ state: { instances: f.instances, config: f.config }, dispatch: f.dispatch }),
 }));
 vi.mock("@/lib/analytics", () => ({ track: vi.fn(), emailGateDone: () => false }));
-vi.mock("@/lib/brand", () => ({ brandStatus: () => ({ source: f.brand }), productName: () => "Cry Bot" }));
 vi.mock("@/components/EngineSetup", async () => {
   const { createElement: h } = await import("react");
   return { EngineSetup: ({ instance, intent, description }: { instance: InstanceInfo; intent: string; description?: string }) =>
