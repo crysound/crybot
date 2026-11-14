@@ -224,19 +224,19 @@ export function skippedNote(skipped: readonly SkippedFile[]): string {
 }
 
 /** The bot's own folders for a turn, and its Local VM's workspace on this computer when it has one. */
-export type BotFolders = () => Promise<{ roots: readonly string[]; vmWorkspace: string | null }>;
+export type BotFolders = () => Promise<{ roots: readonly string[]; vmWorkspace: string | null; vmGuestRoot?: string }>;
 
 /** A chat page's bundle, videos included: readPageBundle within a bot's own folders; a path inside its Local VM's workspace means the same file here. */
 export async function readBotPageBundle(requested: string, folders: BotFolders): Promise<PageBundle> {
-  const { roots, vmWorkspace } = await folders();
-  const path = vmWorkspace ? guestWorkspaceToHost(requested, VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
+  const { roots, vmWorkspace, vmGuestRoot } = await folders();
+  const path = vmWorkspace ? guestWorkspaceToHost(requested, vmGuestRoot ?? VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
   return readPageBundle(path, vmWorkspace ? [vmWorkspace, ...roots] : roots, undefined, { videos: true });
 }
 
 /** A file inside a bot's own folders (or its Local VM's workspace), by the same rules as a page: the `extract` tool's. */
 export async function botFileSource(requested: string, folders: BotFolders): Promise<string> {
-  const { roots, vmWorkspace } = await folders();
-  const path = vmWorkspace ? guestWorkspaceToHost(requested, VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
+  const { roots, vmWorkspace, vmGuestRoot } = await folders();
+  const path = vmWorkspace ? guestWorkspaceToHost(requested, vmGuestRoot ?? VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
   return pageSource(path, vmWorkspace ? [vmWorkspace, ...roots] : roots);
 }
 

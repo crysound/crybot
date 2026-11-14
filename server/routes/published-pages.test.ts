@@ -19,11 +19,11 @@ function sink() {
   return { sent, json, res: {} as PagesInternalContext["res"] };
 }
 
-async function internal(handler: ReturnType<typeof createPagesInternalRoutes>, input: { path?: string; method?: string; body?: unknown; vmWorkspace?: string | null } = {}) {
+async function internal(handler: ReturnType<typeof createPagesInternalRoutes>, input: { path?: string; method?: string; body?: unknown; vmWorkspace?: string | null; vmGuestRoot?: string } = {}) {
   const { sent, json, res } = sink();
   const post = vi.fn(() => "message-1");
   const out = await handler({ method: input.method ?? "POST", path: input.path ?? "/api/internal/pages/publish", res, json, botId: "bot-1", threadId: "thread-1",
-    readBody: async () => input.body ?? {}, folders: async () => ({ roots: ["/work/bot-1"], vmWorkspace: input.vmWorkspace ?? null }), post,
+    readBody: async () => input.body ?? {}, folders: async () => ({ roots: ["/work/bot-1"], vmWorkspace: input.vmWorkspace ?? null, vmGuestRoot: input.vmGuestRoot }), post,
     requireActive: () => {}, signal: new AbortController().signal });
   return { out, post, ...sent };
 }
@@ -89,4 +89,10 @@ describe("the card's Unpublish", () => {
     expect((await call(handler, "/api/published-pages/abcdefghijklmnopqrstuvwxyz/unpublish", "GET")).out).toBe(PASS);
     expect((await call(handler, "/api/published-pages/short/unpublish")).out).toBe(PASS);
   });
+});
+
+it("publishes a screen guest path only beneath its assigned screen workspace", async () => {
+  const publisher = fakePublisher();
+  await internal(createPagesInternalRoutes(publisher), { body: { path: "/home/cua/workspace/screens/s2/site", title: "Site" }, vmWorkspace: "/vm/screens/s2", vmGuestRoot: "/home/cua/workspace/screens/s2" });
+  expect(publisher.publish).toHaveBeenCalledWith(expect.objectContaining({ path: join("/vm/screens/s2", "site"), roots: ["/vm/screens/s2", "/work/bot-1"] }));
 });

@@ -36,6 +36,7 @@ export const CONTROL_TURN_ENDED =
 export interface ControlState {
   held: boolean;
   helpOpen: boolean;
+  localVmScreen?: number;
   /** "person" only when the harness says a person holds the computer. */
   reason?: "person";
   blockedReason?: string;
@@ -89,6 +90,7 @@ export function createControlClient(options?: {
       return {
         held: body.held,
         helpOpen: body.helpOpen,
+        ...(Number.isInteger(body.localVmScreen) && body.localVmScreen >= 0 && body.localVmScreen <= 4 ? { localVmScreen: body.localVmScreen } : {}),
         ...(body.reason === "person" ? { reason: "person" as const } : {}),
         ...(typeof body.blockedReason === "string" && body.blockedReason.trim() ? { blockedReason: body.blockedReason } : {}),
       };

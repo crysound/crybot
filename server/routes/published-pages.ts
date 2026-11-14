@@ -29,7 +29,7 @@ export interface PagesInternalContext {
   /** Aborts once the turn that owns the capability ends or the tool call's request is gone. */
   signal: AbortSignal;
   /** The bot's own folders for this turn, and its Local VM's workspace on this computer when it has one. */
-  folders: () => Promise<{ roots: readonly string[]; vmWorkspace: string | null }>;
+  folders: () => Promise<{ roots: readonly string[]; vmWorkspace: string | null; vmGuestRoot?: string }>;
   /** Puts a card in the conversation the tool was called from; null when that conversation is gone. A live card comes
    * with the files published, so it can show the page itself. */
   post: (text: string, card: PublishedPageCard, bundle?: PageBundle) => string | null;
@@ -44,13 +44,13 @@ const publishBody = z.object({ path: z.string().max(4096), title: z.string().max
 const unpublishBody = z.object({ page_id: pageId, path: z.string().max(4096).optional() });
 
 /** A path inside the bot's Local VM workspace means the same file on this computer. */
-const hostPath = (path: string, vmWorkspace: string | null) => vmWorkspace ? guestWorkspaceToHost(path, VM_WORKSPACE_GUEST, vmWorkspace) ?? path : path;
+const hostPath = (path: string, vmWorkspace: string | null, vmGuestRoot?: string) => vmWorkspace ? guestWorkspaceToHost(path, vmGuestRoot ?? VM_WORKSPACE_GUEST, vmWorkspace) ?? path : path;
 
 export function createPagesInternalRoutes(publisher: PagePublisher) {
   return async (ctx: PagesInternalContext): Promise<typeof PASS | void> => {
     if (ctx.method !== "POST" || (ctx.path !== PUBLISH && ctx.path !== UNPUBLISH)) return PASS;
     const raw = await ctx.readBody();
-    const { roots, vmWorkspace } = await ctx.folders();
+    const { roots, vmWorkspace, vmGuestRoot } = await ctx.folders();
     const folders = vmWorkspace ? [vmWorkspace, ...roots] : roots;
     ctx.requireActive();
     const call = { assertActive: ctx.requireActive, signal: ctx.signal };
@@ -58,14 +58,14 @@ export function createPagesInternalRoutes(publisher: PagePublisher) {
     if (ctx.path === PUBLISH) {
       const body = publishBody.safeParse(raw ?? {});
       if (!body.success) return void ctx.json(ctx.res, 400, { error: "publish_page takes path, title and optionally page_id (text) and live (true or false)." });
-      outcome = await publisher.publish({ botId: ctx.botId, threadId: ctx.threadId, path: hostPath(body.data.path, vmWorkspace), title: body.data.title,
+      outcome = await publisher.publish({ botId: ctx.botId, threadId: ctx.threadId, path: hostPath(body.data.path, vmWorkspace, vmGuestRoot), title: body.data.title,
         ...(body.data.page_id ? { pageId: body.data.page_id } : {}), ...(body.data.live !== undefined ? { live: body.data.live } : {}),
         roots: folders, post: ctx.post, call });
     } else {
       const body = unpublishBody.safeParse(raw ?? {});
       if (!body.success) return void ctx.json(ctx.res, 400, { error: "unpublish_page takes page_id, or the path the page was published from." });
       outcome = await publisher.unpublish({ ...(body.data.page_id ? { pageId: body.data.page_id } : {}),
-        ...(body.data.path ? { path: hostPath(body.data.path, vmWorkspace) } : {}), botId: ctx.botId, roots: folders, call });
+        ...(body.data.path ? { path: hostPath(body.data.path, vmWorkspace, vmGuestRoot) } : {}), botId: ctx.botId, roots: folders, call });
     }
     ctx.json(ctx.res, outcome.status, outcome.status === 200 ? { ok: true, text: outcome.text } : { error: outcome.text });
   };

@@ -1,8 +1,9 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { PassThrough } from "node:stream";
-import { lazyContainerRequests, serveLazyContainerRequests } from "./lazy-container-mcp.ts";
+import { gatedContainerRequests, lazyContainerRequests, serveLazyContainerRequests } from "./lazy-container-mcp.ts";
 import type { AppClient } from "./mcp-app-connections.ts";
-import type { ControlState } from "./computer-control-client.ts";
+import { createControlClient, type ControlState } from "./computer-control-client.ts";
+import { cuaExecArgs, CUA_SOCKET } from "./container-computer.ts";
 import { startAutoVmClaim, type AutoVmClaimTable } from "./auto-vm-claims.ts";
 
 const request = (method: string, name?: string, args?: unknown) => ({ id: 1, method, params: { name, arguments: args } });
@@ -15,6 +16,31 @@ function fixture(gate: (action: boolean, signal: AbortSignal) => Promise<Control
   return { call, connect, proxy: lazyContainerRequests({ gate, connect, toolScope }) };
 }
 afterEach(() => vi.useRealTimers());
+
+it.each([0, 1, 2, 3, 4, undefined, 9])("resolves the lazy MCP identity from the authorized gate screen %s", async screen => {
+  const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ held: false, helpOpen: false, localVmScreen: screen })));
+  const control = createControlClient({ url: "http://fixture/control", token: "fixture", fetchImpl });
+  const open = vi.fn(async (): Promise<AppClient> => ({
+    request: async () => ({ tools: [click] }), close: vi.fn(async () => {}),
+    extensions: undefined, serverInfo: undefined, closed: false,
+  }));
+  const legacy = cuaExecArgs(["mcp", "--socket", CUA_SOCKET], { interactive: true });
+  const proxy = gatedContainerRequests("docker", legacy, control, { dynamicScreen: true, open });
+  await proxy.request(request("tools/list"));
+  expect(fetchImpl).not.toHaveBeenCalled();
+  expect(open).not.toHaveBeenCalled();
+  const result = await proxy.request(request("tools/call", "search_tools", { query: "click" }));
+  if (screen === undefined || screen === 9) {
+    expect(result).toHaveProperty("result.isError", true);
+    expect(open).not.toHaveBeenCalled();
+  } else if (screen === 0) {
+    expect(open).toHaveBeenCalledWith("docker", legacy, expect.any(AbortSignal));
+  } else {
+    expect(open).toHaveBeenCalledWith("docker", expect.arrayContaining(["-u", `crybot-s${screen}`, `DISPLAY=:${screen}`, `/run/user/6100${screen}/crybot-cua.sock`]), expect.any(AbortSignal));
+    expect(JSON.stringify(open.mock.calls)).not.toContain(CUA_SOCKET);
+  }
+  await proxy.close();
+});
 
 it("initializes and lists tools immediately while a five-second wake is in progress, then calls successfully", async () => {
   vi.useFakeTimers();

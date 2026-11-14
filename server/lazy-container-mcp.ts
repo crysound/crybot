@@ -1,12 +1,13 @@
 import { allowsTool, parseToolScope, type ToolScope } from "../shared/tool-scope.ts";
 import { createInterface } from "node:readline";
 import type { Readable, Writable } from "node:stream";
-import { createControlClient, controlRefusal, type ControlState } from "./computer-control-client.ts";
+import { createControlClient, controlRefusal, type ControlState, type ControlClient } from "./computer-control-client.ts";
 import type { AppClient } from "./mcp-app-connections.ts";
 import { CALL_TOOL, DESCRIBE_TOOL, SEARCH_TOOL, ToolDirectory, type CatalogTool } from "./mcp-directory.ts";
 import { listsComputerTool } from "./computer-tool-list.ts";
 import { textOnlyErrorResult } from "./mcp-error-result.ts";
 import { MAX_INPUT_BYTES, failure } from "./harness-mcp-request.ts";
+import { screenExecArgs, screenSocket, sharedScreenTarget } from "./container-computer.ts";
 
 export function lazyContainerRequests(deps: {
   toolScope?: ToolScope;
@@ -88,14 +89,35 @@ export function lazyContainerRequests(deps: {
   };
 }
 
+export function gatedContainerRequests(command: string, args: string[], gate: ControlClient, options: {
+  toolScope?: ToolScope;
+  dynamicScreen: boolean;
+  open(command: string, args: string[], signal: AbortSignal): Promise<AppClient>;
+}) {
+  let screen: number | undefined;
+  return lazyContainerRequests({
+    toolScope: options.toolScope,
+    gate: async (action, signal) => {
+      const state = await gate.state(true, action ? undefined : { readinessOnly: "1" }, signal);
+      if (!state.held) screen = state.localVmScreen;
+      return state;
+    },
+    connect: async signal => {
+      if (options.dynamicScreen) {
+        if (screen === undefined) throw new Error("No screen was assigned to this turn");
+        if (screen > 0) args = screenExecArgs(sharedScreenTarget(screen), ["mcp", "--socket", screenSocket(screen)], { interactive: true });
+      }
+      return options.open(command, args, signal);
+    },
+  });
+}
+
 export function runLazyContainerMcp(command: string, args: string[], control: { url: string; token: string }): void {
   const parsed = parseToolScope(JSON.parse(process.env.CRYBOT_CONTAINER_TOOL_SCOPE ?? "{}"));
   if (!parsed.ok) throw new Error(parsed.error);
-  const gate = createControlClient(control);
-  const requests = lazyContainerRequests({
-    toolScope: parsed.scope,
-    gate: (action, signal) => gate.state(true, action ? undefined : { readinessOnly: "1" }, signal),
-    connect: async signal => {
+  const requests = gatedContainerRequests(command, args, createControlClient(control), {
+    toolScope: parsed.scope, dynamicScreen: process.env.CRYBOT_CONTAINER_DYNAMIC_SCREEN === "1",
+    open: async (command, args, signal) => {
       const { openAppClient } = await import("./mcp-app-connections.ts");
       return openAppClient({ command, args, env: {} }, { onNotification() {} }, false, signal);
     },
@@ -119,7 +141,7 @@ export function serveLazyContainerRequests(requests: ReturnType<typeof lazyConta
     pending.add(work);
     void work.finally(() => pending.delete(work));
   });
-  input.on("close", () => { void Promise.allSettled([...pending]).finally(() => requests.close()); });
+  input.on("close", () => { void Promise.allSettled(pending).finally(() => requests.close()); });
 }
 
 function abortable<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
