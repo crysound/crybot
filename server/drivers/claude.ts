@@ -1,6 +1,7 @@
 // Claude Code over stream-json both ways: prompt on stdin, one retained CLI process per thread,
 // each turn settled by the CLI's own `result` frame.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { claudeTurnLaunch, maySteerClaudeTurn } from "./claude-turn-launch.ts";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { createServer as createNetServer } from "node:net";
 import { homedir, tmpdir } from "node:os";
@@ -46,7 +47,7 @@ import { createOrgModelBlocks, modelSwapNotice, withOrgBlocks } from "./claude-m
 import { engineHomes } from "../engine-homes/engine-homes.ts";
 import { TEAM_TOOLS_FAILED, failedCustomMcp, teamToolsFailed } from "./team-tools.ts";
 import { armIdleClose, engineIdleMs, sessionIdlePolicy, stopIdleClose } from "./session-idle.ts";
-import { promptHalves, withVolatileNote } from "./prompt-split.ts"; import { CLAUDE_OWN_MEMORY_OFF } from "./claude-own-memory.ts";
+import { withVolatileNote } from "./prompt-split.ts"; import { CLAUDE_OWN_MEMORY_OFF } from "./claude-own-memory.ts";
 import { parseVersionTriple, versionAtLeast } from "./acp/version-probe.ts";
 import {
   applyClaudeInject,
@@ -1201,6 +1202,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
         base: env.ANTHROPIC_BASE_URL ?? null,
         configDir: env.CLAUDE_CONFIG_DIR ?? null,
         hooks: Boolean(hooks),
+        feishuCli: Boolean(turn.feishuCli),
         toolSearch,
         botSettings: createHash("sha256").update(JSON.stringify(botSettings)).digest("hex"),
         // Rotating an account's key/helper must not reuse the old process.
@@ -1211,7 +1213,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
       });
 
       const live = sessions.get(threadId);
-      if (!turn.sessionReset && live && !live.turn && !live.closing && live.child.exitCode === null && live.argsKey === argsKey && (!sessionId || sessionId === live.sessionId)) {
+      if (!turn.feishuCli && !turn.sessionReset && live && !live.turn && !live.closing && live.child.exitCode === null && live.argsKey === argsKey && (!sessionId || sessionId === live.sessionId)) {
         if (live.idleTimer) clearTimeout(live.idleTimer);
         live.turn = { turnId, input: turn, retryAbort, settled: false, sawStreamDelta: false, awaitingInit: true, pendingSteers: new Set(), deferred: null, continuationGrace: null, continuationSilence: null };
         active.set(threadId, { stop: () => {
@@ -1238,9 +1240,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
         return { turnId };
       }
       if (live) closeSession(threadId, turn.sessionReset ? "context reset" : "spawn contract changed");
-      // A new process gets the stable half only; the volatile half rides its first message, so a relaunch reuses the cached prefix.
-      const halves = promptHalves(turn);
-      const launchSystem = halves.stable ?? turn.system;
+      const { halves, launchSystem, environment: launchEnvironment, box: launchBox, rememberWarmContract } = await claudeTurnLaunch(turn, env);
 
       // Until sessions.set() below, this turn owns every launch resource and must release it on failure.
       const cleanupUnownedLaunch = () => {
@@ -1341,19 +1341,18 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
 
       let child: ReturnType<typeof spawnCli>;
       try {
-        child = spawnCli(cliToLaunch(config.cli, launchCli), args, { cwd, env, stdio: ["pipe", "pipe", "pipe"], box: { ...(broker ? { rw: [broker.socketPath] } : {}), ...(hookTokenPath ? { ro: [dirname(hookTokenPath)] } : {}) } }, "bot");
+        if (retry.cancelled) {
+          cleanupUnownedLaunch();
+          if (active.get(threadId)?.turnId === turnId) active.delete(threadId);
+          emit({ ...base(threadId, turnId), type: "turn.completed", ok: false, stopReason: "interrupted", cost: null });
+          return { turnId };
+        }
+        child = spawnCli(cliToLaunch(config.cli, launchCli), args, { cwd, env: launchEnvironment(), stdio: ["pipe", "pipe", "pipe"], box: launchBox({ ...(broker ? { rw: [broker.socketPath] } : {}), ...(hookTokenPath ? { ro: [dirname(hookTokenPath)] } : {}) }) }, "bot");
       } catch (error) {
         cleanupUnownedLaunch();
         throw error;
       }
-      if (turn.guestConfined) warmContracts.delete(threadId);
-      else {
-        warmContracts.set(threadId, {
-          args: [...args], env: { ...env }, cwd, system: launchSystem ?? null,
-          mcpServers: mcpConfigPath ? JSON.parse(JSON.stringify(mcpServers)) : null,
-          settings: authSettingsPath ? JSON.parse(JSON.stringify(settings)) : null,
-        });
-      }
+      rememberWarmContract(warmContracts, threadId, args, cwd, mcpConfigPath ? mcpServers : null, authSettingsPath ? settings : null);
       let markClosed!: () => void;
       const session: Session = {
         closed: new Promise<void>((resolve) => { markClosed = resolve; }),
@@ -1416,6 +1415,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
         // `claude update` cannot change code this child already loaded, and a signed-out child can keep holding the shared OAuth refresh lock: retire both before completing.
         if (stopReason === "update_required" || stopReason === "auth_required") closeSession(threadId, stopReason === "auth_required" ? "authentication required" : "update required");
         else if (session.teamToolsFailed) closeSession(threadId, "team tools did not connect");
+        else if (t.input.feishuCli) closeSession(threadId, "turn credentials released");
         const cost = turnCostFromRunningTotal(total, session.costTotal ?? null);
         if (total !== null) session.costTotal = total;
         emit({ ...base(threadId, t.turnId), type: "turn.completed", ok, stopReason, cost, ...(usage ? { usage } : {}) });
@@ -1881,9 +1881,9 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
       return { turnId };
     };
 
-    const steer = async (threadId: string, text: string, images?: readonly ClaudeImage[]): Promise<SteerOutcome> => {
+    const steer = async (threadId: string, text: string, images?: readonly ClaudeImage[], person?: string): Promise<SteerOutcome> => {
       const s = sessions.get(threadId);
-      if (!s || !s.turn || s.turn.settled || s.closing || s.child.exitCode !== null) return "refused";
+      if (!s || !s.turn || s.turn.settled || s.closing || s.child.exitCode !== null || !maySteerClaudeTurn(s.turn.input, person)) return "refused";
       const turn = s.turn;
       let message: ClaudeUserMessage;
       try {

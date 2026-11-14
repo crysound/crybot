@@ -294,7 +294,7 @@ export function scanDiff(diff, readHead = () => null) {
     const pathFindings = scanLine(file, file, 0, config);
     const pathDenied = hasDenylistedWord(file, config);
     if (pathDenied && !pathFindings.some(({ rule }) => rule === "denylist")) pathFindings.push({ file, line: 0, rule: "denylist" });
-    const displayPath = pathDenied ? `<redacted-path #${index + 1}>` : file.replace(/[\x00-\x1f\x7f]/g, "?");
+    const displayPath = pathDenied ? `<redacted-path #${index + 1}>` : file.replace(new RegExp(String.raw`[\u0000-\u001F\u007F]`, "g"), "?");
     const contentFindings = [];
     if (!gitlink && !shouldSkipFile(file)) {
       const head = readHead(file);
