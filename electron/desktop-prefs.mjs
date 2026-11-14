@@ -51,6 +51,8 @@ export function jsonFile(file, files = fs) {
 const parseChat = value => value && typeof value === "object" && typeof value.botId === "string" && typeof value.threadId === "string"
   && CHAT_ID.test(value.botId) && CHAT_ID.test(value.threadId) ? { botId: value.botId, threadId: value.threadId } : null;
 
+const parseIsland = value => ({ enabled: value?.enabled !== false, fullscreen: value?.fullscreen !== false, width: Number.isFinite(value?.width) ? Math.round(Math.min(320, Math.max(120, value.width))) : 200 });
+
 function parse(raw) {
   const record = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   const seen = Array.isArray(record.seen) ? [...DESKTOP_NOTICES.filter(id => record.seen.includes(id)), ...keptAnnouncements(record.seen)] : [];
@@ -58,7 +60,7 @@ function parse(raw) {
   const quickAsks = record.quickAsks && typeof record.quickAsks === "object" && !Array.isArray(record.quickAsks)
     ? Object.fromEntries(Object.entries(record.quickAsks).flatMap(([server, chat]) => { const parsed = parseChat(chat); return parsed ? [[server, parsed]] : []; }))
     : {};
-  return { seen, ...(typeof record.analytics === "boolean" ? { analytics: record.analytics } : {}),
+  return { seen, ...(record.island ? { island: parseIsland(record.island) } : {}), ...(typeof record.analytics === "boolean" ? { analytics: record.analytics } : {}),
     ...(isLanguage(record.language) ? { language: record.language } : {}),
     ...(typeof record.installId === "string" && INSTALL_ID.test(record.installId) ? { installId: record.installId } : {}),
     ...(updatesConsent ? { updatesConsent } : {}),
@@ -93,6 +95,8 @@ export function createDesktopPrefs({ read, write }) {
   };
   const save = next => { record = next; try { write(next); } catch {} };
   return {
+    island: () => parseIsland(current().island),
+    setIsland(value) { save({ ...current(), island: parseIsland({ ...current().island, ...value }) }); },
     seen: () => [...current().seen],
     markSeen(id) {
       const saved = current();
@@ -169,7 +173,7 @@ export function createDesktopPrefs({ read, write }) {
  * `onLanguage(language)`: tells main, which draws its menus, tray and dialogs in it. `onShown(language, sender)`: the
  * language a page of the window shows, which main's words follow while nothing is picked. `prefs`: the record main reads too.
  */
-export function registerDesktopPrefs({ prefs: given, ipcMain, read, write, page, cloudOffered, cloudAccount, localConfig = () => null, languageChanged = () => {}, onLanguage = () => {}, onShown = () => {}, frame = null, now = Date.now, systemName = accountFullName }) {
+export function registerDesktopPrefs({ prefs: given, ipcMain, read, write, page, cloudOffered, cloudAccount, localConfig = () => null, languageChanged = () => {}, onLanguage = () => {}, onShown = () => {}, frame = null, islandChanged = () => {}, now = Date.now, systemName = accountFullName }) {
   let prefs = given ?? null;
   const store = () => prefs ??= createDesktopPrefs({ read, write });
   const from = (channel, pages, handler) => (event, ...args) => {
@@ -186,6 +190,12 @@ export function registerDesktopPrefs({ prefs: given, ipcMain, read, write, page,
     return { seen: closed && !seen.includes(WHATS_NEW) ? [...seen, WHATS_NEW] : seen, cloud };
   };
   const ANY = ["local", "cloud", "server"];
+  ipcMain.handle("island-settings:state", from("island-settings:state", ANY, () => store().island()));
+  ipcMain.handle("island-settings:set", from("island-settings:set", ANY, (_, value) => {
+    store().setIsland(value);
+    islandChanged();
+    return store().island();
+  }));
   ipcMain.handle("desktop-notices:state", from("desktop-notices:state", ANY, state));
   ipcMain.handle("desktop-notices:seen", from("desktop-notices:seen", ANY, (_, id) => store().markSeen(id)));
   // A first run's default name for the profile: this computer's own page only, never a server's.

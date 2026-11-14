@@ -6,6 +6,7 @@ import path from "node:path";
 import test from "node:test";
 import vm from "node:vm";
 import { createDesktopPrefs, createDesktopText, DESKTOP_NOTICES, DESKTOP_PORTS, jsonFile, registerDesktopPrefs } from "./desktop-prefs.mjs";
+import { loadDesktopWindow } from "./remote-only.mjs";
 import { ONBOARDING_CLOUD_HINT, onboardingHints, WELCOME_VERSION } from "./onboarding-record.mjs";
 
 const require = createRequire(import.meta.url);
@@ -114,7 +115,7 @@ function desktopMain({ offered = true, page = event => event.page, config = () =
 
 test("every page of this desktop's window reads and records the same notices; nothing else is answered", async () => {
   const main = desktopMain();
-  assert.deepEqual(main.channels, ["desktop-notices:state", "desktop-notices:seen", "desktop-profile:system-name", "desktop-analytics:set", "desktop-language:set", "window-frame:state", "window-frame:set"]);
+  assert.deepEqual(main.channels, ["island-settings:state", "island-settings:set", "desktop-notices:state", "desktop-notices:seen", "desktop-profile:system-name", "desktop-analytics:set", "desktop-language:set", "window-frame:state", "window-frame:set"]);
   for (const page of ["local", "cloud", "server"]) assert.deepEqual(await main.ask("desktop-notices:state", page), { seen: [], cloud: true });
   await main.ask("desktop-notices:seen", "server", POPUP);
   assert.deepEqual(await main.ask("desktop-notices:state", "local"), { seen: [POPUP], cloud: true });
@@ -256,35 +257,24 @@ function preload(origin, { activation = false, saved = null, language = null } =
   return { bridge, invoked, synced, sent, tell: (channel, ...args) => heard.get(channel)({}, ...args) };
 }
 
-test("the preload gives every page of the window the notices and the switch's state, and only This computer's page a way to set it", async () => {
+test("the preload gives every page the notices without exposing analytics", async () => {
   for (const origin of [CLOUD, VPS]) {
     const page = preload(origin, { saved: false });
     assert.equal(typeof page.bridge.desktopNotices.state, "function", origin);
     assert.equal(page.bridge.cloudAccount, undefined, origin);
     const asked = () => page.synced.filter(channel => channel.startsWith("desktop-"));
     assert.deepEqual(asked(), [], "nothing is asked until analytics asks");
-    assert.equal(page.bridge.desktopAnalytics.enabled(), false, "turned off on this desktop");
-    assert.deepEqual(asked(), ["desktop-analytics:read"]);
-    assert.equal(page.bridge.desktopAnalytics.set, undefined, "a server's page cannot change the desktop's switch");
+    assert.equal(page.bridge.desktopAnalytics, undefined, "analytics stays off a remote page's bridge");
     await page.bridge.desktopNotices.state(); await page.bridge.desktopNotices.seen({ toString: () => POPUP });
     assert.deepEqual(page.invoked, [["desktop-notices:state"], ["desktop-notices:seen", POPUP]]);
     assert.deepEqual(Object.keys(page.bridge.desktopNotices), ["state", "seen", "shown"], "no page moves the window to this computer");
   }
   const local = preload(LOCAL, { activation: true, saved: false });
   assert.equal(typeof local.bridge.desktopNotices.state, "function");
-  assert.deepEqual(local.synced, [], "nothing is asked until analytics asks");
-  assert.equal(local.bridge.desktopAnalytics.enabled(), false, "answered at once, before anything loads");
-  assert.equal(local.bridge.desktopAnalytics.enabled(), false);
-  assert.deepEqual(local.synced, ["desktop-analytics:read"], "asked once a page");
-  await local.bridge.desktopAnalytics.set(true);
-  assert.equal(local.bridge.desktopAnalytics.enabled(), true);
-  assert.deepEqual(local.invoked, [["desktop-analytics:set", true]]);
-  const unsaved = preload(LOCAL);
-  for (let i = 0; i < 3; i++) assert.equal(unsaved.bridge.desktopAnalytics.enabled(), null);
-  assert.deepEqual(unsaved.synced, ["desktop-analytics:read"], "no choice saved yet is asked once too");
-  assert.equal(preload(LOCAL, { saved: "off" }).bridge.desktopAnalytics.enabled(), null);
+  assert.equal(local.bridge.desktopAnalytics, undefined);
+  assert.deepEqual(local.synced, []);
   const safe = PRELOAD.match(/const REMOTE_SAFE = new Set\(\[([^\]]*)\]\)/)[1];
-  assert.ok(safe.includes('"desktopNotices"')); assert.ok(safe.includes('"desktopAnalytics"'));
+  assert.ok(safe.includes('"desktopNotices"')); assert.ok(!safe.includes('"desktopAnalytics"'));
 });
 
 test("the preload gives every page of the window the app language this computer keeps", async () => {
@@ -370,7 +360,7 @@ test("production wiring: main answers this computer's page, My Cloud's own page 
   options.onShown("de", {}); options.onShown("de", contents); options.onShown("en", contents);
   assert.deepEqual(calls.slice(6), [["shown", "de"], "relabel", "talk relabel", ["shown", "en"]], "only the window's own page leads main's words, and only a change redraws them");
   const navigate = main.slice(main.indexOf("function navigateMainWindow(url, keepingRecovery = false) {"), main.indexOf("\n}\n", main.indexOf("function navigateMainWindow(url, keepingRecovery = false) {")) + 3);
-  const load = vm.runInNewContext(`${navigate}; navigateMainWindow`, { homeWindow: { cancel: () => {} }, mainWindow: { isDestroyed: () => false, loadURL: async url => { if (url.endsWith("fail")) throw new Error("ERR_CONNECTION_REFUSED"); } } });
+  const load = vm.runInNewContext(`${navigate}; navigateMainWindow`, { loadDesktopWindow, desktopBuild: { remoteOnly: false }, homeWindow: { cancel: () => {} }, mainWindow: { isDestroyed: () => false, loadURL: async url => { if (url.endsWith("fail")) throw new Error("ERR_CONNECTION_REFUSED"); } } });
   assert.equal(await load(`${LOCAL}/ok`), true); assert.equal(await load(`${LOCAL}/fail`), false, "a failed load answers false, never throws");
   assert.equal(await vm.runInNewContext(`${navigate}; navigateMainWindow`, { homeWindow: { cancel: () => {} }, mainWindow: null })(`${LOCAL}/`), false, "no window");
 });
@@ -455,4 +445,18 @@ test("Settings reads and changes the window's frame on any page of the window; o
   assert.deepEqual(await handlers.get("window-frame:set")({}, false), { on: false, restart: false }, "no window yet");
   asking = null;
   assert.throws(() => handlers.get("window-frame:set")({}, true), /only available in this app's window/);
+});
+
+test("island preferences default on, survive restart, clamp width and require a verified app page", async () => {
+  let saved = null;
+  const prefs = createDesktopPrefs({ read: () => saved, write: value => { saved = value; } });
+  assert.deepEqual(prefs.island(), { enabled: true, fullscreen: true, width: 200 });
+  prefs.setIsland({ enabled: false, fullscreen: false, width: 999 });
+  assert.deepEqual(createDesktopPrefs({ read: () => saved, write() {} }).island(), { enabled: false, fullscreen: false, width: 320 });
+  const main = desktopMain();
+  for (const page of ["local", "cloud", "server"]) {
+    assert.equal((await main.ask("island-settings:set", page, { width: 1 })).width, 120);
+    assert.equal((await main.ask("island-settings:state", page)).enabled, true);
+  }
+  assert.throws(() => main.ask("island-settings:set", null, { enabled: false }), /only available/);
 });

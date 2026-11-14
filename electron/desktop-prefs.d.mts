@@ -31,6 +31,8 @@ export interface DesktopLanguageBridge {
   shown?(language: string): void;
 }
 export interface DesktopPrefs {
+  island(): import("../shared/island").IslandSettings;
+  setIsland(value: Partial<import("../shared/island").IslandSettings>): void;
   seen(): string[];
   /** One of DESKTOP_NOTICES, or an announcement card's mark (`announcement:<id>`, `announcement-sponsor:<day>`); anything
    * else is not kept. */
@@ -86,6 +88,7 @@ export declare function relabelDesktop(options: {
   badge(): void;
 }): void;
 export declare function registerDesktopPrefs(options: {
+  islandChanged?(): void;
   /** Used instead of making a store from read/write. */
   prefs?: DesktopPrefs;
   ipcMain: { handle(channel: string, handler: (event: unknown, ...args: unknown[]) => unknown): void; on(channel: string, listener: (event: { returnValue?: unknown }) => void): void };
