@@ -1,0 +1,188 @@
+name: iOS nightly
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+    - cron: '17 19 * * *'
+    - cron: '17 19 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: ios-nightly
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    runs-on: macos-26
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile/ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        run: |
+          xcode=$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' ! -iname '*beta*' | sort -V | tail -1)
+          test -n "$xcode"
+          sudo xcode-select -s "$xcode/Contents/Developer"
+          xcodebuild -version
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            mobile/ios/SourcePackages
+          key: ${{ runner.os }}-xcode26-spm-${{ hashFiles('mobile/ios/Package.resolved') }}
+          restore-keys: ${{ runner.os }}-xcode26-spm-
+      - name: Test CryKit
+        working-directory: .
+        run: swift test --package-path mobile/ios/Packages/CryKit
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project and restore package lock
+        run: |
+          xcodegen generate
+          if [[ -f Package.resolved ]]; then
+            mkdir -p CryBot.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+            cp Package.resolved CryBot.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+            echo 'CRYBOT_PACKAGE_RESOLUTION=-disableAutomaticPackageResolution' >> "$GITHUB_ENV"
+          fi
+      - name: Select nightly simulators
+        run: |
+          xcrun simctl list --json > "$RUNNER_TEMP/crybot-nightly-simulators.json"
+          python3 - <<'PY'
+          import json, os, subprocess
+          inventory=json.load(open(os.environ['RUNNER_TEMP']+'/crybot-nightly-simulators.json'))
+          runtimes=[r for r in inventory['runtimes'] if r.get('isAvailable') and '.iOS-' in r['identifier']]
+          runtime=max(runtimes,key=lambda r: tuple(int(x) for x in r['version'].split('.')))
+          types=json.loads(subprocess.check_output(['xcrun','simctl','list','devicetypes','--json'],text=True))['devicetypes']
+          available=inventory['devices'].get(runtime['identifier'],[])
+          def get(name, fallbacks=()):
+              item=next((d for d in available if d.get('isAvailable') and d['name']==name),None)
+              chosen=name
+              if item is None:
+                  wanted=next((t for t in types if t['name']==name),None)
+                  if wanted:
+                      udid=subprocess.check_output(['xcrun','simctl','create',name,wanted['identifier'],runtime['identifier']],text=True).strip()
+                      item={'name':name,'udid':udid}
+                  else:
+                      for fallback in fallbacks:
+                          wanted=next((t for t in types if t['name']==fallback),None)
+                          if wanted:
+                              udid=subprocess.check_output(['xcrun','simctl','create',fallback,wanted['identifier'],runtime['identifier']],text=True).strip()
+                              item={'name':fallback,'udid':udid}; chosen=fallback; break
+              if item is None: raise SystemExit('Missing simulator '+name)
+              print('Selected',chosen,item['udid'],'runtime',runtime['identifier'])
+              return item['udid']
+          env=os.environ['GITHUB_ENV']
+          with open(env,'a') as out:
+              out.write('CRYBOT_NIGHTLY_SE='+get('iPhone SE (3rd generation)',('iPhone 16e',))+'\n')
+              out.write('CRYBOT_NIGHTLY_16='+get('iPhone 16')+'\n')
+              out.write('CRYBOT_NIGHTLY_PROMAX='+get('iPhone 16 Pro Max')+'\n')
+          PY
+      - name: Build app and all test bundles once
+        run: |
+          xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+            -destination "platform=iOS Simulator,id=$CRYBOT_NIGHTLY_16" \
+            -derivedDataPath DerivedData/Tests -clonedSourcePackagesDirPath SourcePackages \
+            ${CRYBOT_PACKAGE_RESOLUTION:-} build-for-testing CODE_SIGNING_ALLOWED=NO
+      - name: Run all unit tests and snapshots
+        run: |
+          env TEST_RUNNER_CRY_SNAPSHOT_FEATURES=all xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+            -destination "platform=iOS Simulator,id=$CRYBOT_NIGHTLY_16" \
+            -derivedDataPath DerivedData/Tests -clonedSourcePackagesDirPath SourcePackages \
+            ${CRYBOT_PACKAGE_RESOLUTION:-} -resultBundlePath DerivedData/CryBotTests.xcresult \
+            -parallel-testing-enabled NO -only-testing:CryBotTests test-without-building CODE_SIGNING_ALLOWED=NO
+          scripts/assert-tests-ran.sh DerivedData/CryBotTests.xcresult --required
+          mkdir -p DerivedData/screenshots/unit
+          xcrun xcresulttool export attachments --path DerivedData/CryBotTests.xcresult --output-path DerivedData/screenshots/unit || true
+          for target in CryBotWatchTests; do
+            xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+              -destination "platform=iOS Simulator,id=$CRYBOT_NIGHTLY_16" \
+              -derivedDataPath DerivedData/Tests -clonedSourcePackagesDirPath SourcePackages \
+              ${CRYBOT_PACKAGE_RESOLUTION:-} -resultBundlePath "DerivedData/$target.xcresult" \
+              -parallel-testing-enabled NO -only-testing:"$target" test-without-building CODE_SIGNING_ALLOWED=NO
+            scripts/assert-tests-ran.sh "DerivedData/$target.xcresult" --required
+          done
+      - name: Run all XCUITest flows on three devices
+        run: |
+          for pair in "iPhone16:$CRYBOT_NIGHTLY_16" "iPhoneSE:$CRYBOT_NIGHTLY_SE" "iPhoneProMax:$CRYBOT_NIGHTLY_PROMAX"; do
+            label=${pair%%:*}; udid=${pair#*:}
+            xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+              -destination "platform=iOS Simulator,id=$udid" -derivedDataPath DerivedData/Tests \
+              -clonedSourcePackagesDirPath SourcePackages ${CRYBOT_PACKAGE_RESOLUTION:-} \
+              -resultBundlePath "DerivedData/CryBotUITests-$label.xcresult" -parallel-testing-enabled NO \
+              -only-testing:CryBotUITests test-without-building CODE_SIGNING_ALLOWED=NO
+            scripts/assert-tests-ran.sh "DerivedData/CryBotUITests-$label.xcresult" --required
+            mkdir -p "DerivedData/screenshots/$label"
+            xcrun xcresulttool export attachments --path "DerivedData/CryBotUITests-$label.xcresult" --output-path "DerivedData/screenshots/$label" || true
+          done
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: mobile/ios/DerivedData/screenshots
+          if-no-files-found: ignore
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crybot-nightly-tests
+          path: mobile/ios/DerivedData/*.xcresult
+          if-no-files-found: ignore
+
+  ios-18-weekly:
+    if: github.event_name == 'schedule' && github.event.schedule == '17 19 * * 0'
+    runs-on: macos-26
+    continue-on-error: true
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile/ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        run: |
+          xcode=$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' ! -iname '*beta*' | sort -V | tail -1)
+          test -n "$xcode"
+          sudo xcode-select -s "$xcode/Contents/Developer"
+      - name: Download iOS 18 runtime
+        run: xcodebuild -downloadPlatform iOS -buildVersion 18.x
+      - name: Install XcodeGen and generate project
+        run: brew install xcodegen && xcodegen generate
+      - name: Select iOS 18 simulator
+        run: |
+          xcrun simctl list --json > "$RUNNER_TEMP/ios18.json"
+          python3 - <<'PY'
+          import json, os, subprocess
+          data=json.load(open(os.environ['RUNNER_TEMP']+'/ios18.json'))
+          runtime=next((r for r in data['runtimes'] if r.get('isAvailable') and r['name'].startswith('iOS 18')),None)
+          if runtime is None: raise SystemExit('iOS 18 runtime unavailable')
+          devices=data['devices'].get(runtime['identifier'],[])
+          item=next((d for d in devices if d.get('isAvailable') and d['name']=='iPhone 16'),None)
+          if item is None: raise SystemExit('iPhone 16 unavailable on iOS 18')
+          with open(os.environ['GITHUB_ENV'],'a') as f: f.write('CRYBOT_IOS18_SIMULATOR='+item['udid']+'\n')
+          print('Selected iOS 18 simulator',item['udid'])
+          PY
+      - name: Build and test CryBotTests on iOS 18
+        run: |
+          xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+            -destination "platform=iOS Simulator,id=$CRYBOT_IOS18_SIMULATOR" \
+            -derivedDataPath DerivedData/iOS18 build-for-testing CODE_SIGNING_ALLOWED=NO
+          env TEST_RUNNER_CRY_SNAPSHOT_FEATURES=all xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+            -destination "platform=iOS Simulator,id=$CRYBOT_IOS18_SIMULATOR" \
+            -derivedDataPath DerivedData/iOS18 -resultBundlePath DerivedData/iOS18-CryBotTests.xcresult \
+            -parallel-testing-enabled NO -only-testing:CryBotTests test-without-building CODE_SIGNING_ALLOWED=NO
+          scripts/assert-tests-ran.sh DerivedData/iOS18-CryBotTests.xcresult --required
+          mkdir -p DerivedData/iOS18-screenshots
+          xcrun xcresulttool export attachments --path DerivedData/iOS18-CryBotTests.xcresult --output-path DerivedData/iOS18-screenshots || true
+      - name: Upload iOS 18 screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: mobile/ios/DerivedData/iOS18-screenshots
+          if-no-files-found: ignore

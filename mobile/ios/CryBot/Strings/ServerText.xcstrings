@@ -1,0 +1,4208 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "chat.notice.acpEmpty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ finished without replying."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ terminou sem responder."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 結束了但沒有回覆。"
+          }
+        }
+      }
+    },
+    "chat.notice.acpMcpAppsFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected apps couldn't be set up, so %@ couldn't start this reply. Try again, or switch this bot to another AI."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível configurar os apps conectados, então %@ não conseguiu começar esta resposta. Tente de novo ou troque a IA deste bot."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法設定已連線的應用程式，因此 %@ 無法開始這則回覆。請再試一次，或將這個智能體切換到其他 AI。"
+          }
+        }
+      }
+    },
+    "chat.notice.acpMcpServerFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The \"%1$@\" MCP server couldn't be set up, so %2$@ couldn't start this reply. Try again, or switch this bot to another AI."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível configurar o servidor MCP \"%1$@\", então %2$@ não conseguiu começar esta resposta. Tente de novo ou troque a IA deste bot."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法設定「%1$@」MCP 伺服器，因此 %2$@ 無法開始這則回覆。請再試一次，或將這個智能體切換到其他 AI。"
+          }
+        }
+      }
+    },
+    "chat.notice.acpModelFallback": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ no longer offers %2$@, so this conversation uses %3$@. Choose another model for this bot to stop seeing this."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ não oferece mais %2$@, então esta conversa está usando %3$@. Para não ver mais este aviso, escolha outro modelo para este bot."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 已不再提供 %2$@，因此這段對話改用 %3$@。為這個智能體選擇其他模型即可不再看到這則訊息。"
+          }
+        }
+      }
+    },
+    "chat.notice.acpModelRequestFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@'s model request failed: \"%2$@\" %1$@ may retry or stop; no reply for %3$@ so far."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O pedido de %1$@ ao modelo falhou: “%2$@”. %1$@ pode tentar novamente ou parar. Sem resposta há %3$@."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 的模型請求失敗：「%2$@」%1$@ 可能會重試或停止；目前已 %3$@ 沒有回覆。"
+          }
+        }
+      }
+    },
+    "chat.notice.acpNoReason": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ stopped without saying why."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ parou sem informar o motivo."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 停止了但沒有說明原因。"
+          }
+        }
+      }
+    },
+    "chat.notice.acpQuietStuck": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ sent nothing for %2$@ with no tool running, no open request to its model and no CPU use, so the turn was stopped as stuck. Send the message again to retry."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ficou %2$@ sem enviar nada. Não havia ferramenta em execução, pedido aberto ao modelo nem uso de CPU, então a sessão foi interrompida por estar travada. Envie a mensagem de novo para tentar novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 已經 %2$@ 沒有傳送任何內容，沒有工具在執行、沒有對模型的未完成請求，也沒有使用 CPU，因此這個回合被視為卡住而停止。請再傳送一次訊息重試。"
+          }
+        }
+      }
+    },
+    "chat.notice.acpQuietUsageLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ reached a usage limit%2$@ and is waiting it out without replying, so this turn was stopped."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ atingiu um limite de uso%2$@ e está esperando a restrição acabar, sem responder. Por isso, esta sessão foi interrompida."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 已達到使用上限%2$@，正在等待重設而沒有回覆，因此這個回合已停止。"
+          }
+        }
+      }
+    },
+    "chat.notice.acpRestarted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ was restarted because a session sharing its process ignored Stop"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ foi reiniciado porque uma sessão que compartilha seu processo ignorou “Parar”"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 已重新啟動，因為共用其程序的一個工作階段忽略了「停止」"
+          }
+        }
+      }
+    },
+    "chat.notice.acpStopFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ignored Stop and its process could not be ended"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ignorou “Parar” e não foi possível encerrar seu processo"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 忽略了「停止」，且無法結束它的程序"
+          }
+        }
+      }
+    },
+    "chat.notice.appAccessRequested": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App access requested"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pedido de acesso ao app"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已要求應用程式存取權"
+          }
+        }
+      }
+    },
+    "chat.notice.approve": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approve: %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aprovar: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "核准：%@"
+          }
+        }
+      }
+    },
+    "chat.notice.backupCardWaiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "switched to %1$@. Your request waits on a card above and continues on %1$@ once you act on it."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mudou para %1$@. Seu pedido aguarda sua ação em um cartão acima. Depois disso, continua em %1$@."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已切換到 %1$@。你的請求正在等待上方的卡片，等你處理後會在 %1$@ 上繼續。"
+          }
+        }
+      }
+    },
+    "chat.notice.backupContinuingLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "continuing on %@ after hitting the usage limit"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuando em %@ depois de atingir o limite de uso"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "達到使用上限後，改在 %@ 上繼續"
+          }
+        }
+      }
+    },
+    "chat.notice.backupContinuingSignedOut": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "continuing on %1$@ while %2$@ is signed out"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuando em %1$@ enquanto %2$@ está sem login"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 已登出，改在 %2$@ 上繼續"
+          }
+        }
+      }
+    },
+    "chat.notice.backupConversationBusy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "switched to %@. This conversation is working, so your message was not sent again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mudou para %@. O bot está trabalhando nesta conversa, então sua mensagem não foi enviada novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已切換到 %@。這段對話正在工作，因此你的訊息沒有重新傳送。"
+          }
+        }
+      }
+    },
+    "chat.notice.backupCouldNotContinue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "could not continue on %1$@: %2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível continuar em %1$@: %2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法在 %1$@ 上繼續：%2$@"
+          }
+        }
+      }
+    },
+    "chat.notice.backupMessageMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "switched to %@, but your message could not be found to send again. Send it again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mudou para %@, mas não foi possível encontrar sua mensagem para reenviar. Envie novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已切換到 %@，但找不到你的訊息來重新傳送。請再傳送一次。"
+          }
+        }
+      }
+    },
+    "chat.notice.backupQuestionWaiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "switched to %@. A teammate's question is waiting for your answer in this conversation, so your message was not sent again. Answer it, then send your message again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mudou para %@. Um colega aguarda sua resposta a uma pergunta nesta conversa, por isso sua mensagem não foi reenviada. Responda à pergunta e depois envie sua mensagem novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已切換到 %@。這段對話中有一位隊友的問題正在等你回答，因此你的訊息沒有重新傳送。請先回答，再重新傳送你的訊息。"
+          }
+        }
+      }
+    },
+    "chat.notice.backupRequestUnderWay": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "switched to %1$@. Your request is still under way here and continues on %1$@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mudou para %1$@. Seu pedido ainda está em andamento aqui e continua em %1$@."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已切換到 %1$@。你的請求仍在這裡進行中，並會在 %1$@ 上繼續。"
+          }
+        }
+      }
+    },
+    "chat.notice.claudeExtraUsage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude refused this turn because this model runs on extra usage for your account, and those credits are used up. Your plan's own usage is not affected: switch this bot to a model your plan includes, or add extra usage in your Claude account."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Claude recusou esta sessão porque este modelo consome os créditos de uso extra da sua conta, e esses créditos acabaram. O uso do seu plano não foi afetado: troque este bot para um modelo incluído no plano ou adicione uso extra na sua conta do Claude."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude 拒絕了這個回合，因為這個模型會使用你帳號的額外用量，而這些額度已用完。你方案本身的用量不受影響：請把這個智能體切換到你方案包含的模型，或在你的 Claude 帳號中加購額外用量。"
+          }
+        }
+      }
+    },
+    "chat.notice.claudeLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Claude account has reached its %1$@. For now, %2$@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta conta do Claude atingiu o %1$@. Por enquanto, %2$@."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這個 Claude 帳號已達到%1$@。目前請%2$@。"
+          }
+        }
+      }
+    },
+    "chat.notice.claudeLimitResets": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Claude account has reached its %1$@, which resets %2$@. Until then, %3$@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta conta do Claude atingiu o %1$@, que será renovado em %2$@. Até lá, %3$@."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這個 Claude 帳號已達到%1$@，將於%2$@重設。在那之前，%3$@。"
+          }
+        }
+      }
+    },
+    "chat.notice.claudeLimitSaid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Claude account has reached its %1$@ (Claude says: \"%2$@\"). For now, %3$@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta conta do Claude atingiu o %1$@ (o Claude diz: “%2$@”). Por enquanto, %3$@."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這個 Claude 帳號已達到%1$@（Claude 表示：「%2$@」）。目前請%3$@。"
+          }
+        }
+      }
+    },
+    "chat.notice.codexActionMayHaveRun": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ A tool action may have run. Check its effects before trying again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ Uma ferramenta pode ter executado uma ação. Confira os efeitos antes de tentar novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 某個工具動作可能已經執行。重試前請先檢查它的影響。"
+          }
+        }
+      }
+    },
+    "chat.notice.codexElicitationDeclined": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ asked for input Cry Bot can't show yet, so the request was declined."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pediu informações que o Cry Bot ainda não pode mostrar, então o pedido foi recusado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 要求了 Cry Bot 還無法顯示的輸入，因此已拒絕這個請求。"
+          }
+        }
+      }
+    },
+    "chat.notice.codexElicitationDeclinedGeneric": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An MCP server asked for input Cry Bot can't show yet, so the request was declined."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um servidor MCP pediu informações que o Cry Bot ainda não pode mostrar, então o pedido foi recusado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有一個 MCP 伺服器要求了 Cry Bot 還無法顯示的輸入，因此已拒絕這個請求。"
+          }
+        }
+      }
+    },
+    "chat.notice.codexModelUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This model isn't available on your ChatGPT plan, so it's now hidden from this account's model list. Pick another model."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este modelo não está disponível no seu plano do ChatGPT, por isso agora está oculto na lista de modelos desta conta. Escolha outro modelo."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的 ChatGPT 方案不提供這個模型，因此它已從這個帳號的模型清單中隱藏。請選擇其他模型。"
+          }
+        }
+      }
+    },
+    "chat.notice.codexUnsupportedMany": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex could not run the tools %@ (\"unsupported call\"): the AI provider sent the call back without the tool's app name, so it never reached the tool. Pick a model for this bot whose provider handles tool calls fully."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Codex não conseguiu executar as ferramentas %@ (“unsupported call”). O provedor de IA devolveu a chamada sem o nome do app da ferramenta, e ela nunca chegou à ferramenta. Para este bot, escolha um modelo de um provedor com suporte completo a chamadas de ferramentas."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex 無法執行工具 %@（「unsupported call」）：AI 供應商送回的呼叫缺少工具的應用程式名稱，所以它們沒有送達工具。請為這個智能體選擇一個能完整處理工具呼叫的供應商模型。"
+          }
+        }
+      }
+    },
+    "chat.notice.codexUnsupportedMore": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex could not run the tools %1$@ and %2$@ more (\"unsupported call\"): the AI provider sent the call back without the tool's app name, so it never reached the tool. Pick a model for this bot whose provider handles tool calls fully."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Codex não conseguiu executar as ferramentas %1$@ e mais %2$@ (“unsupported call”). O provedor de IA devolveu a chamada sem o nome do app da ferramenta, e ela nunca chegou à ferramenta. Para este bot, escolha um modelo de um provedor com suporte completo a chamadas de ferramentas."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex 無法執行工具 %1$@ 以及另外 %2$@ 個（「unsupported call」）：AI 供應商送回的呼叫缺少工具的應用程式名稱，所以它們沒有送達工具。請為這個智能體選擇一個能完整處理工具呼叫的供應商模型。"
+          }
+        }
+      }
+    },
+    "chat.notice.codexUnsupportedOne": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex could not run the tool %@ (\"unsupported call\"): the AI provider sent the call back without the tool's app name, so it never reached the tool. Pick a model for this bot whose provider handles tool calls fully."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Codex não conseguiu executar a ferramenta %@ (“unsupported call”). O provedor de IA devolveu a chamada sem o nome do app da ferramenta, e ela nunca chegou à ferramenta. Para este bot, escolha um modelo de um provedor com suporte completo a chamadas de ferramentas."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex 無法執行工具 %@（「unsupported call」）：AI 供應商送回的呼叫缺少工具的應用程式名稱，所以它沒有送達工具。請為這個智能體選擇一個能完整處理工具呼叫的供應商模型。"
+          }
+        }
+      }
+    },
+    "chat.notice.commandCodeAccountRefused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Command Code refused this request for the signed-in account. Check its plan and credits on commandcode.ai, then try again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Command Code recusou este pedido para a conta conectada. Confira o plano e os créditos em commandcode.ai e tente novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Command Code 拒絕了已登入帳號的這個請求。請在 commandcode.ai 檢查方案和額度，然後再試一次。"
+          }
+        }
+      }
+    },
+    "chat.notice.computerAiUnsupported": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "this bot's AI can't use this computer — pick another AI for this bot, or choose another place for it to work"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A IA deste bot não pode usar este computador. Escolha outra IA ou outro lugar para o bot trabalhar"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這個智能體的 AI 無法使用這台電腦：請為它選擇另一個 AI，或選擇其他工作地點"
+          }
+        }
+      }
+    },
+    "chat.notice.computerDesktopOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the Cry Bot app on this computer can let a bot use it. Open the app here, or let the bot work in its own browser or on a cloud desktop instead."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Só o app Cry Bot neste computador pode permitir que um bot o use. Abra o app aqui ou deixe o bot trabalhar no próprio navegador ou em um desktop na nuvem."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只有這台電腦上的 Cry Bot 應用程式能讓智能體使用它。請在這裡開啟應用程式，或改讓智能體在它自己的瀏覽器或雲端桌面上工作。"
+          }
+        }
+      }
+    },
+    "chat.notice.computerNotReadyDetail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cry Bot can't use this computer yet — %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Cry Bot ainda não consegue usar este computador. Motivo: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cry Bot 還無法使用這台電腦：%@"
+          }
+        }
+      }
+    },
+    "chat.notice.computerNotReadyMacPermission": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cry Bot can't use this computer yet — %@. Relaunch Cry Bot after granting the missing macOS permission."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Cry Bot ainda não consegue usar este computador. Motivo: %@. Abra o Cry Bot novamente depois de conceder a permissão do macOS que falta."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cry Bot 還無法使用這台電腦：%@。授予缺少的 macOS 權限後，請重新開啟 Cry Bot。"
+          }
+        }
+      }
+    },
+    "chat.notice.computerPermissionsThenRestart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cry Bot can't use this computer yet — make sure Cry Bot has the permissions it asks for, then restart it"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Cry Bot ainda não consegue usar este computador. Confira se o Cry Bot tem as permissões que pede e reinicie o app."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cry Bot 還無法使用這台電腦：請確認 Cry Bot 已取得它要求的權限，然後重新啟動"
+          }
+        }
+      }
+    },
+    "chat.notice.computerSystemUnsupported": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bots can't use this computer on this system — choose another place for this bot to work"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os bots não podem usar este computador neste sistema. Escolha outro lugar para este bot trabalhar"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在這個系統上，智能體無法使用這台電腦：請為這個智能體選擇其他工作地點"
+          }
+        }
+      }
+    },
+    "chat.notice.computerWakeFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Computer konnte nicht aufgeweckt werden (%@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The computer could not wake (%@)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo despertar el ordenador (%@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de réveiller l’ordinateur (%@)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कंप्यूटर को जगाया नहीं जा सका (%@)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile riattivare il computer (%@)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コンピューターを復帰できませんでした（%@）"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "컴퓨터를 깨울 수 없습니다 (%@)"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie udało się wybudzić komputera (%@)"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível despertar o computador (%@)"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось разбудить компьютер (%@)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayar uyandırılamadı (%@)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося розбудити комп’ютер (%@)"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể đánh thức máy tính (%@)"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "電腦喚醒失敗（%@）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电脑唤醒失败（%@）"
+          }
+        }
+      }
+    },
+    "chat.notice.copilotAccountRefused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub Copilot refused this request for the signed-in account. Check its Copilot plan and premium request allowance, then try again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O GitHub Copilot recusou este pedido para a conta conectada. Confira o plano do Copilot e a franquia de pedidos premium e tente novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub Copilot 拒絕了已登入帳號的這個請求。請檢查它的 Copilot 方案和進階請求額度，然後再試一次。"
+          }
+        }
+      }
+    },
+    "chat.notice.cutOffByRestart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ was cut off by a restart; resuming"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma reinicialização interrompeu %@. Retomando."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 因重新啟動而中斷；正在繼續"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationContinue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ asks to continue"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pede para continuar"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 要求繼續"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationContinueGeneric": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An MCP server asks to continue"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um servidor MCP pede para continuar"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有一個 MCP 伺服器要求繼續"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationFormDeclinedGenericMany": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An MCP server asked you to fill in %@ fields. Cry Bot can't show that form yet, so the request was declined."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um servidor MCP pediu que você preenchesse %@ campos. O Cry Bot ainda não pode mostrar esse formulário, então o pedido foi recusado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有一個 MCP 伺服器要求你填寫 %@ 個欄位。Cry Bot 還無法顯示該表單，因此已拒絕這個請求。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationFormDeclinedGenericManyMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An MCP server asked you to fill in %1$@ fields (\"%2$@\"). Cry Bot can't show that form yet, so the request was declined."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um servidor MCP pediu que você preenchesse %1$@ campos (“%2$@”). O Cry Bot ainda não pode mostrar esse formulário, então o pedido foi recusado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有一個 MCP 伺服器要求你填寫 %1$@ 個欄位（「%2$@」）。Cry Bot 還無法顯示該表單，因此已拒絕這個請求。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationFormDeclinedGenericOne": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An MCP server asked you to fill in a field. Cry Bot can't show that form yet, so the request was declined."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um servidor MCP pediu que você preenchesse um campo. O Cry Bot ainda não pode mostrar esse formulário, então o pedido foi recusado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有一個 MCP 伺服器要求你填寫一個欄位。Cry Bot 還無法顯示該表單，因此已拒絕這個請求。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationFormDeclinedGenericOneMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An MCP server asked you to fill in a field (\"%@\"). Cry Bot can't show that form yet, so the request was declined."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um servidor MCP pediu que você preenchesse um campo (“%@”). O Cry Bot ainda não pode mostrar esse formulário, então o pedido foi recusado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有一個 MCP 伺服器要求你填寫一個欄位（「%@」）。Cry Bot 還無法顯示該表單，因此已拒絕這個請求。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationFormDeclinedMany": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ asked you to fill in %2$@ fields. Cry Bot can't show that form yet, so the request was declined."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ pediu que você preenchesse %2$@ campos. O Cry Bot ainda não pode mostrar esse formulário, então o pedido foi recusado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 要求你填寫 %2$@ 個欄位。Cry Bot 還無法顯示該表單，因此已拒絕這個請求。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationFormDeclinedManyMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ asked you to fill in %2$@ fields (\"%3$@\"). Cry Bot can't show that form yet, so the request was declined."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ pediu que você preenchesse %2$@ campos (“%3$@”). O Cry Bot ainda não pode mostrar esse formulário, então o pedido foi recusado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 要求你填寫 %2$@ 個欄位（「%3$@」）。Cry Bot 還無法顯示該表單，因此已拒絕這個請求。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationFormDeclinedOne": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ asked you to fill in a field. Cry Bot can't show that form yet, so the request was declined."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pediu que você preenchesse um campo. O Cry Bot ainda não pode mostrar esse formulário, então o pedido foi recusado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 要求你填寫一個欄位。Cry Bot 還無法顯示該表單，因此已拒絕這個請求。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationFormDeclinedOneMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ asked you to fill in a field (\"%2$@\"). Cry Bot can't show that form yet, so the request was declined."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ pediu que você preenchesse um campo (“%2$@”). O Cry Bot ainda não pode mostrar esse formulário, então o pedido foi recusado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 要求你填寫一個欄位（「%2$@」）。Cry Bot 還無法顯示該表單，因此已拒絕這個請求。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationMessageGeneric": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An MCP server: %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um servidor MCP: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MCP 伺服器：%@"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationUrlDeclined": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ asked you to open a link to continue. Cry Bot can't open it from here, so the request was declined. Open the link yourself, then ask the bot to try again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pediu que você abrisse um link para continuar. O Cry Bot não pode abri-lo por aqui, então o pedido foi recusado. Abra o link e peça ao bot para tentar novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 要求你開啟一個連結才能繼續。Cry Bot 無法從這裡開啟，因此已拒絕這個請求。請自行開啟連結，然後請智能體再試一次。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationUrlDeclinedGeneric": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An MCP server asked you to open a link to continue. Cry Bot can't open it from here, so the request was declined. Open the link yourself, then ask the bot to try again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um servidor MCP pediu que você abrisse um link para continuar. O Cry Bot não pode abri-lo por aqui, então o pedido foi recusado. Abra o link e peça ao bot para tentar novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有一個 MCP 伺服器要求你開啟連結才能繼續。Cry Bot 無法從這裡開啟，因此已拒絕這個請求。請自行開啟連結，然後請智能體再試一次。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationUrlDeclinedGenericWithUrl": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An MCP server asked you to open a link to continue: %@. Cry Bot can't open it from here, so the request was declined. Open the link yourself, then ask the bot to try again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um servidor MCP pediu que você abrisse um link para continuar: %@. O Cry Bot não pode abri-lo por aqui, então o pedido foi recusado. Abra o link e peça ao bot para tentar novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有一個 MCP 伺服器要求你開啟連結才能繼續：%@。Cry Bot 無法從這裡開啟，因此已拒絕這個請求。請自行開啟連結，然後請智能體再試一次。"
+          }
+        }
+      }
+    },
+    "chat.notice.elicitationUrlDeclinedWithUrl": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ asked you to open a link to continue: %2$@. Cry Bot can't open it from here, so the request was declined. Open the link yourself, then ask the bot to try again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ pediu que você abrisse um link para continuar: %2$@. O Cry Bot não pode abri-lo por aqui, então o pedido foi recusado. Abra o link e peça ao bot para tentar novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 要求你開啟一個連結才能繼續：%2$@。Cry Bot 無法從這裡開啟，因此已拒絕這個請求。請自行開啟連結，然後請智能體再試一次。"
+          }
+        }
+      }
+    },
+    "chat.notice.engineSignedOut": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is signed out."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ está sem login."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 已登出。"
+          }
+        }
+      }
+    },
+    "chat.notice.exportedGoal.blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Goal: blocked]%2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Objetivo: bloqueado]%2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[目標：受阻]%2$@"
+          }
+        }
+      }
+    },
+    "chat.notice.exportedGoal.completed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Goal: completed]%2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Objetivo: concluído]%2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[目標：已完成]%2$@"
+          }
+        }
+      }
+    },
+    "chat.notice.exportedGoal.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Goal: failed]%2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Objetivo: falhou]%2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[目標：失敗]%2$@"
+          }
+        }
+      }
+    },
+    "chat.notice.exportedGoal.limit-reached": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Goal: limit-reached]%2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Objetivo: limite atingido]%2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[目標：已達上限]%2$@"
+          }
+        }
+      }
+    },
+    "chat.notice.exportedGoal.needs-input": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Goal: needs-input]%2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Objetivo: aguardando resposta]%2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[目標：需要輸入]%2$@"
+          }
+        }
+      }
+    },
+    "chat.notice.exportedGoal.paused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Goal: paused]%2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Objetivo: em pausa]%2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[目標：已暫停]%2$@"
+          }
+        }
+      }
+    },
+    "chat.notice.exportedGoal.stopped": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Goal: stopped]%2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Objetivo: interrompido]%2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[目標：已停止]%2$@"
+          }
+        }
+      }
+    },
+    "chat.notice.exportedGoal.working": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Goal: working]%2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[Objetivo: em andamento]%2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@[目標：進行中]%2$@"
+          }
+        }
+      }
+    },
+    "chat.notice.failoverSignedInAgain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is signed in again, so this conversation is back on %1$@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ está com o login ativo novamente, então esta conversa voltou para %1$@."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 已重新登入，因此這段對話已切回 %1$@。"
+          }
+        }
+      }
+    },
+    "chat.notice.failoverSignedOut": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is signed out, so %2$@ took over."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ está sem login, então %2$@ assumiu."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 已登出，因此由 %2$@ 接手。"
+          }
+        }
+      }
+    },
+    "chat.notice.followupInterrupted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Queued follow-up interrupted by restart or restore — it may have already run. Review the result before sending it again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma reinicialização ou restauração interrompeu a mensagem na fila, mas talvez ela já tenha sido processada. Confira o resultado antes de enviar novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排隊中的後續訊息因重新啟動或還原而中斷，可能已經執行過。再次傳送前請先檢查結果。"
+          }
+        }
+      }
+    },
+    "chat.notice.goalBusyMany": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ stayed busy for %2$@ minutes"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ continuou trabalhando por %2$@ minutos"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 已忙碌 %2$@ 分鐘"
+          }
+        }
+      }
+    },
+    "chat.notice.goalBusyManyAgain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ stayed busy for %2$@ minutes — send the goal again when they are free."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ continuou trabalhando por %2$@ minutos — envie o objetivo novamente quando o bot estiver livre."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 已忙碌 %2$@ 分鐘，等它有空時請再傳送一次目標。"
+          }
+        }
+      }
+    },
+    "chat.notice.goalBusyOne": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ stayed busy for %2$@ minute"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ continuou trabalhando por %2$@ minuto"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 已忙碌 %2$@ 分鐘"
+          }
+        }
+      }
+    },
+    "chat.notice.goalBusyOneAgain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ stayed busy for %2$@ minute — send the goal again when they are free."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ continuou trabalhando por %2$@ minuto — envie o objetivo novamente quando o bot estiver livre."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 已忙碌 %2$@ 分鐘，等它有空時請再傳送一次目標。"
+          }
+        }
+      }
+    },
+    "chat.notice.goalEnded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The goal run ended before the bot reported an outcome."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A execução do objetivo terminou antes de o bot informar um resultado."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目標執行在智能體回報結果前就結束了。"
+          }
+        }
+      }
+    },
+    "chat.notice.goalRetry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@'s turn did not settle (%2$@) — retrying once."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A sessão de %1$@ não terminou como esperado (%2$@) — tentando mais uma vez."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 的回合沒有結束（%2$@），正在重試一次。"
+          }
+        }
+      }
+    },
+    "chat.notice.goalWaiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is finishing what it is doing. This goal will continue when it is free."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ está terminando o que está fazendo. Este objetivo continuará quando o bot estiver livre."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 正在完成手上的工作。等它有空時，這個目標會繼續。"
+          }
+        }
+      }
+    },
+    "chat.notice.goalWorking": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is working on turn %2$@ of %3$@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ está trabalhando na sessão %2$@ de %3$@."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 正在進行第 %2$@ 個回合，共 %3$@ 個。"
+          }
+        }
+      }
+    },
+    "chat.notice.kiroAccountRefused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiro refused this request for the signed-in account. Check its Kiro plan and credits, then try again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Kiro recusou este pedido para a conta conectada. Confira o plano e os créditos do Kiro e tente novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiro 拒絕了已登入帳號的這個請求。請檢查它的 Kiro 方案和額度，然後再試一次。"
+          }
+        }
+      }
+    },
+    "chat.notice.memoryReclaimedBrowser": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ran out of room, so I closed the browser to keep everything else running."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faltou memória, então fechei o navegador para manter o restante funcionando."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "空間不足，因此我關閉了瀏覽器，讓其他一切保持運作。"
+          }
+        }
+      }
+    },
+    "chat.notice.memoryReclaimedBrowserDetail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ran out of room, so I closed the browser to keep everything else running. (%@)"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faltou memória, então fechei o navegador para manter o restante funcionando. (%@)"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "空間不足，因此我關閉了瀏覽器，讓其他一切保持運作。（%@）"
+          }
+        }
+      }
+    },
+    "chat.notice.memoryReclaimedTask": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ran out of room, so I stopped this task to keep everything else running."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faltou memória, então interrompi esta tarefa para manter o restante funcionando."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "空間不足，因此我停止了這項工作，讓其他一切保持運作。"
+          }
+        }
+      }
+    },
+    "chat.notice.memoryReclaimedTaskDetail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ran out of room, so I stopped this task to keep everything else running. (%@)"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faltou memória, então interrompi esta tarefa para manter o restante funcionando. (%@)"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "空間不足，因此我停止了這項工作，讓其他一切保持運作。（%@）"
+          }
+        }
+      }
+    },
+    "chat.notice.modelNoRoute": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ can't use the model %2$@ here, so choose another model for this bot."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ não consegue usar o modelo %2$@ aqui, então escolha outro modelo para este bot."
+          }
+        }
+      }
+    },
+    "chat.notice.modelNoRouteUnnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ can't use this bot's model here, so choose another model for this bot."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ não consegue usar o modelo deste bot aqui, então escolha outro modelo para este bot."
+          }
+        }
+      }
+    },
+    "chat.notice.modelServerStoppedAnswering": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model server at %@ stopped answering, so the reply was stopped."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O servidor de modelo em %@ parou de responder, então a resposta foi interrompida."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 的模型伺服器停止回應，因此回覆已停止。"
+          }
+        }
+      }
+    },
+    "chat.notice.part.chooseModel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "choose another model for this bot"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "escolha outro modelo para este bot"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "為這個智能體選擇另一個模型"
+          }
+        }
+      }
+    },
+    "chat.notice.part.dispatchFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dispatch failed"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "não foi possível iniciar"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "派送失敗"
+          }
+        }
+      }
+    },
+    "chat.notice.part.fiveHourLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5-hour limit"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "limite de 5 horas"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 小時上限"
+          }
+        }
+      }
+    },
+    "chat.notice.part.goalStalled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "stalled"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sem atividade"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停滯"
+          }
+        }
+      }
+    },
+    "chat.notice.part.goalTimedOut": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "timed out"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tempo esgotado"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "逾時"
+          }
+        }
+      }
+    },
+    "chat.notice.part.providerFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "provider failed"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "o provedor falhou"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "供應商失敗"
+          }
+        }
+      }
+    },
+    "chat.notice.part.switchAccount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "switch this bot to another AI or Claude account"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "use outra IA ou outra conta do Claude para este bot"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把這個智能體切換到另一個 AI 或 Claude 帳號"
+          }
+        }
+      }
+    },
+    "chat.notice.part.usageLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "usage limit"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "limite de uso"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用上限"
+          }
+        }
+      }
+    },
+    "chat.notice.part.weeklyLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "weekly limit"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "limite semanal"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每週上限"
+          }
+        }
+      }
+    },
+    "chat.notice.part.weeklyOpusLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "weekly Opus limit"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "limite semanal do Opus"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每週 Opus 上限"
+          }
+        }
+      }
+    },
+    "chat.notice.part.weeklySonnetLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "weekly Sonnet limit"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "limite semanal do Sonnet"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每週 Sonnet 上限"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.allowed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "allowed %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "permitido: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已允許 %@"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.denied.calendar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendar is not allowed on the phone"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem permissão para acessar o Calendário no celular"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手機上不允許使用行事曆"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.denied.contacts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contacts is not allowed on the phone"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem permissão para acessar os Contatos no celular"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手機上不允許使用聯絡人"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.denied.home": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home is not allowed on the phone"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem permissão para acessar o app Casa no celular"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手機上不允許使用家庭"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.denied.location": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is not allowed on the phone"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem permissão para acessar a Localização no celular"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手機上不允許使用位置"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.denied.messages": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Messages is not allowed on the phone"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem permissão para acessar o app Mensagens no celular"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手機上不允許使用訊息"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.denied.reminders": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders is not allowed on the phone"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem permissão para acessar os Lembretes no celular"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手機上不允許使用提醒事項"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.noPhone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no phone paired with its apps allowed"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nenhum celular pareado com permissão de uso dos apps"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沒有已配對且允許其應用程式的手機"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.notOwner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not the owner's own turn"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "não é uma sessão do próprio proprietário"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不是擁有者本人的回合"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_COMPLETE_REMINDER": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete reminder on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concluir lembrete em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上完成提醒事項"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_CREATE_CONTACT": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create contact on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Criar contato em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上建立聯絡人"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_CREATE_EVENT": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create event on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Criar evento em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上建立行程"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_CREATE_REMINDER": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create reminder on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Criar lembrete em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上建立提醒事項"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_DELETE_EVENT": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete event on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excluir evento em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上刪除行程"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_DELETE_REMINDER": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete reminder on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excluir lembrete em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上刪除提醒事項"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_RESPOND_TO_INVITE": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respond to invite on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Responder ao convite em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上回覆邀請"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_RUN_SCENE": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run scene on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar cena em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上執行場景"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_SEND_MESSAGE": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send message on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar mensagem em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上傳送訊息"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_SEND_WHATSAPP": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send whatsapp on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar mensagem pelo WhatsApp em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上傳送 WhatsApp"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_SET_ACCESSORY": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set accessory on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controlar acessório em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上設定配件"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_UPDATE_CONTACT": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update contact on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atualizar contato em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上更新聯絡人"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_UPDATE_EVENT": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update event on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atualizar evento em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上更新行程"
+          }
+        }
+      }
+    },
+    "chat.notice.phone.write.PHONE_UPDATE_REMINDER": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update reminder on %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atualizar lembrete em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 %@ 上更新提醒事項"
+          }
+        }
+      }
+    },
+    "chat.notice.piModelNotConfirmed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pi did not confirm the selected model"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Pi não confirmou o modelo selecionado"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pi 沒有確認所選的模型"
+          }
+        }
+      }
+    },
+    "chat.notice.piSessionSlow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pi is taking longer than usual to start this conversation's session. The turn goes on when Pi answers. Press Stop to cancel it."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Pi está demorando mais que o normal para iniciar a sessão desta conversa. A sessão de trabalho continua quando o Pi responder. Clique em “Parar” para cancelar."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pi 啟動這段對話的工作階段比平常久。等 Pi 回應後，回合就會繼續。按「停止」可取消。"
+          }
+        }
+      }
+    },
+    "chat.notice.previousComputerWakeFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Computer konnte für den vorherigen Durchgang nicht aufgeweckt werden (%@)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The computer could not wake for the previous turn (%@)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo despertar el ordenador para el turno anterior (%@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de réveiller l’ordinateur pour le tour précédent (%@)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पिछले टर्न के लिए कंप्यूटर को जगाया नहीं जा सका (%@)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile riattivare il computer per il turno precedente (%@)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前のターンでコンピューターを復帰できませんでした（%@）"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이전 턴에서 컴퓨터를 깨울 수 없었습니다 (%@)"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie udało się wybudzić komputera na potrzeby poprzedniej tury (%@)"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível despertar o computador para o turno anterior (%@)"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось разбудить компьютер для предыдущего хода (%@)"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önceki tur için bilgisayar uyandırılamadı (%@)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося розбудити комп’ютер для попереднього ходу (%@)"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể đánh thức máy tính cho lượt trước (%@)"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上一輪的電腦喚醒失敗（%@）"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上一轮的电脑唤醒失败（%@）"
+          }
+        }
+      }
+    },
+    "chat.notice.relayCouldNotContinue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "this conversation could not carry on — %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível continuar esta conversa. Motivo: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這段對話無法繼續：%@"
+          }
+        }
+      }
+    },
+    "chat.notice.restartInterrupted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "turn interrupted — Cry Bot restarted"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessão interrompida: o Cry Bot reiniciou."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回合已中斷：Cry Bot 已重新啟動"
+          }
+        }
+      }
+    },
+    "chat.notice.resumingAfterRestart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resuming after a restart"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retomando após uma reinicialização"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新啟動後繼續"
+          }
+        }
+      }
+    },
+    "chat.notice.signIn": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サインイン"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrar"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登入"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录"
+          }
+        }
+      }
+    },
+    "chat.notice.signInHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open AI settings to sign in again"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI の設定を開いて、もう一度サインイン"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir as configurações de IA para entrar novamente"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟 AI 設定以重新登入"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 AI 设置以重新登录"
+          }
+        }
+      }
+    },
+    "chat.notice.stalled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no activity for %@ minutes — the turn was stopped"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem atividade por %@ min. A sessão foi interrompida."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已有 %@ 分鐘沒有活動，這個回合已停止"
+          }
+        }
+      }
+    },
+    "chat.notice.stalledCommand": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the command `%1$@` ran for %2$@ minutes without finishing and looks stuck — the turn was stopped"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O comando `%1$@` rodou por %2$@ min sem terminar e parece travado. A sessão foi interrompida."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "指令 `%1$@` 已執行 %2$@ 分鐘仍未完成，看起來卡住了，這個回合已停止"
+          }
+        }
+      }
+    },
+    "chat.notice.stop.maxRequests": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The turn made as many model requests as one turn may before it finished (stop reason: %@). Ask it to carry on from where it stopped, or split the task."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A sessão atingiu o limite de pedidos ao modelo antes de terminar (motivo da parada: %@). Peça para continuar de onde parou ou divida a tarefa."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這個回合在完成前已用完單一回合允許的模型請求次數（停止原因：%@）。請要求它從停下的地方繼續，或把工作拆開。"
+          }
+        }
+      }
+    },
+    "chat.notice.stop.maxTokens": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@'s reply reached its maximum length before it finished (stop reason: %2$@). Ask it to continue, or ask for a shorter answer."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A resposta de %1$@ atingiu o tamanho máximo antes de terminar (motivo da parada: %2$@). Peça para continuar ou dar uma resposta mais curta."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 的回覆在完成前就達到了長度上限（停止原因：%2$@）。請要求它繼續，或要求較短的回答。"
+          }
+        }
+      }
+    },
+    "chat.notice.stop.maxTokensGeneric": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The AI's reply reached its maximum length before it finished (stop reason: %@). Ask it to continue, or ask for a shorter answer."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A resposta da IA atingiu o tamanho máximo antes de terminar (motivo da parada: %@). Peça para continuar ou dar uma resposta mais curta."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 的回覆在完成前就達到了長度上限（停止原因：%@）。請要求它繼續，或要求較短的回答。"
+          }
+        }
+      }
+    },
+    "chat.notice.stop.refusal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ refused to go on with this request (stop reason: %2$@). Try again, reword the request, or switch this bot to another AI."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ se recusou a continuar com este pedido (motivo da parada: %2$@). Tente novamente, reformule o pedido ou mude este bot para outra IA."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 拒絕繼續處理這個請求（停止原因：%2$@）。請再試一次、換個說法，或把這個智能體切換到另一個 AI。"
+          }
+        }
+      }
+    },
+    "chat.notice.stop.refusalGeneric": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The AI refused to go on with this request (stop reason: %@). Try again, reword the request, or switch this bot to another AI."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A IA se recusou a continuar com este pedido (motivo da parada: %@). Tente novamente, reformule o pedido ou mude este bot para outra IA."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 拒絕繼續處理這個請求（停止原因：%@）。請再試一次、換個說法，或把這個智能體切換到另一個 AI。"
+          }
+        }
+      }
+    },
+    "chat.notice.teammateNeedsInput": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ needs your input: %2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ precisa da sua resposta: %2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 需要你的意見：%2$@"
+          }
+        }
+      }
+    },
+    "chat.notice.teammateWorking": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped here — %@ is still working; open to stop it too"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parou aqui — %@ continua trabalhando; abra para parar esse trabalho também"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已在這裡停止，但 %@ 仍在工作；開啟它即可一併停止"
+          }
+        }
+      }
+    },
+    "chat.notice.toolCount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ refused this turn because this model takes at most %2$@ tools and this bot offers more, even with its tool lists trimmed, so nothing ran. Turn off some of this bot's apps or MCP servers, or switch the bot to another model."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ recusou esta sessão porque o limite de ferramentas deste modelo é %2$@ e este bot oferece mais, mesmo com as listas reduzidas. Nada foi executado. Desligue alguns apps ou servidores MCP deste bot, ou mude para outro modelo."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ 拒絕了這個回合，因為這個模型最多只能接受 %2$@ 個工具，而這個智能體即使精簡了工具清單仍提供更多，所以沒有執行任何動作。請關閉這個智能體的部分應用程式或 MCP 伺服器，或把智能體切換到另一個模型。"
+          }
+        }
+      }
+    },
+    "chat.notice.toolCountUnknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ refused this turn because this model takes at most a limited number of tools and this bot offers more, even with its tool lists trimmed, so nothing ran. Turn off some of this bot's apps or MCP servers, or switch the bot to another model."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ recusou esta sessão porque este modelo aceita um número limitado de ferramentas e este bot oferece mais, mesmo com as listas reduzidas. Nada foi executado. Desligue alguns apps ou servidores MCP deste bot, ou mude para outro modelo."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 拒絕了這個回合，因為這個模型能接受的工具數量有限，而這個智能體即使精簡了工具清單仍提供更多，所以沒有執行任何動作。請關閉這個智能體的部分應用程式或 MCP 伺服器，或把智能體切換到另一個模型。"
+          }
+        }
+      }
+    },
+    "chat.notice.unaskedStop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The AI's request was cut off before it finished, and nobody stopped it (it said only \"%@\"). Send the message again to try once more."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O pedido da IA foi interrompido antes de terminar, sem que ninguém o parasse (ela disse apenas “%@”). Envie a mensagem novamente para tentar mais uma vez."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 的請求在完成前被中斷，而且沒有人停止它（它只說了「%@」）。請再傳送一次訊息重試。"
+          }
+        }
+      }
+    },
+    "chat.notice.unknownTeammateWorking": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped here — A teammate is still working; open to stop it too"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parou aqui — um colega continua trabalhando; abra para parar esse trabalho também"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已在這裡停止，但有一位隊友仍在工作；開啟它即可一併停止"
+          }
+        }
+      }
+    },
+    "chat.notice.unreadMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This turn ended before the model read a message sent while it ran. Send that message again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta sessão terminou antes de o modelo ler uma mensagem enviada durante a execução. Envie essa mensagem novamente."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這個回合在模型讀取執行期間傳來的訊息之前就結束了。請再傳送一次那則訊息。"
+          }
+        }
+      }
+    },
+    "chat.notice.usageLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This %1$@ account has reached its usage limit%2$@. Wait for it to reset, or switch this bot to another AI."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta conta de %1$@ atingiu o limite de uso%2$@. Espere o limite ser renovado ou troque a IA deste bot."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這個 %1$@ 帳號已達到使用上限%2$@。請等它重設，或把這個智能體切換到另一個 AI。"
+          }
+        }
+      }
+    },
+    "chat.notice.usageLimitResets": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This %1$@ account has reached its usage limit%2$@, which resets %3$@. Until then, switch this bot to another AI."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta conta de %1$@ atingiu o limite de uso%2$@, que será renovado em %3$@. Até lá, troque a IA deste bot."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這個 %1$@ 帳號已達到使用上限%2$@，將於%3$@重設。在那之前，請把這個智能體切換到另一個 AI。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitBotGone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped waiting for %1$@: %2$@ no longer exists."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A espera por %1$@ foi encerrada: %2$@ não existe mais."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已停止等待 %1$@：%2$@ 已不存在。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitDone.botIdle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: done. %2$@ finished."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espera concluída: %1$@. %2$@ terminou."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@：完成。%2$@ 已完成。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitDone.fileChanged": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: done. %2$@ changed."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espera concluída: %1$@. %2$@ mudou."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@：完成。%2$@ 已變更。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitDone.fileExists": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: done. %2$@ is there now."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espera concluída: %1$@. %2$@ agora existe."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@：完成。%2$@ 現在已存在。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitDone.fileMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: done. %2$@ is gone."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espera concluída: %1$@. %2$@ não existe mais."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@：完成。%2$@ 已消失。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitDone.processGone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: done. %2$@ stopped."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espera concluída: %1$@. %2$@ parou."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@：完成。%2$@ 已停止。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitDone.processRunning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: done. %2$@ is running."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espera concluída: %1$@. %2$@ está em execução."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@：完成。%2$@ 正在執行。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitDone.urlContains": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: done. %2$@ now says “%3$@”."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espera concluída: %1$@. %2$@ agora contém “%3$@”."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@：完成。%2$@ 現在顯示「%3$@」。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitDone.urlMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: done. %2$@ no longer says “%3$@”."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espera concluída: %1$@. %2$@ não contém mais “%3$@”."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@：完成。%2$@ 已不再顯示「%3$@」。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitExpiredMany": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped waiting for %1$@ after %2$@ hours."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A espera por %1$@ foi encerrada após %2$@ h."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待 %1$@ %2$@ 小時後已停止。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitExpiredOne": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped waiting for %1$@ after %2$@ hour."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A espera por %1$@ foi encerrada após %2$@ h."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待 %1$@ %2$@ 小時後已停止。"
+          }
+        }
+      }
+    },
+    "chat.notice.waitingAnswerElsewhere": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting on your answer in @%@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperando sua resposta em @%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在 @%@ 中等待你的回答"
+          }
+        }
+      }
+    },
+    "chat.notice.waitingApprovalElsewhere": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting on your approval in @%@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperando sua aprovação em @%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在 @%@ 中等待你的核准"
+          }
+        }
+      }
+    },
+    "chat.notice.wakingComputer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Computer wird aufgeweckt…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waking the computer…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Despertando el ordenador…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réveil de l’ordinateur…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कंप्यूटर को जगाया जा रहा है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riattivazione del computer…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コンピューターを復帰しています…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "컴퓨터를 깨우는 중…"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wybudzanie komputera…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Despertando o computador…"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пробуждение компьютера…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilgisayar uyandırılıyor…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пробудження комп’ютера…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang đánh thức máy tính…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在喚醒電腦…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在唤醒电脑…"
+          }
+        }
+      }
+    },
+    "chat.notice.webhookHome": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I'm back on this computer, so my webhook \"%1$@\" has an address here again. Open Automations, choose Copy address on \"%1$@\", and paste it into the app that sends to it."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voltei para este computador, então meu webhook “%1$@” tem um endereço aqui novamente. Abra “Automações”, escolha “Copiar endereço” em “%1$@” e cole no app que envia para ele."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我回到這台電腦上了，所以我的 webhook「%1$@」在這裡又有位址了。請開啟「自動化」，在「%1$@」上選擇「拷貝位址」，然後貼到傳送給它的應用程式中。"
+          }
+        }
+      }
+    },
+    "routines.server.backupAi": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting again on the backup AI: this bot's AI reached its usage limit"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Começando novamente na IA reserva: a IA deste bot atingiu o limite de uso"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "改用備用 AI 重新開始：這個智能體的 AI 已達到使用上限"
+          }
+        }
+      }
+    },
+    "routines.server.backupSignedOut": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting again on the backup AI: this bot's AI is signed out"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Começando novamente na IA reserva: a IA deste bot está sem login"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "改用備用 AI 重新開始：這個智能體的 AI 已登出"
+          }
+        }
+      }
+    },
+    "routines.server.checksFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The checks could not run; they try again at the next check."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível fazer as verificações. O app tenta novamente na próxima verificação."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檢查無法執行；會在下次檢查時重試。"
+          }
+        }
+      }
+    },
+    "routines.server.failedAfterRetry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed after one automatic retry: %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falhou mesmo depois de uma nova tentativa automática. Motivo: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動重試一次後仍失敗：%@"
+          }
+        }
+      }
+    },
+    "routines.server.limitWait": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for the AI's usage limit to reset; this run starts again at %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperando a renovação do limite de uso da IA. Esta execução começa novamente em %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在等待 AI 的使用上限重設；這次執行會在 %@ 重新開始"
+          }
+        }
+      }
+    },
+    "routines.server.nothingNew": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing new since the last check"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nada novo desde a última verificação"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自上次檢查以來沒有新內容"
+          }
+        }
+      }
+    },
+    "routines.server.part.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a failure"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "um problema"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一次失敗"
+          }
+        }
+      }
+    },
+    "routines.server.part.provider": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a temporary error"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "um erro temporário"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫時性錯誤"
+          }
+        }
+      }
+    },
+    "routines.server.part.rateLimited": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a rate limit"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "atingir um limite de requisições"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "速率限制"
+          }
+        }
+      }
+    },
+    "routines.server.part.stalled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the AI stalled"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "um travamento da IA"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 停滯"
+          }
+        }
+      }
+    },
+    "routines.server.retryAfter": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting again shortly after %1$@: %2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vai começar novamente em instantes, depois de %1$@. Detalhe: %2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "因%1$@，稍後重新開始：%2$@"
+          }
+        }
+      }
+    },
+    "routines.server.retryAfterRestart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting again shortly after Cry Bot restarted while it ran"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vai começar novamente em instantes: o Cry Bot reiniciou durante a execução"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "因執行期間 Cry Bot 重新啟動，稍後重新開始"
+          }
+        }
+      }
+    },
+    "routines.server.signedOut": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This bot's AI is signed out. Sign in again in Settings → AI. The AI said: “%@”"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A IA deste bot está sem login. Entre novamente em Configurações → IA. A IA disse: “%@”"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這個智能體的 AI 已登出。請在「設定 → AI」中重新登入。AI 表示：「%@」"
+          }
+        }
+      }
+    },
+    "routines.server.stillBusy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Did not start: still busy after %1$@ minutes (%2$@)"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não começou: o bot ainda estava ocupado depois de %1$@ minutos. Motivo: %2$@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沒有開始：%1$@ 分鐘後仍在忙碌（%2$@）"
+          }
+        }
+      }
+    },
+    "routines.server.waitingToStart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting to start: %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperando para começar. Motivo: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待開始：%@"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

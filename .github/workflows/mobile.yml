@@ -50,6 +50,8 @@ jobs:
         working-directory: mobile/ios
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Select Xcode 26
         run: |
           xcode=$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' ! -iname '*beta*' | sort -V | tail -1)
@@ -124,9 +126,26 @@ jobs:
           with open(os.environ["GITHUB_ENV"], "a") as env:
               env.write("CRYBOT_TEST_SIMULATOR=" + selected["udid"] + "\n")
           PYCODE
+      - name: Select iOS test scope
+        id: test-scope
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD > "$RUNNER_TEMP/crybot-changed-files.txt"
+            mapfile -t scope < <(scripts/ui-test-selection.sh < "$RUNNER_TEMP/crybot-changed-files.txt")
+            echo "CRYBOT_SNAPSHOT_FEATURES=${scope[0]}" >> "$GITHUB_ENV"
+            echo "CRYBOT_UI_ONLY_TESTING=${scope[1]}" >> "$GITHUB_ENV"
+          elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            echo 'CRYBOT_SNAPSHOT_FEATURES=' >> "$GITHUB_ENV"
+            echo 'CRYBOT_UI_ONLY_TESTING=' >> "$GITHUB_ENV"
+          else
+            echo 'CRYBOT_SNAPSHOT_FEATURES=all' >> "$GITHUB_ENV"
+            echo 'CRYBOT_UI_ONLY_TESTING=' >> "$GITHUB_ENV"
+          fi
+          echo "snapshot features: ${CRYBOT_SNAPSHOT_FEATURES:-set by next step}"
+
       - name: Build app and all test bundles once
         run: |
-          xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+          env TEST_RUNNER_CRY_SNAPSHOT_FEATURES="${CRYBOT_SNAPSHOT_FEATURES:-}" xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
             -destination "platform=iOS Simulator,id=$CRYBOT_TEST_SIMULATOR" \
             -derivedDataPath DerivedData/Tests -clonedSourcePackagesDirPath SourcePackages \
             ${CRYBOT_PACKAGE_RESOLUTION:-} build-for-testing CODE_SIGNING_ALLOWED=NO
@@ -134,25 +153,42 @@ jobs:
         run: test -d 'DerivedData/Tests/Build/Products/Debug-iphonesimulator/Cry Bot.app/Watch/CryBotWatch.app'
       - name: Run hosted app and watch unit tests without rebuilding
         run: |
-          for target in CryBotTests CryBotWatchTests; do
+          env TEST_RUNNER_CRY_SNAPSHOT_FEATURES="${CRYBOT_SNAPSHOT_FEATURES:-}" xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+            -destination "platform=iOS Simulator,id=$CRYBOT_TEST_SIMULATOR" \
+            -derivedDataPath DerivedData/Tests -clonedSourcePackagesDirPath SourcePackages \
+            ${CRYBOT_PACKAGE_RESOLUTION:-} -resultBundlePath "DerivedData/CryBotTests.xcresult" \
+            -parallel-testing-enabled NO -only-testing:CryBotTests \
+            test-without-building CODE_SIGNING_ALLOWED=NO
+          scripts/assert-tests-ran.sh DerivedData/CryBotTests.xcresult --required
+          mkdir -p DerivedData/screenshots/unit
+          xcrun xcresulttool export attachments --path DerivedData/CryBotTests.xcresult --output-path DerivedData/screenshots/unit || true
+          for target in CryBotWatchTests; do
             xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
               -destination "platform=iOS Simulator,id=$CRYBOT_TEST_SIMULATOR" \
               -derivedDataPath DerivedData/Tests -clonedSourcePackagesDirPath SourcePackages \
               ${CRYBOT_PACKAGE_RESOLUTION:-} -resultBundlePath "DerivedData/$target.xcresult" \
               -parallel-testing-enabled NO -only-testing:"$target" \
               test-without-building CODE_SIGNING_ALLOWED=NO
-            xcrun xcresulttool get test-results summary --path "DerivedData/$target.xcresult" > "$RUNNER_TEMP/$target-summary.json"
-            python3 - "$RUNNER_TEMP/$target-summary.json" "$target" <<'PYCODE'
-          import json
-          import sys
-
-          summary = json.load(open(sys.argv[1]))
-          count = summary["totalTestCount"]
-          print(f"{sys.argv[2]}: {count} selected tests executed")
-          if count <= 0:
-              raise SystemExit("No selected tests executed")
-          PYCODE
+            scripts/assert-tests-ran.sh "DerivedData/$target.xcresult" --required
           done
+
+      - name: Run selected XCUITest flows
+        if: success()
+        run: |
+          if [[ -z "${CRYBOT_UI_ONLY_TESTING:-}" ]]; then
+            echo 'No changed-feature FlowTests selected'
+            exit 0
+          fi
+          xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+            -destination "platform=iOS Simulator,id=$CRYBOT_TEST_SIMULATOR" \
+            -derivedDataPath DerivedData/Tests -clonedSourcePackagesDirPath SourcePackages \
+            ${CRYBOT_PACKAGE_RESOLUTION:-} -resultBundlePath DerivedData/CryBotUITests.xcresult \
+            -parallel-testing-enabled NO $CRYBOT_UI_ONLY_TESTING \
+            test-without-building CODE_SIGNING_ALLOWED=NO
+          scripts/assert-tests-ran.sh DerivedData/CryBotUITests.xcresult --required
+          mkdir -p DerivedData/screenshots/ui
+          xcrun xcresulttool export attachments --path DerivedData/CryBotUITests.xcresult --output-path DerivedData/screenshots/ui || true
+
       - name: Upload first package resolution
         if: always() && hashFiles('mobile/ios/Package.resolved') == ''
         uses: actions/upload-artifact@v4
@@ -160,6 +196,13 @@ jobs:
           name: package-resolved
           path: mobile/ios/CryBot.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
           if-no-files-found: warn
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: mobile/ios/DerivedData/screenshots
+          if-no-files-found: ignore
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
