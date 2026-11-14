@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import type { CommandRunner, ContainerRuntimeStatus, Runtime } from "./container-computer.ts";
 import { augmentedPath, resolveCliSpawn } from "./env-path.ts";
-import { CONTAINER, CUA_EXECUTABLE, DISPLAY, isScreenTarget, screenDisplay, screenUid, screenUser, type LocalVmTarget } from "./container-targets.ts";
+import { CONTAINER, CUA_EXECUTABLE, DISPLAY, isScreenTarget, screenDisplay, screenXauthority, screenUid, screenUser, type LocalVmTarget } from "./container-targets.ts";
 import { rootContainerExecArgs, SCREENS_SUPERVISOR_CONFIG, validateScreenPackages } from "./container-screens.ts";
 
 export function cuaExecArgs(
@@ -47,6 +47,7 @@ export function screenIdentityArgs(
   const env = {
     HOME: `/home/${screenUser(n)}`,
     DISPLAY: screenDisplay(n),
+    XAUTHORITY: screenXauthority(n),
     XDG_RUNTIME_DIR: `/run/user/${screenUid(n)}`,
     TMPDIR: `/run/user/${screenUid(n)}/tmp`,
     CUA_DRIVER_INSTALL_CHANNEL: "python_package",

@@ -1,4 +1,5 @@
 import { GUEST_IDS_SCRIPT_BODY } from "./container-isolation.ts";
+import { screenXauthority } from "./container-targets.ts";
 
 export const SCREENS_LAYOUT_LABEL = "com.crybot.screens-layout";
 export const SCREENS_FALLBACK_FILE = "/run/crybot/screens-layout-single";
@@ -27,7 +28,7 @@ export function screenSupervisorConf(n: number): string {
   const user = `crybot-s${n}`;
   const runtime = `/run/user/${61000 + n}`;
   const programs = {
-    x: `/usr/bin/Xvnc :${n} -rfbport ${5900 + n} -localhost yes -rfbauth /run/crybot/screens/s${n}/passwd -geometry 1280x900 -depth 24`,
+    x: `/usr/bin/Xvnc :${n} -auth ${screenXauthority(n)} -nolisten tcp -rfbport ${5900 + n} -localhost yes -rfbauth /run/crybot/screens/s${n}/passwd -geometry 1280x900 -depth 24`,
     dbus: `/usr/bin/dbus-daemon --session --nofork --address=unix:path=${runtime}/bus`,
     session: "/usr/local/libexec/crybot/screen-wait-display /usr/bin/startxfce4",
     cua: `/usr/local/libexec/crybot/screen-wait-display env ${SCREEN_DRIVER_ENV} /usr/local/libexec/crybot/cua-driver serve --socket ${runtime}/crybot-cua.sock ${SCREEN_DRIVER_OPTIONS}`,
@@ -161,6 +162,7 @@ if pid == 0:
         runtime = f"/run/user/{user.pw_uid}"
         os.environ.update({
             "DISPLAY": f":{suffix}",
+            "XAUTHORITY": f"/run/crybot/screens/s{suffix}/Xauthority",
             "XDG_RUNTIME_DIR": runtime,
             "TMPDIR": f"{runtime}/tmp",
             "DBUS_SESSION_BUS_ADDRESS": f"unix:path={runtime}/bus",
@@ -188,6 +190,30 @@ for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
 _, status = os.waitpid(pid, 0)
 code = os.waitstatus_to_exitcode(status)
 sys.exit(code if code >= 0 else 128 - code)
+`;
+}
+
+export function screenXauthorityScript(): string {
+  return `import os
+import secrets
+import socket
+import struct
+import sys
+
+path, uid, gid, display = sys.argv[1:]
+os.umask(0o077)
+# The parent directory must be root-owned and not writable by screen users.
+try:
+    os.unlink(path)
+except FileNotFoundError:
+    pass
+with open(path, "xb") as auth:
+    # Xauthority uses network byte order; FamilyLocal (256) matches Unix sockets.
+    auth.write(struct.pack("!H", 256))
+    for field in (socket.gethostname().encode(), display.encode(), b"MIT-MAGIC-COOKIE-1", secrets.token_bytes(16)):
+        auth.write(struct.pack("!H", len(field)) + field)
+    os.fchown(auth.fileno(), int(uid), int(gid))
+    os.fchmod(auth.fileno(), 0o400)
 `;
 }
 
@@ -261,6 +287,9 @@ install -d -o ${user} -g ${user} -m 0700 /run/user/${uid}
 install -d -o ${user} -g ${user} -m 0700 /run/user/${uid}/tmp
 if [ -L /run/crybot/screens/s${n} ]; then rm -f /run/crybot/screens/s${n}; fi
 install -d -o root -g root -m 0711 /run/crybot/screens/s${n}
+env -u VNC_PW ${ROOT_PYTHON_ENV.join(" ")} /usr/bin/python3 -I - ${screenXauthority(n)} ${uid} ${uid} ${n} <<'XAUTH'
+${screenXauthorityScript().trimEnd()}
+XAUTH
 rm -rf /home/${user}/workspace
 ln -s /home/cua/workspace/screens/s${n} /home/${user}/workspace
 `;

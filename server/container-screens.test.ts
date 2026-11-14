@@ -1,6 +1,6 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { hostname, tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -36,6 +36,7 @@ describe("container screen layout", () => {
     const args = screenExecArgs(sharedScreenTarget(2), ["mcp", "--socket", screenSocket(2)], { interactive: true });
     expect(args).toEqual([
       "exec", "-i", "-u", "crybot-s2", "-e", "HOME=/home/crybot-s2", "-e", "DISPLAY=:2",
+      "-e", "XAUTHORITY=/run/crybot/screens/s2/Xauthority",
       "-e", "XDG_RUNTIME_DIR=/run/user/61002", "-e", "TMPDIR=/run/user/61002/tmp",
       "-e", "CUA_DRIVER_INSTALL_CHANNEL=python_package", "-e", "CUA_DRIVER_RS_TELEMETRY_ENABLED=0",
       "crybot-computer", "env", "-u", "VNC_PW", "prlimit", "--nproc=1500", "--",
@@ -98,11 +99,68 @@ describe("container screen layout", () => {
     }
   });
 
+  it("requires a separate X authority on every display and disables X TCP listeners", () => {
+    for (let n = 1; n <= 4; n++) {
+      expect(screenSupervisorConf(n)).toContain(`/usr/bin/Xvnc :${n} -auth /run/crybot/screens/s${n}/Xauthority -nolisten tcp`);
+      expect(screenExecArgs(sharedScreenTarget(n), ["status"])).toContain(`XAUTHORITY=/run/crybot/screens/s${n}/Xauthority`);
+    }
+  });
+
+  it("generates private, fresh X cookies on initialization without following existing symlinks", () => {
+    const dir = mkdtempSync(join(tmpdir(), "crybot-xauthority-"));
+    const cookies: string[] = [];
+    try {
+      const script = multiScreenInitScript({ maxScreens: 4 });
+      const blocks = [...script.matchAll(/env -u VNC_PW HOME=\/root PYTHONNOUSERSITE=1 \/usr\/bin\/python3 -I - ([^\n]+) <<'XAUTH'\n[\s\S]*?\nXAUTH/g)];
+      expect(blocks).toHaveLength(4);
+      for (let n = 1; n <= 4; n++) {
+        const uid = 61000 + n;
+        const path = `/run/crybot/screens/s${n}/Xauthority`;
+        expect(blocks[n - 1]![1]).toBe(`${path} ${uid} ${uid} ${n}`);
+        expect(script).toContain(`install -d -o root -g root -m 0711 /run/crybot/screens/s${n}\n${blocks[n - 1]![0]}`);
+        const file = join(dir, `s${n}`);
+        const sentinel = join(dir, `sentinel-${n}`);
+        writeFileSync(sentinel, "unchanged", { mode: 0o600 });
+        symlinkSync(sentinel, file);
+        const fixture = blocks[n - 1]![0].replace(path, file).replace(`${uid} ${uid} ${n}`, `${process.getuid!()} ${process.getgid!()} ${n}`);
+        for (let boot = 0; boot < 2; boot++) {
+          const result = spawnSync("sh", ["-eu", "-c", fixture], { encoding: "utf8", timeout: 3000 });
+          expect({ status: result.status, stdout: result.stdout, stderr: result.stderr }).toEqual({ status: 0, stdout: "", stderr: "" });
+          const stat = statSync(file);
+          expect(stat.uid).toBe(process.getuid!());
+          expect(stat.gid).toBe(process.getgid!());
+          expect(stat.mode & 0o777).toBe(0o400);
+          const bytes = readFileSync(file);
+          expect(bytes.readUInt16BE(0)).toBe(256);
+          const fields: Buffer[] = [];
+          let offset = 2;
+          while (offset < bytes.length) {
+            const length = bytes.readUInt16BE(offset);
+            fields.push(bytes.subarray(offset + 2, offset + 2 + length));
+            offset += 2 + length;
+          }
+          expect(offset).toBe(bytes.length);
+          expect(fields).toHaveLength(4);
+          expect(fields.slice(0, 3).map(field => field.toString())).toEqual([hostname(), String(n), "MIT-MAGIC-COOKIE-1"]);
+          expect(fields[3]).toHaveLength(16);
+          cookies.push(fields[3]!.toString("hex"));
+        }
+        expect(readFileSync(sentinel, "utf8")).toBe("unchanged");
+        expect(statSync(sentinel).mode & 0o777).toBe(0o600);
+      }
+      expect(new Set(cookies).size).toBe(8);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("keeps signal supervision at root and permanently drops the desktop child identity", () => {
     const script = screenProcessScript();
     expect(script.startsWith("#!/usr/bin/python3 -I\n")).toBe(true);
     expect(script).toContain("os.setgroups([])\n    os.setgid(user.pw_gid)\n    os.setuid(user.pw_uid)");
     expect(script.indexOf("os.setuid(user.pw_uid)")).toBeLessThan(script.indexOf('os.environ.update({'));
+    expect(script).toContain('"XAUTHORITY": f"/run/crybot/screens/s{suffix}/Xauthority"');
+    expect(script.indexOf("os.setuid(user.pw_uid)")).toBeLessThan(script.indexOf('"XAUTHORITY"'));
     expect(script).toContain("os.seteuid(user.pw_uid)\n        os.killpg(pid, signum)");
     expect(script).toContain("finally:\n        os.seteuid(0)");
     expect(screenSupervisorConf(2)).toContain("screen-process crybot-s2 /usr/bin/Xvnc");

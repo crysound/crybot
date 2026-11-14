@@ -218,6 +218,7 @@ describe("screen MCP connection validation", () => {
       CUA_EXECUTABLE, "mcp", "--socket", "/run/user/61002/crybot-cua.sock",
     ]);
     expect(args).toContain("DISPLAY=:2");
+    expect(args).toContain("XAUTHORITY=/run/crybot/screens/s2/Xauthority");
     expect(args).toContain("crybot-s2");
   });
 });

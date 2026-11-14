@@ -1618,7 +1618,7 @@ describe("screen execution regressions", () => {
     await containerExec(sharedScreenTarget(2), "id -u", { runtime: "docker", timeoutSeconds: 10, exec });
     expect(exec).toHaveBeenCalledExactlyOnceWith("docker", [
       "exec", "-u", "crybot-s2", "-w", "/home/cua/workspace/screens/s2",
-      "-e", "HOME=/home/crybot-s2", "-e", "DISPLAY=:2", "-e", "XDG_RUNTIME_DIR=/run/user/61002",
+      "-e", "HOME=/home/crybot-s2", "-e", "DISPLAY=:2", "-e", "XAUTHORITY=/run/crybot/screens/s2/Xauthority", "-e", "XDG_RUNTIME_DIR=/run/user/61002",
       "-e", "TMPDIR=/run/user/61002/tmp", "-e", "CUA_DRIVER_INSTALL_CHANNEL=python_package",
       "-e", "CUA_DRIVER_RS_TELEMETRY_ENABLED=0", CONTAINER, "env", "-u", "VNC_PW",
       "prlimit", "--nproc=1500", "--", "/usr/local/libexec/crybot/screen-program", "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
@@ -1787,6 +1787,7 @@ describe("shared container probes for screen targets", () => {
     const screenCalls = fake.calls.filter(call => call.includes("-u crybot-s"));
     expect(screenCalls).toHaveLength(2);
     expect(screenCalls.every(call => call.includes("env -u VNC_PW"))).toBe(true);
+    expect(screenCalls.every(call => call.includes("-e XAUTHORITY=/run/crybot/screens/s2/Xauthority"))).toBe(true);
     expect(fake.calls.some(call => call.includes("61003"))).toBe(false);
   });
 

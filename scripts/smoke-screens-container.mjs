@@ -14,6 +14,7 @@ const {
   sharedScreenTarget, screenIdentityArgs, screenExecArgs, screenSocket, startScreen, stopScreen, screenStates,
 } = await import("../server/container-computer.ts");
 const { SCREENS_SUPERVISOR_CONFIG, rootContainerExecArgs } = await import("../server/container-screens.ts");
+const { screenXauthority } = await import("../server/container-targets.ts");
 const name = `crybot-screens-smoke-${randomBytes(6).toString("hex")}`;
 const image = `localhost/crybot/screens-smoke:${randomBytes(6).toString("hex")}`;
 const workspace = join(fixture, "workspace");
@@ -294,6 +295,7 @@ try {
   const environment = (await docker(screenIdentityArgs(screen(2), ["env"]))).stdout;
   assert.doesNotMatch(environment, /^VNC_PW=/m);
   assert.match(environment, /^DISPLAY=:2$/m);
+  assert.match(environment, /^XAUTHORITY=\/run\/crybot\/screens\/s2\/Xauthority$/m);
   assert.equal((await docker(screenIdentityArgs(screen(2), ["id", "-u"]))).stdout.trim(), "61002");
   assert.equal((await docker(screenIdentityArgs(screen(1), ["cat", "/proc/self/oom_score_adj"]))).stdout.trim(), "500");
   assert.equal((await docker(screenIdentityArgs(screen(2), ["sh", "-c", "umask; prlimit --pid $$ --nproc --noheadings --output SOFT,HARD"]))).stdout.trim().replace(/\s+/g, " "), "0007 1500 1500");
@@ -306,6 +308,7 @@ try {
       assert.match((await docker(root(["cat", `/proc/${pid}/limits`]))).stdout, /^Max processes\s+1500\s+1500/m);
     }
     assert.equal((await docker(root(["stat", "-c", "%u:%a:%s", `/run/crybot/screens/s${n}/passwd`]))).stdout.trim(), `${61000 + n}:400:8`);
+    assert.equal((await docker(root(["stat", "-c", "%u:%g:%a", screenXauthority(n)]))).stdout.trim(), `${61000 + n}:${61000 + n}:400`);
   }
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "! test -r /home/crybot-s1 && ! test -r /home/cua/workspace/screens/s1 && ! test -r /run/user/61001/crybot-cua.sock"]));
   const queryS2Display = ["sh", "-c", "DISPLAY=:2 xset q"];
@@ -313,8 +316,10 @@ try {
   await docker(screenIdentityArgs(screen(2), queryS2Display));
   await docker(screenIdentityArgs(screen(2), connectS2Socket));
   await expectCommandFailure("crybot-s1 cannot query s2 display", screenIdentityArgs(screen(1), queryS2Display), /unable to open display/i);
+  await expectCommandFailure("crybot-s1 cannot read s2 X authority", screenIdentityArgs(screen(1), ["cat", screenXauthority(2)]), /Permission denied/i);
   await expectCommandFailure("crybot-s1 cannot connect to s2 cua socket", screenIdentityArgs(screen(1), connectS2Socket), /^PermissionError:.*Permission denied/m);
-  const sudoDenied = /password is required|not in (?:the )?sudoers|may not run sudo/i;
+  await docker(root(["sh", "-c", "test ! -e /etc/sudoers.d/cua && test ! -L /etc/sudoers.d/cua"]));
+  const sudoDenied = /password is required|not in (?:the )?sudoers|may not run sudo|no new privileges|effective uid is not 0/i;
   for (const [label, args] of [
     ["crybot-s1 sudo", screenIdentityArgs(screen(1), ["sudo", "-n", "true"])],
     ["crybot-s2 sudo", screenIdentityArgs(screen(2), ["sudo", "-n", "true"])],
