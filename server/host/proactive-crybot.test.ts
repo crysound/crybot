@@ -166,7 +166,7 @@ describe("CryBot keeps an eye on the day", () => {
   it("never leaves two watches on: the Chief's is the one kept, CryBot's own is paused, and none is deleted", () => {
     const { first, watch } = existingInstall();
     const bot = ensureDefaultBot(first.store, { dataDir: DATA_DIR })!;
-    const own = first.routines.create({ name: "CryBot's watch", prompt: "Watch.", botId: bot.id, enabled: true, checks: ["mail"], deliver: "brief",
+    const own = first.routines.create({ name: "Cry Bot's watch", prompt: "Watch.", botId: bot.id, enabled: true, checks: ["mail"], deliver: "brief",
       schedule: { type: "interval", everyMinutes: 15, anchorAt: Date.now() + 60_000 } });
     const after = start();
     after.proactive.ensureWatch();
@@ -178,7 +178,7 @@ describe("CryBot keeps an eye on the day", () => {
     const { first, watch } = existingInstall();
     first.routines.update(watch.id, { enabled: false });
     const bot = ensureDefaultBot(first.store, { dataDir: DATA_DIR })!;
-    first.routines.create({ name: "CryBot's watch", prompt: "Watch.", botId: bot.id, enabled: true, checks: ["mail"], deliver: "brief",
+    first.routines.create({ name: "Cry Bot's watch", prompt: "Watch.", botId: bot.id, enabled: true, checks: ["mail"], deliver: "brief",
       schedule: { type: "interval", everyMinutes: 15, anchorAt: Date.now() + 60_000 } });
     const after = start();
     after.proactive.ensureWatch();

@@ -153,7 +153,7 @@ describe("@Ben", () => {
     expect(f.notified.map((one) => [one.forPerson, one.title, one.threadId])).toEqual([
       [key(BEN.email), "Cleo mentioned you in Scout", inbox.threadId], [key(ADA.email), "Cleo mentioned you in Scout", "scout-main"],
     ]);
-    expect(f.team.inbox.home(key(ADA.email)), "Ada has no Chief and no CryBot, so her tag reaches her where it was written").toBeNull();
+    expect(f.team.inbox.home(key(ADA.email)), "Ada has no Chief and no Cry Bot, so her tag reaches her where it was written").toBeNull();
     expect(f.team.needsYou(session(BEN.email))).toHaveLength(1);
     f.team.seen(session(BEN.email), inbox.threadId);
     expect(f.team.needsYou(session(BEN.email))).toEqual([]);

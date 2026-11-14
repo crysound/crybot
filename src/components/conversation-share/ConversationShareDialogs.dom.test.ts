@@ -58,7 +58,7 @@ describe("which actions a conversation offers", () => {
     expect(shareChoices(bot, { shared: true }, true)).toEqual({ team: false, person: false });
     expect(shareChoices(bot, {}, true), "a team conversation").toEqual({ team: false, person: false });
     expect(shareChoices(bot, { private: true, sharedChat: true }, true)).toEqual({ team: false, person: false });
-    expect(shareChoices({ defaultBot: { person: "rui@acme.test" } }, { private: true }, true), "their own CryBot").toEqual({ team: false, person: false });
+    expect(shareChoices({ defaultBot: { person: "rui@acme.test" } }, { private: true }, true), "their own Cry Bot").toEqual({ team: false, person: false });
     expect(shareChoices(bot, { private: true }, false), "off a team").toEqual({ team: false, person: false });
   });
 

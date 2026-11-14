@@ -13,7 +13,7 @@ const CHOSEN_NAME = "CryBot at login";
 const quoted = (value) => `"${value.replace(/["`$\\]/g, (match) => `\\${match}`)}"`;
 
 export function autostartEntry(exec, { lending = true } = {}) {
-  return ["[Desktop Entry]", "Type=Application", "Name=CryBot", `Exec=${quoted(exec)}${lending ? ` ${HIDDEN_ARG}` : ""}`, "NoDisplay=true",
+  return ["[Desktop Entry]", "Type=Application", "Name=Cry Bot", `Exec=${quoted(exec)}${lending ? ` ${HIDDEN_ARG}` : ""}`, "NoDisplay=true",
     "X-GNOME-Autostart-enabled=true", ...(lending ? [MARK] : []), ""].join("\n");
 }
 

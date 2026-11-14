@@ -5,12 +5,12 @@ description: "Why the Cry Bot phone app can't reach the person's computer, and w
 
 # When the phone can't reach their computer
 
-The Cry Bot phone app reaches the person's computer, where the CryBot
+The Cry Bot phone app reaches the person's computer, where the Cry Bot
 desktop app runs, in the ways turned on in Settings → Phone & devices:
 
 - **Same Wi-Fi**: the phone and the computer are on the same network. Every
   version of the phone app can use it.
-- **Anywhere, through CryBot**: from anywhere, through Cry Bot Relay, end-to-end
+- **Anywhere, through Cry Bot**: from anywhere, through Cry Bot Relay, end-to-end
   encrypted. Only a phone app with the encrypted connection can use it.
 - **Tailscale**, under More ways in, for people who use it.
 

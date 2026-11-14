@@ -86,10 +86,10 @@ beforeAll(async () => {
   marta = (await team.pair(MARTA)).token!;
   quotes = (await team.as(owner, "POST", "/api/bots", { name: "Quotes", visibility: "everyone" })).body.bot;
   ruiBot = (await botsOf(rui)).find((bot) => bot.defaultBot?.person === RUI.email)!;
-  expect(ruiBot, "Rui has a CryBot of his own").toBeTruthy();
+  expect(ruiBot, "Rui has a Cry Bot of his own").toBeTruthy();
 
   const renamed = await team.as(rui, "PATCH", `/api/bots/${ruiBot.id}`, { name: `Confidant ${MARK}` });
-  expect(renamed.status, "he names his own CryBot").toBe(200);
+  expect(renamed.status, "he names his own Cry Bot").toBe(200);
   ruiThread = (await team.as(rui, "POST", `/api/bots/${quotes.id}/tasks`, { title: `Salary talk ${MARK}` })).body.task.threadId;
   await sayAndWait(rui, quotes, ruiThread, `What should I ask for? ${MARK}`);
   await sayAndWait(rui, ruiBot, ruiBot.threadId, `Remember my ceiling ${MARK}`);
@@ -132,7 +132,7 @@ it("usage tells an Admin and the Owner how much Rui used, never on what", async 
     expect((await usage(token, "user")).groups.find((group) => group.key === `user:${RUI.email}`)?.turns, "his turns count as his").toBe(3);
     const byBot = await usage(token, "bot");
     expect(byBot.groups.reduce((sum, group) => sum + group.turns, 0), "and toward the team's total").toBe(byBot.total.turns);
-    expect(byBot.groups.find((group) => group.key === "bot:private"), "his CryBot's turn is counted without the bot").toMatchObject({ label: "Private bot" });
+    expect(byBot.groups.find((group) => group.key === "bot:private"), "his Cry Bot's turn is counted without the bot").toMatchObject({ label: "Private bot" });
     expect((await team.as(token, "GET", "/api/usage/traces")).body.roots.filter((root: { title?: string }) => leaksIn(JSON.stringify(root)).length)).toEqual([]);
   }
 }, hostTimeout(60_000));
@@ -177,7 +177,7 @@ it("Rui's own CryBot answers an Admin, the Owner and another member exactly as a
   const before = (await botsOf(rui)).find((bot) => bot.id === ruiBot.id)!;
   for (const [who, token] of [["an Admin", admin], ["the Owner", owner], ["another member", marta]] as const) {
     const told = (await everyRoute(token, [ruiBot.id, randomUUID()])).filter(({ answers: [hidden, missing] }) => JSON.stringify(hidden) !== JSON.stringify(missing));
-    expect(told.map(({ route, answers }) => `${who}: ${route} → ${JSON.stringify(answers)}`), "a route that tells his CryBot from a missing id").toEqual([]);
+    expect(told.map(({ route, answers }) => `${who}: ${route} → ${JSON.stringify(answers)}`), "a route that tells his Cry Bot from a missing id").toEqual([]);
     const layer = `--member-${personKey({ id: "", email: RUI.email })}`;
     for (const suffix of ["/memory", "/memory/file", "/memory/journal"]) {
       expect(await team.as(token, "GET", `/api/bots/${ruiBot.id}${layer}${suffix}`), `${who}: his layer of it`).toEqual(await team.as(token, "GET", `/api/bots/${randomUUID()}${layer}${suffix}`));
@@ -202,9 +202,9 @@ it("naming his CryBot in a request's body is naming no bot", async () => {
   for (const [who, token] of [["an Admin", admin], ["the Owner", owner]] as const) {
     const routine = await asked(token, "POST", "/api/routines", (botId) => ({ name: "Peek", prompt: "Say what you know", botId, schedule: LATER }));
     expect(routine[0], `${who}: a routine for it`).toEqual(NO_SUCH_BOT);
-    const room = await asked(token, "POST", "/api/groups", (botId) => ({ name: "With his CryBot", memberIds: [quotes.id, botId] }));
+    const room = await asked(token, "POST", "/api/groups", (botId) => ({ name: "With his Cry Bot", memberIds: [quotes.id, botId] }));
     expect(room[0], `${who}: a group chat with it`).toEqual(room[1]);
-    const hook = await asked(token, "POST", "/api/webhooks", (botId) => ({ name: "Into his CryBot", botId }));
+    const hook = await asked(token, "POST", "/api/webhooks", (botId) => ({ name: "Into his Cry Bot", botId }));
     expect(hook[0], `${who}: a webhook into it`).toEqual(hook[1]);
     const handed = await asked(token, "PUT", "/api/team/reports-to", (botId) => ({ botIds: [botId], email: ADMIN.email }));
     expect(handed[0], `${who}: looking after it`).toEqual(handed[1]);
@@ -248,7 +248,7 @@ it("Rui keeps every use of his own CryBot, and of what is his", async () => {
   const chat = await team.as(rui, "POST", `/api/bots/${ruiBot.id}/tasks`, { title: "Another chat of his" });
   expect(chat.status).toBe(201);
   await sayAndWait(rui, ruiBot, chat.body.task.threadId, "Still there?");
-  const forIt = await team.as(rui, "POST", "/api/routines", { name: "His CryBot's morning note", prompt: "Say good morning", botId: ruiBot.id, schedule: LATER });
+  const forIt = await team.as(rui, "POST", "/api/routines", { name: "His Cry Bot's morning note", prompt: "Say good morning", botId: ruiBot.id, schedule: LATER });
   expect(forIt.status, JSON.stringify(forIt.body)).toBe(201);
   expect((await routinesOf(rui)).routines.map((routine) => routine.id)).toEqual(expect.arrayContaining([ruiRoutine, forIt.body.routine.id]));
   expect((await team.as(rui, "GET", `/api/threads/${ruiThread}/messages?limit=20`)).status).toBe(200);
@@ -284,7 +284,7 @@ it("a routine made with no audience named is its writer's alone; one sent to the
 it("when Rui leaves, the Cloud itself still finds and deletes his CryBot", async () => {
   const left = await team.signed("POST", "/api/cloud/team/member-left", { email: RUI.email });
   expect(left.status, JSON.stringify(left.body)).toBe(200);
-  expect(left.body.bots, "his own CryBot").toBe(1);
+  expect(left.body.bots, "his own Cry Bot").toBe(1);
   expect(await team.as(admin, "GET", `/api/bots/${ruiBot.id}`)).toEqual(NO_SUCH_BOT);
   const exported = await team.as(owner, "POST", "/api/teams/export", { format: "backup" });
   expect(exported.status, "and the team's backup still works").toBe(200);

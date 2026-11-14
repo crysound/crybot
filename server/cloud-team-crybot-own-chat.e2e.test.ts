@@ -56,7 +56,7 @@ afterAll(async () => {
 it("is the person's own: private on the wire, its notes in their layer, and nobody else reads it through any route", async () => {
   const bot = await ownCryBot(mira);
   expect(bot.tasks!.find((task) => task.threadId === bot.threadId)?.private, "her main chat is marked hers").toBe(true);
-  expect((bot as Bot & { mainThreadId?: string }).mainThreadId, "and it is still her CryBot's main chat").toBe(bot.threadId);
+  expect((bot as Bot & { mainThreadId?: string }).mainThreadId, "and it is still her Cry Bot's main chat").toBe(bot.threadId);
   const other = await team.as(mira, "POST", `/api/bots/${bot.id}/tasks`, { title: "Another chat" });
   expect(other.status).toBe(201);
   expect(((await botsOf(mira)).find((bot) => bot.id === bot.id) as Bot & { mainThreadId?: string }).mainThreadId, "a newer chat of hers doesn't become it").toBe(bot.threadId);

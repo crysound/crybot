@@ -48,15 +48,15 @@ const holdAsk = updates => {
 test("the box's words and timings are fixed", () => {
   assert.deepEqual(TALK_TIMING, { replyHideMs: 12_000, noticeHideMs: 4_000, stillWorkingMs: 120_000, hoverRecheckMs: 500, maxListenMs: 60_000 });
   assert.deepEqual(TALK_TEXT, {
-    busy: "Voice is in use in CryBot",
-    serverDown: "Open CryBot to talk",
-    starting: "CryBot is still starting. Try again in a moment.",
-    noCryBot: "Set up CryBot first, then try again.",
-    moved: "CryBot lives on My Cloud now — talk to it there",
+    busy: "Voice is in use in Cry Bot",
+    serverDown: "Open Cry Bot to talk",
+    starting: "Cry Bot is still starting. Try again in a moment.",
+    noCryBot: "Set up Cry Bot first, then try again.",
+    moved: "Cry Bot lives on My Cloud now — talk to it there",
     permission: "Talking needs Microphone + Speech Recognition access — System Settings → Privacy & Security.",
     dictationOff: "Turn on Dictation in System Settings → Keyboard, then try again.",
     unavailable: "Talking couldn't start. Try again.",
-    failed: "CryBot couldn't take that · Open chat",
+    failed: "Cry Bot couldn't take that · Open chat",
   });
   assert.ok(Object.isFrozen(TALK_TIMING));
   assert.ok(Object.isFrozen(TALK_TEXT));
@@ -135,7 +135,7 @@ test("voice in use refuses without listening", () => {
   const h = harness({ busy: true }); h.session.press();
   assert.deepEqual(h.starts, []);
   assert.equal(h.prepares, 0);
-  assert.deepEqual(h.views, [{ state: "error", text: "Voice is in use in CryBot", textCode: "native.talk.voiceBusy" }]);
+  assert.deepEqual(h.views, [{ state: "error", text: "Voice is in use in Cry Bot", textCode: "native.talk.voiceBusy" }]);
   mock.timers.tick(3_999); assert.equal(h.closed, 0);
   mock.timers.tick(1); assert.equal(h.closed, 1);
 });
@@ -181,10 +181,10 @@ test("permission and setup problems say what to fix, in the composer's words: on
 
 test("a server that can't take asks says why and stops listening: down, still starting, no CryBot, or moved to My Cloud", async () => {
   const notices = [
-    ["server-down", "Open CryBot to talk", "native.talk.openCryBot"],
+    ["server-down", "Open Cry Bot to talk", "native.talk.openCryBot"],
     ["starting", TALK_TEXT.starting, "native.talk.starting"],
     ["no-crybot", TALK_TEXT.noCryBot, "native.talk.setUpFirst"],
-    ["moved", "CryBot lives on My Cloud now — talk to it there", "native.talk.movedToCloud"],
+    ["moved", "Cry Bot lives on My Cloud now — talk to it there", "native.talk.movedToCloud"],
   ];
   for (const [code, text, textCode] of notices) {
     const h = harness({ prepare: async () => { throw new TalkServerError(code); } });

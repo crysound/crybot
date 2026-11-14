@@ -7,7 +7,9 @@
   "triggerTerms": [
     "no route to your computer",
     "anywhere, through crybot",
+    "anywhere, through cry bot",
     "anywhere through crybot",
+    "anywhere through cry bot",
     "same wi-fi",
     "away from wi-fi",
     "away from my wi-fi",
@@ -30,6 +32,7 @@
     "phone app won't connect",
     "phone app can't connect",
     "crybot app on my phone",
+    "cry bot app on my phone",
     "pair my phone",
     "pair the phone",
     "phone & devices",

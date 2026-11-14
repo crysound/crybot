@@ -413,7 +413,7 @@ describe("thread control placement", () => {
     expect(renderToStaticMarkup(createElement(ErrorRow, { message: "Network timeout", onRetry: () => {} }))).toContain("<button");
   });
   it("shows the provider safety guidance from the catalog, word for word", () => {
-    expect(en["chat.providerSafety.guidance"]).toBe(PROVIDER_SAFETY_GUIDANCE.replaceAll("CryBot", "Cry Bot"));
+    expect(en["chat.providerSafety.guidance"]).toBe(PROVIDER_SAFETY_GUIDANCE.replaceAll("Cry Bot", "Cry Bot"));
   });
   it("draws Retry and the next action on the 28px control step", () => {
     const retry = renderToStaticMarkup(createElement(ErrorRow, { message: "Network timeout", onRetry: () => {} }));
@@ -597,23 +597,23 @@ describe("thread control placement", () => {
     fixture.localMessage = "Screen Recording required";
     window.cry = { platform: "darwin", permOpenSettings: vi.fn(), relaunch: vi.fn() } as unknown as NonNullable<Window["cry"]>;
     const screen = renderToStaticMarkup(createElement(ErrorRow, {
-      message: "CryBot can't use this computer yet — embedded host failed: Screen Recording required. Relaunch CryBot after granting any missing macOS permission.",
+      message: "Cry Bot can't use this computer yet — embedded host failed: Screen Recording required. Relaunch Cry Bot after granting any missing macOS permission.",
     }));
     expect(screen).toContain("Open Screen Recording Settings");
     expect(screen).toContain("Relaunch Cry Bot");
     expect(screen).not.toContain("Open Accessibility Settings");
     fixture.localMessage = "Accessibility required";
     const accessibility = renderToStaticMarkup(createElement(ErrorRow, {
-      message: "CryBot can't use this computer yet — Accessibility required",
+      message: "Cry Bot can't use this computer yet — Accessibility required",
     }));
     expect(accessibility).toContain("Open Accessibility Settings");
     expect(accessibility).not.toContain("Open Screen Recording Settings");
     expect(renderToStaticMarkup(createElement(ErrorRow, {
-      message: "CryBot can't use this computer yet — Screen Recording required",
+      message: "Cry Bot can't use this computer yet — Screen Recording required",
     }))).not.toContain("Open Screen Recording Settings");
     expect(renderToStaticMarkup(createElement(ErrorRow, { message: "Network timeout" }))).not.toContain("Open Screen Recording Settings");
     fixture.localReasonCode = "remote-server";
-    expect(renderToStaticMarkup(createElement(ErrorRow, { message: "CryBot can't use this computer yet — Screen Recording required" }))).not.toContain("Open Screen Recording Settings");
+    expect(renderToStaticMarkup(createElement(ErrorRow, { message: "Cry Bot can't use this computer yet — Screen Recording required" }))).not.toContain("Open Screen Recording Settings");
     fixture.localReasonCode = "cua-driver-unavailable";
     fixture.platform = "other";
     fixture.localMessage = "";

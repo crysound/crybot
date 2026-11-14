@@ -286,7 +286,7 @@ describe("CryBot-managed Boat inventory", () => {
     const inventory = await boat.listManagedBoats(cfg, [{ botId, name: "Conflict", inUse: false }]);
 
     expect(inventory).toMatchObject({ available: false, instances: [] });
-    expect(inventory.problem).toMatch(/no longer has its CryBot owner name/i);
+    expect(inventory.problem).toMatch(/no longer has its Cry Bot owner name/i);
     expect(journal.boatCreateRecoverySnapshot()).toContainEqual({ botId, boxId, resolved: true });
     expect(requests.map(({ method, path }) => `${method} ${path}`)).toEqual([
       "GET /api/v1/sandboxes",

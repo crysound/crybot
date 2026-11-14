@@ -186,8 +186,8 @@ test("the places line names this computer's bots briefly, says nothing when its 
 
 test("native window identity distinguishes hosted HTML, companion data, and the local workspace", () => {
   const state = { environments: [{ id: "old", name: "Old team", origin: "https://old.example" }], activeId: "old" };
-  assert.equal(env.workspaceWindowTitle(state), "CryBot — Hosted: Old team (old.example)");
-  assert.equal(env.workspaceWindowTitle(state, { serverName: "Office", endpoint: "https://server.example.test" }), "CryBot — Connected to: Office (c-office.crybot.com)");
+  assert.equal(env.workspaceWindowTitle(state), "Cry Bot — Hosted: Old team (old.example)");
+  assert.equal(env.workspaceWindowTitle(state, { serverName: "Office", endpoint: "https://server.example.test" }), "Cry Bot — Connected to: Office (server.example.test)");
   assert.equal(env.workspaceWindowTitle(env.withActive(state, "local")), "Cry Bot");
 });
 
@@ -380,9 +380,9 @@ test("once My Cloud is home the switcher lists whole places only: My Cloud first
   assert.deepEqual(forgot, ["o"]);
   assert.equal(env.otherPlaces(state, home), 1);
   assert.equal(env.otherPlaces({ ...state, environments: state.environments.filter((entry) => entry.id !== "o") }, home), 0, "My Cloud alone: no switcher");
-  assert.equal(env.workspaceWindowTitle(state, null, home), "CryBot — My Cloud", "with another place besides, the window names the one it shows");
+  assert.equal(env.workspaceWindowTitle(state, null, home), "Cry Bot — My Cloud", "with another place besides, the window names the one it shows");
   assert.equal(env.workspaceWindowTitle({ ...state, environments: state.environments.filter((entry) => entry.id !== "o") }, null, home), "Cry Bot", "the window onto home alone is simply the app");
-  assert.equal(env.workspaceWindowTitle({ ...state, activeId: "o" }, null, home), "CryBot — Hosted: Office (office.example.test)");
+  assert.equal(env.workspaceWindowTitle({ ...state, activeId: "o" }, null, home), "Cry Bot — Hosted: Office (office.example.test)");
 });
 
 const TEAM = "https://cry-u-acme.example.test";
@@ -401,7 +401,7 @@ test("the switcher lists My Cloud first, then each team from the session with th
   assert.deepEqual(env.workspaceMenuTemplate(state, { onSwitch() {}, onConnect() {}, onForget() {}, homeOrigin: home, foldSublabels: true, text: pt }).map((item) => item.label), ["My Cloud", "Acme · Superadmin", "Office"]);
   assert.deepEqual(env.workspaceMenuTemplate({ ...state, environments: state.environments.map((entry) => (entry.team ? { ...entry, team: { ...entry.team, role: "member" } } : entry)) }, { onSwitch() {}, onConnect() {}, onForget() {}, text: pt })
     .filter((item) => item.type === "radio").map((item) => item.sublabel)[1], "Usuário");
-  assert.equal(env.workspaceWindowTitle(state, null, home), "CryBot — Acme");
+  assert.equal(env.workspaceWindowTitle(state, null, home), "Cry Bot — Acme");
   assert.deepEqual(env.workspaceSummary(state), { local: false, name: "Acme", origin: TEAM, role: "Super admin" });
   // Before the move (or a Team Owner, whose home is this computer): This computer, then each team with its role (no Forget), then servers as saved.
   const before = env.workspaceMenuTemplate(state, { onSwitch() {}, onConnect() {}, onForget() {} });

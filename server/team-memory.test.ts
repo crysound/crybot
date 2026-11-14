@@ -184,9 +184,9 @@ describe("resolve, update, remove", () => {
 
   it("lets the person edit and delete, and keeps the file private", () => {
     const { entry } = memory.propose("", { kind: "term", name: "CRY", detail: "Cry Bot" }, source);
-    const edited = memory.update("", entry.id, { detail: "CryBot, the app", aliases: ["CryBot"] });
-    expect(edited?.detail).toBe("CryBot, the app");
-    expect(edited?.aliases).toEqual(["CryBot"]);
+    const edited = memory.update("", entry.id, { detail: "Cry Bot, the app", aliases: ["Cry Bot"] });
+    expect(edited?.detail).toBe("Cry Bot, the app");
+    expect(edited?.aliases).toEqual(["Cry Bot"]);
     expect(memory.remove("", entry.id)).toBe(true);
     expect(memory.remove("", entry.id)).toBe(false);
     if (process.platform !== "win32") expect(statSync(join(dir, "team-memory.json")).mode & 0o777).toBe(0o600);

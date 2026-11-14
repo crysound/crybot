@@ -37,7 +37,7 @@ const freeOpenCode: InstanceInfo = {
   snapshot: { state: "available", authenticated: true, freeFallback: true }, models: { default: "opencode/big-pickle", options: [] }, aiTest: "passed",
 };
 const signIn = (): InstanceInfo => ({ ...claude(false), snapshot: { state: "available", authenticated: false }, authentication: { method: "paste-code" } } as InstanceInfo);
-const bot = { id: "bot", threadId: "t", name: "CryBot", title: "", description: "", notifications: true, color: "chrome", unread: false,
+const bot = { id: "bot", threadId: "t", name: "Cry Bot", title: "", description: "", notifications: true, color: "chrome", unread: false,
   modelSelection: { instanceId: "claude", model: "m" }, messages: [], defaultBot: {}, chiefOfStaff: true };
 
 let host: HTMLDivElement, root: Root;

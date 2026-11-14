@@ -158,7 +158,7 @@ describe("bundled phone-connection skill", () => {
 
   it("mounts when the phone can't reach the computer, with no capability, and stays out of other turns", () => {
     for (const text of ["My phone stopped connecting when I'm away from Wi-Fi", "the app says No route to your computer at 192.168.1.20",
-      "Anywhere, through CryBot doesn't work", "why won't my phone connect on mobile data? my phone won't connect", "how do I pair my phone again?"]) {
+      "Anywhere, through CryBot doesn't work", "Anywhere, through Cry Bot doesn't work", "Anywhere through Cry Bot doesn't work", "Cry Bot app on my phone won't open", "why won't my phone connect on mobile data? my phone won't connect", "how do I pair my phone again?"]) {
       expect(ids(text), text).toContain("phone-connection");
     }
     for (const text of ["call my phone at 5pm", "Write a paragraph about photography", "book a call for Friday", "summarize this email", "check the wifi password in my notes"]) {

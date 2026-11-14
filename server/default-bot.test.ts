@@ -244,7 +244,7 @@ describe("CryBot, every person's helper", () => {
   it("keeps the oldest when two are marked", () => {
     const store = new Store(selection);
     const first = boot(store)!;
-    const second = store.createBot({ name: "CryBot 2" });
+    const second = store.createBot({ name: "Cry Bot 2" });
     store.patchBot(second.id, { defaultBot: {} });
     expect(boot(store)?.id).toBe(first.id);
     expect(placeCryBots(store).map((bot) => bot.id)).toEqual([first.id]);

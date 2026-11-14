@@ -4,15 +4,15 @@ import { TalkServerError } from "./talk-server.mjs";
 export const TALK_TIMING = Object.freeze({ replyHideMs: 12_000, noticeHideMs: 4_000, stillWorkingMs: 120_000, hoverRecheckMs: 500, maxListenMs: 60_000 });
 
 export const TALK_TEXT = Object.freeze({
-  busy: "Voice is in use in CryBot",
-  serverDown: "Open CryBot to talk",
-  starting: "CryBot is still starting. Try again in a moment.",
-  noCryBot: "Set up CryBot first, then try again.",
-  moved: "CryBot lives on My Cloud now — talk to it there",
+  busy: "Voice is in use in Cry Bot",
+  serverDown: "Open Cry Bot to talk",
+  starting: "Cry Bot is still starting. Try again in a moment.",
+  noCryBot: "Set up Cry Bot first, then try again.",
+  moved: "Cry Bot lives on My Cloud now — talk to it there",
   permission: "Talking needs Microphone + Speech Recognition access — System Settings → Privacy & Security.",
   dictationOff: "Turn on Dictation in System Settings → Keyboard, then try again.",
   unavailable: "Talking couldn't start. Try again.",
-  failed: "CryBot couldn't take that · Open chat",
+  failed: "Cry Bot couldn't take that · Open chat",
 });
 
 const SPEECH_PROBLEMS = new Map([

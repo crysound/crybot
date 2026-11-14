@@ -344,7 +344,7 @@ describe("GET /api/cloud/health", () => {
     const target = `${CLOUD_HEALTH_PATH}?after=0`;
     for (let i = 0; i < 20; i++) expect((await send("GET", target, sign(target, { key: "W".repeat(43) }))).status).toBe(401);
     expect(sessions.failureSources()).toEqual([]);
-    const body = JSON.stringify({ label: "CryBot app (Cloud)", ttlSeconds: 300 });
+    const body = JSON.stringify({ label: "Cry Bot app (Cloud)", ttlSeconds: 300 });
     const healthSigned = sign(target);
     expect((await send("POST", CLOUD_PAIRING_PATH, { ...healthSigned, "content-type": "application/json" }, body)).status).toBe(401);
     const timestamp = String(Math.floor(w.now() / 1000)), nonce = "nonce-pairing-000001";

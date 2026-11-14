@@ -79,7 +79,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     if (!this.token) await this.pair();
   }
   async pair() {
-    const body = JSON.stringify({ label: "CryBot app (Cloud)", ttlSeconds: 300 });
+    const body = JSON.stringify({ label: "Cry Bot app (Cloud)", ttlSeconds: 300 });
     const timestamp = String(Math.floor(Date.now() / 1000)), nonce = randomBytes(16).toString("base64url");
     const response = await fetch(`${this.base}/api/cloud/pairing`, { method: "POST", headers: { ...FORWARDED, "content-type": "application/json",
       "x-cry-cloud-timestamp": timestamp, "x-cry-cloud-nonce": nonce, "x-cry-cloud-signature": `v1=${cloudPairingSignature(this.secret, timestamp, nonce, body)}` }, body });
@@ -105,7 +105,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
   /** The capability of a real turn of this Cloud's Chief, for what the bot's own tools call. */
   async chiefTurn() {
     const chief = (await this.bots()).find((bot) => bot.chiefOfStaff);
-    expect(chief, "a new Cloud's CryBot is its Chief").toBeTruthy();
+    expect(chief, "a new Cloud's Cry Bot is its Chief").toBeTruthy();
     const sent = await this.api("POST", `/api/bots/${chief.id}/messages`, { text: "Add a specialist." });
     expect(sent.status, JSON.stringify(sent.body)).toBe(202);
     await expect.poll(() => existsSync(this.dump), { timeout: 20_000 }).toBe(true);

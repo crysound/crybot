@@ -430,9 +430,9 @@ describe("internal mcp_server route, Full access", () => {
     expect(testElsewhere).toHaveBeenCalledWith("notes", expect.objectContaining({ command: "npx", runsOn: MAC }), "cloud-home", expect.any(AbortSignal));
     expect(probe).not.toHaveBeenCalled();
 
-    testElsewhere.mockResolvedValueOnce({ status: 409, error: "notes runs on your Mac (Ada's Mac), which is offline right now: CryBot on it is closed, or the Mac is asleep or off." });
+    testElsewhere.mockResolvedValueOnce({ status: 409, error: "notes runs on your Mac (Ada's Mac), which is offline right now: Cry Bot on it is closed, or the Mac is asleep or off." });
     const offline = await post({ action: "test", name: "notes" });
-    expect(offline.body.text).toBe("MCP server notes: Not tested: notes runs on your Mac (Ada's Mac), which is offline right now: CryBot on it is closed, or the Mac is asleep or off.");
+    expect(offline.body.text).toBe("MCP server notes: Not tested: notes runs on your Mac (Ada's Mac), which is offline right now: Cry Bot on it is closed, or the Mac is asleep or off.");
     expect(offline.body.text).not.toContain("Could not reach");
   });
 

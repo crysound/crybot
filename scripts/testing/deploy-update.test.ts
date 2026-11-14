@@ -169,10 +169,10 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
   });
 
   it("says why in the server's own last words when the new version stops as it starts", () => {
-    const box = install({ behaviour: "crashes", lastWords: "This data was written by a newer CryBot." });
+    const box = install({ behaviour: "crashes", lastWords: "This data was written by a newer Cry Bot." });
     const failed = box.run();
     expect(failed.status).toBe(1);
-    expect(failed.stdout).toContain("The update to 0.1.151 did not work: it kept stopping as it started (This data was written by a newer CryBot.).");
+    expect(failed.stdout).toContain("The update to 0.1.151 did not work: it kept stopping as it started (This data was written by a newer Cry Bot.).");
     expect(failed.said.at(-1)).toBe("Your server runs 0.1.150 again, with its data as it was before the update.");
     expect(tree(box.data)["started-by.txt"]).toBe("0.1.150\n0.1.150\n");
   });
