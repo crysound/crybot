@@ -46,6 +46,9 @@ targets:
         CFBundleInfoDictionaryVersion: "6.0"
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - crybot
         LSRequiresIPhoneOS: true
         ITSAppUsesNonExemptEncryption: false
         NSMicrophoneUsageDescription: Cry Bot needs microphone access for voice features.

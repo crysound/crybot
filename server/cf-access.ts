@@ -86,3 +86,21 @@ export async function cfAccessRefusal(
   if (!access || isCfAccessPublicProbe(method, path)) return null;
   return access(req, res, url, sessions, cookieName);
 }
+
+export function createCfAccessTokenVerifier(env: NodeJS.ProcessEnv = process.env, keySet?: JWTVerifyGetKey) {
+  const issuer = `https://${env.CRYBOT_CF_ACCESS_TEAM_DOMAIN?.trim()}`;
+  const audience = env.CRYBOT_CF_ACCESS_AUD?.split(",").map(value => value.trim()).filter(Boolean);
+  const allow = env.CRYBOT_CF_ACCESS_ALLOW?.split(",").map(value => value.trim().toLowerCase()).filter(Boolean) ?? [];
+  const keys = keySet ?? createRemoteJWKSet(new URL(`${issuer}/cdn-cgi/access/certs`));
+  return async (token: string) => {
+    try {
+      const { payload } = await jwtVerify(token, keys, { issuer, audience, requiredClaims: ["exp"] });
+      const email = payload.email;
+      const identity = payload.sub || (typeof email === "string" ? email.trim().toLowerCase() : undefined);
+      if (!identity || (!allow.includes("*") && (typeof email !== "string" || !allow.includes(email.trim().toLowerCase())))) return null;
+      return payload;
+    } catch {
+      return null;
+    }
+  };
+}

@@ -1,14 +1,21 @@
 import Foundation
+import AuthenticationServices
+import CryptoKit
+import Security
 import UIKit
 import WebKit
 
-final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, ASWebAuthenticationPresentationContextProviding {
     private let preferences = UserDefaults.standard
     private var webView: WKWebView!
     private var serverURL = ""
     private var loginHosts = Set<String>()
     private var downloadLocations = [ObjectIdentifier: URL]()
     private var serverWasInjected = false
+    private var authenticationSession: ASWebAuthenticationSession?
+    private var pendingLoginState: String?
+    private var pendingLoginKey: P256.KeyAgreement.PrivateKey?
+    private var completingLogin = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -58,16 +65,18 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         NSLayoutConstraint.activate([input.heightAnchor.constraint(equalToConstant: 44)])
     }
 
-    private func showError() {
+    private func showError(login: Bool = false) {
         removeWebView()
         let stack = panel()
         let label = UILabel()
-        label.text = NSLocalizedString("LOAD_ERROR", comment: "")
+        label.text = NSLocalizedString(login ? "LOGIN_ERROR" : "LOAD_ERROR", comment: "")
         label.numberOfLines = 0
         label.font = .preferredFont(forTextStyle: .body)
         let retry = UIButton(type: .system)
-        retry.setTitle(NSLocalizedString("RETRY", comment: ""), for: .normal)
-        retry.addAction(UIAction { [weak self] _ in self?.showWebView() }, for: .touchUpInside)
+        retry.setTitle(NSLocalizedString(login ? "LOGIN" : "RETRY", comment: ""), for: .normal)
+        retry.addAction(UIAction { [weak self] _ in
+            if login { self?.startLogin() } else { self?.showWebView() }
+        }, for: .touchUpInside)
         stack.addArrangedSubview(label)
         stack.addArrangedSubview(retry)
         if !serverWasInjected {
@@ -78,7 +87,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         }
     }
 
-    private func showWebView() {
+    private func showWebView(loadServer: Bool = true) {
         WatchSync.shared.refresh(server: serverURL)
         removeWebView()
         let configuration = WKWebViewConfiguration()
@@ -100,7 +109,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
             webView.topAnchor.constraint(equalTo: view.topAnchor),
             webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-        webView.load(URLRequest(url: URL(string: serverURL)!))
+        if loadServer { webView.load(URLRequest(url: URL(string: serverURL)!)) }
     }
 
     @objc private func refreshPage() { webView.reload() }
@@ -136,7 +145,138 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         return loginHosts.contains(host)
     }
 
+    private func isLoginURL(_ url: URL) -> Bool {
+        guard ["http", "https"].contains(url.scheme?.lowercased()), let host = url.host?.lowercased() else { return false }
+        return host != URL(string: serverURL)?.host?.lowercased() && loginHosts.contains(host)
+    }
+
+    private func startLogin() {
+        guard pendingLoginState == nil, !completingLogin, !loginHosts.isEmpty else { return }
+        var bytes = [UInt8](repeating: 0, count: 32)
+        guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess,
+              var url = URLComponents(string: serverURL), view.window != nil else {
+            showError(login: true)
+            return
+        }
+        let state = base64URL(Data(bytes))
+        let privateKey = P256.KeyAgreement.PrivateKey()
+        while url.percentEncodedPath.hasSuffix("/") { url.percentEncodedPath.removeLast() }
+        url.percentEncodedPath += "/auth/app-handoff"
+        url.queryItems = [URLQueryItem(name: "state", value: state), URLQueryItem(name: "pk", value: base64URL(privateKey.publicKey.x963Representation))]
+        url.fragment = nil
+        guard let handoffURL = url.url else { showError(login: true); return }
+        pendingLoginState = state
+        pendingLoginKey = privateKey
+        let session = ASWebAuthenticationSession(url: handoffURL, callbackURLScheme: "crybot") { [weak self] callback, _ in
+            DispatchQueue.main.async {
+                guard let self, self.pendingLoginState == state else { return }
+                if let callback, self.handleAuthCallback(callback) { return }
+                self.failLogin()
+            }
+        }
+        session.prefersEphemeralWebBrowserSession = false
+        session.presentationContextProvider = self
+        authenticationSession = session
+        if !session.start() { failLogin() }
+    }
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        return view.window ?? ASPresentationAnchor()
+    }
+
+    private func failLogin() {
+        pendingLoginState = nil
+        pendingLoginKey = nil
+        completingLogin = false
+        let session = authenticationSession
+        authenticationSession = nil
+        session?.cancel()
+        showError(login: true)
+    }
+
+    func handleAuthCallback(_ url: URL) -> Bool {
+        guard url.scheme == "crybot", url.host == "auth",
+              let state = pendingLoginState else { return false }
+        guard let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+              items.filter({ $0.name == "state" }).count == 1,
+              items.first(where: { $0.name == "state" })?.value == state else { return true }
+        let privateKey = pendingLoginKey
+        pendingLoginState = nil
+        pendingLoginKey = nil
+        completingLogin = true
+        let session = authenticationSession
+        authenticationSession = nil
+        session?.cancel()
+        guard let privateKey,
+              let token = decryptHandoff(items, state: state, privateKey: privateKey),
+              let expiry = tokenExpiry(token), let host = URL(string: serverURL)?.host,
+              let cookie = HTTPCookie(properties: [
+                .name: "CF_Authorization", .value: token, .domain: host, .path: "/",
+                .secure: "TRUE", .expires: expiry, HTTPCookiePropertyKey("HttpOnly"): "TRUE"
+              ]) else { failLogin(); return true }
+        showWebView(loadServer: false)
+        webView.configuration.websiteDataStore.httpCookieStore.setCookie(cookie) { [weak self] in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.completingLogin = false
+                self.webView.load(URLRequest(url: URL(string: self.serverURL)!))
+            }
+        }
+        return true
+    }
+
+    private func base64URL(_ data: Data) -> String {
+        return data.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+    }
+
+    private func decodeBase64URL(_ value: String) -> Data? {
+        guard !value.isEmpty, value.range(of: "^[A-Za-z0-9_-]+$", options: .regularExpression) == value.startIndex..<value.endIndex else { return nil }
+        var padded = value.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        padded += String(repeating: "=", count: (4 - padded.count % 4) % 4)
+        guard let data = Data(base64Encoded: padded), base64URL(data) == value else { return nil }
+        return data
+    }
+
+    private func decryptHandoff(_ items: [URLQueryItem], state: String, privateKey: P256.KeyAgreement.PrivateKey) -> String? {
+        func parameter(_ name: String) -> String? {
+            let matches = items.filter { $0.name == name }
+            return matches.count == 1 ? matches.first?.value : nil
+        }
+        guard parameter("v") == "1",
+              let epk = parameter("epk"), let publicBytes = decodeBase64URL(epk), publicBytes.count == 65, publicBytes.first == 4,
+              let iv = parameter("iv"), let nonceBytes = decodeBase64URL(iv), nonceBytes.count == 12,
+              let ct = parameter("ct"), let encrypted = decodeBase64URL(ct), encrypted.count > 16 else { return nil }
+        do {
+            let publicKey = try P256.KeyAgreement.PublicKey(x963Representation: publicBytes)
+            let secret = try privateKey.sharedSecretFromKeyAgreement(with: publicKey)
+            let stateBytes = Data(state.utf8)
+            let key = secret.hkdfDerivedSymmetricKey(using: SHA256.self, salt: stateBytes, sharedInfo: Data("crybot-app-handoff-v1".utf8), outputByteCount: 32)
+            let nonce = try AES.GCM.Nonce(data: nonceBytes)
+            let box = try AES.GCM.SealedBox(nonce: nonce, ciphertext: encrypted.dropLast(16), tag: encrypted.suffix(16))
+            let plaintext = try AES.GCM.open(box, using: key, authenticating: stateBytes)
+            return String(data: plaintext, encoding: .utf8)
+        } catch {
+            return nil
+        }
+    }
+
+    private func tokenExpiry(_ token: String) -> Date? {
+        guard token.range(of: "^[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]+$", options: .regularExpression) == token.startIndex..<token.endIndex else { return nil }
+        var payload = String(token.split(separator: ".")[1]).replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        payload += String(repeating: "=", count: (4 - payload.count % 4) % 4)
+        guard let data = Data(base64Encoded: payload),
+              let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let exp = json["exp"] as? Double, exp.isFinite, exp > Date().timeIntervalSince1970 else { return nil }
+        return Date(timeIntervalSince1970: exp)
+    }
+
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if navigationAction.targetFrame?.isMainFrame != false,
+           let url = navigationAction.request.url, isLoginURL(url) {
+            decisionHandler(.cancel)
+            startLogin()
+            return
+        }
         guard let targetFrame = navigationAction.targetFrame else {
             decisionHandler(.allow)
             return
@@ -165,6 +305,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
 
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         guard let url = navigationAction.request.url else { return nil }
+        if isLoginURL(url) { startLogin(); return nil }
         if ["http", "https"].contains(url.scheme?.lowercased()) && allowed(url) {
             webView.load(URLRequest(url: url))
         } else if ["http", "https"].contains(url.scheme?.lowercased()) {
@@ -177,12 +318,12 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         webView.scrollView.refreshControl?.endRefreshing()
-        if isNetworkFailure(error) { showError() }
+        if pendingLoginState == nil && !completingLogin && isNetworkFailure(error) { showError() }
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         webView.scrollView.refreshControl?.endRefreshing()
-        if isNetworkFailure(error) { showError() }
+        if pendingLoginState == nil && !completingLogin && isNetworkFailure(error) { showError() }
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
