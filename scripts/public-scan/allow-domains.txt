@@ -12,3 +12,6 @@ accounts.feishu.cn # 飞书官方账号授权，历史登录接力实现使用�
 open.larksuite.com # Lark 官方开放平台，与飞书国际版登录配套。
 accounts.larksuite.com # Lark 官方账号授权，与飞书国际版登录配套。
 example.cloudflareaccess.com # 历史登录接力测试夹具的虚构团队名。
+content.delta # 运行时事件类型名，不是域名。
+island.total # 文案键名，不是域名。
+island.open # 文案键名，不是域名。
