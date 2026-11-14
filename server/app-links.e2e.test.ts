@@ -19,7 +19,7 @@ const env = {
   CRYBOT_ANDROID_CERT_SHA256: fingerprint,
 };
 const aasa = {
-  applinks: { details: [{ appIDs: ["ABCDE12345.com.example.app"], components: [{ "/": returnPath, comment: "Cry Bot login return" }] }] },
+  applinks: { details: [{ appIDs: ["ABCDE12345.com.example.app"], components: [{ "/": returnPath, comment: "Cry Bot login return" }, { "/": "/auth/feishu/app-return", comment: "Cry Bot Feishu login return" }] }] },
   webcredentials: { apps: ["ABCDE12345.com.example.app"] },
 };
 const assetlinks = [{
@@ -62,7 +62,7 @@ it("serves all three routes from index.ts before Access without creating a sessi
         expect(response.headers.get("location")).toBeNull();
         if (path === aasaPath) expect(await response.json()).toEqual(aasa);
         if (path === assetlinksPath) expect(await response.json()).toEqual(assetlinks);
-        if (path === returnPath) expect(await response.text()).toContain("Could not return to the Cry Bot App automatically.");
+        if (path === returnPath) expect(await response.text()).toContain("Returning to the Cry Bot App");
       }
     }
     const protectedResponse = await fetch(`${base}/auth/app-handoff`, { headers: { "cf-access-jwt-assertion": "invalid" } });
