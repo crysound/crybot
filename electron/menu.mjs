@@ -123,7 +123,7 @@ export function buildApplicationMenu({ environments, activeId, onSwitch, onAddFr
   const atLogin = openAtLogin ? [{ id: "open-at-login", label: t("native.menu.openAtLogin"), type: "checkbox", checked: openAtLogin.checked, click: () => openAtLogin.onToggle(!openAtLogin.checked) }] : [];
   const roles = roleMenus(t, isMac);
   if (remoteOnly) roles.view.submenu = roles.view.submenu.map(item => ["reload", "forceReload"].includes(item.role)
-    ? { label: item.label, accelerator: item.role === "reload" ? "CmdOrCtrl+R" : "CmdOrCtrl+Shift+R", click: () => onReload(item.role === "forceReload") } : item);
+    ? { label: item.label, accelerator: item.role === "reload" ? "CmdOrCtrl+R" : "CmdOrCtrl+Shift+R", click: (_item, focusedWindow) => onReload(item.role === "forceReload", focusedWindow) } : item);
   const appMenu = {
     label: app.name,
     submenu: [

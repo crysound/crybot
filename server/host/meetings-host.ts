@@ -75,7 +75,7 @@ export function createMeetingsHost(deps: MeetingsHostDeps, routeDeps: () => Meet
     async computerFor(record) {
       const bot = store.bot(record.botId);
       if (!bot) return { error: "The bot is gone." };
-      if (!boat.boatConfigured(cfg)) return { error: "Meeting notes need a cloud computer, and none is set up here." };
+      if (!boat.boatOffered(cfg)) return { error: "Meeting notes need a cloud computer, and none is set up here." };
       const machine = record.owner === bot.id
         ? await deps.power().start(bot, { threadId: `meeting:${record.id}`, generation: record.id }, { budgetMs: START_BUDGET_MS })
         : await boat.readyBoat(cfg, record.owner, START_BUDGET_MS);
@@ -119,7 +119,7 @@ export function createMeetingsHost(deps: MeetingsHostDeps, routeDeps: () => Meet
     computerOwner(botId) {
       const bot = store.bot(botId);
       if (!bot) return { error: "The bot is gone." };
-      if (!boat.boatConfigured(cfg)) return { error: MEETINGS_NEED_CLOUD_COMPUTER };
+      if (!boat.boatOffered(cfg)) return { error: MEETINGS_NEED_CLOUD_COMPUTER };
       return deps.computerOwner(bot);
     },
     createRoutine(botId, threadId) {

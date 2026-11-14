@@ -1691,14 +1691,14 @@ export class Store {
     return changed;
   }
 
-  renameInstances(ids: ReadonlyMap<string, string>): number {
+  renameInstances(ids: ReadonlyMap<string, string>, options: { discardResumeCursors?: boolean } = {}): number {
     const touches = (record?: Record<string, unknown>) => Boolean(record && Object.keys(record).some(key => ids.has(key)));
-    const rename = <T>(record: Record<string, T>): Record<string, T> => {
+    const rename = <T>(record: Record<string, T>, discard = false): Record<string, T> => {
       const next: Record<string, T> = {};
       for (const [key, value] of Object.entries(record)) {
         const target = ids.get(key);
         if (!target) next[key] = value;
-        else if (!Object.prototype.hasOwnProperty.call(record, target)) next[target] = value;
+        else if (!discard && !Object.prototype.hasOwnProperty.call(record, target)) next[target] = value;
       }
       return next;
     };
@@ -1711,11 +1711,11 @@ export class Store {
         bot.fallback = bot.fallback.map((candidate) => ({ ...candidate, instanceId: ids.get(candidate.instanceId) ?? candidate.instanceId }));
         dirty = true;
       }
-      if (touches(bot.resumeCursors)) { bot.resumeCursors = rename(bot.resumeCursors); dirty = true; }
+      if (touches(bot.resumeCursors)) { bot.resumeCursors = rename(bot.resumeCursors, options.discardResumeCursors); dirty = true; }
       for (const task of bot.tasks ?? []) {
         const taskSelected = task.modelSelection && ids.get(task.modelSelection.instanceId);
         if (task.modelSelection && taskSelected) { task.modelSelection = { ...task.modelSelection, instanceId: taskSelected }; dirty = true; }
-        if (touches(task.resumeCursors)) { task.resumeCursors = rename(task.resumeCursors); dirty = true; }
+        if (touches(task.resumeCursors)) { task.resumeCursors = rename(task.resumeCursors, options.discardResumeCursors); dirty = true; }
         if (task.handedMessages && touches(task.handedMessages)) { task.handedMessages = rename(task.handedMessages); dirty = true; }
         const last = task.lastInstanceId && ids.get(task.lastInstanceId);
         if (last) { task.lastInstanceId = last; dirty = true; }

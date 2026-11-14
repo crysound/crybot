@@ -20,9 +20,10 @@ const catalogSchema = z.object({
 type HostedCatalog = z.infer<typeof catalogSchema>;
 const providerFor = { claude: "anthropic", codex: "openai", opencode: "openrouter" } as const;
 
-/** Operator-only: partial policy configuration must never enable it, and a Cloud home ignores it. */
+/** Operator-only: partial policy configuration must never enable model access. */
 export function hostedModelPolicy(dataDirectory: string, env: NodeJS.ProcessEnv = process.env) {
   if (env.CRYBOT_HOSTED_MODELS === undefined && env.CRYBOT_HOSTED_MODEL_TOKEN === undefined) return null;
+  if (env.CRYBOT_PROVIDER_LOCK === "1") throw new Error("CRYBOT_PROVIDER_LOCK=1 cannot be enabled together with hosted model policy (CRYBOT_HOSTED_MODELS / CRYBOT_HOSTED_MODEL_TOKEN).");
   if (cloudHomeConfigured(env)) return null;
   const hosted = hostedWorkspaceConfiguration(env);
   if (!hosted?.portalMembership || env.CRYBOT_DESKTOP_PARENT === "1" || !/^cry_workspace_[A-Za-z0-9_-]{43}$/.test(env.CRYBOT_HOSTED_MODEL_TOKEN ?? "")) {
