@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { setLocale } from "./i18n";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { activityStepLabel, formatProgressSize, liveActivityLabel, liveActivityPhrases, phraseAt, phraseHoldMs, turnNowPhrases } from "./live-activity";
 import { friendlyNowPhrases } from "./friendly-activity";
@@ -178,4 +179,15 @@ describe("turnNowPhrases: what the status line says is happening now", () => {
     expect(formatProgressSize(1024)).toBe("1 KB");
     expect(formatProgressSize(undefined)).toBeUndefined();
   });
+});
+
+
+afterEach(() => setLocale("en"));
+it.each([["en", "Waking the computer…"], ["zh", "正在唤醒电脑…"]])("translates the running wake notice in %s", (locale, text) => {
+  setLocale(locale);
+  expect(turnNowPhrases(null, activity("notice: Waking the computer…", { nameCode: "chat.notice.wakingComputer", ok: true }))?.phrases).toEqual([text]);
+});
+
+it.each(["chat.notice.computerWakeFailed", "chat.notice.previousComputerWakeFailed"])("keeps %s out of the current state line", nameCode => {
+  expect(turnNowPhrases(null, activity("notice: The computer could not wake (desktop failed)", { nameCode, nameParams: { reason: "desktop failed" }, ok: false }))).toBeNull();
 });

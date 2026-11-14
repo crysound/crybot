@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
-import { screenFrameHash, screenSurfaceForTool, screenTouchingTool, settledFrameIsNews } from "./screen-frame-gate.ts";
+import { computerToolTitle, screenFrameHash, screenSurfaceForTool, screenTouchingTool, settledFrameIsNews } from "./screen-frame-gate.ts";
 
 describe("screenTouchingTool", () => {
   it("strips the Claude driver's mcp__<server>__ prefix", () => {
@@ -150,4 +150,25 @@ describe("screenSurfaceForTool", () => {
   it("keeps a browsed page from being illustrated with an idle desktop", () => {
     expect(screenSurfaceForTool("agent_browser_open")).not.toBe(screenSurfaceForTool("launch_app"));
   });
+});
+
+it.each(["click", "screenshot", "browser_click", "type_text"])("uses the Claude directory target %s for the activity title and screen frame", name => {
+  const title = "mcp__computer__call_tool";
+  const args = { name, arguments: {} };
+  expect(computerToolTitle(title, args)).toBe(`mcp__computer__${name}`);
+  expect(computerToolTitle(title, JSON.stringify(args))).toBe(`mcp__computer__${name}`);
+  expect(screenTouchingTool(title, args)).toBe(true);
+  expect(screenSurfaceForTool(title, args)).toBe("computer");
+});
+
+it("unwraps the chat tool alias too", () => {
+  expect(computerToolTitle("computer_call_tool", { name: "click", arguments: {} })).toBe("computer_click");
+  expect(screenTouchingTool("computer_call_tool", { name: "click", arguments: {} })).toBe(true);
+});
+
+it("does not mistake directory discovery or a shell call for a screen action", () => {
+  expect(screenTouchingTool("mcp__computer__search_tools", { query: "click" })).toBe(false);
+  expect(screenTouchingTool("mcp__computer__describe_tool", { name: "click" })).toBe(false);
+  expect(screenTouchingTool("mcp__computer__call_tool", { name: "computer_exec" })).toBe(false);
+  expect(computerToolTitle("mcp__computer__call_tool", "truncated input")).toBe("mcp__computer__call_tool");
 });

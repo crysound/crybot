@@ -1,0 +1,390 @@
+# T-1223 智能体恢复提速
+
+实现已完成；本次没有 git 提交。214 个测试用例通过，但隔离服务器验收未能执行成功，不能据此声称真实聊天的 `turn.started < 1 秒` 已通过。
+
+## 改动
+
+非 strict 自动挂载路径遇到已存在、可安全恢复的停止中或未就绪云电脑时，先登记 `lazy: true` 的 `autoVmClaims`，立即启动后台 claim，不再等待启动完成才派发聊天。已就绪的懒 claim、容器不存在时的创建流程、用户明确指定电脑的 strict 流程保留原来的挂载时机。
+
+后台任务和首次工具调用共用同一个 claim promise。首次调用确实需要等待时，写入现有 activity notice，并通过 `nameCode` 显示「正在唤醒电脑…」/ “Waking the computer…”，不增加共享事件协议字段。唤醒错误保留实际原因，走现有 `surfaceLazyClaimRejection` 和中断收尾逻辑。该回调仍按 generation 隔离，旧轮次迟到的结果不能终止新轮次；实际唤醒错误若在原轮次结束后到达，会作为带原 turnId 的历史 notice 留下原因。
+
+启动与桌面就绪轮询提取到 `local-vm-ready.ts`。生命周期锁现在覆盖整个等待过程；失败时也释放锁、启动 idle backstop。claim 在关键 await 前后检查当前轮次，取消后不继续领取、绑定预览或自动 pin；旧任务释放租约时仍按目标对象身份及 resource owner 判断。
+
+`containerComputerStatus` 按 runner、平台、target 和探测深度缓存 5 秒，并合并正在进行的相同探测。启动、停止、删除、创建和拉取镜像在开始及结束时使缓存失效，失败也失效；镜像更新与模式切换清除全部缓存。失效代次阻止旧探测结果再次被复用。生命周期操作和桌面启动轮询使用新探测，不被 5 秒缓存拖慢。
+
+常规状态检查保留版本、daemon status、health report，移除准备截图及 base64 读取，正常路径的容器内探测由 5 次减少为 3 次。实际截图仍检查图片完整性，并在失败时清除状态缓存。截图和普通查询共用新的短缓存。
+
+还修复了单纯后台启动不能解决的 MCP 握手问题：原桥接器初始化就会执行容器命令。休眠轮次改用目录式 MCP，立即提供 `search_tools`、`describe_tool`、`call_tool`，在第一次检索或调用电脑工具时才等 gate、连接真正的 CUA MCP 并获取实际 schema。已就绪和 strict 路径继续使用原桥接器。目录调用保留工具范围限制、输入校验、执行前再次检查归属、错误结果只保留文本等处理；CLI gate 与 Chat MCP 都按内部工具名执行权限判断。
+
+## 文件
+
+- 服务端挂载、缓存及生命周期：`server/index.ts`、`server/auto-vm-claims.ts`、`server/container-computer.ts`、`server/local-vm-box.ts`、新增 `server/local-vm-ready.ts`。
+- 延迟 MCP 和权限：`server/container-mcp.ts`、新增 `server/lazy-container-mcp.ts`、`server/mcp-gate-config.ts`、`server/drivers/chat-mcp-tools.ts`。
+- 前端翻译：`src/lib/live-activity.ts`、`src/locales/en.json`、`src/locales/zh.json`。
+- 测试：`server/container-computer.test.ts`、`server/container-mcp.test.ts`、`server/mcp-gate-config.test.ts`、新增 `server/local-vm-ready.test.ts`、`server/lazy-container-mcp.test.ts`、`server/drivers/chat-mcp-lazy-container.test.ts`、`server/local-vm-resume.fixture.test.ts`，以及 `src/lib/live-activity.test.ts`、`src/components/ToolActivity.notice.test.ts`。
+- 隔离慢启动桩：新增 `server/testing/local-vm-resume-hooks.mjs`，复用既有容器 fixture，注入 5 秒启动、启动失败和真实 driver 事件记录。
+
+没有修改 `electron/`、`mobile/`、`.github/`、config.json 或休眠默认时长；没有增加依赖或联网。为运行测试，将本 worktree 的 `node_modules` 链接到了主仓库已有依赖目录，没有修改依赖清单。
+
+## 测试结果
+
+每次只运行一个文件，均使用以下命令形式，没有运行 typecheck、完整测试集或 `.e2e` 文件：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run <文件> --maxWorkers=1 --configLoader runner
+```
+
+| 文件 | 结果 |
+| --- | --- |
+| `server/container-computer.test.ts` | 115 通过 |
+| `server/computer-idle.test.ts` | 20 通过 |
+| `server/local-vm-ready.test.ts` | 5 通过 |
+| `server/lazy-container-mcp.test.ts` | 5 通过 |
+| `server/local-vm-box.test.ts` | 4 通过 |
+| `server/auto-vm-claims.test.ts` | 17 通过 |
+| `server/mcp-gate-config.test.ts` | 15 通过 |
+| `src/lib/live-activity.test.ts` | 26 通过 |
+| `src/components/ToolActivity.notice.test.ts` | 7 通过 |
+| `server/local-vm-resume.fixture.test.ts` | beforeAll 无法取得可监听端口，5 个用例未执行 |
+| `server/container-mcp.test.ts` | 4 个进程用例失败，子进程退出但没有输出，包括原有 3 个用例 |
+| `server/drivers/chat-mcp-lazy-container.test.ts` | 1 个进程用例失败，MCP 子进程在握手前退出 |
+
+独立诊断确认本地监听返回 `EPERM`，Node 同步子进程启动也返回 `EPERM`；异步 Node 子进程出现无输出退出。没有申请提权、放宽沙箱或连接用户的应用。另通过临时目录中的独立 MCP 进程检查确认：休眠模式的 initialize / tools/list 能正常回答，且不会启动假容器运行时。这项检查不替代完整服务器验收。
+
+通过的假时钟测试覆盖了 5 秒慢启动、MCP 初始化不等待、首次工具调用等待后成功、失败不连接容器、只启动一次、启动期间不触发 idle stop、取消后不再轮询、归属变化拒绝执行。缓存测试覆盖 5 秒边界、并发请求合并、target/探测深度隔离、生命周期成功与失败失效、失效后旧探测晚到、fresh 探测更新缓存；中英文组件与运行提示测试通过。`git diff --check` 通过。
+
+## 尚未确认及竞态边界
+
+1. 完整隔离服务器用例需要在允许本地监听及 Node 子进程工作的环境中重跑。该文件实际断言发送到 `turn.started < 1000ms`、首次 gate 等待、失败原因可见且轮次结束、strict 同步等待，以及聊天结束后的生命周期锁。当前不能宣称这些服务器级断言已通过。
+2. 没有使用真实 Podman/CUA 或真实模型进行计时。目录式 MCP 的初始化已有独立进程检查，但各真实引擎的工具发现、权限卡和首次工具执行仍需实际环境验证。
+3. 取消不能撤回已经交给容器运行时的启动命令。因此启动仍可能完成；锁会保留到命令结束，随后旧轮次不再附加预览或 pin，idle backstop 负责后续休眠。该机制的局部测试通过，跨 HTTP 生命周期请求的完整竞态仍待 fixture 验证。
+4. 为保护新轮次，迟到的真实唤醒错误只追加原 turnId 的历史 notice，不通知失败、不中断当前轮次；取消本身不显示唤醒失败。已新增“旧轮失败不打断新聊天”的服务器 fixture 用例，但受监听限制尚未执行。
+5. 绕过本服务直接操作容器时没有服务内生命周期通知，状态最多可能保留 5 秒。实际截图失败会提前使缓存失效；电脑工具仍经过归属 gate。常规 ready 判定现在依赖 driver health，不再预先验证截图传输，截图完整性在真正取图时验证。
+6. 当前检出缺少 AGENTS.md 引用的 `docs/verification/README.md`。使用了仓库现有的隔离 HOME、数据目录、假 CLI 和容器边界 fixture 方式，未接触用户实时数据；完整服务器 fixture 因上述权限限制未能启动。
+
+## 第 2 轮
+
+本轮基于第 1 轮继续修改，没有 git 提交。以下记录替代第 1 轮中“后台失败中断聊天”和“生命周期锁覆盖整个桌面轮询”的描述。
+
+### 必改项
+
+1. **后台失败不打断聊天。** 新增 `server/local-vm-resume.ts`，把等待 notice、后台失败 notice、迟到失败 notice 和目标级 60 秒失败冷却集中处理。`auto-vm-claims.ts` 继续把失败 slot 留在表中，后续电脑调用保持 fail-closed；Local VM 后台唤醒的网络错误也按失败处理，不进入通用 claim 的静默网络重试。`computer-call-gate.ts` 只在实际动作等待 claim 的期间登记 waiter，取消和等待结束都会撤销。只有活跃轮次确有动作在等时，才调用原来的 `surfaceLazyClaimRejection`；纯聊天失败只留带原因的 notice，不通知 turn-failed、不上报 could-not-start、不 interrupt。冷却期间再次挂载会登记失败 slot 并立即给 notice，不重新启动或重复等待坏桌面 90 秒。`local-vm-resume.fixture.test.ts` 第二例现要求先看到失败原因、聊天仍 busy，再写 finishFile 正常完成到 idle，且没有 turn-failed 或事故；还验证下一轮不会再次启动。
+
+2. **首次调用等待超过 5 秒仍可执行。** 将实际 gate 提取到 `server/computer-call-gate.ts`，只扣除本轮自己的 Local VM 唤醒 claim 成功所花的等待时间，仍保留其他轮次占用造成的 CONTROL_WAITED、人控交还拒绝、能力失效与取消检查。目录查询通过 `readinessOnly` 等待就绪，不进入屏幕动作检查或动作 journal。`computer-call-gate.test.ts` 使用真实 gate 和 lazy MCP，在假时钟推进 7 秒后同时断言 held:false 和底层 click 已执行；完整 fixture 的首例也改成 7 秒。取消后到达的失败只提示、不报告，以及动作仍在等待时走拒绝路径，也有回归测试。
+
+3. **Claude 动作名称和截图识别。** 新增 `server/computer-tool-title.ts`，用现有 `directoryCallTarget` 解开 `mcp__computer__call_tool`。Claude 在裁剪 input 前从原始 tool_use input 生成内层动作标题；`index.ts` 的活动标题和 `screen-frame-gate.ts` 的 touched/surface 判定也复用此解析。`screen-frame-gate.test.ts` 覆盖 Claude 名形态的 click、screenshot、browser_click、type_text 标题、touched 和 computer surface，同时排除目录查询与 computer_exec。这样原有 poller.touched、screenIsTheWork 和最终截图选择能识别懒唤醒轮中的动作。
+
+4. **行数棘轮。** `StatusEntry`、缓存、失效代次和 changingTargets 已搬到 `server/container-status-cache.ts`，原模块保留公开函数入口。gate、等待及迟到 notice 抽出后，文件行数（main → 完工）为：
+   - `server/index.ts`：**15562 → 15523**，按本轮审核指定的 main 基线计算。当前本地 `main` 引用实测为 15564 行；完工行数也低于较严格的 15562 要求。
+   - `server/container-computer.ts`：**1175 → 1172**。
+   - 没有提高 ratchet 上限；新增模块均不足 200 行，`server/drivers/claude.ts` 保持 2087 行。
+
+### 建议项（均已处理）
+
+1. `lazy-container-mcp.ts` 的连接或 tools/list 失败后清掉共享 connection promise，已经打开的失败连接会关闭；测试验证下一次调用重新连接成功。
+2. stdin 请求不再整条串行排队，ping 可以立即回答；`notifications/cancelled` 按 requestId 取消正在等待的请求，AbortSignal 经 `computer-control-client.ts` 传到 HTTP gate。共享唤醒和其他请求不会被一条调用的取消撤掉。新增直接请求测试及 PassThrough stdin 测试，验证先收到 ping、随后取消响应，且取消后没有连接容器或执行动作。
+3. `local-vm-ready.ts` 的生命周期锁只覆盖状态准备、机器启动和容器启动，桌面轮询放在锁外；目标级 pending promise 合并重复 readiness 请求。测试覆盖启动只执行一次、轮询时锁已释放，以及轮询期间容器停止后不再启动。已有租约/活跃轮次保护仍可能拒绝用户停止或删除，需先停止正在用电脑的轮次；本轮消除了额外持有最长 90 秒启动锁的行为，没有放宽正在使用中的电脑保护。
+4. 下一轮 attach 遇到上一轮自己的 readiness 尚未结束时，仍登记懒 claim，并等待 pending wake 结束后重新检查本轮归属；不会因该启动锁而静默返回 false。新增隔离 fixture 覆盖快聊天结束后下一轮拿到 lazy MCP、第一次 gate 成功且仅一次 start。
+5. `ownsLiveTurn` 补回 `!companyShutdown`。
+6. 增加 `chat.notice.computerWakeFailed`、`chat.notice.previousComputerWakeFailed`，提供 en 和 zh-CN 对应的 `zh.json` 文案，其余语言按现有机制回退英文。迟到提示保留原 request 对象，等 turn.started 填入 turnId 后读取，写入原轮次；失败 notice 不作为 `turnNowPhrases` 当前状态行。组件测试覆盖英文、中文及英文回退，并断言原因可见。
+7. fixture 的假容器探测接入真实 `cachedContainerStatus`，在边界上记录 statusProbes。新增用例实际发起两次 beginTurn，断言两次 turn.started 在 5 秒内、statusProbes 恰好为 1；生命周期 action 使用真实缓存失效入口。
+
+### 验证结果
+
+所有 Vitest 调用均逐文件、单 worker 执行，使用指定的 Node 24、2048 MB 内存及 `--configLoader runner`，没有运行完整 pnpm test 或 e2e。隔离 fixture 使用临时 HOME、数据目录、假容器和假 Claude，不接触用户应用或数据。当前检出仍缺少 `docs/verification/README.md`，已采用仓库现有的隔离 fixture 方式。
+
+逐文件验证结果如下；每个 Vitest 命令均使用 Node 24、单 worker 和 `--configLoader runner`。
+
+| 文件 | 结果 |
+| --- | --- |
+| `server/container-computer.test.ts` | 115 通过 |
+| `server/lazy-container-mcp.test.ts` | 11 通过 |
+| `server/local-vm-ready.test.ts` | 6 通过 |
+| `server/local-vm-resume.test.ts` | 5 通过 |
+| `server/computer-call-gate.test.ts` | 7 通过 |
+| `server/screen-frame-gate.test.ts` | 83 通过 |
+| `server/computer-idle.test.ts` | 20 通过 |
+| `src/components/ToolActivity.notice.test.ts` | 10 通过 |
+| `src/lib/live-activity.test.ts` | 28 通过 |
+| `src/locales/native-keys.test.ts` | 3 通过 |
+| `server/local-vm-resume.fixture.test.ts` | 沙箱无可监听端口，beforeAll 失败，7 个用例未执行 |
+| `server/container-mcp.test.ts` | 4 个子进程用例失败；沙箱启动子进程后无 stdout，无法验证其 MCP 断言 |
+| `server/drivers/chat-mcp-lazy-container.test.ts` | 1 个子进程用例失败；MCP 子进程在握手前退出 |
+| `server/computer-control-client.test.ts` | 20 通过，2 个监听用例因 `EPERM listen 127.0.0.1` 超时 |
+| `server/routes/desktop-viewer.test.ts` | 沙箱中无法完成监听型测试，已中止等待 |
+| `scripts/testing/file-size-ratchet.test.ts` | 沙箱 `spawnSync git` 返回 `EPERM`；未执行行数断言 |
+
+独立单元测试覆盖了 7 秒唤醒后首次动作、纯聊天失败收尾、60 秒失败冷却、取消、MCP 连接重试、ping 并行响应、Claude 内层动作标题和截图触达判断。上述监听及子进程失败均未改测试绕过；需在允许本地监听和 Node 子进程的环境中重跑。`git diff --check` 通过。
+
+类型检查通过：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc -p tsconfig.server.json --noEmit
+```
+
+### 提示缓存与待真实环境核对
+
+没有修改 `server/cache-keepwarm.ts`。懒唤醒轮暴露 3 个目录工具，而普通轮暴露完整电脑工具，tools 前缀变化可能让 Claude 提示缓存无法命中，增加输入 token 费用及首 token 延迟；需协调者在真实环境比较两种轮次的 cache_read。当前结果不证明真实 Podman/CUA 的端到端唤醒时间、完整 Claude 最终截图帧或真实提示缓存命中率。
+
+启动命令已经交给容器运行时后无法撤回；取消或聊天提前完成时，仍等命令结束再释放启动锁，随后按 generation/lease 检查阻止旧轮次绑定预览。桌面轮询已不持有该锁。完整 HTTP fixture 仍需要在允许本地监听和 Node 子进程的环境中复跑。
+
+## 第 3 轮
+
+本轮沿用原 worktree，仅修改下面 4 项涉及的实现、测试和本报告；没有 git 提交、联网或新增依赖。以上两轮记录保留，本节替代第二轮中“Local VM 后台网络失败立即终止、不重试”和“所有 claim 失败进入冷却”的行为描述。
+
+### 逐项修复及测试
+
+1. **目录查询等待时也提示唤醒。** `server/computer-call-gate.ts` 的 `onWaiting` 不再受 `readinessOnly` 限制，调用后仍清空回调，所以同一个 slot 只提示一次。目录查询继续跳过人控占用、资源 claim、ACT_WITHIN 和动作 journal，也不登记动作 waiter。`server/computer-call-gate.test.ts` 使用真实 lazy MCP、真实 gate 和 notice 回调：两个并发 `search_tools` 等待 7 秒，等待期间恰好一个 `chat.notice.wakingComputer`，随后 `call_tool` 真正执行 click，提示不重复。原人控目录查询测试同时检查提示和不领取资源。`server/local-vm-resume.fixture.test.ts` 首例改为先通过 HTTP `readinessOnly=1` 等待、再执行动作 gate，并检查聊天启动时间及提示次数；受沙箱监听限制，该 fixture 本轮尚未验证成功。
+
+2. **缩小冷却范围，并由生命周期事件清除。** `server/local-vm-resume.ts` 用 `LocalVmWakeError` 标记真实唤醒故障；`server/local-vm-ready.ts` 仅在启动机器、启动容器、桌面就绪探测异常或桌面就绪超时时产生该错误。错误保留原 message 和 cause。生命周期占用、资源/租约冲突以及绑定失败等普通 claim 错误仍按原 notice/reject 路径显示，但不进入 60 秒冷却；网络错误也不进入冷却。未就绪但因取消、生命周期停止、容量/创建条件等提前返回的状态不会被包装成唤醒故障。`server/container-status-cache.ts` 的 `invalidateContainerComputerStatus` 同时清除对应 target 的冷却，无 target 时清除全部，覆盖既有手动启动、停止、镜像更新及模式切换的失效入口。`server/local-vm-resume.test.ts` 覆盖临时 claim 错误、readiness 内生命周期占用、目标级/全局失效后下一轮重新 claim、无关目标冷却保留、60 秒到期，以及机器启动/桌面探测/桌面超时故障确实进入冷却。
+
+3. **合并 readiness 后使用仍活跃调用方的轮次状态。** `server/local-vm-ready.ts` 等待已有 promise 后，若返回未就绪而当前调用方仍活跃，则使用该调用方自己的依赖重新走 readiness；成功结果和已结束调用方直接返回。重新准备仍经目标级 pending 合并及生命周期锁，不并发启动。`server/local-vm-ready.test.ts` 新增两个调用方的测试：第一个启动容器后结束，第二个仍活跃；第一个收到未就绪状态，第二个继续轮询直至 ready，容器启动总次数为 1，不落入 not-ready claim 失败路径。
+
+4. **恢复 Local VM 后台网络重试。** `server/auto-vm-claims.ts` 移除对 `localVm && startsComputer` 的例外，沿用原来的行为：暂时性网络失败清除 begin、设置 retryReason，后续调用重试，总计最多 3 次；不是主动定时后台重试。`server/auto-vm-claims.test.ts` 将已有重试成功、次数上限测试扩展到 Local VM 后台唤醒。`server/local-vm-resume.test.ts` 同时验证首次网络失败不发失败 notice、不写冷却，后续可成功；实际启动错误经 cause 包装后仍可识别网络故障，耗尽 3 次后只发一次失败 notice，仍不进入冷却。
+
+本轮实现文件：`computer-call-gate.ts`、`local-vm-ready.ts`、`local-vm-resume.ts`、`container-status-cache.ts`、`auto-vm-claims.ts`。测试改动仅在 `computer-call-gate.test.ts`、`local-vm-ready.test.ts`、`local-vm-resume.test.ts`、`auto-vm-claims.test.ts`、`local-vm-resume.fixture.test.ts`，均位于 `server/`。
+
+### 先红后绿记录
+
+先补测试，在修改实现之前逐文件运行，实际得到以下失败输出（只摘录关键断言；不是推测）：
+
+| 命令中的文件 | 改前结果 | 关键失败输出 |
+| --- | --- | --- |
+| `server/computer-call-gate.test.ts` | 2 failed / 6 passed | 人控目录查询：`expected "vi.fn()" to be called once, but got 0 times`；search_tools → call_tool：`expected [] to deeply equal [ [ ObjectContaining{…}, false ] ]`，收到的提示列表为空 |
+| `server/local-vm-resume.test.ts` | 6 failed / 4 passed | 临时占用/租约失败：`expected 'this Local VM is being started, stopp…' to be undefined` 等；生命周期失效后下一轮：`expected "vi.fn()" to be called once, but got 0 times`；网络失败：`expected undefined to be 'runtime disconnected'` |
+| `server/local-vm-ready.test.ts` | 1 failed / 6 passed | 第二调用方期望 `ready: true`，实际 `ready: false` |
+| `server/auto-vm-claims.test.ts` | 2 failed / 17 passed | Local VM 网络失败的 `retryReason` 为 undefined，begin 仍是 Promise；重试上限测试：`expected "vi.fn()" to be called 3 times, but got 1 times` |
+
+红、绿阶段均使用以下命令形式，每次只跑一个文件，严格采用本轮要求的 `--maxWorkers=2`：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run <上表或下表文件> --maxWorkers=2 --configLoader runner
+```
+
+红阶段完整输出保存在本次环境 `/tmp/T-1223-r3-red-{gate,resume,ready,claims}.log`。修复后另外补充了 5 个故障分类/网络 cause 的测试，因此最终 resume 单测数为 15。
+
+### 最终验证
+
+| 文件 | 本轮最终结果 |
+| --- | --- |
+| `server/local-vm-resume.fixture.test.ts` | beforeAll 失败，7 skipped；`Error: no free port block for offsets 0,1 in 19600..22600` |
+| `server/computer-call-gate.test.ts` | 8 passed |
+| `server/lazy-container-mcp.test.ts` | 11 passed |
+| `server/local-vm-ready.test.ts` | 7 passed |
+| `server/local-vm-resume.test.ts` | 15 passed |
+| `server/auto-vm-claims.test.ts` | 19 passed |
+| `server/screen-frame-gate.test.ts` | 83 passed |
+| `server/container-computer.test.ts` | 115 passed；补查状态缓存/生命周期失效 |
+| `server/computer-idle.test.ts` | 20 passed；补查原任务要求的 idle 行为 |
+
+共 **278 个单测通过**。隔离 fixture 使用临时 HOME、数据目录、假 CLI 与假容器，已尝试启动，但未能取得端口。独立执行 `net.createServer().listen(0, "127.0.0.1")` 也返回 `EPERM listen EPERM: operation not permitted 127.0.0.1`。未修改测试绕过权限限制，未访问用户 live app 或数据；需要协调者在沙箱外重跑上表 fixture，不能把这 7 例写成通过。
+
+Server tsc **通过（exit 0，无诊断）**：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc -p tsconfig.server.json --noEmit
+```
+
+执行前检查本轮 service cgroup：`memory.max=5368709120`（5 GiB），`memory.current=189009920`（约 180 MiB），系统 available 约 7070 MiB；确认无测试任务在跑后才单独运行 tsc，堆上限 3072 MiB。没有运行完整 pnpm test、pnpm typecheck 或 e2e。
+
+行数（**本轮起点 → 完工**）：`server/index.ts` **15523 → 15523**，与本轮开始保存的文件逐字节相同。本轮未新增文件；本轮涉及的实现和测试文件最大 221 行，任务此前新增的文件也均不足 1000 行。`git diff --check` 通过。
+
+当前检出及可读主仓库均缺少用户引用的 `r2.md` 和 AGENTS.md 引用的 `docs/verification/README.md`，已读取 `brief.md`、本轮要求和本报告保留的第二轮内容，并沿用已有隔离 fixture。验证限制仍是上述端口权限；本轮不声称真实 Podman/CUA 或完整服务器 fixture 已通过。
+
+## 第 4 轮
+
+基于合并提交 `cb81f81d` 修改，未 git 提交、联网或安装依赖。仅修改本轮失败涉及的实现、语言包、对应回归单测和本报告；没有改动既有测试期望，也没有改动工作区原有未跟踪的 `r4.md`。
+
+### 根因与修复
+
+1. **`server/chat-notices.test.ts`：notice 目录遗漏。** 前两轮只把 `computerWakeFailed`、`previousComputerWakeFailed`、`wakingComputer` 写进 en/zh 包，却没加入 `server/chat-notices.ts` 的 `CHAT_NOTICE`。测试实际将 en.json 的全部 `chat.notice.*`（扣除两个客户端键）与该常量比较，因而多出三项。现按已有 notice 方式登记三条，并补齐其余 14 个语言包的相应文案。
+
+2. **`src/locales/server-lines.test.ts`：状态行绕过服务端语言入口。** `server/local-vm-resume.ts` 的 `localVmWakeFailureNotice` 在 `name` 中直接拼接英文；`nameCode` 虽能供客户端翻译，却不能替代服务端落盘状态行的语言规则。现使用 `server.computer.wakeFailed`、`server.computer.previousWakeFailed`、`server.computer.waking`，通过 `serverLine` 写入行；`index.ts` 的即时、后台、迟到和冷却提示均传入 `threadLanguage(threadId)`（它是 `personLanguages.forThread`，内部调用 `forLine`，遵循私聊对象/共享环境语言规则）。16 个语言包都提供这三个 `server.` 键。保留原 notice code、reason 参数及迟到 turnId。新增当前/迟到中文提示单测，覆盖唤醒中和失败状态行。
+
+3. **`server/cloud-computer-slow-start.e2e.test.ts` 两例：gate 的轮次检查盖掉失败原因。** 提取到 `server/computer-call-gate.ts` 时新增了循环入口的 `isActive`/abort 检查。等待 promise 结束后，原实现对 `failed` 执行 `continue`；失败回调已经触发 interrupt，于是循环入口先返回 “This turn no longer has this computer…”，来不及读取启动错误。这不是冷却或 readinessOnly 的问题。现从本次已等待的 slot 直接返回 `lazyClaimFailedText`，保留 Cloud 限额、底层 cause 和 backOnAuto 信息；成功后仍重新检查能力，后续新调用也仍拒绝过期轮次。新增两例分别验证配额拒绝、镜像启动失败，失败回调同时使轮次失活并删除表中 slot，等待中的调用仍收到具体原因。
+
+4. **`server/group-local-vm.e2e.test.ts` 四例分别处理：**
+
+   - **missing-auto 错选 VM：** 本任务把 `server/container-computer.ts:autoLocalVmAttachable` 放宽到“容器仍在运行、但桌面不 ready”。`index.ts:selectableComputers` 用同一函数计算 `canCreate`，于是故障 VM 被视为可用，Auto 在 cloud 之前选中它。恢复该公共函数在 main 的“ready、可 start 或可 run”条件；将后台唤醒允许等待的运行中桌面判定拆为 `localVmDesktopPending`，在已见目标记录、唤醒挂载/readiness 中使用，保留后台唤醒资格而不影响选择菜单。补充单测，确认已有安全配置但桌面故障的运行中 VM 不成为 Auto 的可选电脑。
+   - **readiness claim 失败后无法及时释放：** `server/local-vm-ready.ts:prepareLocalVm` 对“没有启动动作、已经在运行但故障”的桌面也进入 90 秒轮询。main 在该位置立即返回未就绪状态，由调用方释放租约并走失败收尾；新轮询拖过了 fixture 的等待预算。增加明确的 `waitForRunningDesktop` 依赖：普通/strict/房间 claim 默认关闭，仅后台唤醒打开。普通 claim 对已有故障立即返回；它自己刚 start/run 的桌面仍按原有行为等待。新增两例分别固定这两个边界，原后台运行中桌面等待及合并调用方测试保持原期望通过。
+   - **eager Auto VM 占用等待未停车：** `index.ts:attachLocalVm` 把 `claimAutoLocalVm` 整体移入后台，连 `bindTurnComputer` 的占用等待也随之移到派发后；引擎已启动，`ComputerWaitParked` 又被后台 notice 当取消过滤，原派发 catch 无法设置 `busy:false / parked.computer`。现对真正要后台唤醒的轮次，先 await 原来的独占 `bindTurnComputer`，再登记 lazy claim 并启动后台唤醒。占用等待仍在派发前完成或抛出停车异常；没有占用时只领取资源，不等待机器启动/桌面就绪。冷却命中时跳过这一步，不新增占用或启动动作。
+   - **rejected lazy claim 返回 Another thread 且不收尾：** 已 ready 的 lazy 轮次在首个工具调用前桌面故障，也被上述新 readiness 轮询卡住。gate 的调用预算比 90 秒短，先返回通用 CONTROL_BUSY；真正的 claim rejection 和 interrupt 迟迟不发生。普通 claim 恢复即时未就绪返回后，原 `dropLease → onRejected → surfaceLazyClaimRejection → interrupt` 链路及时执行；第 3 项的 gate 修复同时保证正在等待的调用拿到终止错误，而不是轮次失效提示。
+
+5. **`evals/evals.test.ts:lazy-claim-rejection`：与第 4 项最后一例同源。** 普通 lazy claim 不再轮询已故障桌面，故障走原终止收尾链路，而非等 90 秒。此场景的 HTTP 行为必须由沙箱外补跑确认，本轮不将静态推导写成已通过。
+
+### 验证结果
+
+所有 Vitest 调用均一次一个文件，统一使用：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run <文件> --maxWorkers=2 --configLoader runner
+```
+
+| 文件 | 本轮结果 |
+| --- | --- |
+| `server/chat-notices.test.ts` | 13 passed |
+| `src/locales/server-lines.test.ts` | 8 passed |
+| `server/cloud-computer-slow-start.e2e.test.ts` | 隔离 relay 无法 listen，beforeAll 超时；6 skipped，`EPERM 127.0.0.1` |
+| `server/group-local-vm.e2e.test.ts` | 隔离 relay 无法 listen，beforeAll 超时；47 skipped，`EPERM 127.0.0.1` |
+| `evals/evals.test.ts` | 场景目录检查 1 passed；6 场景均在 fixture 启动前失败，`no free port block for offsets 0,1 in 19600..22600`，包括 lazy-claim-rejection |
+| `server/local-vm-resume.fixture.test.ts` | beforeAll 无法分配隔离端口；7 skipped，同上 no free port block |
+| `server/computer-call-gate.test.ts` | 10 passed（原 8 + 新增 2） |
+| `server/lazy-container-mcp.test.ts` | 11 passed |
+| `server/local-vm-ready.test.ts` | 9 passed（原 7 + 新增 2） |
+| `server/local-vm-resume.test.ts` | 17 passed（原 15 + 新增 2） |
+| `server/auto-vm-claims.test.ts` | 19 passed |
+| `server/screen-frame-gate.test.ts` | 83 passed |
+| `server/container-computer.test.ts` | 116 passed（原 115 + 新增 1；补查公共 Auto 判定与状态缓存） |
+
+共 286 个单测通过，另有 eval 场景目录检查 1 个通过。未修改 fixture、测试期望或沙箱设置来绕过监听限制。上述两个 e2e、evals 和 resume fixture 都已实际尝试启动隔离环境，未访问用户 live app 或数据；需协调者在沙箱外及 Actions 上补跑，当前不能声称其行为断言已经变绿。日志保存在本轮环境 `/tmp/T1223-r4-*.log`。
+
+Server tsc 使用以下命令，最终结果见本节末尾：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc -p tsconfig.server.json --noEmit
+```
+
+执行前确认逐文件测试已结束，并读取当前 service cgroup：`memory.max=5368709120`（5 GiB），最终检查时 `memory.current=258080768`（约 246 MiB），系统 `MemAvailable=7977672 kB`（约 7.6 GiB），再单独运行 tsc，堆上限 3072 MiB。
+
+行数（本轮起点 → 完工）：`server/index.ts` **15421 → 15420**。`server/container-computer.ts` 为 1174，低于仓库 ratchet 上限 1175；未改 ratchet。没有新增实现文件。当前检出与可读主仓库仍缺少 `r2.md` 和 `docs/verification/README.md`，已读取 brief、r3 及本报告保留的前轮说明，并沿用测试自带的临时 HOME/数据目录/假引擎/假容器隔离流程。
+
+最终 server tsc **通过（exit 0，无诊断）**；本轮涉及的 10 个 TypeScript 文件的 `pnpm exec oxlint --deny-warnings <文件列表>` **通过（exit 0）**；`git diff --check` **通过**。最后复核保留了第三轮的 readinessOnly 提示、网络重试、目标级冷却失效及合并 readiness 逻辑；完整服务器停车/恢复、失败收尾与速度断言仍以上述沙箱外补跑为准。
+
+## 第 5 轮：法语 notice 预期与 F4 派发时序
+
+### 改动范围
+
+在续跑留下的四个文件 diff 上继续，没有重写前轮实现、没有 git 提交：
+
+- `src/components/ToolActivity.notice.test.ts`：将 fr 预期从 `src/locales/fr.json` 的 `chat.notice.previousComputerWakeFailed` 原样提取（仅去掉 ` ({reason})` 后缀），保留 U+2019 弯撇号；仍单独断言 `desktop unavailable`。
+- `server/teammate-follow-ups.e2e.test.ts`：F4 第二步将 `delayMs: 2_000` 换为 `waitForFile: f.ready("mira")`。保留 readyFile 存在、两次 queued 回执、第一项 running / 第二项 queued、最终 MA/MB 顺序和最终回复的全部断言。
+- `server/testing/room-handoff-agent.ts`：此前只有整轮的 readyFile/gateFile，没有逐步等待文件的能力。新增最小的 step.waitForFile；文件已存在立即继续，否则每 10ms 检查。沿用整轮 `timeoutMs`（默认 20 秒），超时走 `failed` 拒绝并在 finally 清除 interval、回收 MCP 子进程；不会无限等待。
+- `server/testing/room-handoff-agent.test.ts`：增加等待文件、已存在文件、缺失文件超时且不派发被阻塞步骤的用例。续跑补上提前接住 run 的拒绝，避免轮询期间产生 unhandled rejection；最终仍断言 run 成功返回指定结果。
+
+### F4 根因结论及代码证据
+
+**结论：F4 是纯测试时序问题；代码对照未发现本分支给这一普通子任务启动增加等待或轮询间隔。** 这不是依据“本地多跑几次没失败”得出的结论；本轮没有修改生产启动代码。未取得 CI 当次逐阶段耗时，所以不推断那台机器具体慢在哪个系统调用。
+
+对照任务引入前 `e925a77a^`、第 4 轮 `2d552c1c` 与当前 `8ed1d414`：
+
+1. `server/runtime/`、`server/runtime-coordinator.ts`、`server/coordinator.ts`、`server/testing/fake-claude-cli.ts`、`server/testing/room-handoff-agent.ts`、F4 原测试在 `git diff e925a77a^ HEAD -- ...` 中均无变化。Runtime.dispatch 先记 running，再调用 runner；running 并不表示假引擎已完成初始化。假引擎进入 runRoomHandoffAgent 后，还要启动 agents MCP 子进程，完成 initialize、tools/list、list_room_targets，才写 readyFile，随后等待 gateFile。原来的 2 秒覆盖了这一整段异步链路，却没有任何就绪保证。
+2. F4 使用 `launchVerificationServer(..., { scripted: true })`，未传 Local VM/Boat 夹具；`scripts/control-cry.ts` 生成全新的临时 HOME/config，仅装 fake Claude，密封 PATH，不继承用户电脑或数据。F4 的 bot 未指定电脑，也不是 automationSource。`server/index.ts` 的 `attachLocalVm(false)` 在 `!localVmSeen.has(target.key) && !opts?.automationSource` 处返回，不会执行后续 VM 状态检查、claim 或唤醒。
+3. 第 4 轮前置的 `await bindTurnComputer(...)` 明确受 `wakeInBackground && !failure` 限制；wakeInBackground 仅在发现可挂载但尚未就绪的 VM 时为 true，F4 不满足。claimAutoLocalVm 新增的 pendingWake 合并等待也只在 VM claim 中发生，F4 不调用。
+4. `git show e925a77a^:server/local-vm-ready.ts` 已有 `setTimeout(resolve, 2000)` 的桌面就绪轮询；本分支未增加该间隔。第 4 轮的 waitForRunningDesktop 仅为后台唤醒打开正在启动桌面的等待，普通默认值 false。computer-call-gate 的 readinessOnly/onWaiting 是电脑工具调用路径；F4 只调用 agents 的 coordinate_bots/list_room_targets，不调用电脑工具。
+
+因此用 readyFile 同步第二次派发：第一项必须已进入假模型并仍被 gate 挡住，才能发出第二项。不会把 “running” 放宽成 “running 或 queued”。
+
+### 本轮验证结果
+
+所有 Vitest 命令一次一个文件、`--maxWorkers=1`；测试、tsc、lint 串行执行，Node 堆上限 2048 MiB。tsc 前确认测试进程已结束；当时 service cgroup `memory.max=6442450944`、`memory.current=582668288`，未按旧轮次的 3072 MiB 堆上限运行。
+
+命令公共前缀：`PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048`。
+
+| 命令（接公共前缀） | 结果 |
+| --- | --- |
+| `pnpm exec vitest run src/components/ToolActivity.notice.test.ts --maxWorkers=1 --configLoader runner` | **10 passed** |
+| `pnpm exec vitest run server/testing/room-handoff-agent.test.ts --maxWorkers=1 --configLoader runner` | 1 passed / 6 failed；子进程 stdin 管道限制，见下文 |
+| `pnpm exec tsc -p tsconfig.server.json --noEmit` | **exit 0** |
+| `pnpm exec tsc -p tsconfig.json --noEmit` | **exit 0** |
+| `pnpm lint` | exit 1；仅 `server/lazy-container-mcp.ts:122:54` 的既有 `unicorn(no-useless-spread)` 警告 |
+| `pnpm exec oxlint --deny-warnings server/teammate-follow-ups.e2e.test.ts server/testing/room-handoff-agent.ts server/testing/room-handoff-agent.test.ts src/components/ToolActivity.notice.test.ts` | **exit 0** |
+| `git diff --check`（无需前缀） | **exit 0** |
+
+全仓 lint 告警行由 `git blame -L 122,122 -- server/lazy-container-mcp.ts` 定位到已有提交 `e925a77a`，该文件本轮无 diff；按“只修两项”的范围保留原状。
+
+夹具单测中，原有的“收到 stdin 后 exit(7)”用例实际得到 exit(0)，原有畸形输出/回收进程用例超时；新增等待用例也在 MCP 初始化阶段遇到 exit(0)，尚未到达 waitForFile。脱离 Vitest 最小复现仍如此：
+
+```js
+import { spawn } from 'node:child_process';
+const child = spawn(process.execPath,
+  ['-e', 'process.stdin.once("data", () => process.exit(7));'],
+  { stdio: ['pipe', 'pipe', 'pipe'] });
+child.on('exit', (code, signal) => console.log({ code, signal }));
+child.stdin.write('hello\n');
+```
+
+使用 `/opt/node24/bin/node --input-type=module` 执行实际输出 `{ code: 0, signal: null }`。因此不能把本轮夹具单测记为通过；也未为绕开环境限制更改 stdio 通信实现。修正测试的拒绝处理后另跑 `pnpm exec vitest run server/testing/room-handoff-agent.test.ts -t waitForFile --maxWorkers=1 --configLoader runner`，结果见本节末尾。
+
+日志：`/tmp/T1223-r5-notice.log`、`/tmp/T1223-r5-handoff.log`、`/tmp/T1223-r5-handoff-wait.log`、`/tmp/T1223-r5-tsc-{server,ui}.log`、`/tmp/T1223-r5-lint{,-changed}.log`。
+
+### F4 与 FAKE 慢启动：协调者沙箱外补跑
+
+**尚未执行，也未声称 F4 或 3 秒慢启动验证通过。** 按本轮要求，监听端口的 e2e 交协调者在沙箱外跑。当前 worktree 和可读主仓库仍缺少 `docs/verification/README.md`；本轮可跑的测试均使用仓库的临时 HOME/数据目录和假进程，未访问 live app。
+
+已生成仅供本地验证的 `/tmp/T1223-r5-slow-f4.patch`（`git apply --check` 通过，不在待提交 diff 内）。它在 runRoomHandoffAgent 选中 plan 后、spawn MCP 之前临时加：
+
+```ts
+if (entry?.key === "MA" && own.includes("F4-A-BRIEF")) await new Promise(resolve => setTimeout(resolve, 3_000));
+```
+
+这样只延迟 F4 第一项启动 3 秒，发生在 readyFile 写入之前；不能用 plan.delayMs，它发生在 readyFile/gateFile 之后，无法模拟本问题。协调者应先正常跑 F4，再应用临时补丁跑同一用例，最后反向撤销补丁：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run server/teammate-follow-ups.e2e.test.ts -t 'F4 keeps' --maxWorkers=1 --configLoader runner
+git apply /tmp/T1223-r5-slow-f4.patch
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run server/teammate-follow-ups.e2e.test.ts -t 'F4 keeps' --maxWorkers=1 --configLoader runner
+git apply -R /tmp/T1223-r5-slow-f4.patch
+```
+
+无论慢启动运行成功或失败，都需撤销临时补丁；全部原断言应保持通过。另需在支持子进程 stdin 的环境补跑 `server/testing/room-handoff-agent.test.ts`。
+
+最终定向夹具复跑结果：**2 failed / 5 skipped**，仍为上述 stdin/MCP 初始化问题；无 unhandled rejection 报告。正常 F4、3 秒慢启动 F4 和夹具单测的沙箱外结果待协调者补充。本轮最终 `git diff --check` 通过，未引入临时慢启动代码。
+
+## 第 6 轮：Local VM 清单与删除读取真实状态
+
+### 根因
+
+本分支把 `server/container-computer.ts:containerComputerStatus` 的所有调用统一接入 `server/container-status-cache.ts:cachedContainerStatus`；未传 `fresh` 时默认复用 5 秒缓存，影响范围超出了恢复路径。
+
+两条 HTTP 回归都先通过 `GET /api/bots/:id/local-computer` 获取目标信息，此时假 Docker 中容器尚不存在，`localVmPayload` 的查询缓存了 `container: "missing"`。随后测试通过假 Docker 状态文件模拟外部创建容器，没有应用内生命周期事件可以使缓存失效：
+
+1. **非受管容器清单为空：** `localVmInventoryPayload` 的容器发现步骤能够找到该容器，但之后的状态查询读到旧的 missing；`localVmInventoryEntry` 因此过滤掉条目，未返回应有的 `managed: false`。问题不是 Docker 发现命令没有执行。
+2. **删除 bot 未调用 Docker rm：** 删除预检查同样读到 missing，将 `localVmCleanup.removeContainer` 设为 false，后续直接跳过容器删除。`containerComputerAction` 本身虽有生命周期失效保护，却根本没有被调用。
+
+`local-vm-box.ts` 只负责 bot box 的 Docker socket 挂载限制，`lazy-container-mcp.ts` 负责工具懒加载；这两条回归不经过它们的挂载路径。
+
+### 改法与单测
+
+- `server/container-status-cache.ts`：新增显式 `cache` 选项。默认直接执行状态探测，既不读取也不写入恢复缓存。清单、bot 删除预检查、管理接口、生命周期动作及空闲停止的预检查因此恢复实时查询，无须逐个管理入口补失效调用。
+- `server/index.ts`：仅在 `attachLocalVm` 和 `readyLocalVmForTurn` 中显式传 `cache: true`，保留恢复时的并发合并、相邻轮次 5 秒复用和 `fresh: true` 就绪轮询。启动、停止、镜像和模式变更原有的 generation 失效保护保持不变；后台唤醒、租约与错误传递逻辑未改。
+- `server/container-computer.test.ts`：新增一个参数化回归测试，覆盖外部创建的受管与非受管容器。先读取 missing 并预置恢复缓存，再更换假 Docker inspect 结果，断言普通状态查询立即返回 running 和真实 managed 值，并实际重新 inspect。原缓存测试显式启用缓存，所有原有时效、合并、探测次数、结果隔离及生命周期断言保留。
+
+先红后绿：只加入新增测试、实现尚未修复时，两种 managed 情况均失败，期望 `container: "running"`、实际 `"missing"`；受管情况还期望 `managed: true`、实际 false。修复后整个文件 **118 passed**。没有修改 `server/index.test.ts`，两条 HTTP 测试断言原样保留。
+
+### 验证
+
+所有命令使用 `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048` 前缀；逐文件串行运行 Vitest，单测统一 `--maxWorkers=1 --configLoader runner`，HTTP 复现按本轮要求使用 `--maxWorkers=2`。
+
+| 文件 / 检查 | 结果 |
+| --- | --- |
+| `server/container-computer.test.ts` | 118 passed，含新增 2 例 |
+| `server/local-vm-box.test.ts` | 4 passed |
+| `server/local-vm-inventory.test.ts` | 5 passed |
+| `server/local-vm-ready.test.ts` | 9 passed |
+| `server/local-vm-resume.test.ts` | 17 passed |
+| `server/computer-idle.test.ts` | 20 passed |
+| `server/computer-call-gate.test.ts` | 10 passed |
+| `server/lazy-container-mcp.test.ts` | 11 passed |
+| `server/auto-vm-claims.test.ts` | 19 passed |
+| `scripts/testing/file-size-ratchet.test.ts` | 1 passed |
+| `server/index.test.ts -t "Local VM"` | beforeAll 中隔离监听返回 `listen EPERM`，30 秒后 hook 超时；338 skipped，没有执行行为断言 |
+| `server/local-vm-resume.fixture.test.ts` | 隔离端口分配失败：`no free port block for offsets 0,1 in 19600..22600`；7 skipped |
+| `pnpm exec tsc -p tsconfig.server.json --noEmit` | exit 0，无诊断 |
+| `pnpm exec oxlint --deny-warnings server/container-status-cache.ts server/container-computer.test.ts server/index.ts` | exit 0 |
+| `pnpm exec oxlint --deny-warnings .` | exit 1，仅既有 `server/lazy-container-mcp.ts:122:54` 的 `unicorn(no-useless-spread)` 警告 |
+| `git diff --check` | exit 0 |
+
+相关单测共 **213 passed**，另有行数棘轮 **1 passed**。全仓 lint 警告与第 5 轮相同，`git blame` 指向已有提交 `e925a77a`，本轮未修改该文件。tsc 单独运行，执行前测试进程已结束；当时 cgroup 内存上限 6442450944 字节、使用量 239656960 字节，Node 堆上限 2048 MiB。
+
+`server/index.ts` 行数 **15373 → 15373**，低于当前棘轮上限 **15515**；没有新增实现文件、依赖或 git 提交。保留工作区原有未跟踪的 `r6.md`。
+
+当前检出和可读主仓库仍缺少 `docs/verification/README.md`。HTTP 测试已实际启动其自带的临时 HOME、假 Docker 和隔离服务夹具，但在监听前置步骤失败；恢复夹具也已尝试分配隔离端口。未访问用户 live app 或数据，未更改测试以绕过沙箱限制。
+
+**待沙箱外确认：** 两条 HTTP 回归的完整通过结果，以及恢复夹具的聊天启动延迟与跨轮缓存次数。目前实现修复有根因单测和调用链证据，不能将未执行的 HTTP / 恢复速度断言记为通过。补跑命令：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run server/index.test.ts -t "Local VM" --maxWorkers=2 --configLoader runner
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run server/local-vm-resume.fixture.test.ts --maxWorkers=1 --configLoader runner
+```
+
+日志位于本轮环境 `/tmp/T1223-r6-*.log`，包括 `red`、`container`、`index`、`resume-fixture`、各相关单测、`ratchet`、`tsc-server`、`lint` 和 `lint-changed`。

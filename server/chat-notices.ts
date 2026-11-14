@@ -6,6 +6,9 @@ import { DRIVER_NOTICE } from "./drivers/driver-notices.ts";
 /** The client translates by key and falls back to this English, which the row keeps for phones, exports and older clients. */
 export const CHAT_NOTICE = {
   ...DRIVER_NOTICE,
+  "chat.notice.computerWakeFailed": "The computer could not wake ({reason})",
+  "chat.notice.previousComputerWakeFailed": "The computer could not wake for the previous turn ({reason})",
+  "chat.notice.wakingComputer": "Waking the computer…",
   "chat.notice.restartInterrupted": "turn interrupted — Cry Bot restarted",
   "chat.notice.resumingAfterRestart": "Resuming after a restart",
   "chat.notice.cutOffByRestart": "{name} was cut off by a restart; resuming",

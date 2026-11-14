@@ -1,4 +1,10 @@
 {
+  "server.computer.wakeFailed": "The computer could not wake ({reason})",
+  "server.computer.previousWakeFailed": "The computer could not wake for the previous turn ({reason})",
+  "server.computer.waking": "Waking the computer…",
+  "chat.notice.computerWakeFailed": "The computer could not wake ({reason})",
+  "chat.notice.previousComputerWakeFailed": "The computer could not wake for the previous turn ({reason})",
+  "chat.notice.wakingComputer": "Waking the computer…",
   "connectedWorkspaces.localTitle": "Environments on this computer",
   "connectedWorkspaces.missing": "missing",
   "connectedWorkspaces.current": "Current",

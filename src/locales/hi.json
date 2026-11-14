@@ -1,4 +1,10 @@
 {
+  "chat.notice.computerWakeFailed": "कंप्यूटर को जगाया नहीं जा सका ({reason})",
+  "chat.notice.previousComputerWakeFailed": "पिछले टर्न के लिए कंप्यूटर को जगाया नहीं जा सका ({reason})",
+  "chat.notice.wakingComputer": "कंप्यूटर को जगाया जा रहा है…",
+  "server.computer.wakeFailed": "कंप्यूटर को जगाया नहीं जा सका ({reason})",
+  "server.computer.previousWakeFailed": "पिछले टर्न के लिए कंप्यूटर को जगाया नहीं जा सका ({reason})",
+  "server.computer.waking": "कंप्यूटर को जगाया जा रहा है…",
   "voice.gemini.keyPlaceholder": "अपनी Google AI Studio API कुंजी पेस्ट करें",
   "voice.gemini.model": "Gemini वाक् मॉडल",
   "keys.label.geminiTts": "Gemini वाक् API कुंजी",

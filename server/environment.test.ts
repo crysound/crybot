@@ -85,6 +85,26 @@ describe("environment identity", () => {
     expect(readdirSync(dir)).toEqual(["environment-id"]);
   });
 
+  it("derives the Feishu app return URL from the allowed redirect set", () => {
+    expect(environmentDescriptor({ environmentId: "abc", desktopManaged: true })).not.toHaveProperty("feishu");
+    const descriptor = environmentDescriptor({
+      environmentId: "abc",
+      desktopManaged: true,
+      publicOrigin: "https://example.com/",
+      feishu: {
+        appId: "cli_example",
+        appSecret: "secret_example",
+        tenants: ["tenant_example"],
+        allow: ["union_example"],
+        sessionMaxDays: 90,
+        tokenEndpoint: "https://example.com/token",
+      },
+    });
+    expect(descriptor.feishu?.appReturnUrl).toBe("https://example.com/auth/feishu/app-return");
+    expect(descriptor.capabilities.feishuSignIn).toBe(true);
+    expect(JSON.stringify(descriptor)).not.toContain("secret_example");
+  });
+
   it("fails closed instead of rotating a malformed existing identity", () => {
     const dir = mkdtempSync(join(tmpdir(), "cry-env-"));
     dirs.push(dir);
@@ -125,6 +145,8 @@ describe("environment identity", () => {
       version: "0.1.99",
       capabilities: { remoteSessions: true, selfUpdate: "desktop-managed", emailSignIn: false, jobs: true },
     });
+    expect(d.capabilities).not.toHaveProperty("feishuSignIn");
+    expect(JSON.stringify(d)).not.toContain("secret_example");
     expect(environmentDescriptor({ environmentId: "abc", desktopManaged: false }).capabilities.selfUpdate).toBe("operator");
     expect(environmentDescriptor({ environmentId: "abc", desktopManaged: true }).capabilities, "the desktop updates its own server").not.toHaveProperty("install");
     const none = () => false;

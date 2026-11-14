@@ -70,6 +70,10 @@ const sessionSchema = z.object({
   createdAt: z.number(),
   lastSeenAt: z.number(),
   expiresAt: z.number(),
+  source: z.enum(["access", "device"]).optional(),
+  maxAgeAt: z.number().optional(),
+  platform: z.string().max(64).optional(),
+  tenantKey: z.string().max(256).optional(),
   accessIdentity: z.string().min(1).optional(),
   accessEmail: z.string().max(320).optional(),
   userId: z.string().max(256).optional(),
@@ -113,6 +117,8 @@ export interface PublicSession {
   owner?: string;
   teamRole?: TeamRole;
   token?: true;
+  platform?: string;
+  source?: "access" | "device";
 }
 
 export interface PairingCode {
@@ -198,6 +204,8 @@ function publicSession(record: SessionRecord): PublicSession {
   if (record.owner) view.owner = record.owner;
   if (record.teamRole) view.teamRole = record.teamRole;
   if (record.token) view.token = true;
+  if (record.platform) view.platform = record.platform;
+  if (record.source || record.accessIdentity) view.source = record.source ?? "access";
   return view;
 }
 
@@ -581,7 +589,7 @@ export class SessionRegistry {
     const accessEmail = cleanAccessEmail(input.accessEmail);
     const displayName = cleanIdentityClaim(input.displayName);
     const details = { ...(accessEmail ? { accessEmail } : {}), ...(displayName ? { displayName } : {}) };
-    const matching = this.sessions.filter(session => session.accessIdentity === identity).sort((a, b) => a.createdAt - b.createdAt);
+    const matching = this.sessions.filter(session => session.accessIdentity === identity && this.sessionSource(session) === "access").sort((a, b) => a.createdAt - b.createdAt);
     for (const session of matching) {
       const token = this.accessTokens.get(session.id);
       if (token && this.authenticate(token)) {
@@ -590,10 +598,36 @@ export class SessionRegistry {
       }
     }
     for (const session of matching.slice(0, Math.max(0, matching.length - (MAX_ACCESS_SESSIONS_PER_IDENTITY - 1)))) this.revoke(session.id);
-    const issued = this.issueAccount({ label, scopes: ["admin", "client"], accessIdentity: identity, ...details });
+    const issued = this.issueAccount({ label, scopes: ["admin", "client"], accessIdentity: identity, ...details }, undefined, "access");
     // Only hashes reach disk; after a restart, new Access tokens remain bounded per identity.
     this.accessTokens.set(issued.session.id, issued.token);
     return issued;
+  }
+
+  private sessionSource(session: SessionRecord): "access" | "device" | undefined {
+    return session.source ?? (session.accessIdentity !== undefined ? "access" : undefined);
+  }
+
+  issueDevice(identity: string, label: string, input: { displayName?: string; accessEmail?: string; scopes: Scope[]; maxAgeDays: number; platform?: string; tenantKey?: string }): { token: string; session: PublicSession } {
+    this.prune();
+    const now = this.now();
+    const token = `cry_sess_${randomBytes(32).toString("base64url")}`;
+    const maxAgeAt = now + Math.min(Math.max(1, input.maxAgeDays) * DAY_MS, SESSION_MAX_AGE_MS);
+    const record: SessionRecord = {
+      id: randomUUID(), tokenHash: sha256(token), label: (deviceLabel(label) || "Unnamed device").slice(0, 80), scopes: [...new Set(input.scopes)],
+      createdAt: now, lastSeenAt: now, expiresAt: Math.min(now + SESSION_TTL_MS, maxAgeAt), accessIdentity: identity, source: "device", maxAgeAt,
+      ...(input.platform ? { platform: deviceLabel(input.platform).slice(0, 64) } : {}), ...(input.tenantKey ? { tenantKey: input.tenantKey.slice(0, 256) } : {}),
+      ...(cleanAccessEmail(input.accessEmail) ? { accessEmail: cleanAccessEmail(input.accessEmail) } : {}),
+      ...(cleanIdentityClaim(input.displayName) ? { displayName: cleanIdentityClaim(input.displayName) } : {}),
+    };
+    this.refusePersonal(record.scopes);
+    const devices = this.sessions.filter((session) => session.accessIdentity === identity && this.sessionSource(session) === "device").sort((a, b) => a.lastSeenAt - b.lastSeenAt);
+    for (const session of devices.slice(0, Math.max(0, devices.length - 9))) this.revoke(session.id);
+    this.sessions.push(record);
+    this.lastSeenWrites.set(record.id, now);
+    this.persist();
+    for (const listener of this.onIssued) listener(record);
+    return { token, session: publicSession(record) };
   }
 
   /** The one sign-in that moves `bot` in for this team member, as long-lived as their own team session. Only the caller's
@@ -630,7 +664,7 @@ export class SessionRegistry {
     return this.issueAccount({ label: "Hosted workspace", email: input.email, userId: `portal:${input.grant}`, scopes: input.scopes }, "portal");
   }
 
-  private issueAccount(input: { label: string; scopes: Scope[]; userId?: string; email?: string; accessEmail?: string; displayName?: string; accessIdentity?: string }, membershipAuthority?: "portal"): { token: string; session: PublicSession } {
+  private issueAccount(input: { label: string; scopes: Scope[]; userId?: string; email?: string; accessEmail?: string; displayName?: string; accessIdentity?: string }, membershipAuthority?: "portal", source?: "access"): { token: string; session: PublicSession } {
     this.refusePersonal(input.scopes);
     this.prune();
     const now = this.now();
@@ -643,6 +677,7 @@ export class SessionRegistry {
       createdAt: now,
       lastSeenAt: now,
       expiresAt: now + Math.min(SESSION_TTL_MS, SESSION_MAX_AGE_MS),
+      ...(source ? { source } : {}),
     };
     if (input.accessIdentity) record.accessIdentity = input.accessIdentity;
     if (input.userId) record.userId = input.userId;
@@ -715,6 +750,29 @@ export class SessionRegistry {
     }
   }
 
+  revalidateFeishuSessions(check: (unionId: string, tenantKey: string | undefined) => readonly Scope[] | null): number {
+    if (this.closed) throw new Error("Session registry is closed.");
+    let changed = false;
+    const revoked: SessionRecord[] = [];
+    for (const session of this.sessions) {
+      if (this.sessionSource(session) !== "device" || !session.accessIdentity?.startsWith("feishu:")) continue;
+      const unionId = session.accessIdentity.slice("feishu:".length);
+      let scopes: readonly Scope[] | null;
+      try { scopes = check(unionId, session.tenantKey); } catch { scopes = null; }
+      if (!scopes) revoked.push(session);
+      else if (session.scopes.some((scope) => !scopes.includes(scope)) || scopes.length !== session.scopes.length) { session.scopes = [...scopes]; changed = true; }
+    }
+    if (revoked.length) { const ids = new Set(revoked.map((session) => session.id)); this.sessions = this.sessions.filter((session) => !ids.has(session.id)); for (const session of revoked) this.forget(session.id); changed = true; }
+    if (changed) {
+      try {
+        this.persist();
+      } catch {
+        console.error("Could not persist Feishu session revalidation.");
+      }
+    }
+    return revoked.length;
+  }
+
   authenticate(token: string | undefined): SessionRecord | null {
     if (!token) return null;
     this.recheckMembership();
@@ -738,7 +796,7 @@ export class SessionRegistry {
     const now = this.now();
     if (!record || record.expiresAt <= now || record.token) return false;
     if (record.expiresAt - now > SESSION_RENEW_WHEN_LEFT_MS) return false;
-    const proposed = Math.min(now + SESSION_TTL_MS, record.createdAt + SESSION_MAX_AGE_MS);
+    const proposed = Math.min(now + SESSION_TTL_MS, record.createdAt + SESSION_MAX_AGE_MS, record.maxAgeAt ?? Infinity);
     const next = record.membershipAuthority === "team" ? teamSessionExpiresAt(Math.max(record.memberCheckedAt ?? record.createdAt, record.vouchedAt ?? 0), proposed) : proposed;
     if (next <= record.expiresAt) return false;
     record.expiresAt = next;

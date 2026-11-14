@@ -1,4 +1,10 @@
 {
+  "chat.notice.computerWakeFailed": "Không thể đánh thức máy tính ({reason})",
+  "chat.notice.previousComputerWakeFailed": "Không thể đánh thức máy tính cho lượt trước ({reason})",
+  "chat.notice.wakingComputer": "Đang đánh thức máy tính…",
+  "server.computer.wakeFailed": "Không thể đánh thức máy tính ({reason})",
+  "server.computer.previousWakeFailed": "Không thể đánh thức máy tính cho lượt trước ({reason})",
+  "server.computer.waking": "Đang đánh thức máy tính…",
   "voice.gemini.keyPlaceholder": "Dán khóa API Google AI Studio của bạn",
   "voice.gemini.model": "Mô hình giọng nói Gemini",
   "keys.label.geminiTts": "Khóa API giọng nói Gemini",
