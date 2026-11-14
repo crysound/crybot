@@ -1,0 +1,245 @@
+{
+  "anthropic": {
+    "configured": false,
+    "everyClaudeBot": true
+  },
+  "automaticRecovery": {
+    "enabled": false
+  },
+  "billing": {
+    "currency": "USD",
+    "prices": {}
+  },
+  "box": {
+    "configured": false
+  },
+  "browserEngine": {
+    "engine": "agent-browser",
+    "installable": true,
+    "kind": "unavailable",
+    "myChrome": false,
+    "reason": "agent-browser is not installed on this machine yet",
+    "serverSites": false
+  },
+  "browserProfiles": [],
+  "budgets": {},
+  "cacheKeepWarm": {
+    "enabled": false,
+    "windowMinutes": 180
+  },
+  "cerebras": {
+    "configured": false
+  },
+  "cloudStarter": false,
+  "composio": {
+    "configured": false,
+    "mode": "unavailable"
+  },
+  "computerName": "Example device",
+  "decider": {
+    "configured": false,
+    "enabled": false,
+    "jobs": {
+      "roomRouting": true
+    },
+    "provider": "jev"
+  },
+  "decisions": {
+    "retentionDays": 180
+  },
+  "deepseek": {
+    "configured": false
+  },
+  "edition": {
+    "edition": "oss",
+    "features": []
+  },
+  "everyBotRules": "",
+  "features": {
+    "autoRecall": true,
+    "browser": true,
+    "claudeUserMcp": false,
+    "claudeUserSkills": false,
+    "llmThreadTitles": false,
+    "parallelRoomJobs": false,
+    "roomMemoryCapture": false,
+    "savedSteps": true,
+    "savedStepsHere": false,
+    "shareLearnedSkills": "off",
+    "sharedComputers": false,
+    "showToolCalls": false,
+    "skillAuthoring": true,
+    "skillReview": false,
+    "skillReviewSteps": 10,
+    "skillsLibrary": false,
+    "usbPhoneTakeover": false
+  },
+  "fleet": {
+    "available": false
+  },
+  "greenference": {
+    "configured": false
+  },
+  "groq": {
+    "configured": false
+  },
+  "helpers": {
+    "extraction": {
+      "ready": false
+    },
+    "own": {
+      "jev": false,
+      "openrouter": false,
+      "workersAi": false
+    }
+  },
+  "imageGen": {
+    "configured": false,
+    "customKeyConfigured": false,
+    "customModel": "",
+    "customUrl": "",
+    "fallback": null,
+    "geminiConfigured": false,
+    "maxPerTurn": 4,
+    "model": "gpt-image-2",
+    "openaiConfigured": false,
+    "openrouterConfigured": false,
+    "primary": {
+      "configured": false,
+      "model": "gpt-image-2",
+      "provider": "openai"
+    },
+    "provider": "openai",
+    "ready": false,
+    "xaiConfigured": false
+  },
+  "language": "",
+  "live": {
+    "configured": false,
+    "idleMinutes": 5,
+    "readTypedReplies": true,
+    "voice": ""
+  },
+  "localVm": {
+    "idleTimeoutMinutes": 480,
+    "maxInstances": 2,
+    "mode": "shared",
+    "preserveInstalledApps": false
+  },
+  "managedPolicy": null,
+  "mcp": {
+    "callTimeoutMinutes": 10
+  },
+  "membership": {
+    "authority": "local",
+    "pairingCodes": true
+  },
+  "meta": {
+    "configured": false
+  },
+  "mistral": {
+    "configured": false
+  },
+  "modelgo": {
+    "configured": false
+  },
+  "newBots": {},
+  "onboarding": {
+    "completedAt": "",
+    "hintsSeen": [],
+    "reelSeen": false,
+    "version": 0
+  },
+  "openai": {
+    "configured": false
+  },
+  "openaiCompat": {
+    "configured": false,
+    "url": ""
+  },
+  "opencodeGo": {
+    "configured": false,
+    "providerKeys": []
+  },
+  "openrouter": {
+    "configured": false
+  },
+  "pausedBots": [],
+  "postiz": {
+    "configured": false
+  },
+  "profile": {
+    "aboutMe": "",
+    "email": "",
+    "name": ""
+  },
+  "providerLock": false,
+  "rooms": {
+    "turnTimeoutMinutes": 5
+  },
+  "safetyFloor": {
+    "enabled": false
+  },
+  "savedKeys": {
+    "customImageApiKey": {
+      "configured": false
+    },
+    "fishAudioKey": {
+      "configured": false
+    },
+    "geminiImageApiKey": {
+      "configured": false
+    },
+    "geminiTtsKey": {
+      "configured": false
+    },
+    "jevApiKey": {
+      "configured": false
+    },
+    "openaiImageApiKey": {
+      "configured": false
+    },
+    "openaiLiveKey": {
+      "configured": false
+    },
+    "openrouterDeciderKey": {
+      "configured": false
+    },
+    "ttsKey": {
+      "configured": false
+    },
+    "workersAiToken": {
+      "configured": false
+    }
+  },
+  "signIn": {
+    "admins": [],
+    "members": []
+  },
+  "threads": {
+    "maxConcurrentPerBot": 8
+  },
+  "treg": {
+    "configured": false
+  },
+  "tts": {
+    "baseUrl": "",
+    "configured": false,
+    "model": "",
+    "provider": "elevenlabs",
+    "ready": false,
+    "voice": ""
+  },
+  "vps": {
+    "configured": false,
+    "sshAlias": ""
+  },
+  "waitingForRoom": false,
+  "workspaceBanner": null,
+  "xResearch": {
+    "included": false
+  },
+  "xai": {
+    "configured": false
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "type": "pie",
+  "x": "category",
+  "y": "value"
+}

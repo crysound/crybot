@@ -1,0 +1,21 @@
+{
+  "kind": "routine",
+  "routine": {
+    "botId": "00000000-0000-4000-8000-000000000001",
+    "createdAt": 1767225600000,
+    "durationMinutes": 1,
+    "enabled": false,
+    "id": "00000000-0000-4000-8000-000000000000",
+    "name": "Example",
+    "nextRunAt": 1767225600000,
+    "prompt": "Example",
+    "runOn": "cloud",
+    "schedule": {
+      "expression": "0 9 * * *",
+      "timeZone": "UTC",
+      "type": "cron"
+    },
+    "target": "bot",
+    "updatedAt": 1767225600000
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "target": "ES2023", "lib": ["ES2023", "DOM", "DOM.Iterable"] },
+  "include": ["server/testing/ios-contract", "server/ios-contract.e2e.test.ts", "scripts/ios-contract.ts", "src/**/*.d.ts"]
+}

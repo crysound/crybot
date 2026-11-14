@@ -1,0 +1,21 @@
+{
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "profileRequest": {
+    "before": {},
+    "botId": "00000000-0000-4000-8000-000000000001",
+    "changes": {},
+    "createdAt": 1767225600000,
+    "expectedRevision": "Example",
+    "reason": "Example",
+    "requestId": "00000000-0000-4000-8000-000000000000",
+    "targetBotId": "00000000-0000-4000-8000-000000000003",
+    "targetName": "Example",
+    "threadId": "00000000-0000-4000-8000-000000000002",
+    "version": 1
+  },
+  "subtitle": "Example request",
+  "title": "Approve request"
+}

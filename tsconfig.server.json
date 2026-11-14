@@ -27,6 +27,8 @@
     "connector"
   ],
   "exclude": [
-    "server/drivers/pi-mcp-extension.ts"
+    "server/drivers/pi-mcp-extension.ts",
+    "server/testing/ios-contract",
+    "server/ios-contract.e2e.test.ts"
   ]
 }
