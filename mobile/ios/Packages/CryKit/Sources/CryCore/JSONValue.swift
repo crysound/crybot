@@ -115,6 +115,12 @@ struct WireObject {
     func encode(to encoder: Encoder) throws { try values.encode(to: encoder) }
 }
 
+func encodeTaggedWirePayload<T: Encodable>(_ value: T, kindKey: String = "kind", kind: String, to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: WireKey.self)
+    try container.encode(kind, forKey: WireKey(kindKey))
+    try value.encode(to: encoder)
+}
+
 struct WireKey: CodingKey {
     var stringValue: String
     var intValue: Int? { nil }
