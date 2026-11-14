@@ -6,12 +6,13 @@
 // settles it, a restart neither drops nor posts it again, and a question whose turn is gone leaves Needs you and his
 // inbox. The engine is the scripted synthetic Claude CLI, so this proves where things land, not a model's judgement.
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
 import { removeTempDir } from "./testing/cleanup.ts";
+import { fixtureInput, fixtureLines, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const MARCO = { email: "marco@acme.test", role: "owner" as const };
@@ -34,15 +35,14 @@ let marco = "";
 let fuchs: Bot, dachs: Bot, otter: Bot;
 let inbox = "";
 
-const file = (name: string) => join(team.home, name);
+const file = (name: string) => fixtureInput(team.home, name);
 const plan: Record<string, { script: unknown[] }> = {};
 const script = (botId: string, ...entries: unknown[]) => {
   (plan[botId] ??= { script: [] }).script.push(...entries);
   writeFileSync(file("room-plan.json"), JSON.stringify(plan));
 };
 const turns = (botId: string): Array<{ planKey?: string; prompt: unknown }> => {
-  const path = file("room-plan.json.evidence.jsonl");
-  return existsSync(path) ? readFileSync(path, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line)).filter((turn) => turn.botId === botId) : [];
+  return fixtureLines<{ botId: string; planKey?: string; threadId?: string; prompt: unknown }>(team.home, "room-plan.json.evidence.jsonl").filter((turn) => turn.botId === botId);
 };
 const keys = (botId: string, job: string) => turns(botId).map((turn) => turn.planKey).filter((key) => key?.startsWith(job));
 const told = (botId: string, key: string) => JSON.stringify(turns(botId).find((turn) => turn.planKey === key)?.prompt ?? "");
@@ -75,7 +75,7 @@ beforeAll(async () => {
   const binaryPath = join(browserTools, "agent-browser");
   // Answers the saved-login check a browser mount makes; every other command succeeds silently.
   writeFileSync(binaryPath, `#!/bin/sh\nif [ "$1" = session ] && [ "$2" = list ]; then printf '{"success":true,"data":{"sessions":[]}}'; fi\nexit 0\n`, { mode: 0o755 });
-  fx = await launchCloudSendFixture({ onePasswordToken: TOKEN, team: { id: "team-acme-qr", name: "Acme", engine: ENGINE,
+  fx = await launchCloudSendFixture({ onePasswordToken: TOKEN, team: { id: "team-acme-qr", name: "Acme", engine: withFixtureState(ENGINE),
     env: { CRYBOT_AGENT_BROWSER_PATH: binaryPath, AGENT_BROWSER_EXECUTABLE_PATH: join(browserTools, "chrome") } } });
   team = fx.team!;
   writeFileSync(file("room-plan.json"), "{}");

@@ -33,6 +33,8 @@ export { CodeBlock, HIGHLIGHT_CACHE_MAX, HIGHLIGHT_CACHE_MAX_CHARS, HIGHLIGHT_MA
 import { FilePreviewButton } from "./FilePreviewButton";
 import { SaveIconButton, useHtmlPreview } from "./HtmlFilePreview";
 import { useRevealOriginalMenu } from "./RevealOriginalMenu";
+import { localFilePath } from "./chat-markdown-links";
+export { localFilePath } from "./chat-markdown-links";
 
 const mermaidCache = new Map<string, string>();
 const MERMAID_CACHE_MAX = 50;
@@ -40,34 +42,6 @@ const MERMAID_CACHE_MAX = 50;
 let mermaidRenderId = 0;
 const mermaidKey = (scheme: "dark" | "light", code: string) => `${scheme}:${codeHash(code)}`;
 
-const WINDOWS_PATH = /^[a-zA-Z]:[\\/]/;
-const absolutePath = (value: string): string | null => {
-  if (value.startsWith("/") || WINDOWS_PATH.test(value)) return value;
-  return null;
-};
-
-export const localFilePath = (href?: string): string | null => {
-  if (!href) return null;
-  if (/^file:\/\//i.test(href)) {
-    try {
-      const url = new URL(href);
-      if (url.username || url.password || url.port || url.search || url.hash) return null;
-      const path = decodeURIComponent(url.pathname);
-      if (url.hostname && url.hostname !== "localhost") return `//${url.hostname}${path}`;
-      // WHATWG file URLs spell a Windows drive as /C:/ on every host; a raw /C:/… Markdown target is a POSIX path.
-      return /^\/[a-z]:[\\/]/i.test(path) ? path.slice(1) : absolutePath(path);
-    } catch {
-      return null;
-    }
-  }
-  if (href.startsWith("\\\\")) return href;
-  // //host/path is a protocol-relative web URL in Markdown; UNC paths come as backslashes or file://server/share.
-  if (href.startsWith("//")) return null;
-  const absolute = absolutePath(href);
-  if (absolute) return absolute;
-  if (href.startsWith("#") || /^[a-z][a-z\d+.-]*:/i.test(href)) return null;
-  return href;
-};
 
 export function chatUrlTransform(value: string, key = "href"): string {
   if (looksLikeThreadRefUrl(value) || isUseMyComputerUrl(value)) return value;
@@ -191,6 +165,7 @@ export interface MermaidDiagramProps {
 }
 
 const MERMAID_FONT = '"Inter", -apple-system, BlinkMacSystemFont, "SF UI Text", "Segoe UI", system-ui, sans-serif';
+const WINDOWS_PATH = /^[a-zA-Z]:[\\/]/;
 
 /** Security: the only HTML injected is the SVG mermaid.render() returns under securityLevel "strict". */
 export function MermaidDiagram({ code }: MermaidDiagramProps) {

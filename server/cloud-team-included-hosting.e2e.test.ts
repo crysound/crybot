@@ -3,16 +3,15 @@
 // is a loopback stand-in, wired as the Admin wires a home. An app from a member's own chat is that member's alone, the
 // team's app is everyone's to see and an Admin's or its bot's person's to delete, and the count is the team's.
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
 
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
 import type { PublishedAppsList } from "../shared/published-apps.ts";
 import { SITE_FILE } from "./host/netlify-sites.ts";
-import { removeTempDir } from "./testing/cleanup.ts";
 import { startFakeAppHosting, type FakeAppHosting } from "./testing/fake-app-hosting.ts";
+import { fixtureInput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OWNER = { email: "olive@acme.test", role: "owner" as const };
@@ -25,7 +24,7 @@ const TOKEN = "cry_host_team_fixture_token_0123456789abcdef";
 type Bot = { id: string; name: string; threadId: string; mainThreadId?: string };
 
 let fx: CloudSendFixture, team: CloudTeamFixture, fake: FakeAppHosting;
-let scratch = "", replyFile = "", data = "";
+let replyFile = "", data = "";
 let owner = "", admin = "", ada = "", ben = "";
 let mira: Bot;
 let adaThread = "", benThread = "", mainThread = "";
@@ -66,13 +65,12 @@ const listOf = async (token: string) => {
 const titles = async (token: string) => (await listOf(token)).apps.map((app) => app.title).sort();
 
 beforeAll(async () => {
-  scratch = mkdtempSync(join(tmpdir(), "included-hosting-team-"));
-  replyFile = join(scratch, "reply.txt");
-  writeFileSync(replyFile, "Hello.");
   fake = await startFakeAppHosting(TOKEN, { apps: 20 });
   fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`,
-    team: { id: "team-acme-hosting", name: "Acme", env: { CRYBOT_CLOUD_HOSTING_URL: fake.url, CRYBOT_CLOUD_HOSTING_TOKEN: TOKEN }, engine: `process.env.FAKE_CLAUDE_REPLY_FILE = ${JSON.stringify(replyFile)};` } });
+    team: { id: "team-acme-hosting", name: "Acme", env: { CRYBOT_CLOUD_HOSTING_URL: fake.url, CRYBOT_CLOUD_HOSTING_TOKEN: TOKEN }, engine: withFixtureState(`process.env.FAKE_CLAUDE_REPLY_FILE = process.env.FAKE_CLAUDE_FIXTURE_DIR + "/reply.txt";`) } });
   team = fx.team!;
+  replyFile = fixtureInput(team.home, "reply.txt");
+  writeFileSync(replyFile, "Hello.");
   owner = (await team.pair(OWNER)).token!;
   admin = (await team.pair(ADMIN)).token!;
   ada = (await team.pair(ADA)).token!;
@@ -90,7 +88,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await fx?.close();
   await fake?.stop();
-  if (scratch) await removeTempDir(scratch);
 });
 
 it("publishes from a member's own chat and from the team's chat, each from the bot's own folder for that conversation", async () => {

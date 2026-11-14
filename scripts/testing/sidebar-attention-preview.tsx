@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 // The sidebar attention popover geometry fixture: the real Sidebar pinned to the
 // ?density= before the first render, since Sidebar reads its density from
 // localStorage once, at mount, as it shows on a server with no inbox, the only
@@ -9,6 +10,8 @@ import { setInboxSupport } from "../../src/state/inbox";
 import { StoreProvider } from "../../src/state/store";
 import { applySkin, readSkin } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 const density = new URLSearchParams(window.location.search).get("density");
 if (density === "comfortable" || density === "icons") {

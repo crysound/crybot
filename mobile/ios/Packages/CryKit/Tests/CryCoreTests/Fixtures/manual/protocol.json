@@ -1,0 +1,6124 @@
+[
+  {
+    "swiftType": "WireBot",
+    "name": "WireBot",
+    "value": {
+      "defaultBot": {},
+      "sidebarHidden": true,
+      "welcomed": true,
+      "access": {
+        "everyone": "none",
+        "people": {}
+      },
+      "yourAccess": "none",
+      "onlyPeopleAdded": true,
+      "waitingForTeammates": true,
+      "id": "sample-1",
+      "threadId": "sample",
+      "mainThreadId": "sample",
+      "tasks": [],
+      "projects": [],
+      "name": "sample",
+      "title": "sample",
+      "description": "sample",
+      "soul": "sample",
+      "soulHash": "sample",
+      "soulDrift": true,
+      "notifications": true,
+      "color": "green",
+      "mascotExpression": null,
+      "mascotBody": null,
+      "mascotFaceColor": null,
+      "avatarUrl": null,
+      "avatarCrop": "mascot",
+      "avatarZoom": 1,
+      "avatarFocusX": 1,
+      "avatarFocusY": 1,
+      "unread": true,
+      "modelSelection": {
+        "instanceId": "sample",
+        "model": "sample"
+      },
+      "computer": "cloud",
+      "cloudBackend": "box",
+      "autoStartVps": true,
+      "vpsAlias": "sample",
+      "cwd": "sample",
+      "autoApprove": true,
+      "approvalMode": "ask",
+      "alwaysAllow": [],
+      "speakReplies": true,
+      "replyStyle": "default",
+      "voice": "sample",
+      "voiceNotes": true,
+      "voiceNoteEveryReply": true,
+      "xResearch": true,
+      "memoryEnabled": true,
+      "parkDirectMessages": true,
+      "rewound": true,
+      "pinned": true,
+      "hidden": true,
+      "movedTo": {
+        "team": {
+          "id": "sample-1",
+          "name": "sample"
+        },
+        "state": "moving",
+        "at": 1
+      },
+      "section": "sample",
+      "pinnedMessageId": "sample",
+      "chiefOfStaff": true,
+      "managedSections": [],
+      "createdBy": "sample",
+      "reportsTo": "sample",
+      "composio": true,
+      "connectorTools": {},
+      "connectorScopes": {
+        "apps": {}
+      },
+      "outbound": {
+        "policy": "ask"
+      },
+      "phoneApps": {},
+      "fallback": [],
+      "browser": true,
+      "recordBrowserSteps": true,
+      "memoryUpkeep": true,
+      "cacheKeepWarm": true,
+      "helperModel": true,
+      "mcpServers": [],
+      "toolScope": {},
+      "browserProfile": "sample",
+      "playbooks": [],
+      "installedPackage": {
+        "id": "sample-1",
+        "name": "sample",
+        "release": "sample",
+        "requiredApps": []
+      },
+      "busy": true,
+      "activity": "working",
+      "createdAt": 1,
+      "visibility": "everyone"
+    }
+  },
+  {
+    "swiftType": "WireGroup",
+    "name": "WireGroup",
+    "value": {
+      "usage": null,
+      "chiefAbsent": null,
+      "memberContext": null,
+      "id": "sample-1",
+      "threadId": "sample",
+      "tasks": [],
+      "name": "sample",
+      "memberIds": [],
+      "defaultResponder": {
+        "kind": "member",
+        "botId": "sample"
+      },
+      "bulletin": "sample",
+      "description": null,
+      "unread": true,
+      "lastReadMessageId": "sample",
+      "createdAt": 1,
+      "dm": true,
+      "busyBotId": null,
+      "turnStartedAt": 1,
+      "cwd": "sample",
+      "pinnedCwd": null,
+      "pinnedMessageId": "sample",
+      "section": "sample",
+      "setupCompletedAt": null,
+      "setupSkippedAt": null,
+      "audienceFloor": "everyone",
+      "working": true,
+      "turnTimeoutMinutes": null,
+      "holds": {},
+      "heldMessages": {},
+      "queue": []
+    }
+  },
+  {
+    "swiftType": "BotsSnapshot",
+    "name": "BotsSnapshot",
+    "value": {
+      "bots": [],
+      "groups": [],
+      "sections": [],
+      "botQueuedMessages": {},
+      "computerControl": {}
+    }
+  },
+  {
+    "swiftType": "ThreadPage",
+    "name": "ThreadPage",
+    "value": {
+      "messages": [],
+      "hasMore": true,
+      "activeLeafId": null
+    }
+  },
+  {
+    "swiftType": "SendResponse",
+    "name": "SendResponse",
+    "value": {
+      "ok": true,
+      "threadId": "sample",
+      "queued": true,
+      "steered": true,
+      "message": {
+        "id": "sample-1",
+        "role": "bot",
+        "kind": "text",
+        "at": 1
+      },
+      "messages": [],
+      "queueIds": []
+    }
+  },
+  {
+    "swiftType": "OptionCardData",
+    "name": "OptionCardData",
+    "value": {
+      "waitRequest": {
+        "waitId": "sample",
+        "label": "sample",
+        "followUp": "sample"
+      },
+      "computerAsk": {
+        "need": "screen",
+        "reason": "paused",
+        "device": "PC",
+        "state": "asking"
+      },
+      "accessRequest": {
+        "botId": "sample",
+        "botName": "sample",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "outsideWrite": {
+        "kind": "room-bulletin",
+        "roomId": "sample",
+        "bulletin": "sample"
+      },
+      "lendingLift": {
+        "requestMessageId": "sample"
+      },
+      "outboundRequest": {
+        "tool": "sample",
+        "app": null
+      },
+      "teamMemoryRequest": {
+        "section": "sample",
+        "entryId": "sample",
+        "kind": "sample"
+      },
+      "title": "sample",
+      "subtitle": "sample",
+      "summaryCode": "sample",
+      "summaryParams": {},
+      "options": [],
+      "requestType": "permission",
+      "answered": "sample",
+      "answeredText": "sample",
+      "dismissed": true,
+      "answeredBy": {
+        "kind": "session",
+        "name": "Fern"
+      },
+      "requestId": "sample",
+      "tool": "sample",
+      "held": "sample",
+      "expired": true,
+      "stopped": true,
+      "heldCode": "sample",
+      "allowKey": "sample",
+      "allowSession": true,
+      "commandAllowlist": {
+        "command": "sample",
+        "cwd": "sample",
+        "providerInstanceId": "sample"
+      },
+      "approvalScope": "local-computer",
+      "autoApplied": true,
+      "undone": true,
+      "routineRequest": {
+        "version": 1,
+        "requestId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "createdAt": 1,
+        "operation": {
+          "action": "create",
+          "routine": {
+            "name": "sample",
+            "instructions": "sample",
+            "schedule": {
+              "type": "once",
+              "at": 1
+            },
+            "runOn": "bot",
+            "durationMinutes": 1
+          }
+        }
+      },
+      "webhookRequest": {
+        "version": 1,
+        "requestId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "createdAt": 1,
+        "operation": {
+          "action": "create",
+          "webhook": {
+            "name": "sample",
+            "instructions": "sample",
+            "runOn": "bot"
+          }
+        }
+      },
+      "appTriggerRequest": {
+        "version": 1,
+        "requestId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "createdAt": 1,
+        "operation": {
+          "action": "create",
+          "trigger": {
+            "name": "sample",
+            "instructions": "sample",
+            "app": "sample",
+            "event": "sample"
+          }
+        }
+      },
+      "profileRequest": {
+        "version": 1,
+        "requestId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "targetBotId": "sample",
+        "targetName": "sample",
+        "createdAt": 1,
+        "reason": "sample",
+        "changes": {},
+        "before": {},
+        "expectedRevision": "sample"
+      },
+      "modelRequest": {
+        "version": 1,
+        "requestId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "targetBotId": "sample",
+        "targetName": "sample",
+        "createdAt": 1,
+        "reason": "sample",
+        "selection": {
+          "instanceId": "sample",
+          "model": "sample"
+        },
+        "before": {
+          "instanceId": "sample",
+          "model": "sample"
+        }
+      },
+      "teamSetupRequest": {
+        "version": 1,
+        "requestId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "reason": "sample",
+        "createdAt": 1,
+        "requesterRevision": "sample",
+        "operations": [],
+        "newTeams": []
+      },
+      "mcpRequest": {
+        "requestId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "action": "enable",
+        "name": "sample",
+        "targetHash": "sample"
+      },
+      "skillRequest": {
+        "version": 1,
+        "requestId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "stagedId": "sample",
+        "action": "create",
+        "name": "sample",
+        "gist": "sample",
+        "warnings": [],
+        "createdAt": 1
+      },
+      "questionRequest": {
+        "version": 1,
+        "questions": []
+      },
+      "fixedOptions": true,
+      "quotaSwitch": {
+        "engines": []
+      },
+      "yourComputer": {}
+    }
+  },
+  {
+    "swiftType": "InboxPage",
+    "name": "InboxPage",
+    "value": {
+      "botId": null,
+      "threadId": null,
+      "rows": [],
+      "anchor": null
+    }
+  },
+  {
+    "swiftType": "InboxCount",
+    "name": "InboxCount",
+    "value": {
+      "count": 1
+    }
+  },
+  {
+    "swiftType": "NotificationsPage",
+    "name": "NotificationsPage",
+    "value": {
+      "notifications": []
+    }
+  },
+  {
+    "swiftType": "ConfigResponse",
+    "name": "ConfigResponse",
+    "value": {
+      "providerLock": true,
+      "workspaceBanner": null,
+      "xai": {
+        "configured": true
+      },
+      "mistral": {
+        "configured": true
+      },
+      "cerebras": {
+        "configured": true
+      },
+      "groq": {
+        "configured": true
+      },
+      "greenference": {
+        "configured": true
+      },
+      "modelgo": {
+        "configured": true
+      },
+      "deepseek": {
+        "configured": true
+      },
+      "meta": {
+        "configured": true
+      },
+      "xResearch": {
+        "included": true
+      },
+      "treg": {
+        "configured": true
+      },
+      "postiz": {
+        "configured": true
+      },
+      "anthropic": {
+        "configured": true
+      },
+      "openai": {
+        "configured": true
+      },
+      "openrouter": {
+        "configured": true
+      },
+      "openaiCompat": {
+        "configured": true
+      },
+      "edition": {
+        "edition": "oss",
+        "features": []
+      },
+      "fleet": {
+        "available": true
+      },
+      "budgets": {},
+      "billing": {},
+      "composio": {
+        "configured": true
+      },
+      "box": {
+        "configured": true
+      },
+      "vps": {
+        "configured": true,
+        "sshAlias": "sample"
+      },
+      "rooms": {
+        "turnTimeoutMinutes": 1
+      },
+      "mcp": {
+        "callTimeoutMinutes": 1
+      },
+      "newBots": {},
+      "cloudStarter": true,
+      "botLimit": 1,
+      "waitingForRoom": true,
+      "planTurns": {
+        "running": 1,
+        "waiting": 1
+      },
+      "awakeLimit": 1,
+      "pausedBots": [],
+      "threads": {
+        "maxConcurrentPerBot": 1
+      },
+      "automaticRecovery": {
+        "enabled": true
+      },
+      "cacheKeepWarm": {
+        "enabled": true,
+        "windowMinutes": 1
+      },
+      "localVm": {
+        "mode": "shared",
+        "maxInstances": 1
+      },
+      "opencodeGo": {
+        "configured": true
+      },
+      "tts": {
+        "configured": true,
+        "ready": true,
+        "voice": "sample"
+      },
+      "decider": {
+        "provider": "jev",
+        "configured": true,
+        "enabled": true,
+        "jobs": {
+          "roomRouting": true
+        }
+      },
+      "helpers": {
+        "own": {
+          "jev": true,
+          "workersAi": true,
+          "openrouter": true
+        },
+        "extraction": {
+          "ready": true
+        }
+      },
+      "live": {
+        "configured": true,
+        "voice": "sample",
+        "readTypedReplies": true,
+        "idleMinutes": 1
+      },
+      "savedKeys": {},
+      "imageGen": {
+        "configured": true
+      },
+      "profile": {
+        "name": "sample",
+        "email": "person@example.com"
+      },
+      "everyBotRules": "sample",
+      "language": "sample",
+      "computerName": "sample",
+      "features": {
+        "skillAuthoring": true
+      },
+      "onboarding": {
+        "completedAt": "sample",
+        "version": 1,
+        "reelSeen": true,
+        "hintsSeen": []
+      },
+      "browserEngine": {
+        "kind": "engine"
+      },
+      "browserProfiles": [],
+      "managedPolicy": null,
+      "cloudHome": true,
+      "team": {
+        "id": "sample-1",
+        "name": "sample"
+      }
+    }
+  },
+  {
+    "swiftType": "EnvironmentInfo",
+    "name": "EnvironmentInfo",
+    "value": {
+      "environmentId": "sample",
+      "label": "sample",
+      "platform": "linux",
+      "version": "sample",
+      "capabilities": {
+        "remoteSessions": true,
+        "selfUpdate": "desktop-managed",
+        "jobs": true
+      }
+    }
+  },
+  {
+    "swiftType": "AuthSession",
+    "name": "AuthSession",
+    "value": {
+      "kind": "loopback",
+      "scopes": [],
+      "environmentId": "sample",
+      "id": "sample-1",
+      "label": "sample",
+      "expiresAt": 1,
+      "via": "sample",
+      "email": "person@example.com",
+      "displayName": "sample",
+      "owner": "sample",
+      "hosted": true,
+      "cloudHome": true,
+      "own": true,
+      "lending": {},
+      "team": {},
+      "teamSignIn": "sample",
+      "openedThreads": [],
+      "cloudGuest": true,
+      "reactor": "sample",
+      "trust": "sample"
+    }
+  },
+  {
+    "swiftType": "APIError",
+    "name": "APIError",
+    "value": {
+      "error": "sample",
+      "code": "sample",
+      "errorKey": "sample",
+      "errorParams": {}
+    }
+  },
+  {
+    "swiftType": "CryChartSpec",
+    "name": "CryChartSpec",
+    "value": {
+      "type": "bar",
+      "x": "sample",
+      "y": "sample",
+      "color": "sample",
+      "agg": "count",
+      "sort": "x",
+      "limit": 1,
+      "stack": true,
+      "timeUnit": "hour",
+      "bins": 1,
+      "size": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "text",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "text",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "options",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "options",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "activity",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "activity",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "screen",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "screen",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "connector",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "connector",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "secret",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "secret",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "signin",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "signin",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "routine.run",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "routine.run",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "goal.run",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "goal.run",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "burst",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "burst",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "digest",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "digest",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "compaction",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "compaction",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "call",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "call",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "widget",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "widget",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "WireMessage",
+    "name": "app",
+    "value": {
+      "textCode": "sample",
+      "textParams": {},
+      "helperFollowup": {
+        "ai": "own",
+        "apps": [],
+        "bots": 1,
+        "routines": 1
+      },
+      "helperIntro": true,
+      "setupOffer": true,
+      "setupChoices": [],
+      "setupChoicesPending": true,
+      "setupChoicesUpdating": 1,
+      "wait": {
+        "id": "sample-1",
+        "status": "fired"
+      },
+      "bugReport": {
+        "id": "sample-1",
+        "status": "received"
+      },
+      "roomRequest": {
+        "id": "sample-1",
+        "phase": "request"
+      },
+      "id": "sample-1",
+      "role": "bot",
+      "kind": "app",
+      "text": "sample",
+      "digest": {
+        "turnId": "sample",
+        "botId": "sample",
+        "threadId": "sample",
+        "at": 1,
+        "durationMs": 1,
+        "tools": [],
+        "memory": [],
+        "reply": "sample",
+        "hookCoverage": "full"
+      },
+      "engineCompaction": true,
+      "compaction": {
+        "summary": "sample",
+        "firstKeptId": "sample",
+        "foldedThroughId": "sample",
+        "tokensBefore": 1,
+        "by": "person"
+      },
+      "attachments": [],
+      "card": {
+        "title": "sample",
+        "subtitle": "sample",
+        "options": []
+      },
+      "widget": {
+        "v": 1,
+        "root": {
+          "type": "Card",
+          "id": "node-1"
+        }
+      },
+      "serverCard": true,
+      "setupSuggestion": {
+        "kind": "helperKey"
+      },
+      "setupRequest": true,
+      "app": {
+        "v": 1,
+        "source": "html",
+        "title": "sample",
+        "doc": "sample",
+        "rev": 1,
+        "bytes": 1,
+        "border": true,
+        "network": {
+          "connect": [],
+          "resources": []
+        }
+      },
+      "fromApp": {
+        "messageId": "sample",
+        "title": "sample"
+      },
+      "pointed": [],
+      "connector": {
+        "slug": "sample",
+        "label": "sample",
+        "description": "sample",
+        "status": "required",
+        "resumeKey": "sample"
+      },
+      "secret": {
+        "target": {},
+        "label": "sample",
+        "description": "sample",
+        "placeholder": "sample",
+        "helpUrl": "https://example.com",
+        "requestKey": "sample"
+      },
+      "signIn": {
+        "url": "https://example.com",
+        "site": "sample",
+        "place": "cloud"
+      },
+      "routineRun": {
+        "runId": "sample",
+        "routineId": "sample",
+        "routineName": "sample",
+        "status": "queued"
+      },
+      "burst": {
+        "version": 1,
+        "burstId": "sample",
+        "botId": "sample",
+        "task": "sample",
+        "phase": "preview",
+        "total": 1,
+        "requested": 1,
+        "parallel": 1,
+        "modelName": "sample",
+        "estimateMinutes": 1,
+        "counts": {
+          "queued": 1,
+          "running": 0,
+          "done": 0,
+          "failed": 0,
+          "cancelled": 0
+        },
+        "sample": []
+      },
+      "automation": {
+        "routineId": "sample",
+        "runId": "sample",
+        "name": "sample",
+        "trigger": "schedule",
+        "executionThreadId": "sample",
+        "scheduledFor": 1
+      },
+      "goalRun": {
+        "runId": "sample",
+        "goal": "sample",
+        "status": "working",
+        "coordinatorBotId": "sample",
+        "coordinatorName": "sample",
+        "turnCount": 1,
+        "maxTurns": 1,
+        "startedAt": 1
+      },
+      "call": {
+        "callId": "sample",
+        "botId": "sample",
+        "client": "desktop",
+        "startedAt": 1,
+        "endedAt": 1,
+        "seconds": 1,
+        "endReason": "hung-up"
+      },
+      "tool": {
+        "name": "sample"
+      },
+      "webhookPost": true,
+      "steered": true,
+      "aside": true,
+      "via": "api",
+      "callId": "sample",
+      "relayed": true,
+      "sender": {
+        "name": "sample"
+      },
+      "turnId": "sample",
+      "stoppedBy": {
+        "name": "sample"
+      },
+      "itemId": "sample",
+      "requestMessageId": "sample",
+      "turnSucceeded": true,
+      "requestCancelled": true,
+      "requestPending": true,
+      "turnTerminal": true,
+      "turnCompletedAt": 1,
+      "savedSteps": {
+        "recipeId": "sample"
+      },
+      "png": "sample",
+      "mime": "sample",
+      "at": 1,
+      "parentId": null,
+      "replyToId": "sample",
+      "sendId": "sample",
+      "channelMode": "chat",
+      "from": {
+        "botId": "sample",
+        "name": "sample",
+        "color": "sample"
+      },
+      "threadPost": {
+        "deliveryId": "sample",
+        "fromBotId": "sample",
+        "fromThreadId": "sample"
+      },
+      "peerPost": {},
+      "routedBy": {
+        "provider": "jev",
+        "probability": 1
+      },
+      "quickModel": "sample",
+      "doneWhen": "sample",
+      "peerAsk": {
+        "botId": "sample",
+        "name": "sample"
+      },
+      "reactions": [],
+      "reaction": "sample",
+      "comm": {
+        "groupId": "sample",
+        "withBotId": "sample",
+        "withName": "sample",
+        "withColor": "sample"
+      },
+      "relay": {
+        "kind": "told",
+        "email": "person@example.com",
+        "name": "sample"
+      },
+      "inbox": {
+        "kind": "message",
+        "from": {
+          "name": "sample"
+        }
+      },
+      "threadRef": {
+        "botId": "sample",
+        "threadId": "sample",
+        "title": "sample"
+      },
+      "sentDirectly": {
+        "name": "sample"
+      },
+      "publishedPage": {
+        "state": "live",
+        "title": "sample"
+      },
+      "dataResult": {
+        "botId": "sample",
+        "cardId": "sample",
+        "title": "sample",
+        "kind": "table"
+      },
+      "dataContext": {
+        "cardId": "sample"
+      },
+      "queued": true,
+      "queueId": "sample"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "sections",
+    "value": {
+      "kind": "sections",
+      "sections": []
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "bot.queued",
+    "value": {
+      "kind": "bot.queued",
+      "queues": {}
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "message",
+    "value": {
+      "kind": "message",
+      "threadId": "sample",
+      "message": {
+        "id": "sample-1",
+        "role": "bot",
+        "kind": "text",
+        "at": 1
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "message.patch",
+    "value": {
+      "kind": "message.patch",
+      "threadId": "sample",
+      "message": {
+        "id": "sample-1",
+        "role": "bot",
+        "kind": "text",
+        "at": 1
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "thread",
+    "value": {
+      "kind": "thread",
+      "threadId": "sample",
+      "activeLeafId": "sample"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "bot",
+    "value": {
+      "kind": "bot",
+      "bot": {
+        "id": "sample-1",
+        "threadId": "sample",
+        "name": "sample",
+        "title": "sample",
+        "description": "sample",
+        "notifications": true,
+        "color": "green",
+        "avatarUrl": null,
+        "unread": true,
+        "modelSelection": {
+          "instanceId": "sample",
+          "model": "sample"
+        },
+        "createdAt": 1
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "group",
+    "value": {
+      "kind": "group",
+      "group": {
+        "id": "sample-1",
+        "threadId": "sample",
+        "name": "sample",
+        "memberIds": [],
+        "defaultResponder": {
+          "kind": "member",
+          "botId": "sample"
+        },
+        "bulletin": "sample",
+        "unread": true,
+        "createdAt": 1,
+        "working": true
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "notify",
+    "value": {
+      "kind": "notify",
+      "notification": {
+        "kind": "approval",
+        "botId": "sample",
+        "botName": "sample",
+        "threadId": "sample",
+        "title": "sample",
+        "body": "sample",
+        "id": "sample-1",
+        "at": 1,
+        "read": true
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "notifications.read",
+    "value": {
+      "kind": "notifications.read",
+      "threadId": "sample",
+      "ids": []
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "group.deleted",
+    "value": {
+      "kind": "group.deleted",
+      "groupId": "sample"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "routine",
+    "value": {
+      "kind": "routine",
+      "routine": {
+        "id": "sample-1",
+        "name": "sample",
+        "prompt": "sample",
+        "target": "bot",
+        "botId": "sample",
+        "runOn": "bot",
+        "enabled": true,
+        "schedule": {
+          "type": "cron",
+          "expression": "sample",
+          "timeZone": "sample"
+        },
+        "durationMinutes": 1,
+        "nextRunAt": null,
+        "createdAt": 1,
+        "updatedAt": 1
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "routine.deleted",
+    "value": {
+      "kind": "routine.deleted",
+      "routineId": "sample"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "routine.run",
+    "value": {
+      "kind": "routine.run",
+      "run": {
+        "id": "sample-1",
+        "routineId": "sample",
+        "routineName": "sample",
+        "target": "bot",
+        "botId": "sample",
+        "runOn": "bot",
+        "scheduledFor": 1,
+        "status": "queued",
+        "manual": true,
+        "createdAt": 1
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "webhook",
+    "value": {
+      "kind": "webhook",
+      "webhook": {
+        "id": "sample-1",
+        "endpointId": "sample",
+        "name": "sample",
+        "prompt": "sample",
+        "botId": "sample",
+        "runOn": "bot",
+        "enabled": true,
+        "createdAt": 1,
+        "updatedAt": 1,
+        "deliveryCount": 1
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "webhook.attempt",
+    "value": {
+      "kind": "webhook.attempt",
+      "attempt": {
+        "id": "sample-1",
+        "webhookId": "sample",
+        "receivedAt": 1,
+        "outcome": "accepted",
+        "statusCode": 1
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "webhook.deleted",
+    "value": {
+      "kind": "webhook.deleted",
+      "webhookId": "sample"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "app-trigger",
+    "value": {
+      "kind": "app-trigger",
+      "botId": "sample",
+      "trigger": {
+        "id": "sample-1",
+        "name": "sample",
+        "prompt": "sample",
+        "botId": "sample",
+        "runOn": "bot",
+        "enabled": true,
+        "app": "sample",
+        "appName": "sample",
+        "event": "sample",
+        "eventName": "sample",
+        "delivery": "instant",
+        "accountId": "sample",
+        "config": {},
+        "remote": {
+          "state": "active"
+        },
+        "received": 1,
+        "filtered": 1,
+        "createdAt": 1,
+        "updatedAt": 1
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "app-trigger.attempt",
+    "value": {
+      "kind": "app-trigger.attempt",
+      "botId": "sample",
+      "attempt": {
+        "id": "sample-1",
+        "triggerId": "sample",
+        "eventId": "sample",
+        "at": 1,
+        "outcome": "started"
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "app-trigger.deleted",
+    "value": {
+      "kind": "app-trigger.deleted",
+      "triggerId": "sample"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "app-trigger.service",
+    "value": {
+      "kind": "app-trigger.service",
+      "service": {
+        "available": true
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "runtime",
+    "value": {
+      "kind": "runtime",
+      "event": {
+        "eventId": "sample",
+        "provider": "sample",
+        "threadId": "sample",
+        "createdAt": "2026-11-14T00:00:00Z",
+        "type": "session.started",
+        "sessionId": null
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "mcp.changed",
+    "value": {
+      "kind": "mcp.changed"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "screen",
+    "value": {
+      "kind": "screen",
+      "botId": "sample",
+      "threadId": "sample",
+      "png": "sample",
+      "mime": "sample",
+      "surface": "browser"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "computer",
+    "value": {
+      "kind": "computer",
+      "botId": "sample",
+      "state": "provisioning",
+      "place": "cloud"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "computer-control",
+    "value": {
+      "kind": "computer-control",
+      "botId": "sample",
+      "held": true,
+      "helpReason": null,
+      "help": null
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "data",
+    "value": {
+      "kind": "data",
+      "botId": "sample",
+      "sheet": {
+        "version": 1,
+        "botId": "sample",
+        "cards": [],
+        "sources": [],
+        "updatedAt": "sample"
+      }
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "bot.deleted",
+    "value": {
+      "kind": "bot.deleted",
+      "botId": "sample"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "bots.order",
+    "value": {
+      "kind": "bots.order",
+      "botIds": []
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "groups.order",
+    "value": {
+      "kind": "groups.order",
+      "groupIds": []
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "live.call",
+    "value": {
+      "kind": "live.call",
+      "botId": "sample",
+      "threadId": "sample",
+      "call": null
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "device.job",
+    "value": {
+      "kind": "device.job",
+      "phone": "sample",
+      "id": "sample-1"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "team.presence",
+    "value": {
+      "kind": "team.presence",
+      "email": "person@example.com",
+      "here": true
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "thread.presence",
+    "value": {
+      "kind": "thread.presence",
+      "threadId": "sample",
+      "people": []
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "team.people",
+    "value": {
+      "kind": "team.people"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "config",
+    "value": {
+      "kind": "config"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "hello",
+    "value": {
+      "kind": "hello",
+      "cursor": "sample",
+      "resumed": true
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "ping",
+    "value": {
+      "kind": "ping"
+    }
+  },
+  {
+    "swiftType": "ServerFrame",
+    "name": "snapshot",
+    "value": {
+      "kind": "snapshot",
+      "snapshot": {
+        "bots": [],
+        "groups": [],
+        "sections": []
+      }
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "session.started",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "session.started",
+      "sessionId": null,
+      "model": null,
+      "rebuilt": true,
+      "mcpFailed": []
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "session.model-variants",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "session.model-variants",
+      "model": "sample",
+      "variants": {
+        "options": []
+      }
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "session.exited",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "session.exited",
+      "reason": "sample"
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "turn.started",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "turn.started"
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "turn.retrying",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "turn.retrying",
+      "attempt": 1,
+      "delayMs": 1,
+      "reason": "sample"
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "turn.completed",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "turn.completed",
+      "ok": true,
+      "stopReason": null,
+      "cost": null,
+      "denials": [],
+      "usage": {
+        "input": 1,
+        "output": 1
+      }
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "cap.exhausted",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "cap.exhausted",
+      "handoffPath": "sample",
+      "reason": "cap"
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "turn.wait_started",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "turn.wait_started",
+      "resource": "sample",
+      "position": 1,
+      "holder": {
+        "name": "sample"
+      }
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "turn.wait_ended",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "turn.wait_ended",
+      "resource": "sample",
+      "holder": {
+        "name": "sample"
+      },
+      "waitedMs": 1,
+      "outcome": "acquired"
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "item.started",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "item.started",
+      "itemType": "tool",
+      "title": "sample",
+      "summary": "sample",
+      "input": "sample",
+      "step": {
+        "activity": "write",
+        "target": "sample"
+      }
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "item.updated",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "item.updated",
+      "itemType": "tool",
+      "tokens": null
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "item.output",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "item.output",
+      "itemType": "tool",
+      "text": "sample",
+      "whole": true
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "turn.progress",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "turn.progress",
+      "activity": "write",
+      "tool": "sample",
+      "file": "sample",
+      "bytes": 1,
+      "target": "sample",
+      "detail": "sample",
+      "quiet": {
+        "kind": "output",
+        "at": 1
+      },
+      "tail": []
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "item.completed",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "item.completed",
+      "itemType": "tool",
+      "ok": true,
+      "output": "sample"
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "item.completed",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "item.completed",
+      "itemType": "assistant_text",
+      "text": "sample"
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "item.completed",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "item.completed",
+      "itemType": "assistant_image",
+      "data": "sample",
+      "alt": "sample",
+      "fromTool": true
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "content.delta",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "content.delta",
+      "streamKind": "assistant_text",
+      "delta": "sample",
+      "botId": "sample"
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "request.opened",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "request.opened",
+      "requestType": "permission",
+      "tool": "sample",
+      "summary": "sample",
+      "summaryCode": "sample",
+      "summaryParams": {},
+      "command": {
+        "command": "sample",
+        "cwd": "sample"
+      },
+      "commandLine": "sample",
+      "reads": [],
+      "choices": [],
+      "questions": [],
+      "origin": "tool",
+      "approvalScope": "local-computer",
+      "requiresExplicitApproval": true,
+      "nativeReview": "active",
+      "allowSession": true
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "request.resolved",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "request.resolved",
+      "behavior": "allow",
+      "source": "user",
+      "approvalScope": "local-computer"
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "thread.token-usage.updated",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "thread.token-usage.updated",
+      "input": 1,
+      "output": 1,
+      "cachedInput": 1,
+      "contextTokens": 1,
+      "contextWindow": 1,
+      "reasoning": 1
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "runtime.error",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "runtime.error",
+      "message": "sample",
+      "partial": true,
+      "setup": true,
+      "terminal": true,
+      "claudeUpdate": true,
+      "trialCredit": "used_up",
+      "stalled": true,
+      "limitResetsAt": 1,
+      "limit": "engine",
+      "limitModels": [],
+      "text": {
+        "key": "sample"
+      }
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "runtime.notice",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "runtime.notice",
+      "message": "sample",
+      "text": {
+        "key": "sample"
+      }
+    }
+  },
+  {
+    "swiftType": "RuntimeEvent",
+    "name": "context.compacted",
+    "value": {
+      "eventId": "sample",
+      "provider": "sample",
+      "providerInstanceId": "sample",
+      "threadId": "sample",
+      "createdAt": "2026-11-14T00:00:00Z",
+      "turnId": "sample",
+      "itemId": "sample",
+      "requestId": "sample",
+      "raw": {
+        "source": "sample",
+        "payload": {}
+      },
+      "synthetic": true,
+      "type": "context.compacted"
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Card",
+    "value": {
+      "type": "Card",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "ListView",
+    "value": {
+      "type": "ListView",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "ListViewItem",
+    "value": {
+      "type": "ListViewItem",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Box",
+    "value": {
+      "type": "Box",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Row",
+    "value": {
+      "type": "Row",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Col",
+    "value": {
+      "type": "Col",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Form",
+    "value": {
+      "type": "Form",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Spacer",
+    "value": {
+      "type": "Spacer",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Divider",
+    "value": {
+      "type": "Divider",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Table",
+    "value": {
+      "type": "Table",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Table.Row",
+    "value": {
+      "type": "Table.Row",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Table.Cell",
+    "value": {
+      "type": "Table.Cell",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Text",
+    "value": {
+      "type": "Text",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Title",
+    "value": {
+      "type": "Title",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Caption",
+    "value": {
+      "type": "Caption",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Label",
+    "value": {
+      "type": "Label",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Markdown",
+    "value": {
+      "type": "Markdown",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Image",
+    "value": {
+      "type": "Image",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Icon",
+    "value": {
+      "type": "Icon",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Chart",
+    "value": {
+      "type": "Chart",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Badge",
+    "value": {
+      "type": "Badge",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Progress",
+    "value": {
+      "type": "Progress",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Button",
+    "value": {
+      "type": "Button",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Select",
+    "value": {
+      "type": "Select",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "DatePicker",
+    "value": {
+      "type": "DatePicker",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "TimePicker",
+    "value": {
+      "type": "TimePicker",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "DayPicker",
+    "value": {
+      "type": "DayPicker",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Checkbox",
+    "value": {
+      "type": "Checkbox",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "RadioGroup",
+    "value": {
+      "type": "RadioGroup",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Input",
+    "value": {
+      "type": "Input",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Textarea",
+    "value": {
+      "type": "Textarea",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  },
+  {
+    "swiftType": "WidgetNode",
+    "name": "Transition",
+    "value": {
+      "type": "Transition",
+      "id": "node-1",
+      "children": [
+        {
+          "type": "Text",
+          "id": "node-2",
+          "value": "Hello"
+        }
+      ],
+      "future": {
+        "nested": null
+      }
+    }
+  }
+]

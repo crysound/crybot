@@ -1,4 +1,4 @@
-import { locales, type LocaleKey } from "@/locales";
+import { hasTranslation, type LocaleKey } from "@/locales";
 import { activeLocale, t } from "@/lib/i18n";
 import { niceTime, scheduleLabel } from "@/lib/schedule-label";
 import type { OverviewRoutineLine } from "@/lib/bot-overview-types";
@@ -77,7 +77,7 @@ const COORDINATION: readonly Coordination[] = [
 ];
 
 /** A language with its own words for `key`; in any other the server's line is shown exactly as it came, never re-worded. */
-const ownWords = (key: LocaleKey): boolean => activeLocale() !== "en" && Object.hasOwn(locales[activeLocale()] ?? {}, key);
+const ownWords = (key: LocaleKey): boolean => activeLocale() !== "en" && hasTranslation(activeLocale(), key);
 
 function coordinationText(line: string, managedSections: readonly string[] | undefined): string | null {
   for (const coordination of COORDINATION) {

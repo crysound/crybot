@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 // The whole app as one person of a Team Cloud sees it: scripts/verify-team-bot-access.ts sends every request as them.
 // ?mode=simple|advanced and ?skin= pick the mode and the skin.
 import { createRoot } from "react-dom/client";
@@ -8,6 +9,8 @@ import { GROK_MOVE_NOTICE, MODELGO_OFFER_NOTICE } from "../../src/lib/notices";
 import { markSimpleModePromptSeen } from "../../src/lib/simple-mode-prompt";
 import { applySkinChoice, SKIN_IDS, type SkinId } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 const params = new URLSearchParams(location.search);
 const skin = params.get("skin") ?? "daylight";

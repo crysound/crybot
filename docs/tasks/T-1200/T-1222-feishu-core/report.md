@@ -152,3 +152,25 @@
    - `timeout 600 node_modules/.bin/vitest run server/feishu-routes.test.ts --maxWorkers=2`，使用测试自建的隔离 HTTP fixture，重点复核收到 token 请求后断开不签发、不挤掉旧设备，以及随后正常交换返回 200。本沙箱按约束未运行需要监听端口的用例，不能据无端口测试宣称 HTTP 集成已通过。
    - 补跑两项棘轮测试，并协调处理上述已有基线超限。
    - 当前检出仍缺少 `docs/verification/README.md`，未能执行其指定流程；服务启动/HTTP 验收需协调者在具备该流程的环境补齐。本轮未联网、未加依赖、未提交 git。
+
+## 第 6 轮
+
+1. 本轮仅解决合入冲突并追加本报告：
+   - `server/index.ts`：保留 main 的 `appHandoffGate(...)`，删除冲突标记及重复的 cfAccess / app-handoff 代码；紧接 gate 调用保留原有 `feishuExchangeRoute({...})`，参数不变，仍在 Access 校验之后执行。
+   - 已核对 `createAppHandoffGate` → `cfAccessRefusal` → `isCfAccessPublicProbe`：只放行 GET 的 `/api/health`、`/api/brand`、`/.well-known/crybot/environment` 和末段为 64 位小写十六进制的 domain-check 路径，与本分支原有判断一致，无需修改 gate 或 cf-access。
+   - 飞书交换路由实现及第 5 轮设备会话逻辑未改动。
+
+2. 验证命令和结果：
+   - `timeout 600 pnpm exec tsc -p tsconfig.server.json --noEmit`：通过；运行时无其他测试进程。
+   - `timeout 600 pnpm exec oxlint --deny-warnings server/index.ts`：通过。
+   - `timeout 600 pnpm exec vitest run server/feishu-routes.unit.test.ts server/feishu-login.test.ts server/sessions.test.ts server/app-handoff.test.ts server/cf-access.test.ts scripts/testing/file-size-ratchet.test.ts --maxWorkers=2`：6 个文件、181 项全部通过。测试使用隔离临时目录和内存 HTTP fixture，未访问 live app 或真实数据。
+   - 搜索全部测试未发现直接引用 `createAppHandoffGate` 的用例；已执行其相关 app-handoff 和 cf-access 单测，后者包含 main 新增的 GET 探针及非 GET / 非法路径不放行断言。
+   - `git diff --check`：通过；`server/index.ts` 无冲突标记，`git ls-files -u server/index.ts` 仍保留原有三个 stage，状态为 UU。
+   - `crybot-link-deps` 在当前环境不存在；现有依赖可直接运行上述 pnpm 命令，未安装依赖。`systemd-run --scope -q -p MemoryMax=2G true` 返回 `Operation not permitted`，检查改由 `timeout 600` 包裹执行。
+
+3. `server/index.ts` 行数：15441（含冲突标记）→ 15432；低于当前棘轮上限 15515，完整文件行数棘轮测试通过。
+
+4. 待协调者处理：
+   - 按沙箱不能监听端口的约束，本轮未运行 `server/feishu-routes.test.ts`、app-host / app-links e2e、`server/index.test.ts`；请在沙箱外使用隔离 fixture 补跑，不能据单测结果宣称 HTTP 集成已通过。
+   - 当前检出仍缺少 `docs/verification/README.md`，其指定验证流程需在具备该文件的环境补齐。
+   - 未执行 git add、commit 或 merge --abort，索引保留 UU，由协调者检查并提交。本轮未联网，未改其他文件。

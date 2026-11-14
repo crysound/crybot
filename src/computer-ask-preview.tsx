@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "./testing/preview-locale";
 // Dev-only gallery of what the person sees when their own Cloud can't use their PC, served at /computer-ask-preview.html;
 // not in the packaged app. It mounts the real chat over a fixed store with no server behind it, and this PC's own
 // screen-control status over fixed desktop capabilities.
@@ -12,6 +13,8 @@ import { setAdvancedMode } from "@/lib/interface-mode";
 import { applySkinChoice, SKIN_IDS, type SkinId } from "@/lib/skins";
 import { initialState, StoreContext, type AppState, type Bot, type Message } from "@/state/store";
 import "./styles.css";
+
+await preparePreviewLocale();
 
 const params = new URLSearchParams(location.search);
 const view = params.get("view") ?? "asking";

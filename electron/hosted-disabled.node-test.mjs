@@ -26,11 +26,15 @@ test("a disabled hosted service returns unavailable without credentials, timers 
   assert.equal(resolveCompanionControlPlaneURL({ isPackaged: true, environment: { arbitrary: "https://example.test" } }), "");
   assert.equal(hostedAvailable, false);
   const fail = () => assert.fail("disabled service used an external dependency");
-  const account = createCompanionAccountService({ readCredentials: () => ({}), updateCredentials: fail, setTimer: fail, autoRecover: true, onDemand: true, stopManagedEndpoint: fail });
+  let writes = 0, stops = 0;
+  const account = createCompanionAccountService({ readCredentials: () => ({}), updateCredentials: async update => { assert.deepEqual(update({}), {}); writes++; }, setTimer: fail, autoRecover: true, onDemand: true, stopManagedEndpoint: async () => { stops++; } });
   try {
     assert.equal((await account.requestCode("person@example.test")).available, false);
     assert.equal((await account.verifyCode("person@example.test", "123456")).available, false);
-    for (const method of ["state", "prepare", "retry", "restore", "signOut"]) assert.equal((await account[method]()).available, false, method);
+    for (const method of ["state", "prepare", "retry", "restore"]) assert.equal((await account[method]()).available, false, method);
+    assert.deepEqual([writes, stops], [0, 0]);
+    assert.equal((await account.signOut()).available, false);
+    assert.deepEqual([writes, stops], [1, 1]);
   } finally { account.dispose(); }
 });
 

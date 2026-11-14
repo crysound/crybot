@@ -5,14 +5,21 @@ permissions:
 
 on:
   push:
+    branches: [main]
     paths:
-      - "mobile/**"
+      - "mobile/ios/**"
+      - "mobile/android/**"
       - ".github/workflows/mobile.yml"
   pull_request:
     paths:
-      - "mobile/**"
+      - "mobile/ios/**"
+      - "mobile/android/**"
       - ".github/workflows/mobile.yml"
   workflow_dispatch:
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   android:
@@ -36,54 +43,127 @@ jobs:
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
   ios:
-    runs-on: macos-15
+    runs-on: macos-26
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: mobile/ios
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        run: |
+          xcode=$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' ! -iname '*beta*' | sort -V | tail -1)
+          if [[ -z "$xcode" ]]; then
+            echo 'Xcode 26 is not installed'
+            exit 1
+          fi
+          sudo xcode-select -s "$xcode/Contents/Developer"
+          xcodebuild -version
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            mobile/ios/SourcePackages
+          key: ${{ runner.os }}-xcode26-spm-${{ hashFiles('mobile/ios/Package.resolved') }}
+          restore-keys: ${{ runner.os }}-xcode26-spm-
+      - name: Test CryKit
+        working-directory: .
+        run: swift test --package-path mobile/ios/Packages/CryKit
       - name: Install XcodeGen
         run: brew install xcodegen
-      - run: xcodegen generate
-      - name: Build iOS app with embedded watch app
-        run: xcodebuild -scheme CryBot -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath DerivedData/iOS build CODE_SIGNING_ALLOWED=NO
-      - name: Verify embedded watch app
-        run: test -d 'DerivedData/iOS/Build/Products/Debug-iphonesimulator/Cry Bot.app/Watch/CryBotWatch.app'
-      - name: Build watch app
-        run: xcodebuild -scheme CryBotWatch -configuration Debug -destination 'generic/platform=watchOS Simulator' -derivedDataPath DerivedData/Watch build CODE_SIGNING_ALLOWED=NO
-      - name: Select available iPhone simulator
+      - name: Generate project and restore package lock
         run: |
-          xcrun simctl list
-          xcrun simctl list devices available --json > "$RUNNER_TEMP/crybot-simulators.json"
-          python3 - <<'PY'
+          xcodegen generate
+          if [[ -f Package.resolved ]]; then
+            mkdir -p CryBot.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+            cp Package.resolved CryBot.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+            echo 'CRYBOT_PACKAGE_RESOLUTION=-disableAutomaticPackageResolution' >> "$GITHUB_ENV"
+          fi
+      - name: Select iPhone 16 simulator
+        run: |
+          xcrun simctl list --json > "$RUNNER_TEMP/crybot-simulators.json"
+          python3 - <<'PYCODE'
           import json
           import os
+          import subprocess
           from pathlib import Path
 
-          devices = json.loads((Path(os.environ["RUNNER_TEMP"]) / "crybot-simulators.json").read_text())["devices"]
-          runtimes = sorted((runtime for runtime in devices if ".iOS-" in runtime),
-                            key=lambda runtime: tuple(int(part) for part in runtime.rsplit(".iOS-", 1)[1].split("-")),
-                            reverse=True)
-          candidates = [device for runtime in runtimes
-                        for device in devices[runtime]
-                        if device.get("isAvailable") and device["name"].startswith("iPhone")]
-          if not candidates:
-              raise SystemExit("No available iPhone simulator")
-          selected = candidates[0]
-          print("Selected simulator:", selected["name"], selected["udid"])
+          inventory = json.loads((Path(os.environ["RUNNER_TEMP"]) / "crybot-simulators.json").read_text())
+          runtimes = [runtime for runtime in inventory["runtimes"]
+                      if runtime.get("isAvailable") and ".iOS-" in runtime["identifier"]]
+          if not runtimes:
+              raise SystemExit("No available iOS runtime")
+          runtime = max(runtimes, key=lambda item: tuple(int(part) for part in item["version"].split(".")))
+          available = [device for device in inventory["devices"].get(runtime["identifier"], [])
+                       if device.get("isAvailable")]
+          selected = next((device for device in available
+                           if device.get("deviceTypeIdentifier", "").endswith(".iPhone-16")
+                           or device["name"] == "iPhone 16"), None)
+          action = "Selected existing iPhone 16"
+          if selected is None:
+              types = json.loads(subprocess.check_output(
+                  ["xcrun", "simctl", "list", "devicetypes", "--json"], text=True))["devicetypes"]
+              device_type = next((item for item in types if item["name"] == "iPhone 16"), None)
+              if device_type is not None:
+                  udid = subprocess.check_output(
+                      ["xcrun", "simctl", "create", "iPhone 16", device_type["identifier"], runtime["identifier"]],
+                      text=True).strip()
+                  if not udid:
+                      raise SystemExit("simctl create returned an empty simulator ID")
+                  selected = {"name": "iPhone 16", "udid": udid}
+                  action = "Created iPhone 16 (" + device_type["identifier"] + ")"
+              else:
+                  selected = next((device for device in available
+                                   if ".iPhone-" in device.get("deviceTypeIdentifier", "")
+                                   or device["name"].startswith("iPhone")), None)
+                  if selected is None:
+                      raise SystemExit("No iPhone 16 device type or available iPhone in " + runtime["identifier"])
+                  action = "Fallback to available iPhone (iPhone 16 device type missing)"
+          print(action + ":", selected["name"], selected["udid"], "runtime:", runtime["identifier"])
           with open(os.environ["GITHUB_ENV"], "a") as env:
               env.write("CRYBOT_TEST_SIMULATOR=" + selected["udid"] + "\n")
-          PY
-      - name: Run isolated Swift unit tests
-        run: >-
-          xcodebuild -scheme CryBotWatchTests -configuration Debug
-          -destination "platform=iOS Simulator,id=$CRYBOT_TEST_SIMULATOR"
-          -derivedDataPath DerivedData/Tests -resultBundlePath DerivedData/WatchTests.xcresult
-          -parallel-testing-enabled NO test CODE_SIGNING_ALLOWED=NO
+          PYCODE
+      - name: Build app and all test bundles once
+        run: |
+          xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+            -destination "platform=iOS Simulator,id=$CRYBOT_TEST_SIMULATOR" \
+            -derivedDataPath DerivedData/Tests -clonedSourcePackagesDirPath SourcePackages \
+            ${CRYBOT_PACKAGE_RESOLUTION:-} build-for-testing CODE_SIGNING_ALLOWED=NO
+      - name: Verify embedded watch app
+        run: test -d 'DerivedData/Tests/Build/Products/Debug-iphonesimulator/Cry Bot.app/Watch/CryBotWatch.app'
+      - name: Run hosted app and watch unit tests without rebuilding
+        run: |
+          for target in CryBotTests CryBotWatchTests; do
+            xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Debug \
+              -destination "platform=iOS Simulator,id=$CRYBOT_TEST_SIMULATOR" \
+              -derivedDataPath DerivedData/Tests -clonedSourcePackagesDirPath SourcePackages \
+              ${CRYBOT_PACKAGE_RESOLUTION:-} -resultBundlePath "DerivedData/$target.xcresult" \
+              -parallel-testing-enabled NO -only-testing:"$target" \
+              test-without-building CODE_SIGNING_ALLOWED=NO
+            xcrun xcresulttool get test-results summary --path "DerivedData/$target.xcresult" > "$RUNNER_TEMP/$target-summary.json"
+            python3 - "$RUNNER_TEMP/$target-summary.json" "$target" <<'PYCODE'
+          import json
+          import sys
+
+          summary = json.load(open(sys.argv[1]))
+          count = summary["totalTestCount"]
+          print(f"{sys.argv[2]}: {count} selected tests executed")
+          if count <= 0:
+              raise SystemExit("No selected tests executed")
+          PYCODE
+          done
+      - name: Upload first package resolution
+        if: always() && hashFiles('mobile/ios/Package.resolved') == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-resolved
+          path: mobile/ios/CryBot.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+          if-no-files-found: warn
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: crybot-watch-tests
-          path: mobile/ios/DerivedData/WatchTests.xcresult
+          name: crybot-mobile-tests
+          path: mobile/ios/DerivedData/*.xcresult
           if-no-files-found: ignore

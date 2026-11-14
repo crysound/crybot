@@ -27,6 +27,8 @@ import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
+
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
 const HOST = "cry-t-0123456789ab.example.test";
 const edge = { host: HOST, "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "https", origin: `https://${HOST}` };
@@ -75,12 +77,12 @@ async function bootCloud(home: string, agentBrowser: string, env: Record<string,
   const dataDir = join(home, ".crybot");
   mkdirSync(dataDir, { recursive: true });
   mkdirSync(join(home, "turns"), { recursive: true });
-  const cli = join(home, "fixture-claude.mjs");
+  const cli = fixtureEnginePath(dataDir, "fixture-claude.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
 // One engine process, one dump: a new turn never takes the place of the one a test is waiting for.
-if (process.argv[2] !== "--version") { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(home, "turns"))} + "/" + process.pid + ".json"; process.env.FAKE_CLAUDE_TEXT_DUMP = ${JSON.stringify(join(home, "one-shot.json"))}; process.env.FAKE_CLAUDE_MODE = "hang"; }
+if (process.argv[2] !== "--version") { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(home, "turns"))} + "/" + crypto.randomUUID() + ".json"; process.env.FAKE_CLAUDE_TEXT_DUMP = ${JSON.stringify(join(home, "one-shot.json"))}; process.env.FAKE_CLAUDE_MODE = "hang"; }
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
   chmodSync(cli, 0o755);
@@ -306,7 +308,7 @@ describe.skipIf(process.platform === "win32")("My Chrome on My Cloud, with stand
     writeFileSync(join(chromeDir, "DevToolsActivePort"), `${(server.address() as { port: number }).port}\n/devtools/browser/REAL-ID\n`);
     // agent-browser as the server finds it (CRYBOT_AGENT_BROWSER_PATH), speaking MCP on stdin and CDP to AGENT_BROWSER_CDP.
     engineLog = join(home, "agent-browser.log");
-    const engine = join(home, "agent-browser");
+    const engine = fixtureEnginePath(join(home, ".crybot"), "agent-browser");
     writeFileSync(engine, `#!${process.execPath}
 "use strict";
 const fs = require("node:fs");

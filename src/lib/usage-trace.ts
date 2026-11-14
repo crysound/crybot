@@ -1,7 +1,7 @@
 import { api } from "@/state/store";
-import { activeLocale, t } from "@/lib/i18n";
+import { hasLocaleKey, activeLocale, t } from "@/lib/i18n";
 import { namesLocale } from "@/lib/clock-time";
-import { en, type LocaleKey } from "@/locales";
+import type { LocaleKey } from "@/locales";
 import { toolStepLabel } from "@/lib/tool-step-label";
 import { formatUsd, hasFiniteCost, usdText } from "@/lib/usage";
 import type {
@@ -177,7 +177,7 @@ export function toolLabel(tool: Pick<TraceTool, "name" | "icon">): string {
   const agents = /^mcp__agents__([a-z0-9_]+)$/.exec(tool.name)?.[1];
   if (!agents || step !== sentence(agents.replace(/_+/g, " "))) return step;
   const key = `activity.tool.team.${agents.replace(/_([a-z0-9])/g, (_, letter: string) => letter.toUpperCase())}`;
-  return Object.hasOwn(en, key) ? t(key as LocaleKey) : step;
+  return hasLocaleKey(key) ? t(key as LocaleKey) : step;
 }
 
 export function groupLabel(group: Pick<TraceGroup, "icon" | "count" | "name" | "app" | "server">, appName?: string): string {

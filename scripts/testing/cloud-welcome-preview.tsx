@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 // The whole app as a new Cloud's owner sees it (scripts/verify-cloud-welcome.ts answers the session as one).
 // ?desktop=1 adds the reduced bridge a Cloud's page gets in the desktop app; ?move=copy|done shows the one-time move on its
 // way or landed; ?step= opens the welcome on a step; ?skin= picks a skin.
@@ -8,6 +9,8 @@ import { returnToWelcome } from "../../src/lib/cloud-welcome";
 import { initialDesktopCapabilities } from "../../src/lib/desktop";
 import { applySkin, type SkinId } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 const params = new URLSearchParams(location.search);
 

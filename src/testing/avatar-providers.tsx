@@ -1,8 +1,11 @@
+import { preparePreviewLocale } from "./preview-locale";
 import { createRoot } from "react-dom/client";
 import { StoreProvider, useStore } from "../state/store";
 import { BotProfileAvatarCard } from "../components/BotProfileAvatarCard";
 import { applySkin } from "../lib/skins";
 import "../styles.css";
+
+await preparePreviewLocale();
 
 function Fixture() {
   const { state, dispatch } = useStore();

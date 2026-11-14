@@ -1,3 +1,5 @@
+import { isValidSshAlias, normalizeVpsConfig } from "./vps-config.ts";
+export { isValidSshAlias, normalizeVpsConfig } from "./vps-config.ts";
 // ~/.crybot/config.json, with env vars overriding its credentials.
 import { readFileSync, mkdirSync, existsSync, renameSync } from "node:fs";
 import { dataHome } from "./data-dir.ts";
@@ -36,7 +38,6 @@ import { localVmConfigSchema } from "./local-vm-settings.ts";
 export * from "./local-vm-settings.ts";
 
 const optionalText = z.string().optional();
-const SSH_ALIAS = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const LEGACY_BROWSER_PROFILE_ID = /^[A-Za-z0-9_-]{1,40}$/;
 const BROWSER_PROFILE_ID = /^[a-z0-9_-]{1,40}$/;
 
@@ -53,23 +54,6 @@ export const MAX_MCP_CALL_TIMEOUT_MINUTES = 60;
 /** The floor keeps a log tail large enough for the event inspector's recent-line window. */
 export const MIN_THREAD_EVENT_LOG_BYTES = 256 * 1024;
 export const MAX_THREAD_EVENT_LOG_BYTES = 4 * 1024 * 1024 * 1024;
-
-export function isValidSshAlias(value: unknown): value is string {
-  return typeof value === "string" && SSH_ALIAS.test(value);
-}
-
-export function normalizeVpsConfig(raw: unknown): { sshAlias?: string } {
-  if (raw === undefined || raw === null) return {};
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new Error("vps must be an object containing an SSH config alias");
-  }
-  const alias = (raw as Record<string, unknown>).sshAlias;
-  if (alias === undefined || alias === "") return {};
-  if (!isValidSshAlias(alias)) {
-    throw new Error("vps.sshAlias must be a simple SSH config alias (letters, numbers, dot, dash, or underscore)");
-  }
-  return { sshAlias: alias };
-}
 
 const vpsConfigSchema = z.object({
   sshAlias: z.string().refine((value) => value === "" || isValidSshAlias(value), { message: "must be a simple SSH config alias" }).optional(),

@@ -3,10 +3,10 @@
 // and only they can stop it. The engine is the synthetic Claude CLI.
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
 import { personKey } from "./person-key.ts";
+import { fixtureOutput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const ENGINE = `process.env.FAKE_CLAUDE_DUMP = process.env.FAKE_CLAUDE_FIXTURE_DIR + "/dump.json";`;
@@ -19,7 +19,7 @@ let fx: CloudSendFixture, team: CloudTeamFixture;
 let owner = "", ben = "", ada = "";
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-2", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-2", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   owner = (await team.pair(OWNER)).token!;
   ben = (await team.pair(ADMIN)).token!;
@@ -30,22 +30,22 @@ afterAll(async () => {
   await fx?.close();
 });
 
-const dump = () => JSON.parse(readFileSync(join(team.home, "dump.json"), "utf8")) as { systemPrompt: string; prompt: unknown };
+const dump = (botId: string) => JSON.parse(readFileSync(fixtureOutput(team.home, botId, "dump.json"), "utf8")) as { systemPrompt: string; prompt: unknown };
 const messages = async (token: string, threadId: string) => (await team.as(token, "GET", `/api/threads/${threadId}/messages?limit=200`)).body.messages as any[];
 const idle = async (token: string) => ((await team.as(token, "GET", "/api/bots")).body.bots as Array<{ activity?: string; busy?: boolean }>)
   .every((entry) => entry.activity !== "working" && !entry.busy);
 const waiting = async (token: string, botId: string, threadId: string) => ((await team.as(token, "GET", "/api/bots")).body.bots as any[])
   .find((entry) => entry.id === botId)?.tasks?.find((task: { threadId: string }) => task.threadId === threadId)?.setupRequest;
 async function turn(token: string, botId: string, threadId: string, text: string, editing?: string) {
-  rmSync(join(team.home, "dump.json"), { force: true });
+  rmSync(fixtureOutput(team.home, botId, "dump.json"), { force: true });
   const before = (await messages(token, threadId)).length;
   const sent = editing
     ? await team.as(token, "POST", `/api/bots/${botId}/messages/${editing}/edit`, { text, threadId })
     : await team.as(token, "POST", `/api/bots/${botId}/messages`, { text, threadId });
   expect(sent.status, JSON.stringify(sent.body)).toBe(202);
-  await expect.poll(async () => await idle(token) && (await messages(token, threadId)).length >= before + 2 && existsSync(join(team.home, "dump.json")),
+  await expect.poll(async () => await idle(token) && (await messages(token, threadId)).length >= before + 2 && existsSync(fixtureOutput(team.home, botId, "dump.json")),
     { timeout: 60_000, interval: 100 }).toBe(true);
-  return dump();
+  return dump(botId);
 }
 
 it("in the team's shared main chat, only the person who pressed Set me up sets the bot up, and only they can stop it", async () => {
