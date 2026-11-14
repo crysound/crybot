@@ -5,8 +5,10 @@ export function recordOpenCodeProviderEnvironment(argv: string[], env: NodeJS.Pr
   if (argv[2] !== "acp" || !env.FAKE_ACP_DUMP) return undefined;
   // PID namespaces can give separate boxed processes the same PID.
   const startId = randomUUID();
+  const startedAt = Date.now();
   writeFileSync(`${env.FAKE_ACP_DUMP}.${startId}.provider-env.json`, JSON.stringify({
     startId,
+    startedAt,
     pid,
     env: {
       ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,

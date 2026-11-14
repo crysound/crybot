@@ -83,15 +83,19 @@ const written = (file: string, shape: "document" | "lines" = "document") => {
 };
 
 const providerStarts = () => readdirSync(home).filter((name) => /^opencode\.json\.[a-f0-9-]{36}\.provider-env\.json$/.test(name));
-const providerEnvironment = (file: string) => JSON.parse(readFileSync(file, "utf8")) as { startId: string; pid: number; env: Record<string, string> };
+type ProviderEnvironment = { startId: string; startedAt: number; pid: number; env: Record<string, string> };
+const providerEnvironment = (file: string) => JSON.parse(readFileSync(file, "utf8")) as ProviderEnvironment;
 
-async function nextProviderEnvironment(before: string[]) {
-  let file = "";
+async function nextProviderEnvironment(startedAfter: number, before: string[] = []) {
+  let records: ProviderEnvironment[] = [];
   await expect.poll(() => {
-    file = providerStarts().find((name) => !before.includes(name) && written(join(home, name))) ?? "";
-    return Boolean(file);
-  }, { timeout: 15_000 }).toBe(true);
-  return providerEnvironment(join(home, file)).env;
+    records = providerStarts()
+      .filter((name) => !before.includes(name) && written(join(home, name)))
+      .map((name) => providerEnvironment(join(home, name)))
+      .filter((record) => record.startedAt > startedAfter);
+    return records.length;
+  }, { timeout: 15_000 }).toBeGreaterThan(0);
+  return records;
 }
 
 function expectAnthropicEnvironment(env: Record<string, string>) {
@@ -179,13 +183,16 @@ it("refuses a name CryBot keeps, in one plain line, and saves nothing", async ()
 it("saves keys for any OpenCode provider on a Cloud, shows only their names, and hands them to OpenCode alone", async () => {
   expect(owner).toMatch(/^cry_sess_/);
   expect((await api("GET", "/api/config")).body.opencodeGo).toEqual({ configured: false, providerKeys: [] });
-  const initialEnv = await nextProviderEnvironment([]);
-  expect(initialEnv.ANTHROPIC_API_KEY).toBeUndefined();
-  expect(initialEnv.OPENAI_API_KEY).toBeUndefined();
+  const initialEnvironments = await nextProviderEnvironment(0);
+  for (const initialEnv of initialEnvironments) {
+    expect(initialEnv.env.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(initialEnv.env.OPENAI_API_KEY).toBeUndefined();
+  }
 
   const beforeSave = providerStarts();
   rmSync(dump, { force: true });
   const saved = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { VENICE_API_KEY: VENICE, ANTHROPIC_API_KEY: OWNER_ANTHROPIC } } });
+  const savedAt = Date.now();
   expect(saved.status, saved.text).toBe(200);
   expect(saved.body.opencodeGo).toEqual({ configured: false, providerKeys: ["ANTHROPIC_API_KEY", "VENICE_API_KEY"] });
   const reread = await api("GET", "/api/config");
@@ -197,10 +204,13 @@ it("saves keys for any OpenCode provider on a Cloud, shows only their names, and
   await expect.poll(async () => (await api("GET", "/api/instances?fresh=1")).body.instances
     .find((instance: any) => instance.instanceId === "opencodeGo")?.models.options.map((option: any) => option.id), { timeout: 15_000 })
     .toContain(`venice/${VENICE_LISTED}`);
-  const savedEnv = await nextProviderEnvironment(beforeSave);
-  expect(savedEnv.VENICE_API_KEY).toBe(VENICE);
-  expectAnthropicEnvironment(savedEnv);
-  expect(savedEnv.OPENAI_API_KEY).toBeUndefined();
+  const savedEnvironments = await nextProviderEnvironment(savedAt, beforeSave);
+  for (const savedRecord of savedEnvironments) {
+    expect(savedRecord.startedAt).toBeGreaterThan(savedAt);
+    expect(savedRecord.env.VENICE_API_KEY).toBe(VENICE);
+    expectAnthropicEnvironment(savedRecord.env);
+    expect(savedRecord.env.OPENAI_API_KEY).toBeUndefined();
+  }
 
   const { bot } = (await api("POST", "/api/bots", { name: "Venice bot", modelSelection: { instanceId: "opencodeGo", model: "fixture/warm" } })).body;
   const thread = (await api("POST", `/api/bots/${bot.id}/tasks`, { title: "Mine" })).body.task.threadId as string;
@@ -243,10 +253,14 @@ it("saves keys for any OpenCode provider on a Cloud, shows only their names, and
   const beforeRemove = providerStarts();
   rmSync(dump, { force: true });
   const removed = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { VENICE_API_KEY: "" } } });
+  const removedAt = Date.now();
   expect(removed.status, removed.text).toBe(200);
   expect(removed.body.opencodeGo.providerKeys).toEqual(["ANTHROPIC_API_KEY"]);
-  const removedEnv = await nextProviderEnvironment(beforeRemove);
-  expect(removedEnv.VENICE_API_KEY).toBeUndefined();
-  expectAnthropicEnvironment(removedEnv);
-  expect(removedEnv.OPENAI_API_KEY).toBeUndefined();
+  const removedEnvironments = await nextProviderEnvironment(removedAt, beforeRemove);
+  for (const removedRecord of removedEnvironments) {
+    expect(removedRecord.startedAt).toBeGreaterThan(removedAt);
+    expect(removedRecord.env.VENICE_API_KEY).toBeUndefined();
+    expectAnthropicEnvironment(removedRecord.env);
+    expect(removedRecord.env.OPENAI_API_KEY).toBeUndefined();
+  }
 }, 90_000);
