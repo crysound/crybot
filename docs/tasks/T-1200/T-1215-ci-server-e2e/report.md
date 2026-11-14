@@ -371,3 +371,34 @@ Vitest 命令均使用 PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-s
 - `git diff --check`：通过。
 
 未提交、未安装依赖、未运行完整 `pnpm test`，也未修改 CI 或构建文件。`docs/verification/README.md` 在当前 checkout 中仍不存在；本轮未接触用户 live app 或数据。
+
+## r10（2026-11-14）：合并冲突解决
+
+仅解决 `server/app-handoff.ts` 的 1 处 import 冲突和 `server/index.ts` 的 3 处冲突，另追加本节报告；未修改其他文件。
+
+- `app-handoff.ts` 保留同一行中的 `cfAccessRefusal, createCfAccess, createCfAccessTokenVerifier` 导入，并保留来自 `app-links.ts` 的 `appLinkOrigin, prefersChinese` 导入。逐段比较确认 `createAppHandoff` 及其辅助函数与 `origin/main` 完全一致；门面仍调用 `createAppHandoff(access !== null, env, keySet)`，因此 HTTPS App Link 回跳和语言选择逻辑保留。
+- `index.ts` 只创建一次 `createAppLinks()` 和 `createAppHandoffGate()`，请求处理顺序为 `desktopUpdateFiles` → `appLinks` → `appHandoffGate`。Access 和 `/auth/app-handoff` 仍由门面处理，未恢复 main 的内联 `publicProbe`/`cfAccess`，未新增路由判断。
+
+### 验证结果
+
+所有 Node 命令均前置 `PATH=/opt/node24/bin:$PATH`，实际版本为 `v24.22.3`。
+
+- `npx vitest run server/app-links.test.ts server/app-handoff.test.ts server/app-links.e2e.test.ts server/cf-access*.test.ts scripts/testing/index-route-ratchet.test.ts`：默认配置加载器尝试写入 `node_modules/.vite-temp`，因只读文件系统 `EROFS` 无法启动。
+- 同一命令追加 `--configLoader runner`：共 5 个文件、122 个测试，121 个通过；`server/app-links.test.ts`、`server/app-handoff.test.ts`、`server/cf-access.test.ts` 和 `scripts/testing/index-route-ratchet.test.ts` 全部通过。唯一失败是 `server/app-links.e2e.test.ts` 的监听预检报 `listen EPERM: operation not permitted 127.0.0.1`，未能启动测试自带的临时目录隔离 fixture，也未进入 HTTP 行为断言；需在允许监听的环境复跑。
+- `npx tsc -p tsconfig.server.json --noEmit`：通过。
+- `npx oxlint --deny-warnings server/app-handoff.ts server/index.ts server/app-links.ts`：通过。
+- `grep -c '^<<<<<<<\|^>>>>>>>' server/app-handoff.ts server/index.ts`：两个文件均为 `0`（无匹配时 grep 退出码为 1）。
+- `git diff --check`：通过。
+
+棘轮各项计数均不高于 `origin/main`，本分支棘轮测试通过，未修改阈值：
+
+| 路由判断 | 本轮结果 | origin/main |
+| --- | --- | --- |
+| `path === "/` | 84 | 88 |
+| `path.match(` | 19 | 19 |
+| `path.startsWith(` | 6 | 6 |
+| `.exec(path)` | 1 | 1 |
+| `.test(path)` | 0 | 1 |
+| `.includes(path)` | 2 | 2 |
+
+`docs/verification/README.md` 在当前 checkout 中不存在，无法执行其中的额外流程。本轮未接触用户 live app 或数据，未执行 commit、merge --abort、checkout 或 git add；工作区冲突标记已清除，Git 索引仍保留未合并状态，交由协调方暂存和完成合并。

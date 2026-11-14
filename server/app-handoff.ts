@@ -2,6 +2,7 @@ import { createCipheriv, createECDH, ECDH, hkdfSync, randomBytes } from "node:cr
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { JWTVerifyGetKey } from "jose";
 import { cfAccessRefusal, createCfAccess, createCfAccessTokenVerifier } from "./cf-access.ts";
+import { appLinkOrigin, prefersChinese } from "./app-links.ts";
 import { parseCookies } from "./request-auth.ts";
 
 type JsonResponder = (res: ServerResponse, status: number, body: unknown) => void;
@@ -39,19 +40,12 @@ function escapeHtml(value: string) {
   return value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("'", "&#39;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
-function prefersChinese(header: string | undefined) {
-  const languages = (header ?? "").split(",").map(entry => {
-    const [language, ...parameters] = entry.trim().toLowerCase().split(";");
-    const quality = parameters.find(value => value.trim().startsWith("q="));
-    return { language, weight: quality ? Number(quality.trim().slice(2)) : 1 };
-  }).filter(entry => entry.weight > 0).sort((a, b) => b.weight - a.weight);
-  return languages.find(entry => /^(zh|en)(-|$)/.test(entry.language ?? ""))?.language?.startsWith("zh") ?? false;
-}
-
 export function createAppHandoff(enabled: boolean, env: NodeJS.ProcessEnv = process.env, keySet?: JWTVerifyGetKey) {
   const verify = enabled ? createCfAccessTokenVerifier(env, keySet) : null;
   const configuredScheme = env.CRYBOT_APP_SCHEME ?? "crybot";
   const scheme = configuredScheme.match(/^[a-z][a-z0-9+.-]{1,30}$/)?.[0] === configuredScheme ? configuredScheme : "crybot";
+  const origin = appLinkOrigin(env);
+  const callbackBase = origin ? `${origin}/auth/app-return` : `${scheme}://auth`;
   return async (req: IncomingMessage, res: ServerResponse, url: URL) => {
     res.setHeader("cache-control", "no-store");
     res.setHeader("referrer-policy", "no-referrer");
@@ -70,7 +64,7 @@ export function createAppHandoff(enabled: boolean, env: NodeJS.ProcessEnv = proc
     const ephemeral = createECDH("prime256v1");
     ephemeral.generateKeys();
     const encrypted = encryptAppHandoff(token, state, publicKey, { privateKey: ephemeral.getPrivateKey(), nonce: randomBytes(12) });
-    const callback = escapeHtml(`${scheme}://auth?${new URLSearchParams(encrypted)}`);
+    const callback = escapeHtml(`${callbackBase}?${new URLSearchParams(encrypted)}`);
     const chinese = prefersChinese(req.headers["accept-language"]);
     const label = escapeHtml(chinese ? "返回 Cry Bot" : "Return to Cry Bot");
     const title = chinese ? "在 Cry Bot App 中登录" : "Sign in to the Cry Bot App";

@@ -5802,6 +5802,8 @@
   "newBot.sharePreset": "프리셋으로 공유…",
   "newBot.customSettings": "사용자 지정 설정",
   "newBot.randomName": "무작위 이름",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.team": "부서",
   "newBot.enabled": "켜짐",
   "newBot.removeRoutine": "{name} 제거",

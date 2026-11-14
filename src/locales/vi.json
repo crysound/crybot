@@ -4342,6 +4342,8 @@
   "newBot.sharePreset": "Chia sẻ dưới dạng preset…",
   "newBot.customSettings": "Cài đặt tùy chỉnh",
   "newBot.randomName": "Tên ngẫu nhiên",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.edit": "Chỉnh sửa",
   "newBot.loading": "Đang tải cài đặt…",
   "newBot.failed": "Không tạo được bot mới: {error}",

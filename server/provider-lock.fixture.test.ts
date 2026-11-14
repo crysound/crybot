@@ -74,3 +74,28 @@ it.each([true, false])("boots an isolated locked server with an endpoint=%s", as
     await removeTempDir(dir);
   }
 }, hostTimeout(30_000));
+
+it("exits at startup when provider lock and hosted model policy are both configured", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "cry-provider-policy-conflict-"));
+  let child: ChildProcess | undefined;
+  let output = "";
+  let failure: Error | undefined;
+  try {
+    const port = await freePortBlock([0, 1]);
+    mkdirSync(join(dir, "tmp"));
+    const env = { ...verificationServerEnvironment({}, dir, port), CRYBOT_PROVIDER_LOCK: "1", CRYBOT_HOSTED_MODELS: "{}" };
+    child = spawn(process.execPath, verificationServerArgs(env), { env, stdio: ["ignore", "pipe", "pipe"] });
+    child.on("error", error => { failure = error; });
+    child.stdout?.on("data", chunk => { output += String(chunk); });
+    child.stderr?.on("data", chunk => { output += String(chunk); });
+    await vi.waitFor(() => {
+      if (failure) throw failure;
+      expect(child?.exitCode).not.toBeNull();
+    }, { timeout: hostTimeout(20_000), interval: 150 });
+    expect(child.exitCode).not.toBe(0);
+    expect(output).toContain("CRYBOT_PROVIDER_LOCK=1 cannot be enabled together with hosted model policy");
+  } finally {
+    await waitForExit(child, { signal: "SIGTERM" });
+    await removeTempDir(dir);
+  }
+}, hostTimeout(30_000));

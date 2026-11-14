@@ -1,10 +1,11 @@
 // The mocked removal stands in for docker-over-SSH: these tests pin which aliases may reach it.
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AppConfig } from "../config.ts";
 import type { RequestAuth } from "../request-auth.ts";
 import type { BotRecord } from "../store.ts";
+import * as boat from "../boat.ts";
 import * as vps from "../vps-computer.ts";
 import { createComputerRoutes, type ComputerRouteDeps } from "./computers.ts";
 import { PASS, type RouteContext } from "./table.ts";
@@ -13,6 +14,8 @@ vi.mock("../vps-computer.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../vps-computer.ts")>();
   return { ...actual, removeManagedVpsComputer: vi.fn() };
 });
+
+afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 const remove = vi.mocked(vps.removeManagedVpsComputer);
 const CONTAINER = "crybot-vps-test-abc123";
@@ -34,14 +37,13 @@ function fixture(bots: BotRecord[], cfg: AppConfig) {
     routines: () => null,
   } as unknown as ComputerRouteDeps;
   const handler = createComputerRoutes(deps);
-  const postRemove = async (body: Record<string, unknown>) => {
+  const request = async (path: string, method: string, body: Record<string, unknown> = {}) => {
     const sent: Array<{ status: number; body: any }> = [];
     const out = await handler({
       req: { headers: { "content-type": "application/json" } } as unknown as IncomingMessage,
-      res: {} as ServerResponse,
-      url: new URL(`http://localhost/api/computers/vps/${CONTAINER}/remove`),
-      path: `/api/computers/vps/${CONTAINER}/remove`,
-      method: "POST",
+      res: { setHeader() {} } as unknown as ServerResponse,
+      url: new URL(path, "http://localhost"),
+      path, method,
       auth: { kind: "loopback", scopes: ["admin"] } as RequestAuth,
       json: ((_res: ServerResponse, status: number, response: unknown) => {
         sent.push({ status, body: response });
@@ -52,7 +54,7 @@ function fixture(bots: BotRecord[], cfg: AppConfig) {
     expect(sent).toHaveLength(1);
     return sent[0]!;
   };
-  return { postRemove };
+  return { request, postRemove: (body: Record<string, unknown>) => request(`/api/computers/vps/${CONTAINER}/remove`, "POST", body) };
 }
 
 const cfgWith = (sshAlias: string): AppConfig => ({ vps: { sshAlias } }) as AppConfig;
@@ -93,4 +95,23 @@ describe("POST /api/computers/vps/:name/remove", () => {
     expect(removed.status).toBe(200);
     expect(remove).toHaveBeenCalledWith(cfg, [], CONTAINER, CONTAINER);
   });
+});
+
+it.each(["0", "1"])("shows Boat inventory only when offered (lock %s)", async lock => {
+  vi.stubEnv("CRYBOT_PROVIDER_LOCK", lock);
+  const inventory = { configured: true, available: true, problem: null, instances: [] };
+  const list = vi.spyOn(boat, "listManagedBoats").mockResolvedValue(inventory);
+  const { request } = fixture([], { box: { token: "boat_fixture" } });
+  const result = await request("/api/computers/boxes", "GET");
+  expect(result).toEqual({ status: 200, body: lock === "1" ? { configured: false, available: false, problem: null, instances: [] } : inventory });
+  expect(list).toHaveBeenCalledTimes(lock === "1" ? 0 : 1);
+});
+
+it("refuses a user request to create a team computer while locked", async () => {
+  vi.stubEnv("CRYBOT_PROVIDER_LOCK", "1");
+  const provision = vi.spyOn(boat, "provisionBoat");
+  const { request } = fixture([], { box: { token: "boat_fixture" } });
+  const result = await request("/api/team-computers", "POST", { requestId: "11111111-1111-4111-8111-111111111111", name: "Fixture", acknowledgeCost: true });
+  expect(result.status).toBe(409);
+  expect(provision).not.toHaveBeenCalled();
 });

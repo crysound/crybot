@@ -5435,6 +5435,8 @@
   "newBot.sharePreset": "Поделиться как шаблон…",
   "newBot.customSettings": "Свои настройки",
   "newBot.randomName": "Случайное имя",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.team": "Отдел",
   "newBot.enabled": "Включён",
   "newBot.removeRoutine": "Удалить {name}",
