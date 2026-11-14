@@ -21,7 +21,7 @@ function fixture() {
 }
 afterEach(() => vi.useRealTimers());
 
-it("holds the lifecycle lock through slow start and desktop readiness, excluding idle and a second start", async () => {
+it("holds the lock during startup, releases it for desktop polling, and shares the pending wake", async () => {
   vi.useFakeTimers();
   const { deps, running, ready } = fixture();
   deps.start.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(running), 5000)));
@@ -29,14 +29,15 @@ it("holds the lifecycle lock through slow start and desktop readiness, excluding
   const idle = new ComputerIdleTimer(1000, () => deps.lifecycleBusy.has("shared"), stop);
   idle.touch();
   const waking = readyLocalVm(SHARED_LOCAL_VM_TARGET, deps);
-  await expect(readyLocalVm(SHARED_LOCAL_VM_TARGET, deps)).rejects.toThrow("being started");
+  const joined = readyLocalVm(SHARED_LOCAL_VM_TARGET, deps);
   await vi.advanceTimersByTimeAsync(5000);
-  expect(deps.lifecycleBusy.has("shared")).toBe(true);
-  expect(deps.provisionBusy.get()).toBe(true);
+  expect(deps.lifecycleBusy.has("shared")).toBe(false);
+  expect(deps.provisionBusy.get()).toBe(false);
   expect(stop).not.toHaveBeenCalled();
   deps.status.mockResolvedValue(ready);
   await vi.advanceTimersByTimeAsync(2000);
   expect(await waking).toBe(ready);
+  expect(await joined).toBe(ready);
   expect(deps.status).toHaveBeenLastCalledWith(true);
   expect(deps.start).toHaveBeenCalledTimes(1);
   expect(deps.lifecycleBusy.size).toBe(0);
@@ -84,4 +85,35 @@ it("waits for an already running safe desktop without starting it again", async 
   await vi.advanceTimersByTimeAsync(2000);
   expect(await waking).toBe(ready);
   expect(deps.start).not.toHaveBeenCalled();
+});
+
+it("permits a stop during desktop polling and never restarts the stopped target", async () => {
+  vi.useFakeTimers();
+  const { deps, running, stopped } = fixture();
+  deps.start.mockResolvedValue(running);
+  const waking = readyLocalVm(SHARED_LOCAL_VM_TARGET, deps);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(deps.lifecycleBusy.has("shared")).toBe(false);
+  deps.lifecycleBusy.add("shared");
+  deps.status.mockResolvedValue(stopped);
+  await vi.advanceTimersByTimeAsync(2000);
+  expect(await waking).toBe(stopped);
+  expect(deps.start).toHaveBeenCalledOnce();
+  expect(deps.lifecycleBusy.has("shared")).toBe(true);
+});
+
+it("continues with the joining caller's live turn after the first caller ends", async () => {
+  vi.useFakeTimers();
+  const { deps, stopped, running, ready, cancel } = fixture();
+  deps.status.mockResolvedValueOnce(stopped).mockResolvedValueOnce(running).mockResolvedValue(ready);
+  deps.start.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(running), 5000)));
+  const first = readyLocalVm(SHARED_LOCAL_VM_TARGET, deps);
+  await vi.advanceTimersByTimeAsync(1);
+  const joined = readyLocalVm(SHARED_LOCAL_VM_TARGET, { ...deps, isCurrent: () => true });
+  cancel();
+  await vi.advanceTimersByTimeAsync(6999);
+  expect(await first).toBe(running);
+  expect(await joined).toBe(ready);
+  expect(deps.start).toHaveBeenCalledOnce();
+  expect(deps.lifecycleBusy.size).toBe(0);
 });

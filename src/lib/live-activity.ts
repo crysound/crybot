@@ -120,7 +120,8 @@ export function sidebarMessage(message?: Message): Message | undefined {
  * is waiting for memory, say), else the tool call still running in the chat, else nothing, and the line shows its timer alone. */
 export function turnNowPhrases(status: LiveStatus | null, message?: Message): LiveActivityPhrases | null {
   if (status) return liveStatusPhrases(status);
-  const notice = message?.kind === "activity" && message.tool?.name.startsWith("notice:") ? /[^.!?。！？]+[.!?。！？]?/u.exec(activityText(message.tool, message.tool.name.slice("notice:".length).trim()))?.[0] : undefined;
+  const failedWake = message?.tool?.nameCode === "chat.notice.computerWakeFailed" || message?.tool?.nameCode === "chat.notice.previousComputerWakeFailed";
+  const notice = message?.kind === "activity" && !failedWake && message.tool?.name.startsWith("notice:") ? /[^.!?。！？]+[.!?。！？]?/u.exec(activityText(message.tool, message.tool.name.slice("notice:".length).trim()))?.[0] : undefined;
   if (notice) return { phase: `notice:${notice}`, phrases: [notice] };
   if (message?.kind !== "activity" || !message.tool || message.tool.ok !== undefined || message.comm) return null;
   const phrases = toolActivityPhrases(message.tool);

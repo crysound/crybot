@@ -1,5 +1,6 @@
 import { allowsTool, parseToolScope, type ToolScope } from "../shared/tool-scope.ts";
 import { createInterface } from "node:readline";
+import type { Readable, Writable } from "node:stream";
 import { createControlClient, controlRefusal, type ControlState } from "./computer-control-client.ts";
 import type { AppClient } from "./mcp-app-connections.ts";
 import { CALL_TOOL, DESCRIBE_TOOL, SEARCH_TOOL, ToolDirectory, type CatalogTool } from "./mcp-directory.ts";
@@ -9,16 +10,18 @@ import { MAX_INPUT_BYTES, failure } from "./harness-mcp-request.ts";
 
 export function lazyContainerRequests(deps: {
   toolScope?: ToolScope;
-  gate: () => Promise<ControlState>;
+  gate: (action: boolean, signal: AbortSignal) => Promise<ControlState>;
   connect: (signal: AbortSignal) => Promise<AppClient>;
 }) {
   let connection: Promise<{ client: AppClient; directory: ToolDirectory }> | undefined;
   let closed = false;
+  const active = new Map<string | number | null, AbortController>();
   const controller = new AbortController();
   const listed = new ToolDirectory([]).listed({ server: "computer" }).map(tool => tool.name === SEARCH_TOOL
     ? { ...tool, description: "Find tools on the assigned Linux desktop by what you want to do. This waits for the computer to wake. Use describe_tool for exact inputs and call_tool to run a match." }
     : tool);
-  const connect = (signal: AbortSignal) => connection ??= (async () => {
+  const connect = () => connection ??= (async () => {
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(120_000)]);
     const client = await deps.connect(signal);
     try {
       const tools: Array<CatalogTool & { inputSchema: Record<string, unknown> }> = [];
@@ -38,9 +41,14 @@ export function lazyContainerRequests(deps: {
       await client.close();
       throw error;
     }
-  })();
+  })().catch(error => { connection = undefined; throw error; });
   return {
-    async request(frame: { id?: string | number | null; method?: string; params?: { name?: string; arguments?: unknown } }) {
+    async request(frame: { id?: string | number | null; method?: string; params?: { name?: string; arguments?: unknown; requestId?: string | number } }) {
+      if (frame.method === "notifications/cancelled") {
+        const id = frame.params?.requestId;
+        if (id !== undefined) active.get(id)?.abort(new Error("Computer call cancelled."));
+        return;
+      }
       if (frame.id === undefined) return;
       const { id, method } = frame;
       const reply = (result: unknown) => ({ jsonrpc: "2.0", id, result });
@@ -50,24 +58,27 @@ export function lazyContainerRequests(deps: {
       if (method !== "tools/call") return failure(id, method, "Method not found.", -32601);
       const { name, arguments: args } = frame.params ?? {};
       if (![SEARCH_TOOL, DESCRIBE_TOOL, CALL_TOOL].includes(name ?? "")) return failure(id, method, "Unknown computer tool.");
+      if (active.has(id)) return failure(id, method, "Request ID is already active.");
+      const requestController = new AbortController();
+      active.set(id, requestController);
       try {
         if (closed) throw new Error("Computer connection closed.");
-        const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(120_000)]);
-        const gate = await deps.gate();
+        const signal = AbortSignal.any([controller.signal, requestController.signal, AbortSignal.timeout(120_000)]);
+        const gate = await abortable(deps.gate(name === CALL_TOOL, signal), signal);
         signal.throwIfAborted();
         if (gate.held) return failure(id, method, controlRefusal(gate));
-        const { client, directory } = await connect(signal);
+        const { client, directory } = await abortable(connect(), signal);
         if (name === SEARCH_TOOL) return reply(await directory.search(args));
         if (name === DESCRIBE_TOOL) return reply(directory.describe(args));
         const call = directory.call(args);
         if ("answer" in call) return reply(call.answer);
-        const current = await deps.gate();
+        const current = await abortable(deps.gate(true, signal), signal);
         signal.throwIfAborted();
         if (current.held) return failure(id, method, controlRefusal(current));
         return reply(textOnlyErrorResult(await client.request("tools/call", call, signal)));
       } catch (error) {
         return failure(id, method, error instanceof Error ? error.message : String(error));
-      }
+      } finally { active.delete(id); }
     },
     async close() {
       closed = true;
@@ -83,24 +94,39 @@ export function runLazyContainerMcp(command: string, args: string[], control: { 
   const gate = createControlClient(control);
   const requests = lazyContainerRequests({
     toolScope: parsed.scope,
-    gate: () => gate.state(true),
+    gate: (action, signal) => gate.state(true, action ? undefined : { readinessOnly: "1" }, signal),
     connect: async signal => {
       const { openAppClient } = await import("./mcp-app-connections.ts");
       return openAppClient({ command, args, env: {} }, { onNotification() {} }, false, signal);
     },
   });
-  const input = createInterface({ input: process.stdin });
-  let pending = Promise.resolve();
+  serveLazyContainerRequests(requests, process.stdin, process.stdout);
+  process.once("SIGTERM", () => { void requests.close().finally(() => process.exit(0)); });
+}
+
+export function serveLazyContainerRequests(requests: ReturnType<typeof lazyContainerRequests>, stream: Readable, output: Writable): void {
+  const input = createInterface({ input: stream });
+  const pending = new Set<Promise<void>>();
   input.on("line", line => {
-    pending = pending.then(async () => {
+    const work = (async () => {
       let result: unknown;
       try {
         if (Buffer.byteLength(line) > MAX_INPUT_BYTES) throw new Error("Request too large.");
         result = await requests.request(JSON.parse(line));
       } catch { result = failure(null, null, "Invalid request.", -32600); }
-      if (result !== undefined) process.stdout.write(JSON.stringify(result) + "\n");
-    });
+      if (result !== undefined) output.write(JSON.stringify(result) + "\n");
+    })();
+    pending.add(work);
+    void work.finally(() => pending.delete(work));
   });
-  input.on("close", () => { void pending.finally(() => requests.close()); });
-  process.once("SIGTERM", () => { void requests.close().finally(() => process.exit(0)); });
+  input.on("close", () => { void Promise.allSettled([...pending]).finally(() => requests.close()); });
+}
+
+function abortable<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(signal.reason);
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    signal.addEventListener("abort", abort, { once: true });
+    work.then(resolve, reject).finally(() => signal.removeEventListener("abort", abort));
+  });
 }

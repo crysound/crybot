@@ -149,7 +149,8 @@ import {
   type Runtime,
 } from "./container-computer.ts";
 import { containerComputerMcp } from "./local-vm-box.ts";
-import { readyLocalVm } from "./local-vm-ready.ts";
+import { localVmReadinessPending, readyLocalVm } from "./local-vm-ready.ts";
+import { localVmResumeNotices, localVmWakeFailureNotice, recentLocalVmWakeFailure } from "./local-vm-resume.ts";
 import { attachForTurn, saveBotAttachment } from "./bot-attachment.ts";
 import {
   cacheUntilConfigChanges,
@@ -459,7 +460,7 @@ import { browserEngineStatus } from "./browser-engine.ts";
 import { chromeLauncher } from "./browser/chrome/launcher.ts";
 import { botThreadLimitText, botThreadsHost, maxConcurrentBotThreads, maxConcurrentChildThreads } from "./bot-thread-limits.ts"; import { createBrowserSeats } from "./host/browser-seats.ts"; import { createBrowserHost } from "./host/browser.ts"; import { createCloudPlanTier } from "./host/cloud-plan-tier.ts";
 import { createScreenFrameSource, rememberTurnFrame, type ScreenCapture } from "./screen-frame-source.ts";
-import { screenFrameHash, screenSurfaceForTool, screenTouchingTool, settledFrameIsNews } from "./screen-frame-gate.ts";
+import { computerToolTitle, screenFrameHash, screenSurfaceForTool, screenTouchingTool, settledFrameIsNews } from "./screen-frame-gate.ts";
 import { asSchedule, RoutineRequestService } from "./routine-requests.ts"; import { ownerSpokeOnly } from "./cloud-routine-level.ts"; import { routineRunCard, routineRunFallbackText } from "./routine-run-card.ts";
 import { activeRoutinesContext } from "./active-routines-context.ts";
 import { createRefusedHandoffs } from "./host/refused-handoffs.ts"; import { automationContextText, createAutomationReports, newestAutomationLines } from "./automation-reports.ts"; import { createAutomationDestinations } from "./automation-destinations.ts"; import { createTeamRoutines } from "./host/team-routines.ts"; import { botOwner } from "../shared/bot-owner.ts"; import { forgetMember } from "./bot-owners.ts"; import { createProactive } from "./host/proactive.ts"; import { createFirstHourHooks, startFirstHour, welcomeDonePatch } from "./host/first-hour-host.ts"; import { greetingMessage } from "./host/first-hour.ts"; import { READ_AND_DRAFT_PARTS, READ_AND_DRAFT_REFUSAL, READ_AND_DRAFT_TOOLS, recordsAnswer } from "./read-and-draft.ts"; import { createPresenceRoutes } from "./routes/presence.ts"; import { needsYouNow } from "./today.ts"; import { createTeamPresenceHost } from "./host/team-presence-host.ts";
@@ -512,8 +513,9 @@ import { OrgLibrary } from "./org-library.ts";
 import { shouldMountLocalComputer } from "./local-routing.ts";
 import { autoLocalVmAttachable, type ContainerComputerStatus } from "./container-computer.ts";
 import { startStoppedPodmanMachine } from "./podman-machine.ts";
-import { keepTransient, lazyClaimFailedText, lazyClaimRetryText, settledWithin, startAutoVmClaim, withinBudget, type AutoVmClaimSlot, type AutoVmClaimTable } from "./auto-vm-claims.ts";
-import { CONTROL_ACT_WITHIN_MS, CONTROL_BUSY, CONTROL_HANDED_BACK, CONTROL_WAIT_MS, CONTROL_WAITED, controlRefusal, type ControlState } from "./computer-control-client.ts";
+import { keepTransient, startAutoVmClaim, withinBudget, type AutoVmClaimSlot, type AutoVmClaimTable } from "./auto-vm-claims.ts";
+import { CONTROL_ACT_WITHIN_MS, CONTROL_WAIT_MS, controlRefusal } from "./computer-control-client.ts";
+import { createComputerCallGate } from "./computer-call-gate.ts";
 import { computerFreeAfterText, computerParkedText, computerPersonAwayText, computerStoppedWaitingText, computerWaitingText, type ComputerHolder } from "./computer-wait.ts";
 import { modelContextWindow } from "./model-context-window.ts";
 import { browserIsThePlace, chosenPin, cloudPlaceRefusal, computerSkippedNote, computerToolsRefusal, handoffUsesOwnCloud, isHandedWork, ownCloudStateWithin, parseSurface, pinSource, PlaceUnavailableError, placeUnavailable, resolveSurface, surfaceLabel, surfaceOfComputerKind, surfacePrompt, type ComputerWant, type PlaceSource, type Surface } from "./surface.ts";
@@ -5645,7 +5647,6 @@ const localVmActiveThreads = new Map<string, string>();
 const autoVmClaims: AutoVmClaimTable = new Map();
 const COMPUTER_CALL_WAIT_MS = Math.min(CONTROL_WAIT_MS, Math.max(500, Number(process.env.CRYBOT_COMPUTER_CALL_WAIT_MS) || CONTROL_WAIT_MS));
 const COMPUTER_CALL_ACT_WITHIN_MS = Math.min(CONTROL_ACT_WITHIN_MS, Math.max(100, Number(process.env.CRYBOT_COMPUTER_CALL_ACT_WITHIN_MS) || CONTROL_ACT_WITHIN_MS));
-const COMPUTER_CALL_POLL_MS = 250;
 const browserSeats = createBrowserSeats({ resources: turnResources, claim: claimTurnResource, active: (owner) => activeInternalGenerationByThread.get(owner.threadId) === owner.generation, working: (session) => browserRuntime.working(session), holderOf: holderOfTurn, language: threadLanguage, callWaitMs: COMPUTER_CALL_WAIT_MS, actWithinMs: COMPUTER_CALL_ACT_WITHIN_MS, ...(Number(process.env.CRYBOT_BROWSER_IDLE_HANDOVER_MS) > 0 ? { idleHandoverMs: Number(process.env.CRYBOT_BROWSER_IDLE_HANDOVER_MS) } : {}),
   row: (threadId, name, threadRef) => { store.appendMessage(threadId, { role: "bot", kind: "activity", tool: { name, ok: true }, ...(threadRef ? { threadRef } : {}) }); },
   waitStarted: (threadId, resource, position, holder) => bus.publish({ ...waitEventBase(threadId), type: "turn.wait_started", resource, position, ...(holder ? { holder } : {}) }),
@@ -5718,53 +5719,16 @@ function botComputerControlKey(bot: BotRecord): string {
   return computer ? teamComputerOwner(computer.id) : bot.id;
 }
 
-/** Waits here up to COMPUTER_CALL_WAIT_MS; a call that waited through a person's hold, or whose turn ended, is never performed. */
-async function computerCallGate(internalCapability: InternalCapability, signal?: AbortSignal, call?: ReturnType<typeof yourComputerCallFrom>): Promise<ControlState> {
-  const { botId, threadId, generation } = internalCapability;
-  const askedAt = Date.now();
-  const deadline = askedAt + COMPUTER_CALL_WAIT_MS;
-  let personHeld = false;
-  for (;;) {
-    const snapshot = sharedVm.snapshot(botId, threadId);
-    const helpOpen = snapshot.helpReason !== null;
-    const slot = autoVmClaims.get(threadId);
-    const lazyClaim = slot && slot.owner.generation === generation ? slot : undefined;
-    let held: ControlState;
-    if (snapshot.held && snapshot.heldSinceMs !== null && Date.now() - snapshot.heldSinceMs >= COMPUTER_WAIT_MAX_MS) {
-      return { held: true, helpOpen, blockedReason: computerPersonAwayText(COMPUTER_WAIT_MAX_MS) };
-    } else if (snapshot.held) {
-      personHeld = true;
-      held = { held: true, helpOpen, reason: "person" };
-    } else if (lazyClaim?.failed) {
-      // A rejected lazy claim refuses every screen call for the rest of the generation: never forward onto a desktop this turn never claimed.
-      return { held: true, helpOpen: false, blockedReason: lazyClaimFailedText(lazyClaim) };
-    } else if (lazyClaim?.lazy && !lazyClaim.claimed) {
-      lazyClaim.onWaiting?.();
-      lazyClaim.onWaiting = undefined;
-      startAutoVmClaim(autoVmClaims, threadId, generation, call);
-      if (lazyClaim.begin && Date.now() < deadline && !signal?.aborted) {
-        await settledWithin(lazyClaim.begin, deadline - Date.now(), signal);
-        if (lazyClaim.claimed || lazyClaim.failed) continue;
-        if (lazyClaim.retryReason) return { held: true, helpOpen: false, blockedReason: lazyClaimRetryText(lazyClaim) };
-      }
-      held = { held: true, helpOpen: false, blockedReason: yourComputerWaiting(threadId, generation) ?? lazyClaim.pendingReason ?? CONTROL_BUSY };
-    } else {
-      const computer = turnComputerResources.get(threadId);
-      if (computer && computer.owner.generation === generation && !claimTurnResource(computer.owner, computer.resource)) {
-        held = { held: true, helpOpen: false, blockedReason: CONTROL_BUSY };
-      } else if (!internalCapabilityIsActive(internalCapability)) {
-        // A call from a turn that is over never reaches the screen.
-        return { held: true, helpOpen, blockedReason: "This turn no longer has this computer, so this call was not performed." };
-      } else if (personHeld) {
-        return { held: true, helpOpen, blockedReason: CONTROL_HANDED_BACK };
-      } else {
-        return Date.now() - askedAt > COMPUTER_CALL_ACT_WITHIN_MS ? { held: true, helpOpen, blockedReason: CONTROL_WAITED } : { held: false, helpOpen };
-      }
-    }
-    if (Date.now() >= deadline || signal?.aborted || !internalCapabilityIsActive(internalCapability)) return held;
-    await settledWithin(null, Math.min(COMPUTER_CALL_POLL_MS, deadline - Date.now()), signal);
-  }
-}
+const computerCallGate = createComputerCallGate<InternalCapability>({
+  claims: autoVmClaims, snapshot: (botId, threadId) => sharedVm.snapshot(botId, threadId),
+  isActive: internalCapabilityIsActive, waiting: yourComputerWaiting,
+  claimResource: ({ threadId, generation }) => {
+    const computer = turnComputerResources.get(threadId);
+    return !computer || computer.owner.generation !== generation || claimTurnResource(computer.owner, computer.resource);
+  },
+  personAwayText: () => computerPersonAwayText(COMPUTER_WAIT_MAX_MS),
+  waitMs: COMPUTER_CALL_WAIT_MS, actWithinMs: COMPUTER_CALL_ACT_WITHIN_MS, personWaitMs: COMPUTER_WAIT_MAX_MS,
+});
 
 
 function teamComputerInUse(computer: TeamComputerRecord): boolean {
@@ -6513,7 +6477,7 @@ bus.subscribe((event: RuntimeEvent) => {
       break;
     case "item.started":
       if (event.itemType === "tool") {
-        const name = bridgedToolTitle(event.threadId, event.title ?? "tool", event.input);
+        const name = computerToolTitle(bridgedToolTitle(event.threadId, event.title ?? "tool", event.input), event.input);
         const message = pushMessage({
           role: "bot",
           kind: "activity",
@@ -8034,12 +7998,14 @@ async function beginTurn(
           store.patchTask(bot.id, threadId, { surface, surfaceSource: "auto" });
         }
       };
-      const ownsLiveTurn = (claimThreadId: string) =>
+      const ownsLiveTurn = (claimThreadId: string) => !companyShutdown &&
         activeInternalGenerationByThread.get(claimThreadId) === resourceOwner.generation &&
         turnResourceOwners.get(claimThreadId)?.generation === resourceOwner.generation && threadBusy(bot.id, claimThreadId);
       /** Idempotent per turn; a lazy attach leases the target it mounted against, not whatever resolves when the first screen call arrives. */
       const claimAutoLocalVm = async (claimThreadId: string, pinnedTarget?: LocalVmTarget): Promise<{ target: LocalVmTarget; runtime: Runtime }> => {
         const localVmTarget = pinnedTarget ?? localVmThreadTargets.get(claimThreadId) ?? { ...localVmTargetForThread(bot.id, claimThreadId) };
+        const pendingWake = localVmReadinessPending(localVmTarget);
+        if (pendingWake) await pendingWake;
         await waitForLocalVmUpdate(localVmTarget, claimThreadId, () => ownsLiveTurn(claimThreadId));
         const isCurrent = () => ownsLiveTurn(claimThreadId);
         if (!isCurrent()) throw new DirectTurnSetupCancelled("turn stopped before claiming its desktop");
@@ -8091,16 +8057,9 @@ async function beginTurn(
         return { target: localVmTarget, runtime: localVm.runtime };
       };
 
-      const surfaceLazyClaimRejection = (label: string, reportWakeAfterTurn = false) => {
-        const request = directRequestOwners.get(threadId);
+      const surfaceLazyClaimRejection = (label: string) => {
         return (failure: string, error?: unknown) => {
-          if (!ownsLiveTurn(threadId)) {
-            if (reportWakeAfterTurn && !(error instanceof DirectTurnSetupCancelled) && !(error instanceof ComputerWaitParked) && store.taskByThread(bot.id, threadId)) {
-              store.appendMessage(threadId, { role: "bot", kind: "activity", ...(request?.turnId ? { turnId: request.turnId } : {}),
-                tool: { name: `notice: The computer could not wake for the previous turn (${failure})`, ok: false } });
-            }
-            return;
-          }
+          if (!ownsLiveTurn(threadId)) return;
           if (resourceOwner.computerParkedOn) {
             void interruptParkedTurn(bot.id, threadId).catch(() => {});
             return;
@@ -8166,7 +8125,7 @@ async function beginTurn(
             seen = await containerComputerStatus(undefined, undefined, localVmTarget).catch(() => null);
           }
           if (!seen || !autoLocalVmAttachable(seen)) return false;
-          if (localVmImageBusy || localVmModeChangeBusy || localVmLifecycleBusy.has(localVmTarget.key)) return false;
+          if (localVmImageBusy || localVmModeChangeBusy || (localVmLifecycleBusy.has(localVmTarget.key) && !localVmReadinessPending(localVmTarget))) return false;
           if (seen.runtime && (seen.ready || seen.container !== "missing")) {
             lazyReadyVm = { runtime: seen.runtime };
             wakeInBackground = !seen.ready;
@@ -8174,6 +8133,7 @@ async function beginTurn(
         }
         try {
           if (lazyReadyVm) {
+            const wakeRequest = directRequestOwners.get(threadId);
             integrations.localComputer = containerComputerMcp(
               lazyReadyVm.runtime,
               controlIntegration(bot.id, threadId, dispatchClaimId),
@@ -8185,31 +8145,23 @@ async function beginTurn(
               lazy: true,
               label: "the Local VM",
               localVm: true,
-              ...(wakeInBackground ? {
-                startsComputer: true as const,
-                onWaiting: () => {
-                  store.appendMessage(threadId, { role: "bot", kind: "activity", tool: {
-                    name: "notice: Waking the computer…", nameCode: "chat.notice.wakingComputer", ok: true,
-                  } });
-                },
-              } : {}),
-              onRejected: surfaceLazyClaimRejection("the Local VM", wakeInBackground),
+              ...(wakeInBackground ? { startsComputer: true as const,
+                ...localVmResumeNotices({ target: localVmTarget.key, slot: () => autoVmClaims.get(threadId),
+                  live: () => ownsLiveTurn(threadId), cancelled: error => error instanceof DirectTurnSetupCancelled || error instanceof ComputerWaitParked,
+                  append: (tool, late) => { if (store.taskByThread(bot.id, threadId)) store.appendMessage(threadId, { role: "bot", kind: "activity", tool, ...(late && wakeRequest?.turnId ? { turnId: wakeRequest.turnId } : {}) }); },
+                  reject: surfaceLazyClaimRejection("the Local VM"),
+                }),
+              } : { onRejected: surfaceLazyClaimRejection("the Local VM") }),
               claim: async () => {
                 await claimAutoLocalVm(threadId, localVmTarget);
-                // A poller started after its own turn.completed would never be torn down: restart it only while the turn runs.
-                if (previewCapture && ownsLiveTurn(threadId)) {
-                  const touched = screenPollers.get(threadId)?.touched ?? false;
-                  stopScreenPoller(bot.id, threadId);
-                  startScreenPoller(
-                    bot.id,
-                    threadId,
-                    { computer: previewCapture, ...(browserCapture ? { browser: browserCapture } : {}) },
-                    { screenIsTheWork: touched },
-                  );
-                }
+                if (previewCapture && ownsLiveTurn(threadId)) adoptClaimedCapture(previewCapture);
               },
             });
-            if (wakeInBackground) startAutoVmClaim(autoVmClaims, threadId, resourceOwner.generation);
+            const failure = wakeInBackground ? recentLocalVmWakeFailure(localVmTarget.key) : undefined;
+            if (failure) {
+              Object.assign(autoVmClaims.get(threadId)!, { failed: true, failure });
+              store.appendMessage(threadId, { role: "bot", kind: "activity", tool: localVmWakeFailureNotice(failure) });
+            } else if (wakeInBackground) startAutoVmClaim(autoVmClaims, threadId, resourceOwner.generation);
             return true;
           }
           const claimed = await claimAutoLocalVm(threadId);
@@ -14600,10 +14552,10 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         const botId = url.searchParams.get("botId") ?? "";
         const bot = store.bot(botId);
         if (!bot) return json(res, 404, { error: "no such bot" });
-        if (method === "GET") { savedSteps.gateChecked(internalCapability);
+        if (method === "GET") { if (url.searchParams.get("readinessOnly") !== "1") savedSteps.gateChecked(internalCapability);
           const abort = new AbortController();
           res.once("close", () => { if (!res.writableEnded) abort.abort(); });
-          return json(res, 200, await computerCallGate(internalCapability, abort.signal, yourComputerCallFrom(url.searchParams)));
+          return json(res, 200, await computerCallGate(internalCapability, abort.signal, yourComputerCallFrom(url.searchParams), url.searchParams.get("readinessOnly") === "1"));
         }
         return json(res, 405, { error: "method not allowed" });
       }

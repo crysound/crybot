@@ -1,4 +1,6 @@
 {
+  "chat.notice.computerWakeFailed": "电脑唤醒失败（{reason}）",
+  "chat.notice.previousComputerWakeFailed": "上一轮的电脑唤醒失败（{reason}）",
   "chat.notice.wakingComputer": "正在唤醒电脑…",
   "voice.gemini.keyPlaceholder": "粘贴你的 Google AI Studio API 密钥",
   "voice.gemini.model": "Gemini 语音合成模型",

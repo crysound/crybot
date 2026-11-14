@@ -12,6 +12,7 @@ import { createControlClient } from "./computer-control-client.ts";
 const root = fileURLToPath(new URL("..", import.meta.url));
 let fixtureDir = "", stateFile = "", dumpFile = "", finishFile = "", base = "", output = "";
 let child: ChildProcess | undefined;
+let scenario = 0;
 const state = () => JSON.parse(readFileSync(stateFile, "utf8"));
 const save = (value: Record<string, unknown>) => writeFileAtomic(stateFile, JSON.stringify(value));
 async function until<T>(read: () => T | Promise<T>, accept: (value: T) => boolean): Promise<T> {
@@ -75,8 +76,8 @@ afterAll(async () => {
 });
 
 async function send(options: Record<string, unknown> = {}, strict = false) {
-  for (const file of [dumpFile, finishFile, stateFile + ".events", stateFile + ".starting"]) rmSync(file, { force: true });
-  save({ containers: ["shared"], stopped: ["shared"], startDelayMs: 5000, ...options });
+  for (const file of [dumpFile, finishFile, stateFile + ".events", stateFile + ".starting", stateFile + ".notifications", stateFile + ".incidents"]) rmSync(file, { force: true });
+  save({ scenario: ++scenario, containers: ["shared"], stopped: ["shared"], startDelayMs: 5000, ...options });
   const { bot } = await api("POST", "/api/bots", { name: "Resume fixture" });
   if (strict) await api("PATCH", `/api/bots/${bot.id}`, { computer: "vm" });
   const { task } = await api("POST", `/api/bots/${bot.id}/tasks`, {});
@@ -89,23 +90,24 @@ async function send(options: Record<string, unknown> = {}, strict = false) {
     } catch { return []; }
   }, events => events.some(event => event.type === "turn.started"));
   const elapsed = events.find(event => event.type === "turn.started").at - startedAt;
-  const dumped = await until(() => { try { return JSON.parse(readFileSync(dumpFile, "utf8")); } catch { return null; } }, Boolean);
-  return { bot, task, elapsed, computer: dumped.mcpConfig.mcpServers.computer };
+  const dumped = await until(() => { try { return JSON.parse(readFileSync(dumpFile, "utf8")) as { mcpConfig: { mcpServers: { computer: any } } }; } catch { return null; } }, Boolean);
+  return { bot, task, elapsed, computer: dumped!.mcpConfig.mcpServers.computer };
 }
 
-it("starts chat within one second while a five-second wake runs; the first computer call waits", async () => {
-  const { bot, task, elapsed, computer } = await send();
+it("starts chat within one second; catalog readiness announces a seven-second wake only once", async () => {
+  const { bot, task, elapsed, computer } = await send({ startDelayMs: 7000 });
   expect(elapsed).toBeLessThan(1000);
   expect(computer.env.CRYBOT_CONTAINER_LAZY).toBe("1");
   expect(state().stopped).toContain("shared");
   const gate = createControlClient({ url: computer.env.CRYBOT_CONTROL_URL, token: computer.env.CRYBOT_CONTROL_TOKEN });
   let settled = false;
-  const firstCall = gate.state(true).then(result => { settled = true; return result; });
-  const repeatedCall = gate.state(true);
+  const firstCall = gate.state(true, { readinessOnly: "1" }).then(result => { settled = true; return result; });
+  const repeatedCall = gate.state(true, { readinessOnly: "1" });
   await until(() => messages(task.threadId), rows => rows.some(row => row.tool?.nameCode === "chat.notice.wakingComputer"));
   expect(settled).toBe(false);
   expect(await firstCall).toMatchObject({ held: false });
   expect(await repeatedCall).toMatchObject({ held: false });
+  expect(await gate.state(true)).toMatchObject({ held: false });
   expect(state().actions.filter((action: any) => action.action === "start")).toHaveLength(1);
   expect((await messages(task.threadId)).filter(row => row.tool?.nameCode === "chat.notice.wakingComputer")).toHaveLength(1);
   writeFileSync(finishFile, "finish"); await idle(bot.id);
@@ -115,7 +117,20 @@ it("surfaces a background wake failure and settles the turn without a computer c
   const { bot, task, elapsed } = await send({ failStart: true, startDelayMs: 1000 });
   expect(elapsed).toBeLessThan(1000);
   await until(() => messages(task.threadId), rows => rows.some(row => row.tool?.name?.includes("fixture wake failed")));
-  await idle(bot.id);
+  expect((await api("GET", "/api/bots?messages=0")).bots.find((entry: any) => entry.id === bot.id).busy).toBe(true);
+  writeFileSync(finishFile, "finish"); await idle(bot.id);
+  const recorded = (suffix: string) => {
+    try { return readFileSync(stateFile + suffix, "utf8").trim().split("\n").map(line => JSON.parse(line)).filter(row => row?.threadId === task.threadId); }
+    catch { return []; }
+  };
+  expect(recorded(".events").some(row => row.type === "turn.completed")).toBe(true);
+  expect(recorded(".notifications").some(row => row.kind === "turn-failed")).toBe(false);
+  expect(recorded(".incidents")).toEqual([]);
+  rmSync(finishFile);
+  await api("POST", `/api/bots/${bot.id}/messages`, { text: "Keep chatting.", threadId: task.threadId });
+  await until(() => messages(task.threadId), rows => rows.filter(row => row.tool?.nameCode === "chat.notice.computerWakeFailed").length >= 2);
+  expect(state().startAttempts).toBe(1);
+  writeFileSync(finishFile, "finish"); await idle(bot.id);
 });
 
 it("keeps explicit computer selection synchronous", async () => {
@@ -130,8 +145,8 @@ it("records a late wake failure against the old turn without interrupting the ne
   writeFileSync(finishFile, "finish"); await idle(bot.id);
   rmSync(finishFile);
   await api("POST", `/api/bots/${bot.id}/messages`, { text: "Continue chatting without the computer.", threadId: task.threadId });
-  const rows = await until(() => messages(task.threadId), entries => entries.some(row => row.tool?.name?.includes("previous turn (fixture wake failed")));
-  expect(rows.find(row => row.tool?.name?.includes("previous turn (fixture wake failed"))?.turnId).toBeDefined();
+  const rows = await until(() => messages(task.threadId), entries => entries.some(row => row.tool?.nameCode === "chat.notice.previousComputerWakeFailed"));
+  expect(rows.find(row => row.tool?.nameCode === "chat.notice.previousComputerWakeFailed")?.turnId).toBeDefined();
   expect((await api("GET", "/api/bots?messages=0")).bots.find((entry: any) => entry.id === bot.id).busy).toBe(true);
   writeFileSync(finishFile, "finish"); await idle(bot.id);
 });
@@ -147,4 +162,33 @@ it("finishes pure chat before wake, keeps the lifecycle locked, and fences the l
   await new Promise(resolve => setTimeout(resolve, 100));
   expect((await messages(task.threadId)).some(row => row.tool?.name?.includes("lease expired"))).toBe(false);
   expect(state().actions.filter((action: any) => action.action === "start")).toHaveLength(1);
+});
+
+it("mounts a lazy claim on the next turn while the previous turn's startup is still locked", async () => {
+  const { bot, task } = await send({ startDelayMs: 3000 });
+  await until(() => existsSync(stateFile + ".starting"), Boolean);
+  writeFileSync(finishFile, "finish"); await idle(bot.id);
+  rmSync(finishFile); rmSync(dumpFile);
+  await api("POST", `/api/bots/${bot.id}/messages`, { text: "Use the computer now.", threadId: task.threadId });
+  const dumped = await until(() => { try { return JSON.parse(readFileSync(dumpFile, "utf8")) as { mcpConfig: { mcpServers: { computer: any } } }; } catch { return null; } }, Boolean);
+  const computer = dumped!.mcpConfig.mcpServers.computer;
+  expect(computer.env.CRYBOT_CONTAINER_LAZY).toBe("1");
+  const gate = createControlClient({ url: computer.env.CRYBOT_CONTROL_URL, token: computer.env.CRYBOT_CONTROL_TOKEN });
+  expect(await gate.state(true)).toMatchObject({ held: false });
+  expect(state().startAttempts).toBe(1);
+  writeFileSync(finishFile, "finish"); await idle(bot.id);
+});
+
+it("probes status only once across two beginTurn calls within five seconds", async () => {
+  const startedAt = Date.now();
+  const { bot, task } = await send({ stopped: [] });
+  writeFileSync(finishFile, "finish"); await idle(bot.id);
+  rmSync(finishFile); rmSync(dumpFile);
+  await api("POST", `/api/bots/${bot.id}/messages`, { text: "One more chat reply.", threadId: task.threadId });
+  await until(() => existsSync(dumpFile), Boolean);
+  expect(Date.now() - startedAt).toBeLessThan(5000);
+  const events = readFileSync(stateFile + ".events", "utf8").trim().split("\n").map(line => JSON.parse(line));
+  expect(events.filter(event => event.threadId === task.threadId && event.type === "turn.started")).toHaveLength(2);
+  expect(state().statusProbes).toBe(1);
+  writeFileSync(finishFile, "finish"); await idle(bot.id);
 });

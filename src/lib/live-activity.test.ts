@@ -187,3 +187,7 @@ it.each([["en", "Waking the computer…"], ["zh", "正在唤醒电脑…"]])("tr
   setLocale(locale);
   expect(turnNowPhrases(null, activity("notice: Waking the computer…", { nameCode: "chat.notice.wakingComputer", ok: true }))?.phrases).toEqual([text]);
 });
+
+it.each(["chat.notice.computerWakeFailed", "chat.notice.previousComputerWakeFailed"])("keeps %s out of the current state line", nameCode => {
+  expect(turnNowPhrases(null, activity("notice: The computer could not wake (desktop failed)", { nameCode, nameParams: { reason: "desktop failed" }, ok: false }))).toBeNull();
+});

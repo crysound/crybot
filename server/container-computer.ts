@@ -7,6 +7,9 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 
+import { cachedContainerStatus, changingContainerStatus, invalidateContainerComputerStatus, type StatusOptions } from "./container-status-cache.ts";
+export { invalidateContainerComputerStatus } from "./container-status-cache.ts";
+
 import type { ToolScope } from "../shared/tool-scope.ts";
 import { augmentedPath, resolveCliSpawn } from "./env-path.ts";
 import { workspacePreparationDockerfile } from "./container-workspace.ts";
@@ -37,7 +40,6 @@ import {
 import { SPAWNED_PROXIES } from "./proxy-paths.ts";
 
 const run = promisify(execFile);
-const STATUS_TTL_MS = 5_000;
 
 export type CommandRunner = (
   command: string,
@@ -495,44 +497,13 @@ export function cuaExecArgs(
   ];
 }
 
-type StatusOptions = { probeDesktop?: boolean; fresh?: boolean };
-type StatusEntry = { result: Promise<ContainerComputerStatus>; expiresAt: number; generation: number };
-const statusCaches = new WeakMap<CommandRunner, Map<string, StatusEntry>>();
-let statusGeneration = 0;
-let allStatusGeneration = 0;
-const targetStatusGenerations = new Map<string, number>();
-const changingTargets = new Map<string, number>();
-
-export function invalidateContainerComputerStatus(target?: LocalVmTarget): void {
-  if (target) targetStatusGenerations.set(target.key, ++statusGeneration);
-  else {
-    targetStatusGenerations.clear();
-    statusGeneration += 1;
-    allStatusGeneration = statusGeneration;
-  }
-}
-
 export function containerComputerStatus(
   runner: CommandRunner = sh,
   platform: NodeJS.Platform = process.platform,
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
   options: StatusOptions = {},
 ): Promise<ContainerComputerStatus> {
-  let cache = statusCaches.get(runner);
-  if (!cache) { cache = new Map(); statusCaches.set(runner, cache); }
-  const key = JSON.stringify([platform, target.key, target.containerName, target.workspaceDir, target.viewerPort, target.label, options.probeDesktop !== false]);
-  const generation = Math.max(allStatusGeneration, targetStatusGenerations.get(target.key) ?? 0);
-  const cached = cache.get(key);
-  const cacheable = !changingTargets.has(target.key);
-  if (!options.fresh && cacheable && cached && cached.generation === generation && cached.expiresAt > Date.now()) {
-    return cached.result.then(status => ({ ...status }));
-  }
-  const entry: StatusEntry = { result: probeContainerComputerStatus(runner, platform, target, options), expiresAt: Infinity, generation };
-  if (cacheable) cache.set(key, entry);
-  void entry.result.then(() => { entry.expiresAt = Date.now() + STATUS_TTL_MS; }, () => {
-    if (cache.get(key) === entry) cache.delete(key);
-  });
-  return entry.result.then(status => ({ ...status }));
+  return cachedContainerStatus(runner, platform, target, options, () => probeContainerComputerStatus(runner, platform, target, options));
 }
 
 async function probeContainerComputerStatus(
@@ -896,15 +867,11 @@ export async function containerComputerAction(
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
   resources: DesktopResources = DEFAULT_DESKTOP_RESOURCES,
 ): Promise<ContainerComputerStatus> {
-  invalidateContainerComputerStatus(action === "pull" ? undefined : target);
-  changingTargets.set(target.key, (changingTargets.get(target.key) ?? 0) + 1);
+  const finish = changingContainerStatus(target, action === "pull");
   try {
     return await performContainerComputerAction(action, runner, platform, target, resources);
   } finally {
-    const remaining = (changingTargets.get(target.key) ?? 1) - 1;
-    if (remaining) changingTargets.set(target.key, remaining);
-    else changingTargets.delete(target.key);
-    invalidateContainerComputerStatus(action === "pull" ? undefined : target);
+    finish();
   }
 }
 

@@ -30,6 +30,7 @@ export interface AutoVmClaimSlot {
   localVm?: boolean;
   pendingReason?: string;
   onWaiting?: () => void;
+  waitingCalls?: number;
   boxId?: string;
   startsComputer?: true;
   /** Called once after the slot is marked failed, unless the person declined; the fail-closed refusal does not depend on it firing. */

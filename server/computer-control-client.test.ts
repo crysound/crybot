@@ -169,3 +169,20 @@ describe("computer control client", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
 });
+
+it("propagates cancellation to an in-flight readiness request", async () => {
+  let requestSignal: AbortSignal | undefined;
+  const fetchImpl = vi.fn<typeof fetch>(async (_url, init) => {
+    requestSignal = init?.signal ?? undefined;
+    return new Promise<Response>((_resolve, reject) => {
+      requestSignal!.addEventListener("abort", () => reject(requestSignal!.reason), { once: true });
+    });
+  });
+  const controller = new AbortController();
+  const client = createControlClient({ ...options, fetchImpl });
+  const pending = client.state(true, { readinessOnly: "1" }, controller.signal);
+  expect(fetchImpl.mock.calls[0][0]).toContain("readinessOnly=1");
+  controller.abort();
+  expect(requestSignal?.aborted).toBe(true);
+  expect(await pending).toEqual(unavailable);
+});
