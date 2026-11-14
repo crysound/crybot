@@ -2,6 +2,7 @@ import { providerLockEnabled, providerUpdateDrivers, lockedProviderConfigs, prov
 // Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
 import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
 import { createCfAccess } from "./cf-access.ts";
+import { createAppLinks } from "./app-links.ts";
 import { createAppHandoff } from "./app-handoff.ts";
 import { desktopUpdateFiles } from "./routes/desktop-update-files.ts";
 import { startFailureText } from "./start-failure-text.ts";
@@ -49,7 +50,6 @@ import {
 import { createApprovalModeSupport } from "./harness-capabilities.ts";
 import { escapeAttribute } from "../src/lib/composer-attachments.ts";
 import { isPendingSignInRequest, normalizeSignInSite, signInCardWaits, signInOutcome, signInResumePrompt } from "../shared/sign-in-request.ts";
-
 import { createRoomTurnLevels } from "./room-turn-level.ts";
 import { createSignInSettle } from "./host/sign-in-settle.ts"; import { createPersonLanguages, THIS_COMPUTER } from "./host/person-languages.ts"; import "./server-line-packs.ts"; import { conversationLanguage, serverLine, setConversationLanguage } from "./server-lines.ts";
 import { RoomMemberLock } from "./room-member-lock.ts";
@@ -12486,7 +12486,6 @@ ROUTES.push(createBrowserViewerRoutes({
     && browserSessionsOf(candidate.id, candidate.browserProfile).includes(session)).map((candidate) => ({ waitingOnBrowser: computerControl.snapshot(candidate.id).help?.place === "browser" }))),
 }));
 const internalToolRoutes = createInternalToolRoutes({ engineLimits: { instances: () => registry.instances(), configs: () => instanceConfigs(cfg), status: (instanceId) => registry.knownSnapshot(instanceId), load: (accounts) => loadPlanUsage({ accounts }), audienceOf: (threadId) => teamHost.audienceOf(threadId), guestDriven: cloudGuestDriven, dataDir: DATA_DIR }, helpers: { decider, extractor }, notifications: { bot: (id) => store.bot(id), team: sharedMembership, broadcast }, xResearch: { credential: () => researchCredential(cfg.treg?.key), botEnabled: (botId) => store.bot(botId)?.xResearch !== false, cloudHome: CLOUD_HOME !== null, researchOff: () => researchAvailability.refused() }, appPublisher }); const waitRoutes = createWaitRoutes({ waits: botWaits, cloudHome: Boolean(CLOUD_HOME), sleeps: Boolean(CLOUD_HOME) && CLOUD_TEAM === null }); ROUTES.push(createXConnectorRoutes({ credential: () => researchCredential(cfg.treg?.key), included: () => xCredential(), unavailable: () => xResearchStatus().unavailable === true }));
-
 // Live calls: the client holds the WebRTC audio; the key never leaves the harness, which creates the session.
 function liveBotFor(botId: string): LiveBot {
   const bot = store.bot(botId);
@@ -12588,7 +12587,7 @@ ROUTES.push(createLiveRoutes({
     return liveSettingsFor(cfg);
   },
 }));
-
+const appLinks = createAppLinks();
 const cfAccess = createCfAccess();
 const appHandoff = createAppHandoff(cfAccess !== null);
 const toolResults = new ToolResults();
@@ -12606,6 +12605,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
   let releaseWorkspaceRequest: (() => void) | undefined;
   try {
     if (await desktopUpdateFiles(req, res, process.env.CRYBOT_DESKTOP_UPDATES_DIR)) return;
+    if (appLinks(req, res, url)) return;
     const publicProbe = method === "GET" && (path === "/api/health" || path === "/api/brand" || path === "/.well-known/crybot/environment" || /^\/\.well-known\/crybot\/domain-check\/[a-f0-9]{64}$/.test(path));
     if (cfAccess && !publicProbe) {
       const refusal = await cfAccess(req, res, url, sessions, SESSION_COOKIE);
