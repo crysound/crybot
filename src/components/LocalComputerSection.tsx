@@ -1,4 +1,4 @@
-import { MIN_LOCAL_VM_IDLE_TIMEOUT_MINUTES, MAX_LOCAL_VM_IDLE_TIMEOUT_MINUTES, DEFAULT_LOCAL_VM_IDLE_TIMEOUT_MINUTES, parseLocalVmIdleTimeoutMinutes } from "@/lib/local-vm-idle-timeout";
+import { DEFAULT_LOCAL_VM_IDLE_TIMEOUT_MINUTES } from "@/lib/local-vm-idle-timeout";
 export { parseLocalVmIdleTimeoutMinutes } from "@/lib/local-vm-idle-timeout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { t } from "@/lib/i18n";
@@ -15,7 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { SettingsSkeletonRows } from "./settings/SettingsStates";
-import { Card, CommandLine, LearnMore, SETTINGS_INLINE_INPUT, Segmented, StatusDot } from "./SettingsPrimitives";
+import { Card, CommandLine, LearnMore, Segmented, StatusDot } from "./SettingsPrimitives";
 import { MacLocalControl } from "./MacLocalControl";
 import { Select } from "./Select";
 import { cn } from "@/lib/cn";
@@ -23,11 +23,14 @@ import { localizeComputerProblem } from "@/lib/computer-messages";
 import { computerInventoryRequest, jsonPostRequest, type ComputerApiRequest } from "@/lib/computer-requests";
 import { useStore } from "@/state/store";
 import { VpsComputersCard } from "./VpsComputersCard"; import { KeysLink } from "./keys/KeysLink";
+import { LocalVmScreenSetting, LocalVmScreens, saveScreens, type ScreenListPayload } from "./LocalVmScreens";
 import { localVmSetupStep4Title } from "./local-vm-setup-step";
+import { LocalVmIdleTimeoutSetting } from "./LocalVmIdleTimeoutSetting";
+export { LocalVmIdleTimeoutSetting } from "./LocalVmIdleTimeoutSetting";
 
 type Action = "pull" | "run" | "start" | "stop" | "remove" | "recreate";
-
 interface Status {
+  screens?: ScreenListPayload;
   platform: string;
   runtime: string | null;
   available: string[];
@@ -66,6 +69,7 @@ interface Status {
   };
 }
 
+export { LocalVmScreenSetting } from "./LocalVmScreens";
 export interface LocalVmInventoryInstance {
   botId: string;
   name: string;
@@ -76,14 +80,12 @@ export interface LocalVmInventoryInstance {
   problem: string | null;
   inUse: boolean;
 }
-
 interface LocalVmInventoryPayload {
   instances: LocalVmInventoryInstance[];
   maxInstances: number;
   available: boolean;
   problem: string | null;
 }
-
 export interface CloudComputerInventoryInstance {
   boxId: string;
   name: string;
@@ -655,86 +657,6 @@ function ActionButton({
   );
 }
 
-export function LocalVmIdleTimeoutSetting({
-  minutes,
-  disabled,
-  onSave,
-}: {
-  minutes: number;
-  disabled: boolean;
-  onSave: (minutes: number) => Promise<void>;
-}) {
-  const [value, setValue] = useState(String(minutes));
-  const [dirty, setDirty] = useState(false);
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!dirty) setValue(String(minutes));
-  }, [minutes, dirty]);
-
-  const save = async () => {
-    if (!dirty || saving) return;
-    const parsed = parseLocalVmIdleTimeoutMinutes(value);
-    if (parsed === null) {
-      setError(t("vm.idle.range"));
-      return;
-    }
-    setSaving(true);
-    try {
-      await onSave(parsed);
-      setValue(String(parsed));
-      setDirty(false);
-      setError("");
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("vm.idle.error"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="mt-3 flex flex-col gap-1">
-      <div className="flex items-center justify-between gap-6">
-        <div className="min-w-0">
-          <label htmlFor="local-vm-idle-timeout" className="text-[14px] leading-5 text-ink">{t("vm.idle.label")}</label>
-          <div id="local-vm-idle-timeout-help" className="text-[13px] leading-[18px] text-ink-secondary">{t("vm.idle.detail")}</div>
-        </div>
-        <span className="flex shrink-0 items-center gap-2">
-          <input
-            id="local-vm-idle-timeout"
-            type="number"
-            min={MIN_LOCAL_VM_IDLE_TIMEOUT_MINUTES}
-            max={MAX_LOCAL_VM_IDLE_TIMEOUT_MINUTES}
-            step={1}
-            inputMode="numeric"
-            value={value}
-            disabled={disabled || saving}
-            aria-invalid={Boolean(error)}
-            aria-describedby={error ? "local-vm-idle-timeout-error local-vm-idle-timeout-help" : "local-vm-idle-timeout-help"}
-            onChange={(event) => {
-              setValue(event.target.value);
-              setDirty(true);
-              setError("");
-            }}
-            onBlur={() => void save()}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
-            }}
-            className={cn(SETTINGS_INLINE_INPUT, "w-16 bg-transparent", error && "border-danger/60")}
-          />
-          <span className="text-[13px] leading-5 text-ink-secondary">{t("vm.idle.minutes")}</span>
-        </span>
-      </div>
-      {error ? (
-        <p id="local-vm-idle-timeout-error" role="alert" className="text-[12px] leading-4 text-danger">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 /** A command, behind a quiet Show (no native triangle). */
 function ShowCommand({ label, command }: { label: string; command: string }) {
   const [open, setOpen] = useState(false);
@@ -1016,7 +938,6 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
       setPolicyPending(false);
     }
   };
-
   const saveIdleTimeout = async (idleTimeoutMinutes: number) => {
     const response = await fetch("/api/config", {
       method: "PATCH",
@@ -1027,7 +948,6 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
     if (!response.ok) throw new Error(body.error ?? t("vm.idle.error"));
     setStatus((current) => current ? { ...current, idle_timeout_ms: idleTimeoutMinutes * 60_000 } : current);
   };
-
   const deletePerBotVm = async (instance: LocalVmInventoryInstance) => {
     if (!instance.managed) {
       setInventoryError(t("vm.unmanagedError"));
@@ -1052,7 +972,6 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
       setDeletingBotId(null);
     }
   };
-
   const actOnCloudComputer = async (action: CloudAction, instance: CloudComputerInventoryInstance) => {
     const request = confirmComputerAction(
       cloudComputerActionPlan(action, instance),
@@ -1242,7 +1161,7 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
           >
             {t("vm.main.recheck")}
           </button>
-          {ready && !perBot && (
+          {ready && !perBot && status?.screens?.layout !== "multi" && (
             <a
               href={status?.viewer_url ?? c?.view}
               target="_blank"
@@ -1256,9 +1175,11 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
         {error && <div role="alert" className="mt-2 text-[12px] leading-4 text-danger">{error}</div>}
       </Card>
 
+      {status?.mode === "shared" && status.screens && <LocalVmScreens payload={status.screens} />}
+
       <Card
         title={t("vm.isolation.title")}
-        subtitle={t("vm.isolation.subtitle")}
+        subtitle={t(status?.screens?.layout === "multi" ? "vm.screens.detail" : "vm.isolation.subtitle")}
       >
         <div className="flex justify-end">
           <Segmented label={t("vm.isolation.title")} value={status?.mode === "per-bot" ? "per-bot" : "shared"} disabled={!status || policyPending}
@@ -1280,6 +1201,13 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
               {[1, 2, 3, 4, 5, 6, 7, 8].map((value) => <option key={value} value={value}>{value}</option>)}
             </Select>
           </div>
+        )}
+        {status?.mode === "shared" && status.screens && (
+          <LocalVmScreenSetting screens={status.screens.screens} disabled={policyPending}
+            onChange={(screens) => {
+              setPolicyPending(true); setError(null);
+              void saveScreens(screens).then(() => refresh()).catch((cause) => setError(cause instanceof Error ? cause.message : String(cause))).finally(() => setPolicyPending(false));
+            }} />
         )}
         <LocalVmIdleTimeoutSetting
           minutes={status ? Math.round(status.idle_timeout_ms / 60_000) : DEFAULT_LOCAL_VM_IDLE_TIMEOUT_MINUTES}

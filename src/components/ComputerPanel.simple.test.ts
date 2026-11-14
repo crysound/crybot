@@ -103,6 +103,8 @@ vi.mock("@/state/store", async (importOriginal) => ({
 }));
 
 const { ComputerPanel } = await import("./ComputerPanel");
+const { ComputerPanelTabs } = await import("./ComputerPanelTabs");
+const { ComputerBrowserSwitch } = await import("./ComputerBrowserSwitch");
 const { WorksOnGrid } = await import("./WorksOnGrid");
 const { FullScreenButton } = await import("./FullScreenButton");
 const { ComputerFilesPane } = await import("./ComputerFilesPane");
@@ -118,7 +120,10 @@ function nodes(value: ReactNode): Node[] {
   return Children.toArray(value).flatMap((child) => {
     if (!isValidElement(child)) return [];
     const node = child as Node;
-    return [node, ...nodes(node.props.children)];
+    const children = node.type === ComputerPanelTabs
+      ? ComputerPanelTabs(node.props as unknown as Parameters<typeof ComputerPanelTabs>[0])
+      : node.props.children;
+    return [node, ...nodes(children)];
   });
 }
 function destinations(rendered: { nodes: Node[] }): Node[] {
@@ -215,7 +220,7 @@ describe("Computer panel tabs", () => {
       expect(String(firstTab.props.className).split(" ")).toEqual(expect.arrayContaining(["shrink-0", "@max-[28rem]/paneltabs:[&>svg]:hidden"]));
       expect(rendered.nodes.some((node) => String(node.props.className ?? "").split(" ").includes("@container/paneltabs"))).toBe(true);
       const row = rendered.nodes.find((node) => Children.toArray(node.props.children)
-        .some((child) => isValidElement(child) && (child as Node).props["data-testid"] === "computer-tabs"))!;
+        .some((child) => isValidElement(child) && child.type === ComputerPanelTabs))!;
       expect(String(row.props.className).split(" ")).toEqual(expect.arrayContaining(["relative", "flex", "justify-center"]));
       const close = rendered.nodes.find((node) => node.props["aria-label"] === "Close the Screen panel")!;
       expect(String(close.props.className).split(" ")).toEqual(expect.arrayContaining(["absolute", "right-0"]));
@@ -370,7 +375,10 @@ describe("Simple Browser tab with the browser off", () => {
 });
 
 function browserSwitch(rendered: ReturnType<typeof render>) {
-  return rendered.nodes.find((node) => node.props["aria-label"] === "Let Scout use a browser")!;
+  expect(rendered.html).toContain('aria-label="Let Scout use a browser"');
+  const row = rendered.nodes.find((node) => node.type === ComputerBrowserSwitch)!;
+  return nodes(ComputerBrowserSwitch(row.props as unknown as Parameters<typeof ComputerBrowserSwitch>[0]))
+    .find((node) => node.props["aria-label"] === "Let Scout use a browser")!;
 }
 
 describe("Where the bot works", () => {
