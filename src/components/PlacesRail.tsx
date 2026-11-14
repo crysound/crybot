@@ -12,7 +12,7 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as Rea
 import { Cloud, House, Laptop, Loader2, MoreHorizontal, Plus, Search, Server, UserRound } from "lucide-react";
 import type { CloudSwatch } from "../../electron/cloud-list.mjs";
 import type { PlaceColorOutcome } from "../../electron/place-look.mjs";
-import { track } from "@/lib/analytics";
+
 import { cn } from "@/lib/cn";
 import { cloudColor, cloudColorFill } from "@/lib/cloud-look";
 import { activeLocale, t } from "@/lib/i18n";
@@ -102,7 +102,7 @@ function ProgressRing({ value = 0, waiting = false }: { value?: number; waiting?
 }
 
 /** What a place's mark draws: its kind, its name's letters and its colour, faded while it is offline or has ended. */
-type MarkedPlace = Pick<RailPlace, "kind" | "name" | "offline" | "ended"> & Partial<Pick<RailPlace, "named">> & { color: unknown };
+type MarkedPlace = Pick<RailPlace, "kind" | "name"> & Partial<Pick<RailPlace, "offline" | "ended" | "named">> & { color: unknown };
 
 export function PlaceMark({ place, size = TILE }: { place: MarkedPlace; size?: number }) {
   const color = cloudColor(place.color);
@@ -308,7 +308,7 @@ function RemoveLocalRow({ place, onRemoved }: { place: RailPlace; onRemoved: () 
       setAsking(false); setFailed(true);
     });
   };
-  const ask = t(window.ogb?.platform === "win32" ? "rail.localRemoveAskWin" : "rail.localRemoveAsk", { name: computerName(place) });
+  const ask = t(window.cry?.platform === "win32" ? "rail.localRemoveAskWin" : "rail.localRemoveAsk", { name: computerName(place) });
   return <div data-rail-remove className="flex flex-col gap-1.5 border-t border-hairline/50 px-0.5 pt-1.5">
     {asking
       ? <div role="alertdialog" aria-label={t("rail.localRemove")} className="flex flex-col gap-2 px-1.5 pb-1">
@@ -422,9 +422,9 @@ export function PlacesRail({ chrome = false }: { chrome?: boolean }) {
   const going = clicked && clicked.id !== clicked.from ? state.places.find((place) => place.id === clicked.id) ?? null : null;
   const veil = chrome && going?.settling === undefined ? going : null;
   const covering = more || adding || connecting !== null || menu !== null || accounts !== null || veil !== null;
-  useEffect(() => { if (chrome) void window.ogb?.rail?.expand?.(covering)?.catch(() => {}); }, [chrome, covering]);
+  useEffect(() => { if (chrome) void window.cry?.rail?.expand?.(covering)?.catch(() => {}); }, [chrome, covering]);
   if (!state.places.length) return null;
-  const bridge = window.ogb?.workspaces;
+  const bridge = window.cry?.workspaces;
   const open = (place: RailPlace) => {
     if (!place.opens) { if (place.pairs) setConnecting(place.name); return; }
     const onScreen = state.places.find((entry) => entry.active)?.id ?? null;
@@ -433,7 +433,7 @@ export function PlacesRail({ chrome = false }: { chrome?: boolean }) {
     const mine = ++clicks.current;
     click({ id: place.id, from: onScreen });
     const done = () => { if (mine === clicks.current) click(null); };
-    track("rail_place_opened", { kind: place.kind });
+
     void Promise.resolve(bridge?.open?.(place.id)).then((said) => {
       done();
       if (!said) return;
@@ -477,7 +477,7 @@ export function PlacesRail({ chrome = false }: { chrome?: boolean }) {
         <MoreHorizontal size={13} aria-hidden="true" />
       </button>}
       {more && <MorePlaces places={places} canPair={canPair} onOpen={open} onMenu={openMenu} onClose={() => setMore(false)} />}
-      {canAdd && <button type="button" aria-label={addLabel} title={addLabel} aria-haspopup="dialog" data-rail-add onClick={() => { track("rail_add", { step: "opened" }); setAdding(true); }}
+      {canAdd && <button type="button" aria-label={addLabel} title={addLabel} aria-haspopup="dialog" data-rail-add onClick={() => {  setAdding(true); }}
         className="grid size-6 place-items-center rounded-[8px] border border-dashed border-ink/25 text-ink-secondary hover:border-ink/40 hover:bg-ink/[0.04] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
         <Plus size={13} aria-hidden="true" />
       </button>}

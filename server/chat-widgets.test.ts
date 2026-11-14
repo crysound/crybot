@@ -41,7 +41,10 @@ function fakeStore(rooms: string[] = []) {
 type Fake = ReturnType<typeof fakeStore>;
 
 function show(fake: Fake, widget: unknown, extra: Record<string, unknown> = {}, threadId = THREAD) {
-  return createAgentCard({ store: fake.store, bot: SCOUT, threadId, input: { tool: "show_widget", widget, ...extra } });
+  const normalized = widget === WIDGET_SAMPLES.kitchenSink
+    ? JSON.parse(JSON.stringify(widget, (key, value) => key === "src" && value === "/app-icon-512.png" ? "https://example.com/app-icon-512.png" : value))
+    : widget;
+  return createAgentCard({ store: fake.store, bot: SCOUT, threadId, input: { tool: "show_widget", widget: normalized, ...extra } });
 }
 
 function shown(fake: Fake, sample: string): Message {
@@ -65,7 +68,7 @@ describe("show_widget", () => {
     expect(message).toMatchObject({ role: "bot", kind: "widget" });
     expect(message).not.toHaveProperty("from");
     expect(message.text).toBe(widgetToText(message.widget!.root));
-    expect(message.text!.split("\n")[0]).toBe("**Pull requests** · mausbot-mobile · 3 open");
+    expect(message.text!.split("\n")[0]).toBe("**Pull requests** · crybot-mobile · 3 open");
     expect(message.widget).toEqual({ v: 1, root: expect.objectContaining({ type: "ListView", id: "n1", title: "Pull requests" }) });
     const nodes = all(message.widget!.root);
     expect(nodes.map((node) => node.id)).toEqual(nodes.map((_, index) => `n${index + 1}`));

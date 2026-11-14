@@ -1,9 +1,9 @@
 import { createECDH } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { phonePairingLink } from "./pairing-link";
+import { isRelayHost, phonePairingLink } from "./pairing-link";
 
 describe("phonePairingLink", () => {
-  const token = `omb_pair_${"a".repeat(43)}`;
+  const token = `cry_pair_${"a".repeat(43)}`;
   const secretPublicKey = "BIPBQ12_dWnF1DZLsTZO3Vg0NGjds5-jp9h3jhjr2To7bJelczS0LM82rfXV68PmSJhz2ePosj3fL974XckCpDU";
 
   const decodedEndpoints = (link: string) => {
@@ -22,23 +22,57 @@ describe("phonePairingLink", () => {
     return item === undefined ? undefined : decodeURIComponent(item.slice(name.length + 1));
   };
 
+  it("accepts complete relay domains and rejects local, single-label, and IP hosts", () => {
+    expect(isRelayHost("relay.example.com")).toBe(true);
+    expect(isRelayHost("r1.relay.example.com")).toBe(true);
+    for (const host of [
+      "localhost", "LOCALHOST", "localhost.", "foo.localhost", "relay.localhost", "relay", "127.0.0.1", "::1", "2001:db8::1",
+      "127.1", "0x7f.0.0.1", "0177.0.0.1", "0x7f.1", "10.1", "192.168.1", "00127.0.0.1",
+    ]) {
+      expect(isRelayHost(host), host).toBe(false);
+    }
+  });
+
+  it("keeps relay host validation identical in the shared, companion, and electron copies", async () => {
+    const [{ isRelayHost: companionIsRelayHost }, { validRelayGrant }] = await Promise.all([
+      import("../companion/src/e2e/descriptor.ts"),
+      import("../electron/relay-token.mjs"),
+    ]);
+    const hosts = [
+      "127.1", "0x7f.0.0.1", "0177.0.0.1", "0x7f.1", "10.1", "192.168.1", "00127.0.0.1",
+      "localhost", "LOCALHOST", "localhost.", "foo.localhost", "relay.localhost", "relay.example.com", "r1.relay.example.com",
+    ];
+    for (const host of hosts) {
+      const shared = isRelayHost(host);
+      const companion = companionIsRelayHost(host);
+      const electron = validRelayGrant({
+        token: "token.sig",
+        hostId: "a".repeat(22),
+        nodes: [host],
+        expiresAt: 2,
+        refreshAfter: 1,
+      }) !== null;
+      expect([companion, electron], host).toEqual([shared, shared]);
+    }
+  });
+
   it("carries the dialable address, one-time token, fallback code, and display name", () => {
     const link = phonePairingLink({
       address: "macbook.tail1234.ts.net",
       port: 8810,
       code: "004209",
       token,
-      name: "Milind's Mac",
+      name: "Owner's Mac",
       secretPublicKey,
     });
 
     const url = new URL(link!);
-    expect(url.protocol).toBe("openmausbot:");
+    expect(url.protocol).toBe("crybot:");
     expect(url.host).toBe("pair");
     expect(url.searchParams.get("address")).toBe("macbook.tail1234.ts.net:8810");
     expect(url.searchParams.get("token")).toBe(token);
     expect(url.searchParams.get("code")).toBe("004209");
-    expect(url.searchParams.get("name")).toBe("Milind's Mac");
+    expect(url.searchParams.get("name")).toBe("Owner's Mac");
     expect(url.searchParams.get("secretKey")).toBe(secretPublicKey);
   });
 
@@ -68,10 +102,10 @@ describe("phonePairingLink", () => {
       port: 8810,
       code: "004209",
       token,
-      hosts: ["macbook.tail1234.ts.net", "192.168.1.42", "openmausbot-abcd1234.local"],
+      hosts: ["macbook.tail1234.ts.net", "192.168.1.42", "crybot-abcd1234.local"],
     });
     expect(new URL(link!).searchParams.get("hosts")).toBe(
-      "macbook.tail1234.ts.net,192.168.1.42,openmausbot-abcd1234.local",
+      "macbook.tail1234.ts.net,192.168.1.42,crybot-abcd1234.local",
     );
   });
 
@@ -81,22 +115,22 @@ describe("phonePairingLink", () => {
       port: 8810,
       code: "004209",
       token,
-      hosts: ["192.168.1.42", "openmausbot-abcd1234.local"],
+      hosts: ["192.168.1.42", "crybot-abcd1234.local"],
       endpoints: [
         { url: "http://192.168.1.42:8810", kind: "lan", priority: 200 },
         { url: "https://Device-123.Companion.Example/", kind: "hosted", priority: 0 },
-        { url: "http://openmausbot-abcd1234.local:8810", kind: "bonjour", priority: 300 },
+        { url: "http://crybot-abcd1234.local:8810", kind: "bonjour", priority: 300 },
       ],
     });
 
     const url = new URL(link!);
     expect(url.searchParams.get("address")).toBe("192.168.1.42:8810");
-    expect(url.searchParams.get("hosts")).toBe("192.168.1.42,openmausbot-abcd1234.local");
+    expect(url.searchParams.get("hosts")).toBe("192.168.1.42,crybot-abcd1234.local");
     expect(url.searchParams.get("endpoints")).toMatch(/^[A-Za-z0-9_-]+$/);
     expect(decodedEndpoints(link!)).toEqual([
       { url: "https://device-123.companion.example", kind: "hosted", priority: 0 },
       { url: "http://192.168.1.42:8810", kind: "lan", priority: 200 },
-      { url: "http://openmausbot-abcd1234.local:8810", kind: "bonjour", priority: 300 },
+      { url: "http://crybot-abcd1234.local:8810", kind: "bonjour", priority: 300 },
     ]);
   });
 
@@ -155,10 +189,10 @@ describe("phonePairingLink", () => {
 
   it("is the server's link too: an https origin, a credential, a name and no code", () => {
     const link = phonePairingLink({ address: "https://mini.example", token, name: "Ada's server" })!;
-    expect(link).toBe(`openmausbot://pair?address=https%3A%2F%2Fmini.example&token=${token}&name=Ada's%20server`);
+    expect(link).toBe(`crybot://pair?address=https%3A%2F%2Fmini.example&token=${token}&name=Ada's%20server`);
     expect(rawField(link, "code")).toBeUndefined();
     expect(phonePairingLink({ address: "http://192.168.1.5:8787", token })).toBe(
-      `openmausbot://pair?address=http%3A%2F%2F192.168.1.5%3A8787&token=${token}`,
+      `crybot://pair?address=http%3A%2F%2F192.168.1.5%3A8787&token=${token}`,
     );
   });
 
@@ -171,7 +205,7 @@ describe("phonePairingLink", () => {
     expect(rawField(phonePairingLink({ address: "https://Mini.Example:443/", token })!, "address")).toBe(
       "https://mini.example",
     );
-    expect(phonePairingLink({ address: "https://mini.example/omb", token })).toBeNull();
+    expect(phonePairingLink({ address: "https://mini.example/cry", token })).toBeNull();
     expect(phonePairingLink({ address: "https://mini.example/?x=1", token })).toBeNull();
     expect(phonePairingLink({ address: "https://mini.example/#pair", token })).toBeNull();
   });
@@ -179,7 +213,7 @@ describe("phonePairingLink", () => {
   it("carries the end-to-end descriptor a phone parses, and leaves out one it would refuse", async () => {
     const { parseDescriptor } = await import("../companion/src/e2e/descriptor.ts");
     const k = Buffer.from(createECDH("prime256v1").generateKeys()).toString("base64url");
-    const e2e = { v: 1 as const, k, h: "lz81isB3BuNV6rHgYgG3Wg", r: ["relay1.openmausbot.com", "relay2.openmausbot.com"] };
+    const e2e = { v: 1 as const, k, h: "lz81isB3BuNV6rHgYgG3Wg", r: ["relay1.crybot.com", "relay2.crybot.com"] };
     const link = phonePairingLink({ address: "192.168.1.5", port: 8810, token, e2e })!;
     const parsed = parseDescriptor(new URL(link).searchParams.get("e2e"));
     expect(parsed).toMatchObject({ outcome: "ok", descriptor: e2e });

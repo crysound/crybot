@@ -1,10 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry } from "../scripts/control-cry.ts";
 
 it("moves one bot and one conversation between Claude, GitHub Copilot and a custom ACP agent through the picker's routes", async () => {
-  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, undefined, ["copilot", "customAcp"]);
+  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, ["copilot", "customAcp"]);
   const { url, dataDir } = fixture.info;
   const api = async (method: string, path: string, body?: unknown, status = 200) => {
     const response = await fetch(url + path, { method, headers: { "content-type": "application/json", origin: url },
@@ -13,7 +13,7 @@ it("moves one bot and one conversation between Claude, GitHub Copilot and a cust
     expect(response.status, `${method} ${path}: ${JSON.stringify(result)}`).toBe(status);
     return result;
   };
-  const cli = (...args: string[]) => runControlOmb([...args, "--url", url]) as Promise<any>;
+  const cli = (...args: string[]) => runControlCry([...args, "--url", url]) as Promise<any>;
   const prompts = (file: string) => {
     const path = join(dataDir, `${file}.prompts.jsonl`);
     return existsSync(path) ? readFileSync(path, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line)) : [];
@@ -74,7 +74,7 @@ it("moves one bot and one conversation between Claude, GitHub Copilot and a cust
 
 /** Verifies routine create and update calls through Copilot's scoped launcher-owned MCP server. */
 async function createAndUpdateRoutineThroughCopilotTools() {
-  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, undefined, ["copilot"]);
+  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, ["copilot"]);
   const { url, dataDir, logPath } = fixture.info;
   const evidence: unknown[] = [{ fixture: fixture.info }];
   const api = async (method: string, path: string, body?: unknown) => {
@@ -85,7 +85,7 @@ async function createAndUpdateRoutineThroughCopilotTools() {
     return result;
   };
   const cli = async (...args: string[]) => {
-    const result = await runControlOmb([...args, "--url", url]) as any;
+    const result = await runControlCry([...args, "--url", url]) as any;
     evidence.push({ command: args, result });
     return result;
   };

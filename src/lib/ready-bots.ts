@@ -1,6 +1,6 @@
 import type { BotRoutineTemplate, NewBotDefaults } from "../../shared/new-bot-defaults";
 import type { MascotBodyId } from "../../shared/mascot-bodies";
-import type { MausColor } from "../../shared/wire";
+import type { BotColor } from "../../shared/wire";
 import { t, tFromServer } from "@/lib/i18n";
 
 export type ReadyBotCategory = "everyday" | "work" | "writing" | "design" | "sales" | "personal";
@@ -14,7 +14,7 @@ export interface ReadyBot {
   title: string;
   description: string;
   soul: string;
-  look: { color: MausColor; mascotBody: MascotBodyId };
+  look: { color: BotColor; mascotBody: MascotBodyId };
   tryAsking: string[];
   /** Connected apps the bot works best with; suggested, never connected for the person. */
   apps: string[];
@@ -41,7 +41,7 @@ export const READY_BOTS: ReadyBot[] = [
       "Say plainly when you are unsure or could not check something, and never present a guess as a fact.",
       "When a task will take several steps, say what you are about to do in one line before doing it.",
     ].join("\n"),
-    look: { color: "green", mascotBody: "cursor" },
+    look: { color: "green", mascotBody: "dome" },
     tryAsking: ["Plan my week from this list of to-dos", "Explain this contract clause in plain English", "Draft a polite reply declining this meeting"],
     apps: [],
   },

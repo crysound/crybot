@@ -36,11 +36,11 @@ interface Replacement {
   toldPerson?: true;
 }
 
-/** Whether a dead computer is deleted and replaced without the person. Off unless OMB_CLOUD_COMPUTER_AUTO_REPLACE is "1" or
+/** Whether a dead computer is deleted and replaced without the person. Off unless CRYBOT_CLOUD_COMPUTER_AUTO_REPLACE is "1" or
  * config.json has `"features": {"cloudComputerAutoReplace": true}`; the environment, "1" or "0", wins. Off by default until
  * the provider confirms that deleting a computer whose host is unreachable is safe for the rest of the account. */
 export function cloudComputerAutoReplace(cfg: Pick<AppConfig, "features">, env: NodeJS.ProcessEnv = process.env): boolean {
-  const override = env.OMB_CLOUD_COMPUTER_AUTO_REPLACE?.trim();
+  const override = env.CRYBOT_CLOUD_COMPUTER_AUTO_REPLACE?.trim();
   if (override === "1") return true;
   if (override === "0") return false;
   return cfg.features?.cloudComputerAutoReplace === true;
@@ -323,7 +323,7 @@ export function createBoatRecovery(deps: BoatRecoveryDeps) {
     }
     const outcome = await lane(owner, () => replace(owner, dead, { dead: true }));
     if (outcome === "capped") {
-      throw Object.assign(new Error("it stopped working within an hour of being replaced, and MausBot replaces it at most once an hour; Replace computer in the computer panel tries once more"), { status: 409 });
+      throw Object.assign(new Error("it stopped working within an hour of being replaced, and Cry Bot replaces it at most once an hour; Replace computer in the computer panel tries once more"), { status: 409 });
     }
     if (outcome === "kept") throw Object.assign(new Error(CLOUD_COMPUTER_NOT_RESPONDING), { status: 409 });
     if (outcome === "waiting") throw Object.assign(new Error(CLOUD_COMPUTER_DEAD_WAITING), { status: 409 });

@@ -70,7 +70,7 @@ it.each([
   { row: "its take names the VPS its bot works on", owned: true, opened: true, releases: false, closes: true, vps: true },
 ])("the remote panel's Take control gives back only a hold its own take owned, by that take's lease: $row", async ({ owned, opened, releases, closes, vps }) => {
   fixture.owned = owned;
-  vi.stubGlobal("ogb", { desktopViewer: { open: vi.fn(async () => opened), close: vi.fn(async () => true), onState: () => () => {}, currentState: async () => ({ open: false, contextId: null }) } });
+  vi.stubGlobal("cry", { desktopViewer: { open: vi.fn(async () => opened), close: vi.fn(async () => true), onState: () => () => {}, currentState: async () => ({ open: false, contextId: null }) } });
   const container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -94,7 +94,7 @@ it.each([
 it("a client whose host runs the bot on its Local VM takes and opens that desktop, not the cloud computer", async () => {
   fixture.owned = true;
   const open = vi.fn(async () => true);
-  vi.stubGlobal("ogb", { desktopViewer: { open, close: vi.fn(async () => true), onState: () => () => {}, currentState: async () => ({ open: false, contextId: null }) } });
+  vi.stubGlobal("cry", { desktopViewer: { open, close: vi.fn(async () => true), onState: () => () => {}, currentState: async () => ({ open: false, contextId: null }) } });
   const container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -116,7 +116,7 @@ it("a client whose host runs the bot on its Local VM takes and opens that deskto
 it("a client whose host's Local VM is already held in another view is told so, and never joins with a lease it does not own", async () => {
   fixture.owned = false;
   const open = vi.fn(async () => true);
-  vi.stubGlobal("ogb", { desktopViewer: { open, close: vi.fn(async () => true), onState: () => () => {}, currentState: async () => ({ open: false, contextId: null }) } });
+  vi.stubGlobal("cry", { desktopViewer: { open, close: vi.fn(async () => true), onState: () => () => {}, currentState: async () => ({ open: false, contextId: null }) } });
   const container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);

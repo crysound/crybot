@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { CloudAccountState, CloudPlanSnapshot } from "../../../electron/cloud-account.mjs";
-import { cloudPlanLabel, cloudPlanView } from "@/lib/cloud-plan";
+import type { CloudAccountState, CloudPlanSnapshot } from "../../../electron/cloud-account-types.mjs";
+import { cloudPlanLabel, cloudPlanView } from "@/lib/cloud-status";
 import { t } from "@/lib/i18n";
 import { profileForSession, readSessionState, type SessionState } from "@/lib/session";
 import { useStore } from "@/state/store";
@@ -29,10 +29,10 @@ function fromPlan(plan: CloudPlanSnapshot | null): AccountSummary {
   return { signedIn: plan.status !== "none" && plan.status !== "signin", email: null, plan: paid ? cloudPlanLabel(plan.tier) : null, paid };
 }
 
-/** Who is signed in to MausBot on this device, as far as this page may know. */
+/** Who is signed in to CryBot on this device, as far as this page may know. */
 export function useAccountSummary(): AccountSummary {
-  const account = typeof window === "undefined" || window.ogb?.remoteClient?.active ? undefined : window.ogb?.cloudAccount;
-  const planBridge = account ? undefined : typeof window === "undefined" ? undefined : window.ogb?.cloudPlan;
+  const account = typeof window === "undefined" || window.cry?.remoteClient?.active ? undefined : window.cry?.cloudAccount;
+  const planBridge = account ? undefined : typeof window === "undefined" ? undefined : window.cry?.cloudPlan;
   const [summary, setSummary] = useState<AccountSummary>({ signedIn: null, email: null, plan: null, paid: false });
   useEffect(() => {
     let alive = true;

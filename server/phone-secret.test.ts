@@ -36,7 +36,7 @@ async function keyMaterial() {
   const keyId = createHash("sha256").update(raw).digest().subarray(0, 16).toString("base64url");
   return {
     publicKey: await suite.kem.deserializePublicKey(raw),
-    message: { type: "openmausbot:phone-secret-key", version: 1, keyId, privateKey },
+    message: { type: "crybot:phone-secret-key", version: 1, keyId, privateKey },
     keyId,
   };
 }
@@ -69,13 +69,14 @@ async function seal(
   };
 }
 
+// The fixed envelope above comes from scripts/generate-phone-secret-vector.ts (deterministic Node HPKE with the current labels).
 describe("PhoneSecretBridge", () => {
-  it("opens an envelope produced by Apple's CryptoKit HPKE implementation", async () => {
+  it("opens the deterministic Node HPKE envelope", async () => {
     let bridge!: PhoneSecretBridge;
     const send = vi.fn((message: { requestId: string; value: string }) => {
       expect(message.value).toBe("swift-to-node-secret");
       queueMicrotask(() => bridge.receive({
-        type: "openmausbot:phone-secret-save-result",
+        type: "crybot:phone-secret-save-result",
         requestId: message.requestId,
         ok: true,
       }));
@@ -83,7 +84,7 @@ describe("PhoneSecretBridge", () => {
     });
     bridge = new PhoneSecretBridge(send, 200);
     bridge.receive({
-      type: "openmausbot:phone-secret-key",
+      type: "crybot:phone-secret-key",
       version: 1,
       keyId: "taWSR_nZ7ojlH_0Z3tar6Q",
       privateKey: {
@@ -104,8 +105,8 @@ describe("PhoneSecretBridge", () => {
       messageId: "message-1",
       target: "ttsKey",
       requestKey: "credential-request-1",
-      encapsulatedKey: "BDhy_5hMSvVIy3zGSmBwBECAedYBAwwFLvbWoXCGTJyLRH1cItoQXo9NBcEG0cTQV_VwaEf5judXcsJlh2jfW7Q",
-      ciphertext: "CjM0CnBT8NYd_BHAXJRKFrbYrSw6OgMIlJLAKs8VUPSSCsa2",
+      encapsulatedKey: "BDV7YaQYeY_XnNaaqHluyv46sSbU3UfWm_YJTExGZwLdE1fdMK6ijMfv1JYUyuli1MpQc26KMHH22DqDzJAM56w",
+      ciphertext: "51pBdSlSKF6oYf5IH8PXbWPU5CT4EqYVCbDS9B3iqFZ6NmdH",
     })).resolves.toBeUndefined();
     expect(send).toHaveBeenCalledTimes(1);
   });
@@ -128,7 +129,7 @@ describe("PhoneSecretBridge", () => {
       expect(message.value).toBe("elevenlabs-secret");
       expect(message.target).toBe("ttsKey");
       queueMicrotask(() => bridge.receive({
-        type: "openmausbot:phone-secret-save-result",
+        type: "crybot:phone-secret-save-result",
         requestId: message.requestId,
         ok: true,
       }));
@@ -185,7 +186,7 @@ describe("PhoneSecretBridge", () => {
     });
 
     const desktop = new PhoneSecretBridge(() => true, 50);
-    await expect(desktop.provide(context)).rejects.toMatchObject({ message: expect.stringContaining("Reopen OpenMausBot") });
+    await expect(desktop.provide(context)).rejects.toMatchObject({ message: expect.stringContaining("Reopen Cry Bot") });
     const material = await keyMaterial();
     desktop.receive(material.message);
     await vi.waitFor(() => expect(desktop.ready).toBe(true));
@@ -220,7 +221,7 @@ describe("PhoneSecretBridge", () => {
     let bridge!: PhoneSecretBridge;
     bridge = new PhoneSecretBridge((message) => {
       queueMicrotask(() => bridge.receive({
-        type: "openmausbot:phone-secret-save-result",
+        type: "crybot:phone-secret-save-result",
         requestId: message.requestId,
         ok: false,
         error: "The operating-system credential store is unavailable",
@@ -252,7 +253,7 @@ describe("PhoneSecretBridge", () => {
     await started;
     await expect(bridge.provide(envelope)).rejects.toMatchObject({ status: 429 });
     bridge.receive({
-      type: "openmausbot:phone-secret-save-result",
+      type: "crybot:phone-secret-save-result",
       requestId: firstRequestId,
       ok: true,
     });
@@ -263,7 +264,7 @@ describe("PhoneSecretBridge", () => {
 describe("phoneSecretAAD", () => {
   it("has the exact stable cross-platform serialization", () => {
     expect(new TextDecoder().decode(phoneSecretAAD(baseContext("AAAAAAAAAAAAAAAAAAAAAA")))).toBe([
-      "openmausbot-phone-credential-v1",
+      "crybot-phone-credential-v1",
       "AAAAAAAAAAAAAAAAAAAAAA",
       "paired-device-1",
       "bot-1",
@@ -295,7 +296,7 @@ describe("phoneSecretAAD", () => {
   it("refuses an AI provider key from a phone, which only the computer's own app saves where Settings does", () => {
     const context = { deviceId: "paired-device-1", target: "anthropicApiKey", requestKey: "credential-request-1" };
     expect(() => assertPhoneSecretRequestMatches(context, "paired-device-1", { target: "anthropicApiKey", requestKey: "credential-request-1" }))
-      .toThrow("Paste this key in OpenMausBot on your computer, or in My Cloud: a phone cannot save it yet.");
+      .toThrow("Paste this key in Cry Bot on your computer, or in My Cloud: a phone cannot save it yet.");
     for (const target of ["composioApiKey", "customSecret"]) {
       expect(() => assertPhoneSecretRequestMatches({ ...context, target }, "paired-device-1", { target, requestKey: "credential-request-1" })).not.toThrow();
     }
@@ -305,7 +306,7 @@ describe("phoneSecretAAD", () => {
   it("refuses a 1Password token from a phone, saying where to paste it", () => {
     const context = { ...baseContext("AAAAAAAAAAAAAAAAAAAAAA"), target: "onePasswordToken" };
     expect(() => assertPhoneSecretRequestMatches(context, "paired-device-1", { target: "onePasswordToken", requestKey: "credential-request-1" }))
-      .toThrow(expect.objectContaining({ status: 409, message: expect.stringMatching(/^Paste the 1Password token in OpenMausBot on your computer, or in My Cloud/u) }));
+      .toThrow(expect.objectContaining({ status: 409, message: expect.stringMatching(/^Paste the 1Password token in Cry Bot on your computer, or in My Cloud/u) }));
   });
 
   it("gives an exact encrypted retry one stable desktop operation id", async () => {

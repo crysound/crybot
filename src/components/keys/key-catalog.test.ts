@@ -7,20 +7,20 @@ import { CREDENTIAL_TARGETS, credentialConfigPatch, desktopCredentialSlot, isCon
 import { KEY_CATALOG, KEY_SECTIONS, keyEntry, keyForInstance, keyHidden, keyMatches, looksLikeOtherKey, savedState, type KeyId } from "./key-catalog";
 
 const NOT_A_PERSONS_KEY: Record<string, string> = {
-  OMB_ANTHROPIC_API_URL: "the address the Anthropic key goes to, set by a hosted install",
-  OMB_HOSTED_MODEL_TOKEN: "a hosted install's model token",
-  OMB_HOSTED_MODELS: "a hosted install's model list",
-  OMB_COMPOSIO_BROKER_TOKEN: "MausBot Cloud's connected-apps broker",
-  OMB_CLOUD_BOAT_TOKEN: "MausBot Cloud's included computers",
-  OMB_CLOUD_VOICE_TOKEN: "MausBot Cloud's included voice",
-  OMB_CLOUD_DECIDER_TOKEN: "MausBot Cloud's included decisions",
-  OMB_CLOUD_AI_TOKEN: "MausBot Cloud's included AI",
-  OMB_CLOUD_X_TOKEN: "MausBot Cloud's included X research",
-  OMB_CLOUD_HOSTING_TOKEN: "MausBot Cloud's included app hosting",
-  OMB_CLOUD_CONNECTED_APPS_GRANT: "MausBot Cloud's connected apps",
-  OMB_BROWSER_CONNECTION: "the app's own browser, not a credential",
-  OMB_USER_DATA: "the app's own data folder, not a credential",
-  OMB_BOAT_API: "the Boat address, not a credential",
+  CRYBOT_ANTHROPIC_API_URL: "the address the Anthropic key goes to, set by a hosted install",
+  CRYBOT_HOSTED_MODEL_TOKEN: "a hosted install's model token",
+  CRYBOT_HOSTED_MODELS: "a hosted install's model list",
+  CRYBOT_COMPOSIO_BROKER_TOKEN: "Cry Bot Cloud's connected-apps broker",
+  CRYBOT_CLOUD_BOAT_TOKEN: "Cry Bot Cloud's included computers",
+  CRYBOT_CLOUD_VOICE_TOKEN: "Cry Bot Cloud's included voice",
+  CRYBOT_CLOUD_DECIDER_TOKEN: "Cry Bot Cloud's included decisions",
+  CRYBOT_CLOUD_AI_TOKEN: "Cry Bot Cloud's included AI",
+  CRYBOT_CLOUD_X_TOKEN: "Cry Bot Cloud's included X research",
+  CRYBOT_CLOUD_HOSTING_TOKEN: "Cry Bot Cloud's included app hosting",
+  CRYBOT_CLOUD_CONNECTED_APPS_GRANT: "Cry Bot Cloud's connected apps",
+  CRYBOT_BROWSER_CONNECTION: "the app's own browser, not a credential",
+  CRYBOT_USER_DATA: "the app's own data folder, not a credential",
+  CRYBOT_BOAT_API: "the Boat address, not a credential",
 };
 
 const electron = (file: string) => readFileSync(new URL(`../../../electron/${file}`, import.meta.url), "utf8");

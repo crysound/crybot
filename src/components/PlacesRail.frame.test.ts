@@ -2,7 +2,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { RailState } from "../../electron/cloud-rail.mjs";
+import type { RailState } from "../../electron/rail-types.mjs";
 
 const fixture = vi.hoisted(() => ({ windowChrome: "mac-inset" as "mac-inset" | "win-caption", windowFrame: undefined as boolean | undefined }));
 vi.mock("@/lib/analytics", () => ({ track: vi.fn() }));
@@ -24,7 +24,7 @@ beforeEach(() => {
   setLocale("en");
   fixture.windowChrome = "mac-inset";
   fixture.windowFrame = undefined;
-  Object.assign(window, { ogb: {
+  Object.assign(window, { cry: {
     workspaces: { places: async () => rail, onChanged: () => () => {} },
     rail: { expand: async () => {}, onSkin: () => () => {}, onFramed: (callback: (framed: boolean) => void) => { tell = callback; return () => {}; } },
   } });

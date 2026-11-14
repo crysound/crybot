@@ -9,14 +9,14 @@ import type { FeatureFlagConfig } from "@/lib/feature-flags";
 // tree. `seed` presets what the resolve effect would have reached.
 const fixture = vi.hoisted(() => {
   const view = { current: "computer" as string };
-  const ogb: Record<string, unknown> = {};
-  vi.stubGlobal("window", { ogb });
+  const cry: Record<string, unknown> = {};
+  vi.stubGlobal("window", { cry });
   vi.stubGlobal("document", { visibilityState: "visible" });
-  vi.stubGlobal("localStorage", { getItem: (key: string) => key.startsWith("omb-computer-panel-view") ? view.current : null, setItem: () => {} });
+  vi.stubGlobal("localStorage", { getItem: (key: string) => key.startsWith("cry-computer-panel-view") ? view.current : null, setItem: () => {} });
   return {
     advanced: false,
     view,
-    ogb,
+    cry,
     platform: "darwin" as "darwin" | "win32" | "linux",
     localComputer: {} as Record<string, unknown>,
     values: [] as unknown[],
@@ -198,7 +198,7 @@ beforeEach(() => {
   fixture.api = vi.fn(() => Promise.resolve({ features: { browser: true } }));
   fixture.setAdvancedMode = vi.fn();
   fixture.ownerOrAdmin = null;
-  for (const key of Object.keys(fixture.ogb)) delete fixture.ogb[key];
+  for (const key of Object.keys(fixture.cry)) delete fixture.cry[key];
 });
 
 describe("Computer panel tabs", () => {
@@ -285,10 +285,10 @@ describe("Computer panel tabs", () => {
   it("keeps showing the pinned private folder after the bot default is cleared", () => {
     fixture.view.current = "files";
     const rendered = render(makeBot({ tasks: [
-      { threadId: "thread-scout", title: "Existing chat", createdAt: 1, cwd: "/Users/me/.openmausbot/task-workspaces/scout/thread-scout" },
+      { threadId: "thread-scout", title: "Existing chat", createdAt: 1, cwd: "/Users/me/.crybot/task-workspaces/scout/thread-scout" },
     ] }));
-    expect(rendered.html).toContain('title="/Users/me/.openmausbot/task-workspaces/scout/thread-scout"');
-    expect(rendered.html).toContain("~/.openmausbot/task-workspaces/scout/thread-scout");
+    expect(rendered.html).toContain('title="/Users/me/.crybot/task-workspaces/scout/thread-scout"');
+    expect(rendered.html).toContain("~/.crybot/task-workspaces/scout/thread-scout");
     expect(rendered.html).not.toContain("Scout&#x27;s private folder");
   });
 
@@ -630,7 +630,7 @@ describe("Technical controls", () => {
   });
 
   it("hides two desktops and Delete VM in Simple, keeps them in Advanced", () => {
-    fixture.ogb.desktopWorkspace = {};
+    fixture.cry.desktopWorkspace = {};
     fixture.seed = {
       phase: "vm",
       resolved: { botId: "scout", threadId: "thread-scout", computer: "vm", cloudBackend: "box" },

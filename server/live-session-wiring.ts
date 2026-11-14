@@ -43,7 +43,7 @@ export function liveSessionWiring(input: LiveSessionWiringInput): {
       return { agent, token: await createFishLiveSession({ ...session, endpoint: agent }) };
     } catch (error) {
       // An agent removed on Fish Audio is set up again, unless the operator chose it.
-      const gone = (error as { fishStatus?: number }).fishStatus === 404 && endpoint.model !== "" && !env.OMB_FISH_LIVE_AGENT_ID?.trim();
+      const gone = (error as { fishStatus?: number }).fishStatus === 404 && endpoint.model !== "" && !env.CRYBOT_FISH_LIVE_AGENT_ID?.trim();
       if (!gone) throw error;
       agent = await setUpAgent(key, endpoint);
       return { agent, token: await createFishLiveSession({ ...session, endpoint: agent }) };

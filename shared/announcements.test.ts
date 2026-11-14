@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  ANNOUNCEMENT_IMAGE_PREFIX, audienceMatches, compareVersions, isAnnouncementImageUrl, isHttpsUrl, LIMITS, liveCards, localized, MAX_CARDS,
+  audienceMatches, compareVersions, isAnnouncementImageUrl, isHttpsUrl, LIMITS, liveCards, localized, MAX_CARDS,
   parseAnnouncementCard, parseAnnouncementFeed, type AnnouncementFacts,
 } from "./announcements";
 
+const ANNOUNCEMENT_IMAGE_PREFIX = "https://feed.example.test/";
 const NOW = Date.parse("2026-12-01T10:00:00Z");
 const example = JSON.parse(readFileSync(new URL("../scripts/testing/fixtures/announcements.example.json", import.meta.url), "utf8")) as { cards: Record<string, unknown>[] };
 const card = (extra: Record<string, unknown> = {}) => ({
@@ -95,10 +96,10 @@ describe("a card", () => {
       { open: "settings/../../" }, { open: "billing" }, { run: "rm -rf /" }, { open_url: "https://example.com", open: "api_keys" }, {}]) expect(action(bad), JSON.stringify(bad)).toBe(false);
   });
 
-  it("shows a picture only from this repository's announcements folder, and an install drops one it cannot read", () => {
-    expect(isAnnouncementImageUrl(`${ANNOUNCEMENT_IMAGE_PREFIX}images/phone.png`)).toBe(true);
+  it("shows a picture only from the feed origin, and an install drops one it cannot read", () => {
+    expect(isAnnouncementImageUrl(`${ANNOUNCEMENT_IMAGE_PREFIX}images/phone.png`, "https://feed.example.test")).toBe(true);
     for (const bad of [`${ANNOUNCEMENT_IMAGE_PREFIX}../secret.png`, `${ANNOUNCEMENT_IMAGE_PREFIX}images/x.svg`, "https://example.com/x.png",
-      `${ANNOUNCEMENT_IMAGE_PREFIX}images/x.png?track=1`, ANNOUNCEMENT_IMAGE_PREFIX.replace("https", "http") + "x.png"]) expect(isAnnouncementImageUrl(bad), bad).toBe(false);
+      `${ANNOUNCEMENT_IMAGE_PREFIX}images/x.png?track=1`, ANNOUNCEMENT_IMAGE_PREFIX.replace("https", "http") + "x.png"]) expect(isAnnouncementImageUrl(bad, "https://feed.example.test"), bad).toBe(false);
     const parsed = parseAnnouncementCard(card({ image: { url: "https://example.com/tracker.png" } }));
     expect(parsed.ok && parsed.card.image).toBeUndefined();
     expect(parseAnnouncementCard(card({ image: { url: "https://example.com/tracker.png" } }), { strict: true }).ok).toBe(false);
@@ -108,7 +109,7 @@ describe("a card", () => {
 });
 
 it("an https address has a host and nothing hidden in it", () => {
-  expect(isHttpsUrl("https://github.com/milind-soni/OpenMausBot")).toBe(true);
+  expect(isHttpsUrl("https://github.com/example/project")).toBe(true);
   for (const bad of ["https://localhost/x", "https:// spaced.com", "https://a.com/\u0000", "ftp://a.com", "//a.com"]) expect(isHttpsUrl(bad), bad).toBe(false);
 });
 

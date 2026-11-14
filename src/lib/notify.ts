@@ -28,7 +28,7 @@ export interface NotificationBotIdentity {
 }
 
 export function buildNotificationOptions(bot: NotificationBotIdentity): NotificationOptions {
-  return { tag: `openmausbot:${bot.id}`, icon: bot.avatarUrl ?? undefined };
+  return { tag: `crybot:${bot.id}`, icon: bot.avatarUrl ?? undefined };
 }
 
 export function showNotification(
@@ -49,7 +49,7 @@ export function showNotification(
   const options: NotificationOptions = {
     body,
     ...buildNotificationOptions({ id: frame.botId, avatarUrl }),
-    ...(spend ? { tag: "openmausbot:spend", icon: undefined } : {}),
+    ...(spend ? { tag: "crybot:spend", icon: undefined } : {}),
     ...(notificationSoundsEnabled() ? {} : { silent: true }),
   };
   const shownByPage = () => {
@@ -58,7 +58,7 @@ export function showNotification(
       onOpen({ botId: frame.botId, threadId: frame.threadId });
     };
   };
-  const desktop = window.ogb?.desktopNotifications;
+  const desktop = window.cry?.desktopNotifications;
   if (!desktop) return shownByPage();
   void desktop.show({
     title, body, tag: options.tag, silent: options.silent === true, picture: options.icon, botId: frame.botId, threadId: frame.threadId,

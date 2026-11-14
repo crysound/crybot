@@ -1,4 +1,4 @@
-// `serve --relay`: phones reach this server through MausBot Relay, end-to-end encrypted as they reach the desktop app.
+// `serve --relay`: phones reach this server through CryBot Relay, end-to-end encrypted as they reach the desktop app.
 // The server dials out to the relay, the phone dials the relay, and the relay splices sealed bytes it cannot open. Every
 // encrypted stream lands in the server's own request handler as a remote request, so a phone signs in with its own session.
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -9,27 +9,21 @@ import { join } from "node:path";
 import type { Duplex } from "node:stream";
 
 import { phonePairingLink, type CompanionEndpoint } from "../shared/pairing-link.ts";
-import { relayBaseUrlOverride } from "../companion/src/e2e/config.ts";
+import { configuredPhoneRelay } from "./phone-relay-config.ts";
 import { b64u, fromB64u } from "../companion/src/e2e/credentials.ts";
 import type { E2EDescriptor } from "../companion/src/e2e/descriptor.ts";
 import { generateKeyPair, keyPairFromPrivate, TRANSPORT_RELAY, type KeyPair } from "../companion/src/e2e/noise.ts";
 import { createE2EOrigin, e2eContextOf, type E2EOriginDeadlines } from "../companion/src/e2e/origin.ts";
 import { E2ERegistry, type E2EContext, type E2EDevices, type Peer } from "../companion/src/e2e/registry.ts";
 import { RelayClient, type RelayStatus } from "../companion/src/e2e/relay-client.ts";
-import { COMPANION_INSTALLATION_CREDENTIAL_FIELD, resolveCompanionControlPlaneURL } from "../electron/companion-account-service.mjs";
-import { createControlPlaneClient } from "../electron/control-plane-client.mjs";
-import { MANAGED_COMPANION_ENDPOINT_FIELD } from "../electron/managed-companion-tunnel.mjs";
 import { createRelayTokenService, validRelayGrant, type RelayGrant } from "../electron/relay-token.mjs";
 import { isLoopbackHost } from "../electron/server-address.mjs";
 import { writeFileAtomic } from "./atomic.ts";
 import { bearerToken, PROXY_HEADERS } from "./request-auth.ts";
 import { isPairingCredential, type SessionRegistry } from "./sessions.ts";
-import { describeTunnelAccount, FLEET_CREDENTIAL_ENV, fleetCredential, openTunnelCredentials } from "./tunnel.ts";
 import type { E2ESession } from "../companion/src/e2e/session.ts";
 
-export const PHONE_RELAY_ENV = "OMB_PHONE_RELAY";
-/** `serve --tunnel` sets it. OMB_TUNNEL_SOCKET alone is no tunnel: Docker's Caddy reaches the server over that socket. */
-export const SERVES_TUNNEL_ENV = "OMB_SERVES_TUNNEL";
+export const PHONE_RELAY_ENV = "CRYBOT_PHONE_RELAY";
 export const PHONE_RELAY_KEY_FILE = "phone-relay-key.json";
 export const PHONE_RELAY_PHONES_FILE = "phone-relay-phones.json";
 /** The relay admits 32 per host; 20 phones, 2 pairing windows and the live pairing sessions stay under it. */
@@ -46,7 +40,7 @@ const STREAM_DEADLINES: E2EOriginDeadlines = { headersMs: 30_000, requestMs: 300
 const PAIRING_SESSION_ROUTES = new Set(["POST /api/pair", "GET /api/health"]);
 
 /** `tunnel`: this machine holds or needs a tunnel address, so it never asks for a relay token (`reason` says why). */
-export type PhoneRelayGrantState = "waiting" | "ok" | "signed-out" | "unavailable" | "failed" | "tunnel";
+export type PhoneRelayGrantState = "waiting" | "ok" | "signed-out" | "unavailable" | "failed";
 
 export interface PhoneRelayStatus {
   relay: RelayStatus;
@@ -143,45 +137,16 @@ function reply(res: ServerResponse, status: number, body: unknown): void {
   res.end(text);
 }
 
-/** Why this machine must not take a relay token, or null. Security: the control plane does not yet tell a server from a
- * desktop, and gives back the tunnel of any installation that recently took a relay token, then refuses it another. So
- * a machine that serves a tunnel, runs on a fleet credential, or holds a tunnel address from `login` never asks. */
-export function tunnelHolder(env: NodeJS.ProcessEnv, dataDir: string): string | null {
-  if (env[SERVES_TUNNEL_ENV] === "1") return "this server runs with --tunnel";
-  if (fleetCredential(env)) return `${FLEET_CREDENTIAL_ENV} is set, and a fleet installation keeps its tunnel`;
-  const account = openTunnelCredentials(dataDir);
-  if (account.status === "unavailable") return `${account.file} could not be read, so this machine may hold a tunnel address`;
-  const document = account.read();
-  if (describeTunnelAccount(document).address || document[MANAGED_COMPANION_ENDPOINT_FIELD]) return "this machine holds a tunnel address from `openmausbot login`";
-  return null;
-}
-
-function offForTunnel(reason: string): PhoneRelay {
-  return {
-    status: () => ({ relay: "off", node: null, grant: "tunnel", reason, phones: 0, maxPhones: MAX_RELAY_PHONES }),
-    invite: () => null,
-    pairedOver: () => ({}),
-    pairingRefusal: () => null,
-    stop: () => {},
-  };
-}
-
-const TUNNEL_HELD = "tunnel_held";
-
-/** Null unless OMB_PHONE_RELAY=1, and when it cannot run here: the server works on without it either way. */
+/** Null unless CRYBOT_PHONE_RELAY_URL configures a valid relay, and when it cannot run here: the server works on without it either way. */
 export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
-  if (options.env[PHONE_RELAY_ENV] !== "1") return null;
+  const configured = configuredPhoneRelay(options.env);
+  if (!configured || options.env[PHONE_RELAY_ENV] === "0") return null;
   const log = options.log ?? ((line: string) => console.log(line));
   if (options.refusal) {
     log(`phone relay: off on ${options.refusal}`);
     return null;
   }
   const { sessions, dataDir } = options;
-  const holder = tunnelHolder(options.env, dataDir);
-  if (holder) {
-    log(`phone relay: off: ${holder}. Use the relay on a machine signed in with \`openmausbot login --relay\`, which holds no tunnel address.`);
-    return offForTunnel(holder);
-  }
   let key: KeyPair;
   try {
     key = phoneRelayKey(dataDir);
@@ -209,8 +174,7 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
   const pairing = new AsyncLocalStorage<E2EContext>();
   let relay: RelayClient | null = null;
   let grantState: PhoneRelayGrantState = "waiting";
-  let tunnelReason: string | null = null;
-  const baseUrl = relayBaseUrlOverride(options.env.OMB_PHONE_RELAY_URL);
+  const baseUrl = () => configured.socketOrigin;
   const descriptor = () => e2e.descriptor(null);
 
   const counts = () => {
@@ -218,16 +182,8 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
     // A server's other devices reach it some other way: they are the devices the relay does not carry.
     return { e2e: Math.min(e2eCount, 100), legacy: Math.min(Math.max(sessions.list().length - e2eCount, 0), 100) };
   };
-  const controlPlane = resolveCompanionControlPlaneURL({ isPackaged: true, environment: options.env });
-  const client = controlPlane ? createControlPlaneClient({ baseURL: controlPlane }) : null;
   const fetchGrant = options.fetchGrant ?? (async (devicesNow: { e2e: number; legacy: number }) => {
-    const document = openTunnelCredentials(dataDir).read();
-    const stored = document[COMPANION_INSTALLATION_CREDENTIAL_FIELD];
-    tunnelReason = tunnelHolder(options.env, dataDir);
-    if (tunnelReason) throw Object.assign(new Error(tunnelReason), { code: TUNNEL_HELD });
-    const credential = typeof stored === "string" ? stored : null;
-    if (!client || !credential) throw Object.assign(new Error("signed out"), { code: "signed_out" });
-    return client.relayToken(credential, { appVersion: options.version, devices: devicesNow, kind: "server" });
+    return configured.grant(devicesNow);
   });
 
   const tokens = createRelayTokenService({
@@ -239,10 +195,8 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
         return grant;
       } catch (error) {
         const failure = error as { code?: unknown; status?: unknown };
-        if (failure.code === TUNNEL_HELD) applyGrant(null);
         const current = tokens.grant;
-        grantState = failure.code === TUNNEL_HELD ? "tunnel"
-          : failure.code === "relay_unavailable" ? "unavailable"
+        grantState = failure.code === "relay_unavailable" ? "unavailable"
           : failure.code === "signed_out" || failure.status === 401 ? "signed-out"
           : current && current.expiresAt > Date.now() && relay ? "ok" : "failed";
         throw error;
@@ -306,7 +260,7 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
    * remote, and whatever Host, proxy, cookie or owner headers the phone wrote are replaced: it needs a session of its own. */
   function scrub(req: IncomingMessage, peer: Peer): void {
     for (const name of Object.keys(req.headers)) {
-      if (name === "cookie" || name.startsWith("x-openmausbot-") || (PROXY_HEADERS as readonly string[]).includes(name)) delete req.headers[name];
+      if (name === "cookie" || name.startsWith("x-crybot-") || (PROXY_HEADERS as readonly string[]).includes(name)) delete req.headers[name];
     }
     req.headers.host = "phone-relay.invalid";
     req.headers["x-forwarded-for"] = sourceOf(peer);
@@ -323,7 +277,7 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
     if (peer.kind === "pairing") {
       if (!PAIRING_SESSION_ROUTES.has(`${method} ${path}`)) return reply(res, 401, { error: "pair this phone first" });
       if (method === "POST" && devices.records().length >= MAX_RELAY_PHONES) {
-        return reply(res, 409, { error: `This server has ${MAX_RELAY_PHONES} phones on MausBot Relay. Remove one (openmausbot devices revoke ID), then pair again.` });
+        return reply(res, 409, { error: `This server has ${MAX_RELAY_PHONES} phones on Cry Bot Relay. Remove one (crybot devices revoke ID), then pair again.` });
       }
     } else {
       const bearer = bearerToken(req.headers.authorization);
@@ -361,7 +315,7 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
   tokens.start();
 
   return {
-    status: () => ({ relay: relay?.status ?? "off", node: relay?.node ?? null, grant: grantState, ...(grantState === "tunnel" && tunnelReason ? { reason: tunnelReason } : {}), phones: devices.records().length, maxPhones: MAX_RELAY_PHONES }),
+    status: () => ({ relay: relay?.status ?? "off", node: relay?.node ?? null, grant: grantState, phones: devices.records().length, maxPhones: MAX_RELAY_PHONES }),
     invite(credential, name, publicOrigin) {
       const current = descriptor();
       if (!current?.h || !current.r) return null;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { setEmailGateDone, track } from "@/lib/analytics";
+import { setEmailGateDone } from "@/lib/welcome-progress";
 import { cn } from "@/lib/cn";
 import { chiefStepFits, myDefaultBot, setChiefStepOpen, useViewerEmail } from "@/lib/default-bot";
 import { beatsFor, completionPatch, firstRunPatch, markWelcomeFinished, resumeBeat, showWelcome, type BeatId } from "@/lib/onboarding";
@@ -17,7 +17,7 @@ type Config = ReturnType<typeof useStore>["state"]["config"];
 /** A genuine first run on this computer's own page names the person after its account, where their profile has none
  * (never on a Cloud, a Team Cloud or a remote page). The name stays theirs to change in Settings. */
 async function nameFromComputer(config: Config, done: (config: NonNullable<Config>) => void): Promise<void> {
-  const bridge = window.ogb;
+  const bridge = window.cry;
   if (!config || config.onboarding?.completedAt || config.profile?.name?.trim() || config.cloudHome || config.team) return;
   if (!localDesktopPage() || bridge?.remoteClient?.active) return;
   const name = await bridge?.desktopProfile?.systemName().catch(() => null);
@@ -62,7 +62,7 @@ export function WelcomeFlow({
   hosted?: boolean;
 }) {
   const { state, dispatch } = useStore();
-  const maus = myDefaultBot(state.bots, useViewerEmail());
+  const bot = myDefaultBot(state.bots, useViewerEmail());
   // A first run keeps its screen in this browser, so a reload resumes it; a replay starts over. A hosted place's
   // browser may hold another person's draft.
   const keepsDraft = !replay && !embedded && !hosted;
@@ -74,7 +74,7 @@ export function WelcomeFlow({
   record.current = state.config?.onboarding;
 
   useEffect(() => {
-    track("onboarding_step", { step: beat, replay });
+
     if (keepsDraft && !finishing.current) saveWelcomeDraft({ beat });
   }, [beat, replay, keepsDraft]);
 
@@ -86,10 +86,10 @@ export function WelcomeFlow({
   }, []);
 
   const finish = useCallback(
-    async (reason: "completed" | "skipped", botId: string | null) => {
+    async (_reason: "completed" | "skipped", botId: string | null) => {
       if (finishing.current) return;
       finishing.current = true;
-      track("onboarding_completed", { reason, at: beat, replay });
+
       setEmailGateDone("submitted");
       if (!replay && !embedded) markWelcomeFinished();
       if (keepsDraft) clearWelcomeDraft();
@@ -106,7 +106,7 @@ export function WelcomeFlow({
 
   // The first screen fades away before the Chief step comes up; a timer moves on, since a hidden window runs no
   // animation to its end.
-  const toChief = beats.includes("chief") && chiefStepFits(state.bots, maus);
+  const toChief = beats.includes("chief") && chiefStepFits(state.bots, bot);
   const leaving = useRef(false);
   const next = useCallback(() => {
     if (finishing.current || leaving.current) return;
@@ -125,7 +125,7 @@ export function WelcomeFlow({
     setChiefStepOpen(true);
     return () => setChiefStepOpen(false);
   }, [chief, embedded]);
-  // The scrim fades with the dialog and lets clicks through while MausBot lands.
+  // The scrim fades with the dialog and lets clicks through while CryBot lands.
   const fadeScrim = useCallback(() => {
     if (!root.current) return;
     root.current.style.pointerEvents = "none";

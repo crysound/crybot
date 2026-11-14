@@ -1,4 +1,4 @@
-import type { ConnectorResult } from "@/lib/analytics-allowlist";
+import type { ConnectorResult } from "@/lib/setup-types";
 import type { ConnectorStatus } from "@/lib/connector-status";
 
 export const CONNECTOR_POLL_MS = 5_000;

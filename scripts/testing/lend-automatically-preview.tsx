@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "../../src/App";
-import { setAnalyticsEnabled, setEmailGateDone } from "../../src/lib/analytics";
+import { setEmailGateDone } from "../../src/lib/welcome-progress";
 import { CLOUD_SETUP_HIDDEN, CLOUD_WELCOME_DONE } from "../../src/lib/cloud-setup";
 import { withTourFinished } from "../../src/lib/guided-tour";
 import { setAdvancedMode } from "../../src/lib/interface-mode";
@@ -9,13 +9,13 @@ import { markSimpleModePromptSeen } from "../../src/lib/simple-mode-prompt";
 import { applySkin, type SkinId } from "../../src/lib/skins";
 import "../../src/styles.css";
 
-// Served only by scripts/verify-lend-automatically.ts: the real app's Settings → MausBot Cloud, against the disposable
+// Served only by scripts/verify-lend-automatically.ts: the real app's Settings → CryBot Cloud, against the disposable
 // fake-engine server. ?page=local is this computer's own page, its desktop bridge's verified Cloud sign-in answered
 // here (a Pro plan, My Cloud ready); ?page=cloud is My Cloud's own page in the desktop window, the fixture server's
 // config read as a Cloud home's. ?skin= picks the skin.
 const params = new URLSearchParams(location.search);
 const page = params.get("page") === "local" ? "local" : "cloud";
-setAnalyticsEnabled(false);
+
 setEmailGateDone("skipped");
 markSimpleModePromptSeen();
 localStorage.setItem(GROK_MOVE_NOTICE, "1");
@@ -23,7 +23,7 @@ localStorage.setItem(MODELGO_OFFER_NOTICE, "1");
 setAdvancedMode(true);
 applySkin((params.get("skin") ?? "midnight") as SkinId);
 
-const ORIGIN = "https://omb-u-fixture.fly.dev";
+const ORIGIN = "https://cry-u-fixture.fly.dev";
 const account = {
   status: "connected", account: { id: "acct_fixture", email: "you@example.test" }, deviceId: "device-fixture",
   entitlement: { plan: "pro", tier: "pro", status: "active", expiresAt: Date.now() + 30 * 86_400_000, version: 3 },
@@ -36,7 +36,7 @@ const cloudAccount = {
   signOut: signedIn, openDashboard: signedIn, offer: async () => null, connectHome: signedIn, connectHomeForPhone: signedIn,
 };
 let openSettings: ((section?: string) => void) | null = null;
-Object.assign(window, { ogb: {
+Object.assign(window, { cry: {
   platform: "darwin",
   app: { version: "0.1.130", ownPage: page === "local" },
   getCapabilities: async () => ({ host: { platform: "darwin", label: "macOS", session: "unknown", packaged: true }, windowChrome: "mac-inset",

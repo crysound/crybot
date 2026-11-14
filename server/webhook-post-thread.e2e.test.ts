@@ -1,8 +1,8 @@
 import { expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry } from "../scripts/control-cry.ts";
 
 it("opens a new Updates task for a post webhook after the person deleted the old one", async () => {
-  const fixture = await launchVerificationServer(process.env, undefined, undefined, undefined, undefined, { scripted: true });
+  const fixture = await launchVerificationServer(process.env, undefined, undefined, undefined, { scripted: true });
   const { url } = fixture.info;
   const api = async (method: string, path: string, body?: unknown, status = 200) => {
     const response = await fetch(`${url}${path}`, {
@@ -16,7 +16,7 @@ it("opens a new Updates task for a post webhook after the person deleted the old
   const updates = async (botId: string) => ((await api("GET", "/api/bots")).bots.find((bot: any) => bot.id === botId).tasks as any[])
     .filter((task) => task.title === "Updates");
   try {
-    const { bot } = await runControlOmb(["new-bot", "--name", "Poster", "--url", url]) as any;
+    const { bot } = await runControlCry(["new-bot", "--name", "Poster", "--url", url]) as any;
     const hook = await api("POST", "/api/webhooks", { name: "Deploys", prompt: "", botId: bot.id, delivery: "post" }, 201);
     const deliver = (text: string) => fetch(hook.credential.url, {
       method: "POST", headers: { authorization: `Bearer ${hook.credential.secret}`, "content-type": "application/json" }, body: JSON.stringify({ text }),

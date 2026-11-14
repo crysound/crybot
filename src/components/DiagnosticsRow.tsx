@@ -14,11 +14,11 @@ export function DiagnosticsRow({ simple = false }: { simple?: boolean }) {
   const [folder, setFolder] = useState<string | null>(null);
 
   const exportDiagnostics = async () => {
-    if (!window.ogb?.exportDiagnostics || exporting) return;
+    if (!window.cry?.exportDiagnostics || exporting) return;
     setExporting(true);
     setResult(null);
     try {
-      const path = await window.ogb.exportDiagnostics();
+      const path = await window.cry.exportDiagnostics();
       if (path) setResult({ kind: "success", message: t("settings.diagnostics.saved", { path }) });
     } catch (e) {
       setResult({ kind: "error", message: e instanceof Error ? e.message : String(e) });
@@ -28,10 +28,10 @@ export function DiagnosticsRow({ simple = false }: { simple?: boolean }) {
   };
 
   const openLogs = async () => {
-    if (!window.ogb?.openLogsFolder) return;
+    if (!window.cry?.openLogsFolder) return;
     setResult(null);
     try {
-      const opened = await window.ogb.openLogsFolder();
+      const opened = await window.cry.openLogsFolder();
       setFolder(opened.folder);
       if (!opened.opened) setResult({ kind: "error", message: t("settings.diagnostics.openFailed", { folder: opened.folder }) });
     } catch (e) {
@@ -40,12 +40,12 @@ export function DiagnosticsRow({ simple = false }: { simple?: boolean }) {
   };
 
   // My Cloud's page in the app, or a browser: this computer's logs are not reachable from here.
-  const here = Boolean(window.ogb?.exportDiagnostics);
+  const here = Boolean(window.cry?.exportDiagnostics);
   return (
     <SettingRow
       title={t("settings.app.diagnostics")}
       subtitle={<>{t(simple ? "settings.simple.diagnostics" : "settings.diagnostics.subtitle")}
-        {here && window.ogb?.openLogsFolder && <>{" "}<LearnMore label={t("settings.diagnostics.openLogs")} onClick={() => void openLogs()} /></>}</>}
+        {here && window.cry?.openLogsFolder && <>{" "}<LearnMore label={t("settings.diagnostics.openLogs")} onClick={() => void openLogs()} /></>}</>}
       message={folder || result || !here ? <>
         {folder && result?.kind !== "error" && <p role="status" data-logs-folder className="break-all text-ink-secondary">{t("settings.diagnostics.logsAt", { folder })}</p>}
         {result && <p role={result.kind === "error" ? "alert" : "status"} className={cn("break-all", result.kind === "error" ? "text-danger" : "text-success")}>

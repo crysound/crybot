@@ -7,7 +7,7 @@ import {
 } from "./cloud-computer-background.ts";
 import { copyFromComputer, copyToComputer } from "./cloud-computer-files.ts";
 import type { AppConfig } from "./config.ts";
-import { controlRefusal, type ControlState } from "./control-client.ts";
+import { controlRefusal, type ControlState } from "./computer-control-client.ts";
 import { COMPUTER_COPY_BUDGET_MS, HARNESS_CALL_BUDGET_MS } from "./harness-budget.ts";
 import { compileToolSchema } from "./mcp-schema-validator.ts";
 import { CLOUD_COMPUTER_NO_ANSWER } from "../shared/cloud-computer-recovery.ts";

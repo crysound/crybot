@@ -10,7 +10,6 @@ import { AwayEmailsSetting } from "../../AwayEmailsSetting";
 import { PausedBotsButton } from "../../AwakeBotsPicker";
 import { BuiltInBrowserRow, NewBrowserSettings, ServerSitesRow } from "../../BrowserSettingsRows";
 import { CacheKeepWarmSettings } from "../../CacheKeepWarmSettings";
-import { TeamPeopleCard } from "../../CloudAccountSettings";
 import { CloudKeepHere } from "../../CloudKeepHere";
 import { CustomDomainSettings } from "../../CustomDomainSettings";
 import { preloadConnectedApps } from "@/lib/connected-apps";
@@ -38,7 +37,7 @@ import { versionLine } from "../settings-context";
 import { useSettingsShell } from "../settings-shell";
 import { AdvancedSection } from "../AdvancedSection";
 
-const GROUPED_NOTE = "omb-settings-grouped-note";
+const GROUPED_NOTE = "cry-settings-grouped-note";
 const GROUPED_DAYS = 30;
 
 /** Shown for 30 days to a device that used Settings before it was grouped; never on a new install. */
@@ -50,7 +49,7 @@ function useGroupedNote(): [boolean, () => void] {
       if (raw === "dismissed") return;
       const first = raw ? Number(raw) : null;
       if (first === null) {
-        const before = ["omb-skin", "omb-advanced-mode", "omb-send-key"].some((key) => localStorage.getItem(key) !== null);
+        const before = ["cry-skin", "cry-advanced-mode", "cry-send-key"].some((key) => localStorage.getItem(key) !== null);
         if (!before) { localStorage.setItem(GROUPED_NOTE, "dismissed"); return; }
         localStorage.setItem(GROUPED_NOTE, String(Date.now()));
         setShown(true);
@@ -67,7 +66,6 @@ export function OverviewPage() {
   const { state, dispatch } = useStore();
   const [note, dismiss] = useGroupedNote();
   const phone = usePhonePlaceState(!ctx.client);
-  const team = state.config?.team;
   const phoneValue = phone.kind === "paired" || phone.kind === "attention" ? t("settings.glance.phonePaired", { count: phone.count })
     : phone.kind === "none" ? t("settings.glance.notSetUp") : undefined;
   const engines = state.instances.filter((instance) => instance.snapshot.state === "available").length;
@@ -81,7 +79,7 @@ export function OverviewPage() {
         </div>
       </SettingsRows>
     )}
-    {place.kind === "server" && !ctx.client && !window.ogb?.updater && <SettingsGroup label={t("settings.updates.title")} block="version"><SettingsRows><ServerUpdateRow title={versionLine()} /></SettingsRows></SettingsGroup>}
+    {place.kind === "server" && !ctx.client && !window.cry?.updater && <SettingsGroup label={t("settings.updates.title")} block="version"><SettingsRows><ServerUpdateRow title={versionLine()} /></SettingsRows></SettingsGroup>}
     <SettingsGroup label={t("settings.overview.glance")} block="glance">
       <SettingsRows>
         {!ctx.client && <SettingsLinkRow title={t("settings.section.phoneDevices")} value={phoneValue} onClick={() => go("phone")} data={{ "data-glance": "phone" }} />}
@@ -96,8 +94,7 @@ export function OverviewPage() {
     <SettingsGroup label={t("settings.overview.sidebar")} block="sidebar">
       <SettingsRows><PlaceLookRows /><DefaultBotSidebarRow simple /></SettingsRows>
     </SettingsGroup>
-    {ctx.desktop && ctx.cloud && team && team.cloudPage && <div data-settings-block="people-and-plan"><TeamPeopleCard team={team} /></div>}
-    {/* Address: a self-hosted server's own web address, Advanced only. A Cloud's address is MausBot's to manage, so it
+    {/* Address: a self-hosted server's own web address, Advanced only. A Cloud's address is CryBot's to manage, so it
         has none here (no administrator or proxy steps for a person who has no server to set up). */}
     {place.kind === "server" && !ctx.client && ctx.advanced && <CustomDomainSettings />}
   </>;
@@ -198,6 +195,6 @@ export function DesktopsPage() {
 
 export function MoveSection() {
   const { ctx } = useSettingsShell();
-  if (!ctx.here || !window.ogb?.cloudSendPage) return null;
-  return <CloudKeepHere bridge={window.ogb.cloudSendPage} />;
+  if (!ctx.here || !window.cry?.cloudSendPage) return null;
+  return <CloudKeepHere bridge={window.cry.cloudSendPage} />;
 }

@@ -6,8 +6,18 @@ import { isPublicKey, PUBLIC_KEY_BYTES } from "./noise.ts";
 export const DESCRIPTOR_VERSION = 1;
 export const MAX_DESCRIPTOR_CHARS = 1024;
 export const MAX_RELAY_NODES = 4;
-export const RELAY_HOST = /^relay[1-9][0-9]?\.openmausbot\.com$/;
-
+const DNS_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
+const RELAY_HOST = new RegExp(`^(?=.{1,253}$)(?=[^.]*\\.)${DNS_LABEL}(?:\\.${DNS_LABEL})+$`, "i");
+const NUMERIC_HOST_LAST_LABEL = /^(?:\d+|0x[0-9a-f]*)$/i;
+export const isRelayHost = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const lower = value.toLowerCase();
+  const lastLabel = lower.slice(lower.lastIndexOf(".") + 1);
+  return lower !== "localhost"
+    && !lower.endsWith(".localhost")
+    && !NUMERIC_HOST_LAST_LABEL.test(lastLabel)
+    && RELAY_HOST.test(value);
+};
 export type DescriptorRoutes = "any" | "local";
 
 export interface E2EDescriptor {
@@ -42,7 +52,7 @@ export function descriptorFor(
   return routes === "local" ? { ...base, routes: "local" } : base;
 }
 
-/** `update` means a newer version: the phone says "Update the MausBot app" and never falls back to plain pairing.
+/** `update` means a newer version: the phone says "Update the CryBot app" and never falls back to plain pairing.
  * `reject` refuses the whole invite. */
 export type DescriptorParse =
   | { outcome: "ok"; descriptor: E2EDescriptor; transportKey: Buffer; hostId: Buffer | null }
@@ -79,6 +89,6 @@ export function parseDescriptor(input: unknown): DescriptorParse {
   if (!hostId || hostId.length !== HOST_ID_BYTES) return reject("host_id");
   const relays = fields.r;
   if (!Array.isArray(relays) || relays.length < 1 || relays.length > MAX_RELAY_NODES) return reject("relays");
-  if (!relays.every((host): host is string => typeof host === "string" && RELAY_HOST.test(host))) return reject("relay_host");
+  if (!relays.every(isRelayHost)) return reject("relay_host");
   return { outcome: "ok", descriptor: { v: 1, k: fields.k as string, h: fields.h as string, r: [...relays], ...routes }, transportKey, hostId };
 }

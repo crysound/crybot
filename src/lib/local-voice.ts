@@ -5,7 +5,7 @@ type Preferences = {
   voices?: Record<string, string>;
 };
 
-const STORAGE_KEY = "openmausbot.remote-voice.v1";
+const STORAGE_KEY = "crybot.remote-voice.v1";
 
 function storage(): Storage | null {
   try {
@@ -36,8 +36,8 @@ function write(next: Preferences): void {
 export function localSystemVoicesAvailable(): boolean {
   return (
     typeof window !== "undefined" &&
-    window.ogb?.remoteClient?.active === true &&
-    window.ogb?.platform === "darwin" &&
+    window.cry?.remoteClient?.active === true &&
+    window.cry?.platform === "darwin" &&
     typeof window.speechSynthesis !== "undefined" &&
     typeof window.SpeechSynthesisUtterance !== "undefined"
   );

@@ -4,12 +4,12 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry } from "../scripts/control-cry.ts";
 
 type Entry = { step?: { tool: string }; response: any };
 
 it("gives the address to the owning bot and its Chief, never to a teammate, another audience or an outside event's run", async () => {
-  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, { scripted: true });
+  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, { scripted: true });
   const planPath = join(fixture.info.dataDir, "room-plan.json");
   const turns = () => existsSync(`${planPath}.evidence.jsonl`)
     ? readFileSync(`${planPath}.evidence.jsonl`, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line))
@@ -23,7 +23,7 @@ it("gives the address to the owning bot and its Chief, never to a teammate, anot
     expect(response.status, `${method} ${path}: ${JSON.stringify(value)}`).toBe(status);
     return value;
   };
-  const cli = (...args: string[]) => runControlOmb([...args, "--url", fixture.info.url]) as Promise<any>;
+  const cli = (...args: string[]) => runControlCry([...args, "--url", fixture.info.url]) as Promise<any>;
   const plans: Record<string, unknown> = {};
   /** One turn of `bot` in its main conversation; resolves with that turn's tool results. */
   const turn = async (bot: { id: string; activeTaskId: string }, text: string, steps: unknown[], reply = "Done."): Promise<Entry[]> => {

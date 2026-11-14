@@ -23,7 +23,7 @@ beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   install.mockClear();
   check.mockClear();
-  (window as unknown as { ogb: unknown }).ogb = {
+  (window as unknown as { cry: unknown }).cry = {
     updater: {
       onState: (callback: (state: UpdaterState) => void) => {
         push = callback;
@@ -44,7 +44,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  delete (window as unknown as { ogb?: unknown }).ogb;
+  delete (window as unknown as { cry?: unknown }).cry;
 });
 
 describe("the update button", () => {
@@ -55,7 +55,7 @@ describe("the update button", () => {
   });
 
   it("says what it holds", () => {
-    expect(updateIndicatorLabel({ status: "downloaded", version: "0.2.0" })).toBe("Update ready: MausBot 0.2.0");
+    expect(updateIndicatorLabel({ status: "downloaded", version: "0.2.0" })).toBe("Update ready: Cry Bot 0.2.0");
     expect(updateIndicatorLabel({ status: "downloading", percent: 41.6 })).toBe("Downloading an update, 42%");
     expect(updateIndicatorLabel({ status: "downloading" })).toBe("Downloading an update");
   });
@@ -88,7 +88,7 @@ describe("the update card", () => {
     expect(dialog.getAttribute("aria-modal")).toBe("true");
     expect(dialog.parentElement!.className).toContain("items-center");
     expect(dialog.className).toContain("max-w-[420px]");
-    expect(dialog.textContent).toContain("MausBot 0.2.0");
+    expect(dialog.textContent).toContain("Cry Bot 0.2.0");
     expect([...dialog.querySelectorAll("li")].map((item) => item.textContent)).toEqual([
       "Faster start.",
       "Rooms keep actions.",
@@ -101,7 +101,7 @@ describe("the update card", () => {
   });
 
   it("names the desktop app's version, not the version of a server page it shows", async () => {
-    (window as unknown as { ogb: { app: unknown } }).ogb.app = { version: "9.8.7", ownPage: false };
+    (window as unknown as { cry: { app: unknown } }).cry.app = { version: "9.8.7", ownPage: false };
     await emit({ status: "downloaded", version: "0.2.0", releaseNotes: NOTES, installMode: "restart" });
     await act(async () => button()!.click());
     expect(card()!.textContent).toContain("you have 9.8.7");
@@ -122,10 +122,10 @@ describe("the update card", () => {
   it("says the update installs by itself the next time the person is away, and still offers Restart", async () => {
     await emit({ status: "downloaded", version: "0.2.0", installMode: "restart", installsByItself: true });
     await act(async () => button()!.click());
-    expect(card()!.textContent).toContain("Restart now, or leave it: MausBot installs it by itself the next time you're away and nothing is running.");
+    expect(card()!.textContent).toContain("Restart now, or leave it: Cry Bot installs it by itself the next time you're away and nothing is running.");
     expect(card()!.textContent).toContain("Restart to update");
     await emit({ status: "downloaded", version: "0.2.0", installMode: "restart", installsByItself: false });
-    expect(card()!.textContent).toContain("MausBot closes and reopens in a moment.");
+    expect(card()!.textContent).toContain("Cry Bot closes and reopens in a moment.");
     expect(card()!.textContent).not.toContain("by itself");
   });
 

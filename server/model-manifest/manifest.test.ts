@@ -24,7 +24,7 @@ afterEach(() => {
 });
 
 function dataDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), "omb-model-manifest-"));
+  const dir = mkdtempSync(join(tmpdir(), "cry-model-manifest-"));
   scratchDirs.push(dir);
   return dir;
 }
@@ -54,7 +54,7 @@ function store(options: Partial<ConstructorParameters<typeof ModelManifestStore>
     dir,
     log,
     advance: (ms: number) => { time += ms; },
-    manifest: new ModelManifestStore({ dataDir: dir, bundled, now: () => time, log, env: {}, ...rest }),
+    manifest: new ModelManifestStore({ dataDir: dir, bundled, now: () => time, log, env: { CRYBOT_MODEL_MANIFEST_URL: "https://feed.example.test/models.json" }, ...rest }),
   };
 }
 

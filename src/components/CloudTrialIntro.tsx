@@ -1,9 +1,9 @@
 import { Check, Cloud } from "lucide-react";
 import type { CloudOffer } from "../../electron/cloud-home.mjs";
 import { cn } from "@/lib/cn";
-import { cloudIntroView } from "@/lib/cloud-plan";
+import { cloudIntroView } from "@/lib/cloud-status";
 import { t } from "@/lib/i18n";
-import { LINK, Tag } from "./cloud-buy/parts";
+import { LINK, Tag } from "./cloud-parts";
 import { NoticeCard, NotNowButton, PRIMARY_BUTTON } from "./NoticeCard";
 
 export function CloudTrialIntroCard({ offer, onStart, onHowTo, onSignIn, onNotNow, onDismiss }: {

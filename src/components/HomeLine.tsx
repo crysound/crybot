@@ -36,7 +36,7 @@ function ConnectAiLink() {
  * it is separate from My Cloud: words only, so its ✕ closes them for good in that workspace, and they go by themselves after
  * a few days (homeLineStage); connecting an AI stays offered while none is ready. */
 export function HomeLine() {
-  const bridge = !window.ogb?.remoteClient?.active ? window.ogb?.workspaces : undefined;
+  const bridge = !window.cry?.remoteClient?.active ? window.cry?.workspaces : undefined;
   const { state, dispatch } = useStore();
   const [line, setLine] = useState<Line | null>(null);
   const [closed, setClosed] = useState(false);

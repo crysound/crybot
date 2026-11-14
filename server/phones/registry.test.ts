@@ -7,14 +7,14 @@ import * as atomic from "../atomic.ts";
 import { removeTempDir } from "../testing/cleanup.ts";
 import { MAX_BLOCKED, MAX_PHONES, PHONE_ONLINE_MS, PHONE_REMOVED_TEXT, phoneRegistration, PhoneRegistry, type PhoneRegistration } from "./registry.ts";
 
-const reg = (over: Partial<PhoneRegistration> = {}): PhoneRegistration => ({ installId: "inst-aaaaaaaa", name: "Omkar's iPhone", platform: "ios", appVersion: "1.9.0", timeZone: "Asia/Kolkata", capabilities: { calendar: "full", contacts: "limited" }, ...over });
+const reg = (over: Partial<PhoneRegistration> = {}): PhoneRegistration => ({ installId: "inst-aaaaaaaa", name: "User's iPhone", platform: "ios", appVersion: "1.9.0", timeZone: "Asia/Kolkata", capabilities: { calendar: "full", contacts: "limited" }, ...over });
 
 describe("PhoneRegistry", () => {
   let dir: string;
   let file: string;
   let at: number;
   const now = () => at;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "omb-phones-")); file = join(dir, "phones.json"); at = 1_000_000; });
+  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "cry-phones-")); file = join(dir, "phones.json"); at = 1_000_000; });
   afterEach(async () => { vi.restoreAllMocks(); await removeTempDir(dir); });
 
   it("registers, lists online, and persists across a reload", () => {

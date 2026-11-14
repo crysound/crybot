@@ -1,4 +1,4 @@
-import type { CompanionAccountState } from "../types/ogb";
+import type { CompanionAccountState } from "../types/cry";
 import { t } from "./i18n";
 import type { CompanionEndpoint, CompanionPairingRouteMode } from "./companion-pairing";
 
@@ -313,7 +313,7 @@ export function companionPairingOpenFailure(
   if (
     !pairing
     || pairing.token === previousToken
-    || !/^omb_pair_[A-Za-z0-9_-]{43}$/.test(pairing.token)
+    || !/^cry_pair_[A-Za-z0-9_-]{43}$/.test(pairing.token)
     || !/^\d{6}$/.test(pairing.code ?? "")
     || !Number.isFinite(pairing.expiresAt)
     || (pairing.expiresAt ?? 0) <= now
@@ -408,7 +408,7 @@ const PUBLIC_ACCOUNT_MESSAGES = [
   /^The secure connection request (?:was not accepted|was not allowed)\./,
   /^That code (?:is not valid|expired)\./,
   /^Your sign-in expired\./,
-  /^OpenMausBot could not reach its secure connection service\./,
+  /^Cry Bot could not reach its secure connection service\./,
   /^Too many attempts were made\./,
   /^This computer was reconnected too often\./,
   /^This account has reached its computer limit\./,
@@ -427,7 +427,7 @@ export function normalizePhoneSetupActionError(cause: unknown, fallback: string)
   const reference = unwrapped.match(REQUEST_REFERENCE)?.[1] ?? "";
   const message = unwrapped.replace(REQUEST_REFERENCE, "").trim();
   const forbiddenCodeRequest =
-    /remote method ['"]companion-account:request-code['"]/i.test(raw)
+    /remote method ['"]account:request-code['"]/i.test(raw)
     && message.startsWith("The secure connection request was not allowed.");
   const publicMessage = !forbiddenCodeRequest
     && PUBLIC_ACCOUNT_MESSAGES.some((pattern) => pattern.test(message))

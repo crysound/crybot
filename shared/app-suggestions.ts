@@ -13,7 +13,6 @@ export const GOES_WELL_WITH: Readonly<Record<string, readonly string[]>> = {
   linear: ["github", "slack", "notion"],
   jira: ["confluence", "github", "slack"],
   sentry: ["github", "linear", "slack"],
-  posthog: ["github", "linear", "slack"],
   notion: ["slack", "googledrive", "linear"],
   airtable: ["slack", "googlesheets", "notion"],
   asana: ["slack", "googlecalendar", "gmail"],

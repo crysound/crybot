@@ -55,7 +55,7 @@ function fakeHost(script: Script = () => undefined): Host {
     park(node, question) { host.parks.push({ node, question }); },
     report(child, parent) { host.reports.push({ child, ...(parent ? { parent } : {}) }); },
     changed(groups, threads) { host.changes.push({ groups: [...groups].sort(), threads: [...threads].sort() }); },
-    names: (node, parent) => ({ requester: parent?.botId ?? "Milind", assignee: node.botId, person: "Milind" }),
+    names: (node, parent) => ({ requester: parent?.botId ?? "Owner", assignee: node.botId, person: "Owner" }),
     levelOf: target => host.levels[target.botId] ?? { level: "ask" },
     chiefOf: address => host.chiefs.has(address.threadId),
     async release(id, outcome) {
@@ -206,8 +206,8 @@ describe("RuntimeCoordinator: the requesting turn and its tree", () => {
     const first = w.host.runs[0]!;
     expect(first.node).toMatchObject({ id: node.id, status: "running", executions: 1 });
     expect(first.resumed).toBe(false);
-    expect(first.text.startsWith(`[From @chief (bot) · assignment ${node.id} for Milind · on their behalf at your level]`)).toBe(true);
-    expect(first.text).toContain('Milind asked: "Ship the CSV export".');
+    expect(first.text.startsWith(`[From @chief (bot) · assignment ${node.id} for Owner · on their behalf at your level]`)).toBe(true);
+    expect(first.text).toContain('Owner asked: "Ship the CSV export".');
     expect(first.text).toContain("Your level for this is Edits:");
     expect(first.text.endsWith("Brief from @chief:\nBuild it")).toBe(true);
     await flush();
@@ -820,8 +820,8 @@ describe("RuntimeCoordinator: the run adapter", () => {
     w.coordinator.tick(); await flush();
     const resumes = w.host.runs.filter(run => run.node.id === "gen-1");
     expect(resumes.map(run => run.resumed)).toEqual([true]);
-    expect(resumes[0]!.text).toMatch(/^A teammate you are waiting on stopped on a question for Milind or for you; the rest of your requests are still open/);
-    expect(resumes[0]!.text).toContain(`\n\n[From @builder (bot) · question on assignment ${built.id}: waiting on Milind · information only]\nIt asks Milind: "Which region should I deploy to?".`);
+    expect(resumes[0]!.text).toMatch(/^A teammate you are waiting on stopped on a question for Owner or for you; the rest of your requests are still open/);
+    expect(resumes[0]!.text).toContain(`\n\n[From @builder (bot) · question on assignment ${built.id}: waiting on Owner · information only]\nIt asks Owner: "Which region should I deploy to?".`);
     expect(w.coordinator.node("gen-1")?.status).toBe("waiting");
     expect(w.coordinator.node(tested.id)?.status).toBe("running");
   });
@@ -1151,13 +1151,13 @@ describe("RuntimeCoordinator: restarts", () => {
       after.coordinator.tick();
       expect(after.host.runs).toHaveLength(1);
       expect(after.host.runs[0]!.resumed).toBe(false);
-      expect(after.host.runs[0]!.text).toMatch(/^OpenMausBot restarted while your previous turn here was running and cut it off;.*\n\[From /);
+      expect(after.host.runs[0]!.text).toMatch(/^Cry Bot restarted while your previous turn here was running and cut it off;.*\n\[From /);
       await flush();
       expect(after.coordinator.node(node.id)).toMatchObject({ status: "completed", restarts: 1 });
       after.coordinator.tick();
       const resume = after.host.runs[1]!;
       expect(resume.node.id).toBe("gen-1");
-      expect(resume.text).toMatch(/^OpenMausBot restarted before your previous turn here finished, after it sent work to teammates\..*A restart cut these teammates' turns: builder \(resumed once in place and told to check what it had already done\)\. Check their results as usual\.\nYour downstream room requests have settled\./);
+      expect(resume.text).toMatch(/^Cry Bot restarted before your previous turn here finished, after it sent work to teammates\..*A restart cut these teammates' turns: builder \(resumed once in place and told to check what it had already done\)\. Check their results as usual\.\nYour downstream room requests have settled\./);
       await flush();
       expect(after.coordinator.node("gen-1")?.status).toBe("completed");
       after.coordinator.close();
@@ -1301,7 +1301,7 @@ describe("RuntimeCoordinator: modes and openers", () => {
     expect(second.reply).toBe("poll");
     w.coordinator.tick();
     const text = w.host.runs[0]!.text;
-    expect(text).toContain("This work started with an external runtime, not with Milind's own request");
+    expect(text).toContain("This work started with an external runtime, not with Owner's own request");
     expect(text).toContain("@bridge reads your reply from its inbox when it asks");
     ended(w, "gen-x");
     expect(w.coordinator.node("gen-x")?.status).toBe("waiting");
@@ -1339,7 +1339,7 @@ describe("RuntimeCoordinator: modes and openers", () => {
     expect(text).toContain("A routine run started this work");
     expect(text).toContain("a step the routine does not cover");
     expect(text).toContain('Done when: "the PDF is in the shared folder".');
-    expect(text).not.toContain("Milind asked");
+    expect(text).not.toContain("Owner asked");
     expect(text).not.toContain("outside content");
     await flush();
     expect(w.coordinator.outstandingFor("chief-chat")).toEqual([]);
@@ -1386,7 +1386,7 @@ describe("RuntimeCoordinator: modes and openers", () => {
 });
 
 describe("RuntimeCoordinator: every turn a root (beginTurn, endTurn, answerRoot, parkedDirect)", () => {
-  const CONNECTED = "OpenMausBot connection update: the user securely connected GitHub. Continue the task.";
+  const CONNECTED = "Cry Bot connection update: the user securely connected GitHub. Continue the task.";
   const bridge: RoomAddress = { botId: "bridge", threadId: "bridge-chat" };
   const begin = (w: World, id = "gen-1", over: Partial<BeginTurnRequest> = {}) =>
     w.coordinator.beginTurn({ id, address: chief, brief: "Ship the CSV export", level: "auto", origin: userOrigin, ...over });
@@ -1511,7 +1511,7 @@ describe("RuntimeCoordinator: every turn a root (beginTurn, endTurn, answerRoot,
       expect(run.node).toMatchObject({ id: "gen-1", status: "running", executions: 2, restarts: 1, restart: "rerun" });
       expect(run.resumed).toBe(false);
       expect(run.composed.turn).toBe("rerun");
-      expect(run.composed.restartNote).toMatch(/^OpenMausBot restarted while your previous turn here was running and cut it off; this turn continues it\./);
+      expect(run.composed.restartNote).toMatch(/^Cry Bot restarted while your previous turn here was running and cut it off; this turn continues it\./);
       expect(run.text.startsWith(run.composed.restartNote)).toBe(true);
       expect(run.text.endsWith('Continue the request you were working on: "Ship the CSV export".')).toBe(true);
       expect(run.text).not.toContain("· assignment ");
@@ -1582,7 +1582,7 @@ describe("RuntimeCoordinator: every turn a root (beginTurn, endTurn, answerRoot,
     expect(second.resumed).toBe(false);
     expect(second.composed.turn).toBe("continued");
     expect(second.composed.restartNote).toBe("");
-    expect(second.text.startsWith(`Step cap: 64 rounds. Every step so far is listed in /handoffs/builder-1.md; read it before going on.\n[From @chief (bot) · assignment ${node.id} for Milind · on their behalf at your level]`)).toBe(true);
+    expect(second.text.startsWith(`Step cap: 64 rounds. Every step so far is listed in /handoffs/builder-1.md; read it before going on.\n[From @chief (bot) · assignment ${node.id} for Owner · on their behalf at your level]`)).toBe(true);
     expect(second.text.endsWith("Brief from @chief:\nBuild it")).toBe(true);
     expect(second.composed.note.startsWith("Step cap: 64 rounds.")).toBe(true);
     expect(second.composed.note).not.toContain("Brief from");
@@ -1711,7 +1711,7 @@ describe("RuntimeCoordinator: every turn a root (beginTurn, endTurn, answerRoot,
 });
 
 describe("RuntimeCoordinator: outward restart policy, answerNode, continuation on the view", () => {
-  const CONNECTED = "OpenMausBot connection update: the user securely connected GitHub. Continue the task.";
+  const CONNECTED = "Cry Bot connection update: the user securely connected GitHub. Continue the task.";
   const beginRoot = (w: World, id: string, address: RoomAddress = chief) =>
     w.coordinator.beginTurn({ id, address, brief: "Ship the CSV export", level: "auto", origin: userOrigin });
 
@@ -1725,7 +1725,7 @@ describe("RuntimeCoordinator: outward restart policy, answerNode, continuation o
       const asked: string[] = [];
       after.host.outward = node => { asked.push(node.id); return node.id === "gen-1" ? ["GMAIL_SEND_EMAIL", "git push"] : []; };
       expect(after.coordinator.node("gen-1")).toMatchObject({ status: "failed", outcome: "interrupted", restarts: 0, executions: 1,
-        outcomeDetail: "Interrupted by an OpenMausBot restart after it already sent an email (GMAIL_SEND_EMAIL), pushed (git push); not resumed, so nothing is done twice." });
+        outcomeDetail: "Interrupted by a Cry Bot restart after it already sent an email (GMAIL_SEND_EMAIL), pushed (git push); not resumed, so nothing is done twice." });
       expect(asked).toEqual(["gen-1"]);
       expect("restart" in after.coordinator.node("gen-1")!).toBe(false);
       expect(after.host.reports).toEqual([{ child: expect.objectContaining({ id: "gen-1", status: "failed", outcome: "interrupted" }) }]);
@@ -1744,7 +1744,7 @@ describe("RuntimeCoordinator: outward restart policy, answerNode, continuation o
       const last = world(undefined, {}, dir);
       last.host.outward = n => n.id === node.id ? ["SLACK_SEND_MESSAGE"] : [];
       expect(last.coordinator.node(node.id)).toMatchObject({ status: "failed", outcome: "interrupted", restarts: 0, reported: true,
-        outcomeDetail: "Interrupted by an OpenMausBot restart after it already sent a message (SLACK_SEND_MESSAGE); not resumed, so nothing is done twice." });
+        outcomeDetail: "Interrupted by a Cry Bot restart after it already sent a message (SLACK_SEND_MESSAGE); not resumed, so nothing is done twice." });
       expect(last.host.reports.map(r => [r.child.id, r.parent?.id])).toEqual([[node.id, "gen-2"]]);
       expect(last.coordinator.node("gen-2")).toMatchObject({ status: "waiting", restart: "teammates" });
       last.coordinator.tick();
@@ -1752,7 +1752,7 @@ describe("RuntimeCoordinator: outward restart policy, answerNode, continuation o
       expect(resume.node.id).toBe("gen-2");
       expect(resume.composed.turn).toBe("resume");
       expect(resume.composed.restartNote).toBe("A restart cut these teammates' turns: builder (cut after an outward action, not resumed: see its result). Check their results as usual.\n");
-      expect(resume.text).toContain(`[From @builder (bot) · report on assignment ${node.id}: failed (interrupted): Interrupted by an OpenMausBot restart after it already sent a message (SLACK_SEND_MESSAGE)`);
+      expect(resume.text).toContain(`[From @builder (bot) · report on assignment ${node.id}: failed (interrupted): Interrupted by a Cry Bot restart after it already sent a message (SLACK_SEND_MESSAGE)`);
       await flush();
       expect(last.coordinator.node("gen-2")?.status).toBe("completed");
       expect(last.host.runs).toHaveLength(1);
@@ -1799,8 +1799,8 @@ describe("RuntimeCoordinator: outward restart policy, answerNode, continuation o
     expect(run.node).toMatchObject({ id: node.id, status: "running", executions: 2 });
     expect("cards" in run.node).toBe(false);
     expect(run.composed.turn).toBe("answered");
-    expect(run.text.startsWith(`[From @chief (bot) · assignment ${node.id} for Milind · on their behalf at your level]`)).toBe(true);
-    expect(run.text.endsWith('The person answered: "OpenMausBot connection update: the user securely connected GitHub. Continue the task.".')).toBe(true);
+    expect(run.text.startsWith(`[From @chief (bot) · assignment ${node.id} for Owner · on their behalf at your level]`)).toBe(true);
+    expect(run.text.endsWith('The person answered: "Cry Bot connection update: the user securely connected GitHub. Continue the task.".')).toBe(true);
     expect(run.text).not.toContain("Your question was");
     await flush();
     expect(w.coordinator.node(node.id)).toMatchObject({ status: "completed", result: "builder done", executions: 2, reported: true });
@@ -1874,7 +1874,7 @@ describe("RuntimeCoordinator: who answers a teammate's question", () => {
     w.coordinator.tick(); await flush();
     const resume = w.host.runs.find(run => run.node.id === "gen-1")!;
     expect(resume.text).toContain(`[From @builder (bot) · question on assignment ${node.id}: yours to answer · information only]\nIt asks: "CSV or Excel?". Its default: "CSV".`);
-    expect(resume.text).not.toContain("waiting on Milind");
+    expect(resume.text).not.toContain("waiting on Owner");
     w.coordinator.tick(); await flush();
     const answered = w.host.runs.filter(run => run.node.id === node.id).at(-1)!;
     expect(answered.node).toMatchObject({ answer: "CSV", answeredBy: { kind: "default" } });
@@ -1892,8 +1892,8 @@ describe("RuntimeCoordinator: who answers a teammate's question", () => {
     expect(w.coordinator.node(node.id)?.decide).toBeUndefined();
     w.coordinator.tick(); await flush();
     const resume = w.host.runs.find(run => run.node.id === "gen-1")!;
-    expect(resume.text).toContain("waiting on Milind");
-    expect(resume.text).toContain("Only Milind can answer it, there: do not answer it for them or pass an answer on.");
+    expect(resume.text).toContain("waiting on Owner");
+    expect(resume.text).toContain("Only Owner can answer it, there: do not answer it for them or pass an answer on.");
     expect(resume.text).not.toContain("yours to answer");
   });
 
@@ -1948,7 +1948,7 @@ describe("RuntimeCoordinator: who answers a teammate's question", () => {
     w.coordinator.tick(); await flush();
     expect(w.coordinator.node(node.id)).toMatchObject({ status: "waiting", question: "CSV or Excel?\nDefault: CSV" });
     expect(w.coordinator.node(node.id)?.decide).toBeUndefined();
-    expect(w.host.runs.find(run => run.node.id === node.id)?.text).toContain("If something genuinely needs Milind");
+    expect(w.host.runs.find(run => run.node.id === node.id)?.text).toContain("If something genuinely needs Owner");
   });
 
   it("lists the work a bot has parked, for an answer passed on to it", async () => {

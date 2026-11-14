@@ -27,7 +27,7 @@ describe("base64url", () => {
 
 describe("the stored token hash", () => {
   it("is the hex the desktop already keeps, and nothing else parses", () => {
-    const hash = credentialHash("omb_example");
+    const hash = credentialHash("cry_example");
     expect(credentialHashFromHex(hash.toString("hex"))).toEqual(hash);
     expect(credentialHashFromHex(hash.toString("hex").toUpperCase())).toBeNull();
     expect(credentialHashFromHex("abc")).toBeNull();
@@ -68,7 +68,7 @@ describe("relay tokens", () => {
 describe("descriptors", () => {
   it("round-trip, with and without the relay", () => {
     const T = generateKeyPair();
-    const withRelay = descriptorFor(T.publicKey, { hostId: Buffer.alloc(16, 1), nodes: ["relay1.openmausbot.com"] });
+    const withRelay = descriptorFor(T.publicKey, { hostId: Buffer.alloc(16, 1), nodes: ["relay1.crybot.com"] });
     const parsed = parseDescriptor(encodeDescriptor(withRelay));
     expect(parsed.outcome === "ok" && parsed.descriptor).toEqual(withRelay);
     const direct = descriptorFor(T.publicKey);
@@ -82,5 +82,18 @@ describe("descriptors", () => {
     expect(parseDescriptor({ v: 1, k: b64u(T.publicKey) }).outcome).toBe("ok");
     expect(parseDescriptor({ v: 3 }).outcome).toBe("update");
     expect(parseDescriptor(null).outcome).toBe("reject");
+  });
+
+  it("accepts a complete relay domain and rejects local, single-label, and IP hosts", () => {
+    const T = generateKeyPair();
+    const base = { v: 1 as const, k: b64u(T.publicKey), h: b64u(Buffer.alloc(16, 1)) };
+    expect(parseDescriptor({ ...base, r: ["relay.example.com"] }).outcome).toBe("ok");
+    expect(parseDescriptor({ ...base, r: ["r1.relay.example.com"] }).outcome).toBe("ok");
+    for (const host of [
+      "localhost", "LOCALHOST", "localhost.", "foo.localhost", "relay.localhost", "relay", "127.0.0.1", "::1", "2001:db8::1",
+      "127.1", "0x7f.0.0.1", "0177.0.0.1", "0x7f.1", "10.1", "192.168.1", "00127.0.0.1",
+    ]) {
+      expect(parseDescriptor({ ...base, r: [host] }), host).toMatchObject({ outcome: "reject", reason: "relay_host" });
+    }
   });
 });

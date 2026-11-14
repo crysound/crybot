@@ -43,7 +43,6 @@ vi.mock("./PhoneDevicesSection", () => ({ PhoneDevicesSection: () => null }));
 vi.mock("./ServerPairingCard", () => ({ ServerPairingCard: () => null }));
 vi.mock("./ConnectedWorkspacesSettings", () => ({ ConnectedWorkspacesSettings: marker("desktopWorkspaces") }));
 vi.mock("./LocalComputerSection", () => ({ LocalComputerSection: marker("computer") }));
-vi.mock("./CloudAccountSettings", () => ({ CloudAccountSettings: marker("cloudAccount") }));
 vi.mock("./OrganizationSettings", () => ({ OrganizationSettings: marker("organization") }));
 vi.mock("./PeopleSection", () => ({ PeopleSection: marker("people") }));
 vi.mock("./ActivitySection", () => ({ ActivitySection: marker("activity") }));
@@ -83,7 +82,7 @@ beforeEach(() => {
     if (action.type === "configStatus") fx.config = action.config!;
     publish();
   });
-  vi.stubGlobal("ogb", undefined);
+  vi.stubGlobal("cry", undefined);
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);

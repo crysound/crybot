@@ -6,12 +6,12 @@ import { journalUrl } from "./saved-steps/journal-tap.ts";
 import { COMPUTER_HELPER_STOPPED } from "../shared/your-computer.ts";
 
 const {
-  OMB_CUA_COMMAND: command,
-  OMB_CUA_ARGS: encodedArgs,
-  OMB_CUA_PLATFORM: platform,
-  OMB_CONTROL_URL: url,
-  OMB_CONTROL_TOKEN: token,
-  OMB_COMPUTER_JOURNAL: journal,
+  CRYBOT_CUA_COMMAND: command,
+  CRYBOT_CUA_ARGS: encodedArgs,
+  CRYBOT_CUA_PLATFORM: platform,
+  CRYBOT_CONTROL_URL: url,
+  CRYBOT_CONTROL_TOKEN: token,
+  CRYBOT_COMPUTER_JOURNAL: journal,
   ...childEnv
 } = process.env;
 

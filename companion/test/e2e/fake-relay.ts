@@ -1,7 +1,7 @@
 // A relay for tests, following README section 9: host control and data sockets, phone sockets, admission sets,
 // splicing, and the close codes. `tamper` lets a test play a malicious relay on spliced bytes.
 import { createHash, randomBytes } from "node:crypto";
-import { createServer, type IncomingMessage } from "node:http";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import type { Duplex } from "node:stream";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
@@ -20,6 +20,7 @@ interface Host {
 export interface FakeRelayOptions {
   keys: Map<string, Uint8Array>;
   port?: number;
+  request?: (req: IncomingMessage, res: ServerResponse) => void;
   /** Return the bytes to pass on, or null to drop them. */
   tamper?: (direction: Direction, data: Buffer, index: number) => Buffer | null;
 }
@@ -43,14 +44,14 @@ export interface FakeRelay {
   close(): Promise<void>;
 }
 
-const PROTOCOL = "omb-relay.v1";
+const PROTOCOL = "cry-relay.v1";
 const toBuffer = (data: RawData): Buffer => (Array.isArray(data) ? Buffer.concat(data) : Buffer.from(data as ArrayBuffer));
 
 export async function startFakeRelay(options: FakeRelayOptions): Promise<FakeRelay> {
   const hosts = new Map<string, Host>();
   const relay = { refreshes: 0, tamper: options.tamper ?? null } as FakeRelay;
   const closes: FakeRelay["closes"] = [];
-  const server = createServer((_req, res) => res.writeHead(404).end());
+  const server = createServer(options.request ?? ((_req, res) => res.writeHead(404).end()));
   const wss = new WebSocketServer({
     noServer: true,
     maxPayload: 70_000,

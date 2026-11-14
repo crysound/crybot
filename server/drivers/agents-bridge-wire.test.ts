@@ -1,5 +1,5 @@
 // What the agents proxy puts on the wire for `tools/list` with the tool
-// bridge on (OMB_AGENTS_TOOL_BRIDGE=1, agents-bridge.ts), pinned byte for
+// bridge on (CRYBOT_AGENTS_TOOL_BRIDGE=1, agents-bridge.ts), pinned byte for
 // byte and measured, the way agents-catalog-wire.test.ts pins the whole
 // catalog. That file and its goldens are not this one's to change: with the
 // switch off the proxy serves them to the byte, which it keeps checking and
@@ -31,7 +31,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const PROXY_SOURCE = join(HERE, "agents-proxy.ts");
 const GOLDENS = join(HERE, "agents-catalog-goldens");
 const UPDATE = process.env.UPDATE_AGENTS_CATALOG_GOLDENS === "1";
-const BRIDGE_ON = { OMB_AGENTS_TOOL_BRIDGE: "1" };
+const BRIDGE_ON = { CRYBOT_AGENTS_TOOL_BRIDGE: "1" };
 
 const flag = (on: boolean) => (on ? "1" : "0");
 
@@ -47,29 +47,29 @@ function profiles(): Record<string, Record<string, string>> {
           const name = [skills && "skills", shared && "shared", voice && "voice", !chief && "non-chief"]
             .filter(Boolean).join("+") || "default";
           all[name] = {
-            OMB_SKILL_AUTHORING_ENABLED: flag(skills),
-            OMB_SHARED_COMPUTERS_ENABLED: flag(shared),
-            OMB_VOICE_NOTES: flag(voice),
-            OMB_CHIEF_OF_STAFF: flag(chief),
-            OMB_COMPUTER_SELECTION: "1",
+            CRYBOT_SKILL_AUTHORING_ENABLED: flag(skills),
+            CRYBOT_SHARED_COMPUTERS_ENABLED: flag(shared),
+            CRYBOT_VOICE_NOTES: flag(voice),
+            CRYBOT_CHIEF_OF_STAFF: flag(chief),
+            CRYBOT_COMPUTER_SELECTION: "1",
           };
         }
       }
     }
   }
   for (const name of ["skills+shared+voice", "skills+shared+voice+non-chief"]) {
-    all[`${name}+cloud-home`] = { ...all[name]!, OMB_CLOUD_HOME: "1" };
+    all[`${name}+cloud-home`] = { ...all[name]!, CRYBOT_CLOUD_HOME: "1" };
   }
-  all["skills+shared+voice+x"] = { ...all["skills+shared+voice"]!, OMB_X_RESEARCH: "1", OMB_RESEARCH: "1" };
-  all["skills+shared+voice+x+team"] = { ...all["skills+shared+voice+x"]!, OMB_TEAM_PEOPLE: "1" };
-  all["skills+shared+voice+x+team+images"] = { ...all["skills+shared+voice+x+team"]!, OMB_IMAGE_GENERATION: "1" };
-  all["default+legacy-switches"] = { ...all.default!, OMB_ROOM_TURN: "1", OMB_OWN_THREAD_CREATION: "1", OMB_EXTERNAL_RUNTIME: "1", OMB_ACTIVE_WAITS: "0" };
-  for (const name of ["default", "skills+shared+voice"]) all[`${name}+mausbot`] = { ...all[name]!, OMB_MAUSBOT: "1" };
-  all["default+no-computer-pick"] = { ...all.default!, OMB_COMPUTER_SELECTION: "0" };
-  for (const name of ["default", "non-chief"]) all[`${name}+room`] = { ...all[name]!, OMB_COMPUTER_SELECTION: "0", OMB_ROOM: "1" };
-  all["default+images"] = { ...all.default!, OMB_IMAGE_GENERATION: "1" };
-  all["skills+shared+voice+x+team+images+hosting"] = { ...all["skills+shared+voice+x+team+images"]!, OMB_APP_HOSTING: "1" };
-  all["default+hosting"] = { ...all.default!, OMB_APP_HOSTING: "1" };
+  all["skills+shared+voice+x"] = { ...all["skills+shared+voice"]!, CRYBOT_X_RESEARCH: "1", CRYBOT_RESEARCH: "1" };
+  all["skills+shared+voice+x+team"] = { ...all["skills+shared+voice+x"]!, CRYBOT_TEAM_PEOPLE: "1" };
+  all["skills+shared+voice+x+team+images"] = { ...all["skills+shared+voice+x+team"]!, CRYBOT_IMAGE_GENERATION: "1" };
+  all["default+legacy-switches"] = { ...all.default!, CRYBOT_ROOM_TURN: "1", CRYBOT_OWN_THREAD_CREATION: "1", CRYBOT_EXTERNAL_RUNTIME: "1", CRYBOT_ACTIVE_WAITS: "0" };
+  for (const name of ["default", "skills+shared+voice"]) all[`${name}+crybot`] = { ...all[name]!, CRYBOT_BOTBOT: "1" };
+  all["default+no-computer-pick"] = { ...all.default!, CRYBOT_COMPUTER_SELECTION: "0" };
+  for (const name of ["default", "non-chief"]) all[`${name}+room`] = { ...all[name]!, CRYBOT_COMPUTER_SELECTION: "0", CRYBOT_ROOM: "1" };
+  all["default+images"] = { ...all.default!, CRYBOT_IMAGE_GENERATION: "1" };
+  all["skills+shared+voice+x+team+images+hosting"] = { ...all["skills+shared+voice+x+team+images"]!, CRYBOT_APP_HOSTING: "1" };
+  all["default+hosting"] = { ...all.default!, CRYBOT_APP_HOSTING: "1" };
   return all;
 }
 
@@ -105,8 +105,8 @@ const BUDGET_BASELINE: Record<string, number> = {
   "skills+shared+voice+x": 19352,
   "skills+shared+voice+x+team": 19352,
   "default+legacy-switches": 18331,
-  "default+mausbot": 18383,
-  "skills+shared+voice+mausbot": 19325,
+  "default+crybot": 18383,
+  "skills+shared+voice+crybot": 19325,
   "default+no-computer-pick": 17119,
   "default+room": 17389,
   "non-chief+room": 17272,
@@ -121,11 +121,11 @@ type RpcAnswer = { id: number; result?: { tools?: unknown[]; content?: Array<{ t
 /** One freshly spawned proxy's raw answer lines to `requests`, in the order
  * asked, read off its stdout as they arrive. */
 async function proxyLines(entry: string, env: Record<string, string>, requests: Array<{ method: string; params?: unknown }>): Promise<string[]> {
-  // A developer shell (or an OpenMausBot turn running this suite) can carry
-  // OMB_* switches of its own; the profile must be the only source.
-  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("OMB_")));
+  // A developer shell (or an CryBot turn running this suite) can carry
+  // CRYBOT_* switches of its own; the profile must be the only source.
+  const inherited = { PATH: process.env.PATH ?? "/usr/bin:/bin", HOME: process.env.HOME ?? "/tmp" };
   const child = spawn(process.execPath, [entry], {
-    env: { ...inherited, OMB_HARNESS_URL: "http://127.0.0.1:9", OMB_BOT_ID: "bot-golden", OMB_THREAD_ID: "thread-golden", OMB_COMMS_TOKEN: "unused", OMB_TURN_DEPTH: "0", ...env },
+    env: { ...inherited, CRYBOT_HARNESS_URL: "http://127.0.0.1:9", CRYBOT_BOT_ID: "bot-golden", CRYBOT_THREAD_ID: "thread-golden", CRYBOT_COMMS_TOKEN: "unused", CRYBOT_TURN_DEPTH: "0", ...env },
     stdio: ["pipe", "pipe", "inherit"],
   });
   try {
@@ -166,7 +166,8 @@ async function toolsListWire(entry: string, env: Record<string, string>): Promis
 
 async function bridgedWireForEveryProfile(entry: string): Promise<Record<string, string>> {
   const names = Object.keys(PROFILES);
-  const all = await Promise.all(names.map((name) => toolsListWire(entry, { ...PROFILES[name]!, ...BRIDGE_ON })));
+  const all: string[] = [];
+  for (const name of names) all.push(await toolsListWire(entry, { ...PROFILES[name]!, ...BRIDGE_ON }));
   return Object.fromEntries(names.map((name, index) => [name, all[index]!]));
 }
 
@@ -179,7 +180,7 @@ type Tool = { name: string; description: string; inputSchema: Record<string, unk
 const toolsOf = (wire: string) => (JSON.parse(wire) as { tools: Tool[] }).tools;
 /** The turn's whole catalog as the proxy serializes it with the switch off;
  * agents-catalog-wire.test.ts proves these are the proxy's bytes. */
-const unbridgedWire = (name: string) => JSON.stringify({ tools: availableTools(catalogProfileFromEnv({ OMB_BOT_ID: "bot-golden", ...PROFILES[name]! })) });
+const unbridgedWire = (name: string) => JSON.stringify({ tools: availableTools(catalogProfileFromEnv({ CRYBOT_BOT_ID: "bot-golden", ...PROFILES[name]! })) });
 
 const goldenPath = join(GOLDENS, "bridged.tools-list.json");
 const manifestPath = join(GOLDENS, "bridged.profiles.json");
@@ -270,7 +271,7 @@ describe("agents proxy tools/list golden with the tool bridge on", () => {
       expect(namedHidden(wire), name).toEqual(twinNames.filter((tool) => !listed.has(tool)));
     }
     // So a bot that is not a Chief is not told the Chief-only tools exist.
-    const nonChief = Object.keys(PROFILES).filter((name) => PROFILES[name]!.OMB_CHIEF_OF_STAFF === "0");
+    const nonChief = Object.keys(PROFILES).filter((name) => PROFILES[name]!.CRYBOT_CHIEF_OF_STAFF === "0");
     expect(nonChief).toHaveLength(10);
     for (const name of nonChief) {
       for (const tool of CHIEF_ONLY_TOOLS) expect(wires[name], `${name}: ${tool}`).not.toContain(tool);
@@ -284,17 +285,17 @@ describe("agents proxy tools/list golden with the tool bridge on", () => {
     const base = hotOf("default");
     expect(base).toEqual(["tool_result_read", "list_room_targets", "coordinate_bots", "list_bots", "list_rooms", "select_computer", "attach_file", "publish_page", "post_to_room", "post_to_thread", "request_credential", "request_sign_in", "fill_login", "message_person", "memory_update"]);
     for (const name of Object.keys(PROFILES)) {
-      const selects = PROFILES[name]!.OMB_COMPUTER_SELECTION === "1";
+      const selects = PROFILES[name]!.CRYBOT_COMPUTER_SELECTION === "1";
       // publish_app puts an app on the public web, so the host counts it as outbound and it is never behind use_tool.
       expect(hotOf(name).filter((tool) => tool !== "send_voice_note" && tool !== "publish_app"), name).toEqual(selects ? base : base.filter((tool) => tool !== "select_computer"));
-      expect(hotOf(name).includes("publish_app"), name).toBe(PROFILES[name]!.OMB_APP_HOSTING === "1");
-      expect(hotOf(name).includes("send_voice_note"), name).toBe(PROFILES[name]!.OMB_VOICE_NOTES === "1");
+      expect(hotOf(name).includes("publish_app"), name).toBe(PROFILES[name]!.CRYBOT_APP_HOSTING === "1");
+      expect(hotOf(name).includes("send_voice_note"), name).toBe(PROFILES[name]!.CRYBOT_VOICE_NOTES === "1");
     }
   });
 
   it("is what the catalog and the bridge compute in-process, so another front end lists the same tools", () => {
     for (const name of Object.keys(PROFILES)) {
-      const turn = catalogProfileFromEnv({ OMB_BOT_ID: "bot-golden", ...PROFILES[name]! });
+      const turn = catalogProfileFromEnv({ CRYBOT_BOT_ID: "bot-golden", ...PROFILES[name]! });
       const tools = createToolBridge(availableTools(turn) as BridgeTool[]).listed;
       expect(JSON.stringify({ tools }), name).toBe(wires[name]);
     }
@@ -319,7 +320,7 @@ describe("agents proxy tools/list golden with the tool bridge on", () => {
   it("serves the unbridged goldens unless the switch is exactly 1", async () => {
     const full = JSON.stringify(readJson(join(GOLDENS, "full.tools-list.json")));
     expect(unbridgedWire(FULL)).toBe(full);
-    const served = await Promise.all(["0", "", "true", "yes", "on"].map((value) => toolsListWire(PROXY_SOURCE, { ...PROFILES[FULL]!, OMB_AGENTS_TOOL_BRIDGE: value })));
+    const served = await Promise.all(["0", "", "true", "yes", "on"].map((value) => toolsListWire(PROXY_SOURCE, { ...PROFILES[FULL]!, CRYBOT_AGENTS_TOOL_BRIDGE: value })));
     for (const wire of [...served, await toolsListWire(PROXY_SOURCE, PROFILES[FULL]!)]) expect(wire).toBe(full);
   }, 60_000);
 });
@@ -334,7 +335,7 @@ describe("agents proxy with the tool bridge on, from the packaged bundle", () =>
     // The proxy runs as its own process in a packaged build, so the bridge
     // and the ranker it searches with have to be inlined into the one
     // agents-proxy.js that scripts/bundle-server.mjs's options produce.
-    directory = realpathSync(mkdtempSync(join(tmpdir(), "omb-agents-proxy-bridge-bundle-")));
+    directory = realpathSync(mkdtempSync(join(tmpdir(), "cry-agents-proxy-bridge-bundle-")));
     await build({
       entryPoints: [PROXY_SOURCE],
       bundle: true,

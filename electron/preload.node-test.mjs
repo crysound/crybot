@@ -44,8 +44,8 @@ const emit = (channel, ...args) => {
 };
 const subscriberCount = (channel) => listeners.get(channel)?.size ?? 0;
 
-test("exposes the full local-shell bridge on window.ogb", () => {
-  assert.equal(exposed.name, "ogb");
+test("exposes the full local-shell bridge on window.cry", () => {
+  assert.equal(exposed.name, "cry");
   assert.equal(typeof exposed.api, "object");
   assert.equal(typeof exposed.api.onOpenAppSettings, "function");
 });
@@ -146,7 +146,7 @@ test("native Settings requests accept only the fixed organisation section, Cloud
   emit("app:open-settings", "cloud-settings");
   emit("app:open-settings", "https://other.example");
   emit("app:open-settings", "cloudAccount");
-  emit("app:open-settings", "openmausbot://cloud");
+  emit("app:open-settings", "crybot://cloud");
   emit("app:open-settings", { section: "organization", url: "https://other.example" });
   emit("app:open-settings", ["cloud"]);
   assert.deepEqual(calls, ["organization", "cloud", "cloud-settings", undefined, undefined, undefined, undefined, undefined]);

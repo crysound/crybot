@@ -20,7 +20,7 @@ let fromMain: ((section?: string) => void) | null = null;
 function renderAt(path: string): () => void {
   vi.stubGlobal("fetch", () => new Promise(() => {}));
   window.history.replaceState(null, "", path);
-  (window as { ogb?: unknown }).ogb = {
+  (window as { cry?: unknown }).cry = {
     environments: { onOpenSettings: () => () => {} },
     onOpenAppSettings: (cb: (section?: string) => void) => { fromMain = cb; return () => { fromMain = null; }; },
   };
@@ -34,7 +34,7 @@ function renderAt(path: string): () => void {
 
 const settingsOpened = () => dispatched.filter((action) => action.type === "toggleAppSettings");
 
-afterEach(() => { delete (window as { ogb?: unknown }).ogb; fromMain = null; vi.unstubAllGlobals(); });
+afterEach(() => { delete (window as { cry?: unknown }).cry; fromMain = null; vi.unstubAllGlobals(); });
 
 it("main's request for This computer's update or sign-out page opens Settings on that page", () => {
   const done = renderAt("/");
@@ -60,4 +60,9 @@ it("main's request for the phone page opens the phone pairing, as the phone link
   try {
     expect(settingsOpened()).toEqual([{ type: "toggleAppSettings", open: true, section: "phone", phonePairing: true }]);
   } finally { linked(); }
+});
+
+it("the local store has no hosted modal state", () => {
+  expect(initialState).not.toHaveProperty("cloudAdd");
+  expect(initialState).not.toHaveProperty("cloudHowTo");
 });

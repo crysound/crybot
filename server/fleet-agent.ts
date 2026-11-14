@@ -12,7 +12,6 @@ export interface FleetAgentOptions {
   group?: string;
   node: string;
   script: string;
-  licenseKey?: string;
   root?: string;
   deps?: FleetDeps;
   auditFile?: string;
@@ -80,7 +79,7 @@ export function createFleetAgent(options: FleetAgentOptions): Server {
   const auditFile = options.auditFile ?? layout.auditFile;
   const base = (): FleetInput => ({
     action: "list", admins: [], members: [], dryRun: false, yes: false, keepData: false,
-    node: options.node, script: options.script, root: options.root, ...(options.licenseKey ? { licenseKey: options.licenseKey } : {}),
+    node: options.node, script: options.script, root: options.root,
   });
 
   const audit = (entry: Record<string, unknown>) => {
@@ -142,7 +141,7 @@ export function createFleetAgent(options: FleetAgentOptions): Server {
         const workspaces: (FleetWorkspaceView | Pick<FleetWorkspaceView, "slug" | "live">)[] = [];
         for (const workspace of Object.values(registry.workspaces).sort((a, b) => a.slug.localeCompare(b.slug))) {
           const live = workspace.status === "running" || workspace.status === "suspended"
-            ? (await deps.run(["systemctl", "is-active", `openmausbot@${workspace.slug}.service`])).output.trim() || "unknown"
+            ? (await deps.run(["systemctl", "is-active", `crybot@${workspace.slug}.service`])).output.trim() || "unknown"
             : workspace.status;
           workspaces.push(statusOnly ? { slug: workspace.slug, live } : { ...workspace, live, usage: workspaceUsage(layout, workspace.slug, now(), deps) });
         }
@@ -152,7 +151,7 @@ export function createFleetAgent(options: FleetAgentOptions): Server {
         const body = await readBody(req);
         const result = await act({
           ...base(), action: "create", slug: text(body.slug), admins: strings(body.admins), members: strings(body.members),
-          cap: number(body.cap), memory: text(body.memory), brandJson: text(body.brandJson), anthropicKey: text(body.anthropicKey),
+          cap: number(body.cap), memory: text(body.memory), anthropicKey: text(body.anthropicKey),
           portalUrl: text(body.portalUrl), anthropicUrl: text(body.anthropicUrl),
           openrouterKey: text(body.openrouterKey), openrouterUrl: text(body.openrouterUrl),
           openrouterModels: body.openrouterModels === undefined ? undefined : models(body.openrouterModels), openrouterDefault: body.openrouterDefault === true,

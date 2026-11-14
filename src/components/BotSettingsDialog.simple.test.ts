@@ -231,7 +231,7 @@ const rowValue = (rendered: Rendered, page: string) => find(rendered, "data-pane
 const skill = (name: string, enabled: boolean, origin?: ManagedSkill["origin"]): ManagedSkill =>
   ({ name, description: `${name} helper`, enabled, source: "github:x/y", warnings: [], ...(origin ? { origin } : {}) });
 const routine = (extra: Partial<Routine> = {}): Routine => ({
-  id: "r1", name: "Morning brief", prompt: "Brief me", target: "bot", botId: "scout", runOn: "maus", enabled: true,
+  id: "r1", name: "Morning brief", prompt: "Brief me", target: "bot", botId: "scout", runOn: "bot", enabled: true,
   schedule: { type: "daily", time: "09:00", weekdays: [1, 2, 3, 4, 5] }, durationMinutes: 15,
   nextRunAt: Date.UTC(2099, 0, 5, 9), createdAt: 1, updatedAt: 1, ...extra,
 });
@@ -277,7 +277,7 @@ beforeEach(() => {
   fixture.places = {
     cloud: [true, true, "Cloud desktop"], vm: [true, true, "Private desktop"], local: [true, true, "Your screen"], browser: [true, true, "Web pages only"],
   };
-  (window as unknown as { ogb?: unknown }).ogb = undefined;
+  (window as unknown as { cry?: unknown }).cry = undefined;
 });
 
 describe("the bot panel in Simple mode", () => {
@@ -516,7 +516,7 @@ describe("the avatar editor", () => {
     expect(rendered.html).not.toContain(">Halloween<");
     expect(rendered.html).not.toContain(">Diwali<");
     expect(has(rendered, "data-avatar-face", "idle")).toBe(false);
-    expect(find(rendered, "aria-label", "Use the Cursor body").props["aria-pressed"]).toBe(true);
+    expect(find(rendered, "aria-label", "Use the Dome body").props["aria-pressed"]).toBe(true);
     click(find(rendered, "aria-label", "Use the Blob body"));
     expect(patch).toHaveBeenLastCalledWith({ mascotBody: "blob" });
     click(find(rendered, "aria-label", "Use blue mascot color"));
@@ -566,7 +566,7 @@ describe("the avatar editor", () => {
 
   it("resets the mascot as the Advanced card does", () => {
     click(find(editor(makeBot()), "data-avatar-reset"));
-    expect(patch).toHaveBeenLastCalledWith({ avatarCrop: "mascot", color: "green", mascotExpression: null, mascotBody: "cursor", mascotFaceColor: null });
+    expect(patch).toHaveBeenLastCalledWith({ avatarCrop: "mascot", color: "green", mascotExpression: null, mascotBody: "dome", mascotFaceColor: null });
   });
 
   it("edits facial feature color without changing body color or expression", () => {
@@ -937,7 +937,7 @@ describe("the Library tab", () => {
     expect(rowValue(rendered, "folder")).toBe("Private");
     click(find(rendered, "data-panel-page", "folder"));
     expect(onOpen).toHaveBeenLastCalledWith("folder");
-    expect(rowValue(library(makeBot({ cwd: "/Users/omkar/Projects/site" })), "folder")).toBe("/Users/omkar/Projects/site");
+    expect(rowValue(library(makeBot({ cwd: "/Users/alex/Projects/site" })), "folder")).toBe("/Users/alex/Projects/site");
   });
 });
 
@@ -977,7 +977,7 @@ describe("the Computer tab", () => {
     const setItem = vi.fn();
     vi.stubGlobal("localStorage", { getItem: () => null, setItem });
     click(find(rendered, "data-panel-action", "open-computer"));
-    expect(setItem).toHaveBeenLastCalledWith("omb-computer-panel-view:scout", "computer");
+    expect(setItem).toHaveBeenLastCalledWith("cry-computer-panel-view:scout", "computer");
     expect((fixture.dispatch as ReturnType<typeof vi.fn>).mock.calls.slice(-2)).toEqual([
       [{ type: "toggleSettings", open: false }],
       [{ type: "toggleComputer", open: true }],
@@ -1271,8 +1271,8 @@ describe("the drill-in pages", () => {
   });
 
   it("keeps the bot's own private folder, or a folder chosen with the native picker, saved through the bot route", async () => {
-    const pickFolder = vi.fn(() => Promise.resolve("/Users/omkar/Projects/site"));
-    (window as unknown as { ogb: unknown }).ogb = { pickFolder };
+    const pickFolder = vi.fn(() => Promise.resolve("/Users/alex/Projects/site"));
+    (window as unknown as { cry: unknown }).cry = { pickFolder };
     const rendered = body("folder");
     expect(find(rendered, "data-panel-choice", "private").props.checked).toBe(true);
     expect(find(rendered, "data-panel-choice", "pick").props.checked).toBe(false);
@@ -1282,14 +1282,14 @@ describe("the drill-in pages", () => {
     await Promise.resolve();
     expect(pickFolder).toHaveBeenCalledWith(undefined);
     await Promise.resolve();
-    expect(fixture.api).toHaveBeenCalledWith("/api/bots/scout", { method: "PATCH", body: JSON.stringify({ cwd: "/Users/omkar/Projects/site" }) });
+    expect(fixture.api).toHaveBeenCalledWith("/api/bots/scout", { method: "PATCH", body: JSON.stringify({ cwd: "/Users/alex/Projects/site" }) });
 
     fresh();
-    const chosen = body("folder", makeBot({ cwd: "/Users/omkar/Projects/site" }));
+    const chosen = body("folder", makeBot({ cwd: "/Users/alex/Projects/site" }));
     expect(find(chosen, "data-panel-choice", "pick").props.checked).toBe(true);
-    expect(chosen.html).toContain("/Users/omkar/Projects/site");
+    expect(chosen.html).toContain("/Users/alex/Projects/site");
     click(find(chosen, "data-panel-action", "pick-folder"));
-    expect(pickFolder).toHaveBeenLastCalledWith("/Users/omkar/Projects/site");
+    expect(pickFolder).toHaveBeenLastCalledWith("/Users/alex/Projects/site");
     click(find(chosen, "data-panel-choice", "private"));
     expect(fixture.api).toHaveBeenLastCalledWith("/api/bots/scout", { method: "PATCH", body: JSON.stringify({ cwd: null }) });
   });

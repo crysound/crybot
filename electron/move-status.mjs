@@ -1,7 +1,7 @@
 // Where this computer's one-time move to My Cloud stands (one-home.mjs), as the Admin keeps it per sign-in: POST
 // /api/cloud/desktop/move-status, sent when it changes and every 15 minutes otherwise, so an operator can see why a move
 // hasn't finished, or never started. Ids and codes only: never a name, a path or anything the person wrote.
-import { teamPlan } from "./cloud-team-plan.mjs";
+import { teamPlan } from "./cloud-home.mjs";
 import { FAILURE_CODES, FAILURE_PHASES, safeSentence } from "./move-failure.mjs";
 import { awayIn } from "./one-home.mjs";
 
@@ -82,7 +82,7 @@ function failureIn(journal) {
 
 /**
  * The report for POST /api/cloud/desktop/move-status (move-status.d.mts MoveStatusReport): `journal` as one-home.mjs keeps
- * it (null without one), `state` the MausBot Cloud sign-in's state (cloud-account.mjs), `kept` the person's choice to keep
+ * it (null without one), `state` the CryBot Cloud sign-in's state (account.mjs), `kept` the person's choice to keep
  * this computer's bots here, `facts` what one-home's last run found (createOneHome's `facts`).
  */
 export function moveStatus({ journal, state, kept, facts = { noted: null, waiting: null }, now, version }) {

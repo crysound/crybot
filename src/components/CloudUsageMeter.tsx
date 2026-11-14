@@ -1,13 +1,13 @@
 import { useContext, useRef, useState, type ReactNode } from "react";
 import { ArrowUpRight, Gauge, Loader2, X } from "lucide-react";
 
-import type { CloudPlanBridge, CloudPlanSnapshot, CloudUpgradePreview, CloudUpgradeRefusal } from "../../electron/cloud-account.mjs";
+import type { CloudPlanBridge, CloudPlanSnapshot, CloudUpgradePreview, CloudUpgradeRefusal } from "../../electron/cloud-account-types.mjs";
 import type { CloudUsage, CloudUsageMeter } from "../../electron/cloud-home.mjs";
 import { cloudPlanChanged, useCloudPlanSnapshot } from "./CloudTrialNotice";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { Card, SettingsLook, SIMPLE_CARD } from "./SettingsPrimitives";
 import { localDesktopPage } from "./onboarding/WelcomeGate";
-import { cloudPlanLabel } from "@/lib/cloud-plan";
+import { cloudPlanLabel } from "@/lib/cloud-status";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { useAdvancedMode } from "@/lib/interface-mode";
@@ -22,8 +22,8 @@ const TEAM_TIERS: readonly string[] = ["team", "business"];
 export type UpgradeSource = "app_usage" | "app_settings" | "app_room";
 
 export function usageBridge(cloudHome: boolean): CloudPlanBridge | undefined {
-  if (window.ogb?.remoteClient?.active === true) return undefined;
-  return localDesktopPage() ? (window.ogb?.cloudAccount ? window.ogb?.cloudPlan : undefined) : cloudHome ? window.ogb?.cloudPlan : undefined;
+  if (window.cry?.remoteClient?.active === true) return undefined;
+  return localDesktopPage() ? (window.cry?.cloudAccount ? window.cry?.cloudPlan : undefined) : cloudHome ? window.cry?.cloudPlan : undefined;
 }
 
 export function useCloudUsage(): { usage: CloudUsage | null; bridge: CloudPlanBridge | undefined; teamHome: boolean } {

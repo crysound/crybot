@@ -7,7 +7,7 @@ import { useStore } from "@/state/store";
 import { AccountMoveStatus, useAccountMoveLine } from "./AccountMove";
 import { CloudRoomCard } from "./CloudRoomCard";
 import { CloudUsageCard } from "./CloudUsageMeter";
-import { endCloudHowTo, useWorkspacePlace, type WorkspacePlace } from "./DesktopWorkspaceSwitcher";
+import { useWorkspacePlace, type WorkspacePlace } from "./DesktopWorkspaceSwitcher";
 import { SidebarConnectApps } from "./SidebarConnectApps";
 import { SidebarBottomButtons, SidebarFooterNav } from "./SidebarFooterNav";
 import { phoneSettingsAction, SidebarPhoneButton } from "./SidebarPhoneButton";
@@ -15,8 +15,8 @@ import { SidebarProfileMenu, useSimpleAccount, type ArchivedBots } from "./Sideb
 import { UpdateIndicator } from "./UpdateIndicator";
 
 export function useSimplePlace(): WorkspacePlace {
-  const { state, dispatch } = useStore();
-  return useWorkspacePlace({ cloudHome: state.config?.cloudHome === true, howTo: state.cloudHowTo, onMenuClosed: () => endCloudHowTo(dispatch) });
+  const { state } = useStore();
+  return useWorkspacePlace({ cloudHome: state.config?.cloudHome === true });
 }
 
 export function SidebarPlaceStatus({ place, className }: { place: WorkspacePlace; className?: string }) {

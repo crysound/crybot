@@ -5,11 +5,11 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
 
-import { launchVerificationServer, runControlOmb, verificationServerArgs, verificationServerEnvironment } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry, verificationServerArgs, verificationServerEnvironment } from "../scripts/control-cry.ts";
 import { waitForExit } from "./testing/cleanup.ts";
 
 it("keeps an ACP partial reply in the transcript across graceful shutdown and restart", async () => {
-  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, undefined, ["cline"]);
+  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, ["cline"]);
   const { dataDir, url, logPath } = fixture.info;
   const port = Number(new URL(url).port);
   let server = fixture.child;
@@ -35,7 +35,7 @@ it("keeps an ACP partial reply in the transcript across graceful shutdown and re
       await waitForExit(server, { signal: "SIGTERM" });
     }
   };
-  const cli = (...args: string[]) => runControlOmb([...args, "--url", url]) as Promise<any>;
+  const cli = (...args: string[]) => runControlCry([...args, "--url", url]) as Promise<any>;
   try {
     await stop();
     const configPath = join(dataDir, "config.json");

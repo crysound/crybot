@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { t } from "@/lib/i18n";
 import { SettingsSkeletonCard } from "./settings/SettingsStates";
 import { cn } from "@/lib/cn";
-import type { CompanionAccountState } from "../types/ogb";
+import type { CompanionAccountState } from "../types/cry";
 import {
   PhoneSetupFlowView,
   companionAccountActionError,
@@ -191,7 +191,7 @@ const ROUTE_LINE = { wifi: "phone.reach.wifiLine", relay: "phone.reach.anywhereL
 
 function RouteRow({ c, state, route, blocked, onSignIn }: { c: PhoneSetupController; state: CompanionState; route: "wifi" | "relay"; blocked: string | null; onSignIn?: () => void }) {
   const current = state.routes?.[route];
-  // Anywhere needs a free MausBot sign-in: signed out, it stays in place, inert, with the way to sign in under it.
+  // Anywhere needs a free CryBot sign-in: signed out, it stays in place, inert, with the way to sign in under it.
   const needsSignIn = route === "relay" && c.account?.available !== false && c.account?.status !== "ready";
   if (needsSignIn && !current?.on && !blocked) {
     return (
@@ -303,7 +303,7 @@ export function PairDeviceDialog({ c, state, onClose, secureAddress = false, pla
   }, [close]);
   // An ancestor with backdrop-filter becomes the containing block for `fixed`, so it renders through Layer, on the body.
   const title = t("phone.pair.dialogTitle", { place: placeName });
-  const localHint = picked === "wifi" && !state.routes?.wifi?.on && typeof window !== "undefined" && window.ogb?.platform === "darwin";
+  const localHint = picked === "wifi" && !state.routes?.wifi?.on && typeof window !== "undefined" && window.cry?.platform === "darwin";
   const dialog = (
     <div ref={root} role="dialog" aria-modal="true" aria-label={title}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" data-pair-dialog={step} data-settings-look="simple">
@@ -364,7 +364,7 @@ export function OpenCodeRow({ c, state }: { c: PhoneSetupController; state: Comp
   );
 }
 
-/** "Reaches this computer on Same Wi-Fi and anywhere through MausBot." */
+/** "Reaches this computer on Same Wi-Fi and anywhere through CryBot." */
 export function reachLine(state: Pick<CompanionState, "routes">): string {
   const on = (route: CompanionRoute) => state.routes?.[route]?.on === true;
   const ways = [

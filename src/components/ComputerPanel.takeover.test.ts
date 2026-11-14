@@ -5,7 +5,6 @@ import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Action, AppState, Bot, InstanceInfo } from "@/state/store";
-import { viewerClosedRelease } from "./computer-takeover";
 
 const fixture = vi.hoisted(() => ({
   held: false,
@@ -161,7 +160,7 @@ beforeEach(() => {
   fixture.beacons = [];
   fixture.live = null;
   state = { ...initialState, instances: [engine], config: { box: { configured: true } } as AppState["config"], computerControl: {} } as AppState;
-  vi.stubGlobal("ogb", {
+  vi.stubGlobal("cry", {
     desktopViewer: { open: vi.fn(async () => true), close: vi.fn(async () => true), onState: () => () => {}, currentState: async () => ({ open: false, contextId: null }) },
   });
   vi.spyOn(window, "open").mockImplementation(() => null);
@@ -193,7 +192,7 @@ describe("taking control of a Local VM", () => {
     await press("Take control");
     await shownLive();
     expect(liveDesktop()!.dataset.target).toBe(`local/bot-${"a".repeat(64)}`);
-    expect(window.ogb!.desktopViewer!.open, "nothing may open in another window").not.toHaveBeenCalled();
+    expect(window.cry!.desktopViewer!.open, "nothing may open in another window").not.toHaveBeenCalled();
     expect(window.open).not.toHaveBeenCalled();
     expect(fixture.controls).toEqual([{ action: "take", controlLeaseId: expect.stringMatching(/^[0-9a-f]{36}$/), target: `local/bot-${"a".repeat(64)}` }]);
     expect(document.body.textContent).toContain("You're in control");
@@ -393,43 +392,19 @@ describe("taking control of a Local VM", () => {
     await settle();
     expect(releases()).toHaveLength(1);
     expect(liveDesktop()).toBeNull();
-    expect(document.body.textContent).toContain("MausBot couldn't open the live desktop. Try again.");
+    expect(document.body.textContent).toContain("Cry Bot couldn't open the live desktop. Try again.");
   });
 });
 
-describe("taking control of other computers", () => {
-  it("a VPS is driven in place too, and handing back closes its viewer tunnel", async () => {
+describe("taking control of a self-hosted VPS", () => {
+  it("is driven in place, and handing back closes its viewer tunnel", async () => {
     await open(makeBot({ computer: "cloud", cloudBackend: "vps" }));
     await press("Take control");
     await shownLive();
     expect(liveDesktop()!.dataset.target).toBe("vps/scout");
     expect(fixture.controls[0]).toMatchObject({ action: "take", target: "vps/scout" });
-    expect(window.ogb!.desktopViewer!.open).not.toHaveBeenCalled();
+    expect(window.cry!.desktopViewer!.open).not.toHaveBeenCalled();
     await press("Hand control back");
     expect(fixture.beacons.some((beacon) => beacon.url.startsWith("/api/bots/scout/computer/viewer-close"))).toBe(true);
-  });
-
-  it("a cloud computer's provider-hosted desktop still opens in the app's own viewer window", async () => {
-    await open(makeBot({ computer: "cloud" }));
-    await press("Take control");
-    expect(liveDesktop()).toBeNull();
-    expect(fixture.posts).toContain("/api/bots/scout/computer/join");
-    expect(window.ogb!.desktopViewer!.open).toHaveBeenCalledWith("https://desktop.invalid/scout", "Scout's live desktop", "scout");
-  });
-
-  it("closing a cloud computer's viewer window gives back the hold its open took, by that lease", async () => {
-    await open(makeBot({ computer: "cloud" }));
-    await press("Take control");
-    expect(viewerClosedRelease("scout")).toEqual({ action: "release", controlLeaseId: fixture.controls[0]!.controlLeaseId });
-  });
-
-  it("a cloud computer's desktop is taken before it opens even while the bot shows a hold another device has elsewhere", async () => {
-    fixture.held = true;
-    heldElsewhere(true);
-    await open(makeBot({ computer: "cloud" }));
-    await press("Full screen");
-    expect(fixture.controls).toEqual([{ action: "take", controlLeaseId: expect.stringMatching(/^[0-9a-f]{36}$/) }]);
-    expect(fixture.controlPaths.at(-1)).toContain("threadId=thread");
-    expect(window.ogb!.desktopViewer!.open).toHaveBeenCalledWith("https://desktop.invalid/scout", "Scout's live desktop", "scout");
   });
 });

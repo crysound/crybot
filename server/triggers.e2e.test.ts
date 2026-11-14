@@ -1,14 +1,14 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry } from "../scripts/control-cry.ts";
 
 // Triggers v2, end to end on a real server with the scripted engine: a bot at Ask sets up a schedule and a webhook from
 // chat with no card to confirm; the webhook's address reaches the bot that owns it but never the transcript; the person's
 // Copy address is the same link and works through the real receiver; runs show on the one live card; Undo removes what
 // the bot made.
 it("sets up schedule and webhook triggers from chat at Ask, with no confirmation, no leaked secret, and a working link", async () => {
-  const fixture = await launchVerificationServer(process.env, undefined, undefined, undefined, undefined, { scripted: true });
+  const fixture = await launchVerificationServer(process.env, undefined, undefined, undefined, { scripted: true });
   const evidence: unknown[] = [{ fixture: fixture.info }];
   const planPath = join(fixture.info.dataDir, "room-plan.json");
   const turns = () => existsSync(`${planPath}.evidence.jsonl`)
@@ -24,7 +24,7 @@ it("sets up schedule and webhook triggers from chat at Ask, with no confirmation
     if (method !== "GET") evidence.push({ method, path, status: response.status, result: value });
     return value;
   };
-  const cli = (...args: string[]) => runControlOmb([...args, "--url", fixture.info.url]) as Promise<any>;
+  const cli = (...args: string[]) => runControlCry([...args, "--url", fixture.info.url]) as Promise<any>;
   try {
     const { bot } = await cli("new-bot", "--name", "Trigger fixture");
     // At Ask: before Triggers v2 a bot's own routine applied here but a teammate's or a 21st waited on a card.

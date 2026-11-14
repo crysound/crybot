@@ -9,8 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/cn";
-import { CHROME_EYES, CHROME_GRADIENT, MAUS_COLORS, type MausColor, type MausMotion, type MausState } from "@/lib/mascot";
-import { CursorAvatar, type CursorAvatarHandle } from "./CursorAvatar";
+import { CHROME_EYES, CHROME_GRADIENT, BOT_COLORS, type BotColor, type BotMotion, type BotState } from "@/lib/mascot";
+import { AnimatedMascot, type AnimatedMascotHandle } from "./AnimatedMascot";
 import { avatarCropRadius, botAvatarProfile, clampAvatarFocus, clampAvatarZoom, mascotFaceInk, type BotAvatarCrop, type MascotFaceColor } from "../../shared/bot-avatar";
 import { MASCOT_BODIES, botMascotBody } from "../../shared/mascot-bodies";
 import { isCarvedBody, type BotBodyId } from "../../shared/bot-body";
@@ -26,7 +26,7 @@ const POINTER_GAZE = { forward: 1, authored: 0.25 };
 
 interface MotionFaces
   extends Partial<
-    Record<Exclude<MausMotion, "none">, { state?: MausState; blink?: boolean; spin?: number }>
+    Record<Exclude<BotMotion, "none">, { state?: BotState; blink?: boolean; spin?: number }>
   > {}
 
 const MOTION_FACE: MotionFaces = {
@@ -59,13 +59,13 @@ function mix(hex: string, toward: string, t: number): string {
     .join("")}`;
 }
 
-const gradientFor = (color: MausColor): [string, string, string] => {
+const gradientFor = (color: BotColor): [string, string, string] => {
   if (color === "chrome") return CHROME_GRADIENT;
-  const fill = MAUS_COLORS[color] ?? MAUS_COLORS.green;
+  const fill = BOT_COLORS[color] ?? BOT_COLORS.green;
   return [mix(fill, "#ffffff", 0.55), fill, mix(fill, "#000000", 0.42)];
 };
 
-export function roomAvatarGradient(color: MausColor): [string, string, string] {
+export function roomAvatarGradient(color: BotColor): [string, string, string] {
   const fill = `var(--identity-${color})`;
   return [
     `color-mix(in srgb, ${fill} 82%, #ffffff)`,
@@ -74,15 +74,15 @@ export function roomAvatarGradient(color: MausColor): [string, string, string] {
   ];
 }
 
-export type MausAvatarHandle = CursorAvatarHandle;
+export type MascotAvatarHandle = AnimatedMascotHandle;
 
-export type MausAvatarProps = {
-  color: MausColor;
-  state?: MausState;
+export type MascotAvatarProps = {
+  color: BotColor;
+  state?: BotState;
   expression?: number;
   size?: number;
   label?: string;
-  motion?: MausMotion;
+  motion?: BotMotion;
   motionKey?: number;
   turn?: number;
   gaze?: { x?: number; y?: number };
@@ -99,7 +99,7 @@ export type MausAvatarProps = {
   faceColor?: MascotFaceColor | null;
 };
 
-function MausAvatarComponent(props: MausAvatarProps, ref: React.Ref<MausAvatarHandle>) {
+function MascotAvatarComponent(props: MascotAvatarProps, ref: React.Ref<MascotAvatarHandle>) {
   const { bodyId, color, size, state, motion, motionKey, gaze, trackPointer, animated, label } = props;
   if (isCarvedBody(bodyId)) {
     return (
@@ -144,20 +144,21 @@ function GradientAvatarComponent(
     bodyId,
     gradient,
     faceColor,
-  }: MausAvatarProps,
-  ref: React.Ref<MausAvatarHandle>,
+  }: MascotAvatarProps,
+  ref: React.Ref<MascotAvatarHandle>,
 ) {
   const silhouette = MASCOT_BODIES[botMascotBody(bodyId)];
+  const dome = silhouette.id === "dome";
   const chrome = color === "chrome";
   const faceInk = mascotFaceInk(faceColor);
-  const inner = useRef<CursorAvatarHandle>(null);
+  const inner = useRef<AnimatedMascotHandle>(null);
   useImperativeHandle(ref, () => ({
     blink: () => inner.current?.blink(),
     spin: (durationMs?: number) => inner.current?.spin(durationMs),
     setExpression: (index: number) => inner.current?.setExpression(index),
   }));
 
-  const [motionState, setMotionState] = useState<MausState | null>(null);
+  const [motionState, setMotionState] = useState<BotState | null>(null);
   useEffect(() => {
     if (motion === "none" || !animated) return;
     const beat = MOTION_FACE[motion];
@@ -188,15 +189,15 @@ function GradientAvatarComponent(
       onPointerMove={trackPointer && animated ? onPointerMove : undefined}
       onPointerLeave={trackPointer && animated ? onPointerLeave : undefined}
     >
-      <CursorAvatar
+      <AnimatedMascot
         ref={inner}
         state={motionState ?? state}
         expression={expression}
         size={size}
         silhouette={silhouette}
-        gradient={gradient ?? gradientFor(color)}
+        gradient={dome ? ["#ffffff", "#F6F3FF", "#D7CCFF"] : gradient ?? gradientFor(color)}
         picture={chrome && !faceInk ? steelBodyImage(silhouette.id, size, globalThis.devicePixelRatio ?? 1) : null}
-        eyeColor={faceInk ?? (chrome ? CHROME_EYES : undefined)}
+        eyeColor={faceInk ?? (dome ? "#170057" : chrome ? CHROME_EYES : "#ffffff")}
         title={label ?? null}
         lookAround={lookAround ?? (forward ? 0 : 1)}
         gaze={{ x: (gaze?.x ?? 0) + pointer.x, y: (gaze?.y ?? 0) + pointer.y }}
@@ -213,13 +214,13 @@ function GradientAvatarComponent(
 
 const GradientAvatar = forwardRef(GradientAvatarComponent);
 
-export const MausAvatar = memo(forwardRef(MausAvatarComponent));
+export const MascotAvatar = memo(forwardRef(MascotAvatarComponent));
 
-export type BotAvatarProps = Omit<MausAvatarProps, "color" | "gradient"> & {
+export type BotAvatarProps = Omit<MascotAvatarProps, "color" | "gradient"> & {
   readable?: boolean;
   bot: {
     name?: string;
-    color: MausColor;
+    color: BotColor;
     avatarUrl?: string | null;
     avatarCrop?: BotAvatarCrop;
     avatarZoom?: number;
@@ -260,7 +261,7 @@ export function BotAvatar({ bot, size = 44, label, readable = false, ...mascotPr
 
   if (outcome !== "flatImage") {
     return (
-      <MausAvatar
+      <MascotAvatar
         bodyId={wornBody(bot.mascotBody, bot.color, festival)}
         {...mascotProps}
         color={bot.color}

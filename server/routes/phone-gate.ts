@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http";
 
-import { CONTROL_WAIT_MS } from "../control-client.ts";
+import { CONTROL_WAIT_MS } from "../computer-control-client.ts";
 import type { json } from "../harness/http.ts";
 import type { PhoneHold } from "../phone-screen/hold.ts";
 import type { TurnOwner, TurnResources } from "../turn-resources.ts";

@@ -19,7 +19,7 @@ const linksTo = (path: string, target: string) => isLink(path) && realpathSync(p
 const snapshot = () => Object.fromEntries(readdirSync(plan).sort().map(name => [name, isLink(join(plan, name)) ? readlinkSync(join(plan, name)) : "real"]));
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), "omb-codex-shared-home-"));
+  root = mkdtempSync(join(tmpdir(), "cry-codex-shared-home-"));
   shared = join(root, "person", ".codex");
   plan = join(root, "data", "providers", "chatgpt-plan", "abc", "codex");
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -194,23 +194,23 @@ describe("linkSharedCodexHome", () => {
 
 describe("keepChatsOutOfCodexHistory", () => {
   const data = () => join(root, "data");
-  const mausHome = (instanceId: string) => join(data(), "providers", "codex-own", createHash("sha256").update(instanceId).digest("hex"), "codex");
+  const botHome = (instanceId: string) => join(data(), "providers", "codex-own", createHash("sha256").update(instanceId).digest("hex"), "codex");
   const turnEnv = (extra: Record<string, string> = {}, teamCloud = false, managed: string[] = []) => {
     const env: Record<string, string | undefined> = { HOME: join(root, "person"), ...extra };
     keepChatsOutOfCodexHistory(env, "codex", data(), teamCloud, managed);
     return env;
   };
 
-  it("runs a turn on the person's own login in MausBot's Codex home, with their login and setup linked in", () => {
+  it("runs a turn on the person's own login in CryBot's Codex home, with their login and setup linked in", () => {
     write(join(shared, "auth.json"), "person's sign-in");
     write(join(shared, "config.toml"), 'model = "gpt-5"\n');
-    expect(turnEnv()).toMatchObject({ CODEX_HOME: mausHome("codex"), CODEX_SQLITE_HOME: mausHome("codex") });
-    expect(linksTo(join(mausHome("codex"), "auth.json"), join(shared, "auth.json"))).toBe(true);
-    expect(linksTo(join(mausHome("codex"), "config.toml"), join(shared, "config.toml"))).toBe(true);
-    expect(turnEnv({ CODEX_HOME: shared, CODEX_SQLITE_HOME: join(root, "elsewhere") }).CODEX_SQLITE_HOME).toBe(mausHome("codex"));
+    expect(turnEnv()).toMatchObject({ CODEX_HOME: botHome("codex"), CODEX_SQLITE_HOME: botHome("codex") });
+    expect(linksTo(join(botHome("codex"), "auth.json"), join(shared, "auth.json"))).toBe(true);
+    expect(linksTo(join(botHome("codex"), "config.toml"), join(shared, "config.toml"))).toBe(true);
+    expect(turnEnv({ CODEX_HOME: shared, CODEX_SQLITE_HOME: join(root, "elsewhere") }).CODEX_SQLITE_HOME).toBe(botHome("codex"));
   });
 
-  it("keeps the person's home when the login may be in the keyring, cannot be linked, or the home is MausBot's already", () => {
+  it("keeps the person's home when the login may be in the keyring, cannot be linked, or the home is CryBot's already", () => {
     write(join(shared, "auth.json"), "person's sign-in");
     write(join(shared, "config.toml"), 'cli_auth_credentials_store = "keyring"\n');
     expect(turnEnv().CODEX_HOME).toBeUndefined();
@@ -218,32 +218,32 @@ describe("keepChatsOutOfCodexHistory", () => {
     expect(turnEnv().CODEX_HOME).toBeUndefined();
     // Only a top-level setting moves the login: one inside a table is about something else.
     write(join(shared, "config.toml"), '[profiles.work]\ncli_auth_credentials_store = "keyring"\n');
-    expect(turnEnv().CODEX_HOME).toBe(mausHome("codex"));
+    expect(turnEnv().CODEX_HOME).toBe(botHome("codex"));
 
     expect(turnEnv({}, true).CODEX_HOME).toBeUndefined();
     const engineHome = join(data(), "engine-homes", "team", ".codex");
     write(join(engineHome, "auth.json"));
     expect(turnEnv({ CODEX_HOME: engineHome }).CODEX_HOME).toBe(engineHome);
 
-    rmSync(mausHome("codex"), { recursive: true });
-    write(join(mausHome("codex"), "auth.json"), "a login of its own");
+    rmSync(botHome("codex"), { recursive: true });
+    write(join(botHome("codex"), "auth.json"), "a login of its own");
     expect(turnEnv().CODEX_HOME).toBeUndefined();
   });
 
   it("keeps the person's home when it has no login file or a system-wide setting may put the login in the keyring", () => {
     write(join(shared, "config.toml"), 'model = "gpt-5"\n');
     expect(turnEnv().CODEX_HOME).toBeUndefined();
-    expect(existsSync(mausHome("codex"))).toBe(false);
+    expect(existsSync(botHome("codex"))).toBe(false);
 
     write(join(shared, "auth.json"), "person's sign-in");
     const managed = join(root, "etc", "codex", "requirements.toml");
     write(managed, 'cli_auth_credentials_store = "keyring"\n');
     expect(turnEnv({}, false, [managed, join(root, "etc", "codex", "missing.toml")]).CODEX_HOME).toBeUndefined();
     write(managed, 'allowed_sandbox_modes = ["read-only"]\n');
-    expect(turnEnv({}, false, [managed]).CODEX_HOME).toBe(mausHome("codex"));
+    expect(turnEnv({}, false, [managed]).CODEX_HOME).toBe(botHome("codex"));
   });
 
-  it("keeps the person's home, and the turn going, when MausBot's Codex home cannot be made", () => {
+  it("keeps the person's home, and the turn going, when CryBot's Codex home cannot be made", () => {
     write(join(shared, "auth.json"), "person's sign-in");
     write(join(data(), "providers", "codex-own"), "a file where a folder should be");
     let env: Record<string, string | undefined> = {};

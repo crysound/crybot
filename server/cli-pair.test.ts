@@ -5,8 +5,7 @@ import { runPair, type CliOptions } from "./cli.ts";
 import { removeTempDir } from "./testing/cleanup.ts";
 
 const mocks = vi.hoisted(() => ({
-  readCliStartup: vi.fn(),
-  createTunnelAccount: vi.fn(), describeTunnelAccount: vi.fn(), tailscaleStatus: vi.fn(),
+  readCliStartup: vi.fn(), tailscaleStatus: vi.fn(),
   ui: { log: vi.fn(), choose: vi.fn(), ask: vi.fn(), secret: vi.fn(), confirm: vi.fn() },
 }));
 vi.mock("./cli-setup.ts", () => ({ readCliStartup: mocks.readCliStartup }));
@@ -16,11 +15,6 @@ vi.mock("./cli-prompts.ts", async (original) => ({
 vi.mock("./tailscale.ts", () => ({
   tailscaleStatus: mocks.tailscaleStatus,
   tailscaleServe: vi.fn(), clearLeftoverTailscaleServe: vi.fn(), explainTailscaleFailure: vi.fn(),
-}));
-vi.mock("./tunnel.ts", () => ({
-  createTunnelAccount: mocks.createTunnelAccount, describeTunnelAccount: mocks.describeTunnelAccount,
-  cleanupTunnelOrigin: vi.fn(), createTunnelOrigin: vi.fn(), describeTunnelState: vi.fn(),
-  ensureCloudflared: vi.fn(), guardianEntry: vi.fn(), startTunnel: vi.fn(), tunnelAccess: vi.fn(),
 }));
 
 const advertisedOrigin = "https://current.example.test";
@@ -38,27 +32,25 @@ beforeEach(() => {
   vi.resetAllMocks();
   // The shared test setup supplies a throwaway HOME before module imports.
   dataDir = mkdtempSync(join(process.env.HOME!, "cli-pair-"));
-  vi.stubEnv("OMB_DATA_DIR", dataDir);
-  options = { command: "pair", port: 18451, dataDir, tailscale: false, tunnel: false, client: false, pair: true, json: false };
+  vi.stubEnv("CRYBOT_DATA_DIR", dataDir);
+  options = { command: "pair", port: 18451, dataDir, tailscale: false, client: false, pair: true, json: false };
   publicUrl = advertisedOrigin;
   remoteWorkspaceId = workspaceId;
   for (const stream of [process.stdin, process.stdout]) Object.defineProperty(stream, "isTTY", { value: true, configurable: true });
   mocks.ui.choose.mockResolvedValue(0);
-  mocks.createTunnelAccount.mockReturnValue({ credentials: { read: () => ({}) } });
-  mocks.describeTunnelAccount.mockReturnValue({ address: "https://old-tunnel.example.test", email: "fixture@example.test" });
   mocks.tailscaleStatus.mockResolvedValue({ status: { dnsName: "old-tailnet.example.test" } });
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
   fetchMock.mockImplementation(async (input, init) => {
     const url = String(input);
     const local = `http://127.0.0.1:${options.port}`;
-    if (url === `${local}/api/health`) return Response.json({ app: "openmausbot", pid: 12345 });
+    if (url === `${local}/api/health`) return Response.json({ app: "crybot", pid: 12345 });
     if (url === `${local}/api/auth/pairing`) {
       if (init?.method === "POST") return Response.json({ code, expiresAt: Date.now() + 300_000, url: `${advertisedOrigin}/pair#code=${code}` });
       return Response.json({ pairings: [], publicUrl });
     }
-    if (url === `${local}/.well-known/openmausbot/environment`) return Response.json({ environmentId: workspaceId });
-    if ([advertisedOrigin, explicitOrigin].some((origin) => url === `${origin}/.well-known/openmausbot/environment`)) {
+    if (url === `${local}/.well-known/crybot/environment`) return Response.json({ environmentId: workspaceId });
+    if ([advertisedOrigin, explicitOrigin].some((origin) => url === `${origin}/.well-known/crybot/environment`)) {
       return Response.json({ environmentId: remoteWorkspaceId });
     }
     // No real network fallback is allowed, including stale saved addresses.
@@ -81,7 +73,7 @@ afterEach(async () => {
 
 const printed = () => vi.mocked(console.log).mock.calls.map(([line]) => String(line)).join("\n");
 
-describe("openmausbot pair", () => {
+describe("crybot pair", () => {
   it("never asks anything: one code, the running server's own link, a QR, and the phone command", async () => {
     expect(await runPair(options)).toBe(0);
     expect(mocks.ui.choose).not.toHaveBeenCalled();
@@ -92,7 +84,7 @@ describe("openmausbot pair", () => {
     expect(printed()).toMatch(new RegExp(`Pairing code {3}${code} {3}works once, until .+ · everything`));
     expect(printed()).toContain(`Link           ${advertisedOrigin}/pair#code=${code}`);
     expect(printed()).toMatch(/[▀▄█]/);
-    expect(printed()).toContain("For a phone (chat and approvals only)   openmausbot pair --phone");
+    expect(printed()).toContain("For a phone (chat and approvals only)   crybot pair --phone");
     expect(printed()).not.toContain("doesn't reach");
   });
 
@@ -121,20 +113,20 @@ describe("openmausbot pair", () => {
     publicUrl = null;
     fetchMock.mockImplementation(async (input, init) => {
       const url = String(input);
-      if (url.endsWith("/api/health")) return Response.json({ app: "openmausbot", pid: 12345 });
+      if (url.endsWith("/api/health")) return Response.json({ app: "crybot", pid: 12345 });
       if (url.endsWith("/api/auth/pairing")) return init?.method === "POST" ? Response.json({ code, expiresAt: Date.now() + 600_000, url: null }) : Response.json({ pairings: [], publicUrl: null });
       throw new Error(`Unexpected fixture request: ${url}`);
     });
     expect(await runPair(options)).toBe(0);
     expect(printed()).toContain(`http://127.0.0.1:${options.port}/pair#code=${code}`);
-    expect(printed()).toContain("pick a way in first: openmausbot serve --help");
+    expect(printed()).toContain("pick a way in first: crybot serve --help");
     expect(printed()).not.toMatch(/[▀▄█]/);
   });
 
   it("when the desktop app owns the server, says to pair from the app instead of showing the raw refusal", async () => {
     fetchMock.mockImplementation(async (input, init) => {
       const url = String(input);
-      if (url.endsWith("/api/health")) return Response.json({ app: "openmausbot", pid: 12345 });
+      if (url.endsWith("/api/health")) return Response.json({ app: "crybot", pid: 12345 });
       if (url.endsWith("/api/auth/pairing")) {
         return init?.method === "POST"
           ? Response.json({ error: "forbidden: this change must come from the desktop app or a paired device" }, { status: 403 })
@@ -145,27 +137,27 @@ describe("openmausbot pair", () => {
     const failure = await runPair(options).then(() => null, (error: unknown) => error);
     expect(failure).toBeInstanceOf(Error);
     const message = (failure as Error).message;
-    expect(message).toContain("The OpenMausBot desktop app runs this server");
+    expect(message).toContain("The Cry Bot desktop app runs this server");
     expect(message).toContain("Settings → Remote access");
     // A terminal `serve` would not get the keys the app keeps in its own credential store, so it is not offered.
-    expect(message).not.toContain("openmausbot serve");
+    expect(message).not.toContain("crybot serve");
     expect(message).not.toContain("server refused to mint a pairing code");
   });
 
   it("says how to start a server when none runs", async () => {
     fetchMock.mockImplementation(async () => { throw new Error("offline"); });
     expect(await runPair(options)).toBe(1);
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("No MausBot server is running here. Start it: openmausbot serve"));
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("No Cry Bot server is running here. Start it: crybot serve"));
   });
 });
 
-describe("the phone-app link `openmausbot pair --phone android` scans", () => {
-  const credential = `omb_pair_${"b".repeat(43)}`;
+describe("the phone-app link `crybot pair --phone android` scans", () => {
+  const credential = `cry_pair_${"b".repeat(43)}`;
   const serverName = "Miguel's computer";
   const pairingResponse = (fields: Record<string, unknown>) => {
     fetchMock.mockImplementation(async (input, init) => {
       const url = String(input);
-      if (url === `http://127.0.0.1:${options.port}/api/health`) return Response.json({ app: "openmausbot", pid: 12345 });
+      if (url === `http://127.0.0.1:${options.port}/api/health`) return Response.json({ app: "crybot", pid: 12345 });
       if (url === `http://127.0.0.1:${options.port}/api/auth/pairing`) {
         return init?.method === "POST" ? Response.json({ code, expiresAt: Date.now() + 300_000, credential, serverName, ...fields }) : Response.json({ pairings: [], publicUrl: null });
       }
@@ -176,15 +168,15 @@ describe("the phone-app link `openmausbot pair --phone android` scans", () => {
   it("builds the invite for --public-url from the server's credential and name, and never prints it as text", async () => {
     pairingResponse({ url: null, inviteUrl: null });
     expect(await runPair({ ...options, phone: "android", publicUrl: explicitOrigin })).toBe(0);
-    expect(printed()).not.toContain("openmausbot://");
+    expect(printed()).not.toContain("crybot://");
     expect(printed()).not.toContain(credential);
-    expect(printed()).toContain("scan this with the MausBot app");
+    expect(printed()).toContain("scan this with the Cry Bot app");
   });
 
   it("keeps a proxy path in the web link", async () => {
-    pairingResponse({ url: `https://proxy.example.test/omb/pair#code=${code}`, inviteUrl: null });
+    pairingResponse({ url: `https://proxy.example.test/cry/pair#code=${code}`, inviteUrl: null });
     expect(await runPair({ ...options, label: "Pixel" })).toBe(0);
-    expect(printed()).toContain(`https://proxy.example.test/omb/pair#code=${code}`);
+    expect(printed()).toContain(`https://proxy.example.test/cry/pair#code=${code}`);
   });
 });
 
@@ -193,7 +185,7 @@ describe("pair --ttl", () => {
     const day = Date.now() + 86_400_000;
     fetchMock.mockImplementation(async (input, init) => {
       const url = String(input);
-      if (url.endsWith("/api/health")) return Response.json({ app: "openmausbot", pid: 12345 });
+      if (url.endsWith("/api/health")) return Response.json({ app: "crybot", pid: 12345 });
       if (url.endsWith("/api/auth/pairing")) return init?.method === "POST" ? Response.json({ code, expiresAt: day, url: null }) : Response.json({ pairings: [], publicUrl: null });
       throw new Error(`Unexpected fixture request: ${url}`);
     });

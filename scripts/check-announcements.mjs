@@ -4,6 +4,7 @@
 //   node scripts/check-announcements.mjs                  check the file
 //   node scripts/check-announcements.mjs --against <rev>  also require updatedAt to move forward when the file changed
 //   node scripts/check-announcements.mjs --write-schema   regenerate announcements/announcements.schema.json
+import { optionalFeedUrl } from "../server/optional-feed-url.ts";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -11,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import {
-  ANNOUNCEMENT_IMAGE_PREFIX, ANNOUNCEMENTS_FILE, ANNOUNCEMENTS_SCHEMA_FILE, announcementsJsonSchema, parseAnnouncementFeed,
+  ANNOUNCEMENTS_FILE, ANNOUNCEMENTS_SCHEMA_FILE, announcementsJsonSchema, parseAnnouncementFeed,
 } from "../shared/announcements.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -29,7 +30,7 @@ export const schemaText = () => `${JSON.stringify(announcementsJsonSchema(), nul
 
 /** Problems with the file's text, or an empty list when it is sound. `fileSize(path)` is a picture's size in bytes, or null when
  * the repository has no such file. */
-export function announcementProblems(raw, { previous: rawPrevious = null, now = Date.now(), fileSize = (path) => (existsSync(join(root, path)) ? statSync(join(root, path)).size : null) } = {}) {
+export function announcementProblems(raw, { previous: rawPrevious = null, now = Date.now(), feedOrigin = optionalFeedUrl(process.env, "CRYBOT_ANNOUNCEMENTS_URL")?.origin, fileSize = (path) => (existsSync(join(root, path)) ? statSync(join(root, path)).size : null) } = {}) {
   const text = lf(raw), previous = rawPrevious === null ? null : lf(rawPrevious);
   if (Buffer.byteLength(text) > MAX_FILE_BYTES) return [`the file is larger than ${MAX_FILE_BYTES} bytes`];
   let doc;
@@ -38,14 +39,14 @@ export function announcementProblems(raw, { previous: rawPrevious = null, now = 
   } catch {
     return ["the file is not valid JSON"];
   }
-  const parsed = parseAnnouncementFeed(doc, { strict: true, nowMs: now });
+  const parsed = parseAnnouncementFeed(doc, { strict: true, nowMs: now, feedOrigin });
   if (!parsed.ok) return [parsed.error];
   const problems = [];
   for (const card of parsed.feed.cards) {
     if (card.kind === "sponsor" && !card.label) problems.push(`${card.id}: a sponsor's card needs a label, such as "Sponsor", so people can tell it is one`);
     if (Date.parse(card.ends) > now + MAX_DAYS_AHEAD * DAY) problems.push(`${card.id}: ends is more than ${MAX_DAYS_AHEAD} days away`);
     if (card.image && "url" in card.image) {
-      const path = `announcements/${card.image.url.slice(ANNOUNCEMENT_IMAGE_PREFIX.length)}`;
+      const path = `announcements/${new URL(card.image.url).pathname.slice(1)}`;
       const size = fileSize(path);
       if (size === null) problems.push(`${card.id}: the picture ${path} is not in the repository`);
       else if (size > MAX_IMAGE_BYTES) problems.push(`${card.id}: the picture ${path} is larger than ${MAX_IMAGE_BYTES} bytes`);

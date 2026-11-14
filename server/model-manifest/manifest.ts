@@ -6,13 +6,14 @@ import { dirname, join } from "node:path";
 
 import { writeFileAtomic } from "../atomic.ts";
 import { DATA_DIR } from "../config.ts";
+import { optionalFeedUrl } from "../optional-feed-url.ts";
 import type { ModelCatalog } from "../contracts.ts";
 import { parseVersionTriple, versionAtLeast, type VersionTriple } from "../drivers/acp/version-probe.ts";
 import { BUNDLED_MODEL_MANIFEST, bundledEngineCatalog, engineCatalogFrom } from "./bundled.ts";
 import { parseModelManifest, type ManifestEngine, type ManifestPrice, type ModelManifestData } from "./schema.ts";
 
-export const MODEL_MANIFEST_URL = "https://raw.githubusercontent.com/milind-soni/OpenMausBot/main/server/model-manifest/model-manifest.json";
-export const MANIFEST_DISABLE_ENV = "OMB_DISABLE_MODEL_MANIFEST_FETCH";
+export const MODEL_MANIFEST_URL = process.env.CRYBOT_MODEL_MANIFEST_URL?.trim() ?? "";
+export const MANIFEST_DISABLE_ENV = "CRYBOT_DISABLE_MODEL_MANIFEST_FETCH";
 export const MANIFEST_TTL_MS = 60 * 60 * 1000;
 /** GitHub's raw CDN caches about this long, so a shorter window buys nothing. */
 export const MANIFEST_ON_DEMAND_TTL_MS = 5 * 60 * 1000;
@@ -68,7 +69,8 @@ export class ModelManifestStore {
   }
 
   get fetchDisabled(): boolean {
-    return (this.options.env ?? process.env)[MANIFEST_DISABLE_ENV] === "1";
+    const env = this.options.env ?? process.env;
+    return !optionalFeedUrl(env, "CRYBOT_MODEL_MANIFEST_URL") || env[MANIFEST_DISABLE_ENV] === "1";
   }
 
   /** The newest usable manifest. Reads the disk cache once and never waits on the network. */
@@ -167,8 +169,8 @@ export class ModelManifestStore {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.options.timeoutMs ?? MANIFEST_FETCH_TIMEOUT_MS);
     try {
-      const response = await (this.options.fetch ?? fetch)(MODEL_MANIFEST_URL, {
-        headers: { accept: "application/json", "user-agent": "OpenMausBot" },
+      const response = await (this.options.fetch ?? fetch)(optionalFeedUrl(this.options.env ?? process.env, "CRYBOT_MODEL_MANIFEST_URL")!.href, {
+        headers: { accept: "application/json", "user-agent": "Cry Bot" },
         // raw.githubusercontent.com answers directly; anywhere else is not the file we meant to read.
         redirect: "error",
         signal: controller.signal,

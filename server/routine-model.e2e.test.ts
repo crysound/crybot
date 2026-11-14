@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry } from "../scripts/control-cry.ts";
 
 it("opens each run of a routine with its own model in the run's thread, and refuses a model it cannot check", async () => {
-  const fixture = await launchVerificationServer(process.env, undefined, undefined, undefined, undefined, { scripted: true });
+  const fixture = await launchVerificationServer(process.env, undefined, undefined, undefined, { scripted: true });
   const api = async (method: string, path: string, body?: unknown) => {
     const response = await fetch(`${fixture.info.url}${path}`, { method,
       headers: { "content-type": "application/json", origin: fixture.info.url },
@@ -11,7 +11,7 @@ it("opens each run of a routine with its own model in the run's thread, and refu
     });
     return { status: response.status, body: await response.json() as any };
   };
-  const cli = (...args: string[]) => runControlOmb([...args, "--url", fixture.info.url]) as Promise<any>;
+  const cli = (...args: string[]) => runControlCry([...args, "--url", fixture.info.url]) as Promise<any>;
   try {
     const { bot } = await cli("new-bot", "--name", "Routine model fixture");
     const own = { instanceId: bot.modelSelection.instanceId, model: `${bot.modelSelection.model}-routine` };

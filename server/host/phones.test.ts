@@ -16,22 +16,22 @@ import { createPhones, type PhonesDeps } from "./phones.ts";
 
 const THREAD = "thread-1";
 const TURN = { botId: "chief", threadId: THREAD, generation: "gen-1" };
-const PHONE_SESSION = { id: "phone-session", label: "Omkar's iPhone" } as SessionRecord;
+const PHONE_SESSION = { id: "phone-session", label: "User's iPhone" } as SessionRecord;
 const DESK_SESSION = { id: "desk-session", label: "Laptop" } as SessionRecord;
 const session = (record: SessionRecord): RequestAuth => ({ kind: "session", session: record, via: "bearer", scopes: ["admin", "client"] });
 const loopback: RequestAuth = { kind: "loopback", scopes: ["admin", "client"] };
-const chief = { id: "chief", name: "MausBot", color: "teal", chiefOfStaff: true } as BotRecord;
+const chief = { id: "chief", name: "Cry Bot", color: "teal", chiefOfStaff: true } as BotRecord;
 
 const dirs: string[] = [];
 afterEach(async () => { for (const dir of dirs.splice(0)) await removeTempDir(dir); });
 
 function world(overrides: Partial<PhonesDeps> = {}) {
-  const dir = mkdtempSync(join(tmpdir(), "omb-phones-host-"));
+  const dir = mkdtempSync(join(tmpdir(), "cry-phones-host-"));
   dirs.push(dir);
   // The owner's iPhone, paired as a session, allowing Calendar.
   writeFileSync(join(dir, "phones.json"), JSON.stringify({ version: 1, phones: [{
     key: `session:${PHONE_SESSION.id}`, owner: "owner", registeredAt: 1, seen: Date.now(), lastUsedAt: null,
-    registration: { installId: "install-0001", name: "Omkar's iPhone", platform: "ios", appVersion: "1.6.0", timeZone: "Asia/Kolkata", capabilities: { calendar: "full" } },
+    registration: { installId: "install-0001", name: "User's iPhone", platform: "ios", appVersion: "1.6.0", timeZone: "Asia/Kolkata", capabilities: { calendar: "full" } },
   }] }));
   const lines: Array<{ id: string; role: string; sendId?: string; sender?: { id: string } }> = [];
   const requests = new Map<string, { messageId?: string; automation?: unknown; origin?: { kind: string } }>();
@@ -90,7 +90,7 @@ describe("where the person is", () => {
     send(phones.sendIdFor(loopback));
     for (const place of ["phone", "computer", "unattended"] as const) {
       const [device, where] = phones.promptParts(chief, { mounted: true, offered: true, turn: TURN, place });
-      expect(device).toMatchObject({ id: "device", label: "Phone", text: expect.stringContaining("Omkar's iPhone is an iPhone; this bot may use: Calendar.") });
+      expect(device).toMatchObject({ id: "device", label: "Phone", text: expect.stringContaining("User's iPhone is an iPhone; this bot may use: Calendar.") });
       expect(where).toEqual({ id: "device-place", label: "Where the person is", text: PHONE_PLACE_PROMPT[place] });
     }
     for (const text of Object.values(PHONE_PLACE_PROMPT)) {
@@ -100,7 +100,7 @@ describe("where the person is", () => {
     expect(PHONE_PLACE_PROMPT.phone).toContain("do it on the phone with the PHONE tools");
     // Unmounted: why the owner's phone is not here, and no place at all.
     expect(phones.promptParts(chief, { mounted: false, offered: true, turn: TURN, place: "phone" })).toEqual([
-      { id: "device", label: "Phone", text: expect.stringContaining("Paired: Omkar's iPhone.") },
+      { id: "device", label: "Phone", text: expect.stringContaining("Paired: User's iPhone.") },
     ]);
     expect(phones.promptParts(chief, { mounted: false, offered: false, turn: TURN, place: "phone" })).toEqual([{ id: "device", label: "Phone", text: "" }]);
   });
@@ -116,7 +116,7 @@ describe("whose phones", () => {
     expect(phones.turnOwner(TURN)).toBeNull();
     send(phones.sendIdFor(loopback));
     expect(phones.turnOwner(TURN)).toBe("owner");
-    expect(phones.integration(chief, TURN)).toMatchObject({ env: { OMB_MCP_TOKEN_DEVICE: "turn-token", OMB_HARNESS_URL: "http://127.0.0.1:1" } });
+    expect(phones.integration(chief, TURN)).toMatchObject({ env: { CRYBOT_MCP_TOKEN_DEVICE: "turn-token", CRYBOT_HARNESS_URL: "http://127.0.0.1:1" } });
     // A line from a person who holds no admin session here is not the owner's, nor is anything after it.
     send("guest-send-0000000001", { origin: { kind: "user" } }, "p_guest");
     expect(phones.turnOwner(TURN)).toBeNull();

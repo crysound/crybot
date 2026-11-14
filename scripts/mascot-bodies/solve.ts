@@ -12,7 +12,7 @@ import {
   MOUTHS,
   MOUTH_STROKE,
   mouthFrame,
-} from "../../src/components/cursor-face-data.ts"
+} from "../../src/components/mascot-face-data.ts"
 import { sampleSdf, type Sdf } from "./sdf.ts"
 
 /** Required clearance from the silhouette edge, in face-space units. */

@@ -635,7 +635,7 @@ describe("McpOAuthManager with a failing onSettled", () => {
     const started = await manager.start("docs", mcp.url);
     const page = await approve(started);
     expect(page.status).toBe(200);
-    expect(await page.text()).toBe("Signed in. You can close this tab and return to OpenMausBot.");
+    expect(await page.text()).toBe("Signed in. You can close this tab and return to Cry Bot.");
     expect(manager.authState("docs", mcp.url)).toBe("signed-in");
     await manager.start("docs", mcp.url);
     await expect.poll(() => heard).toEqual(["succeeded", "expired"]);
@@ -667,7 +667,7 @@ describe("McpOAuthManager sign-in from a browser on another computer", () => {
     const callback = await returnAddress(started);
     expect(callback.origin + callback.pathname).toBe("https://cloud.example/mcp-oauth/callback");
     const page = await manager.publicCallback("cloud.example", callback.search);
-    expect(page).toEqual({ status: 200, text: "Signed in. You can close this tab and return to OpenMausBot." });
+    expect(page).toEqual({ status: 200, text: "Signed in. You can close this tab and return to Cry Bot." });
     expect(manager.status("docs", started.flowId, "alice")?.phase).toBe("succeeded");
     expect(oauth.isValid(`Bearer ${await manager.accessToken("docs", mcp.url)}`)).toBe(true);
 
@@ -684,7 +684,7 @@ describe("McpOAuthManager sign-in from a browser on another computer", () => {
     const forged = new URLSearchParams(callback.search);
     forged.set("state", "forged");
     for (const [host, search] of [["cloud.example", `?${forged}`], ["attacker.example", callback.search], [undefined, callback.search], ["cloud.example", ""]] as const) {
-      expect(await manager.publicCallback(host, search)).toEqual({ status: 400, text: "Invalid sign-in callback. Return to OpenMausBot and try again." });
+      expect(await manager.publicCallback(host, search)).toEqual({ status: 400, text: "Invalid sign-in callback. Return to Cry Bot and try again." });
     }
     expect(manager.status("docs", started.flowId, "alice")?.phase).toBe("waiting");
     expect(oauth.counts.token).toBe(0);
@@ -746,18 +746,18 @@ describe("McpOAuthManager sign-in from a browser on another computer", () => {
 
 describe("mcpCallbackOrigin", () => {
   it("uses the origin the browser proved when nothing is configured or it is configured", () => {
-    expect(mcpCallbackOrigin("https://me.fly.dev", [])).toBe("https://me.fly.dev");
-    expect(mcpCallbackOrigin("https://bots.acme.com", ["https://me.fly.dev", "https://bots.acme.com"])).toBe("https://bots.acme.com");
+    expect(mcpCallbackOrigin("https://me.example.test", [])).toBe("https://me.example.test");
+    expect(mcpCallbackOrigin("https://bots.acme.com", ["https://me.example.test", "https://bots.acme.com"])).toBe("https://bots.acme.com");
   });
 
   it("prefers a configured address over one nobody vouched for", () => {
-    expect(mcpCallbackOrigin("https://elsewhere.example", ["https://me.fly.dev"])).toBe("https://me.fly.dev");
-    expect(mcpCallbackOrigin(null, [null, undefined, "https://me.fly.dev/"])).toBe("https://me.fly.dev");
+    expect(mcpCallbackOrigin("https://elsewhere.example", ["https://me.example.test"])).toBe("https://me.example.test");
+    expect(mcpCallbackOrigin(null, [null, undefined, "https://me.example.test/"])).toBe("https://me.example.test");
   });
 
   it("returns null for plain http, a path or credentials", () => {
     expect(mcpCallbackOrigin("http://192.168.1.5:3000", [])).toBeNull();
-    expect(mcpCallbackOrigin(null, ["http://me.example", "https://me.example/omb", "https://user:pw@me.example", "not a url"])).toBeNull();
+    expect(mcpCallbackOrigin(null, ["http://me.example", "https://me.example/cry", "https://user:pw@me.example", "not a url"])).toBeNull();
     expect(mcpCallbackOrigin(null, [])).toBeNull();
   });
 });

@@ -13,7 +13,7 @@ describe("phone tools", () => {
   });
 
   it("an answer's own phone key never relabels the phone it ran on", () => {
-    const phone = { name: "Omkar's iPhone", platform: "ios" } as const;
+    const phone = { name: "User's iPhone", platform: "ios" } as const;
     const ok = phoneOkResult({ phone: { name: "Someone else's phone", platform: "android" }, events: [] }, phone);
     expect(ok.structuredContent).toEqual({ events: [], phone });
     expect(JSON.parse(ok.content[0]!.text)).toEqual({ events: [], phone });

@@ -8,7 +8,7 @@ import type { RemoteComputerProvider } from "./config.ts";
 import type { RouteContext } from "./table.ts";
 
 const legacyNameFor = (botId: string) =>
-  `ogb-${botId.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, "")}-${createHash("sha256").update(botId).digest("hex").slice(0, 6)}`;
+  `cry-${botId.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, "")}-${createHash("sha256").update(botId).digest("hex").slice(0, 6)}`;
 
 let api: Server;
 let listStatus = 200;
@@ -32,9 +32,9 @@ beforeAll(async () => {
     res.writeHead(404).end(JSON.stringify({ ok: false }));
   });
   await new Promise<void>((resolve) => api.listen(0, "127.0.0.1", resolve));
-  vi.stubEnv("OMB_BOAT_API", `http://127.0.0.1:${(api.address() as { port: number }).port}/api/v1`);
-  vi.stubEnv("OMB_CLOUD_BOAT_URL", undefined);
-  vi.stubEnv("OMB_CLOUD_BOAT_TOKEN", undefined);
+  vi.stubEnv("CRYBOT_BOAT_API", `http://127.0.0.1:${(api.address() as { port: number }).port}/api/v1`);
+  vi.stubEnv("CRYBOT_CLOUD_BOAT_URL", undefined);
+  vi.stubEnv("CRYBOT_CLOUD_BOAT_TOKEN", undefined);
   vi.resetModules();
   boat = await import("../boat.ts");
   journal = await import("../boat-create-idempotency.ts");
@@ -107,7 +107,7 @@ describe("GET /api/computers/usage", () => {
     });
     expect(body).toEqual({ cloudComputers: 2, teamComputers: 1 });
     expect(Object.values(body as object).every((value) => Number.isInteger(value))).toBe(true);
-    expect(JSON.stringify(body)).not.toMatch(/bx_|Research|Team box|ogb-|ready|archived/);
+    expect(JSON.stringify(body)).not.toMatch(/bx_|Research|Team box|cry-|ready|archived/);
     expect(requests).toEqual(["GET /api/v1/sandboxes?limit=200"]);
   });
 
@@ -117,11 +117,11 @@ describe("GET /api/computers/usage", () => {
   });
 
   it("says it does not know when Boat cannot be reached", async () => {
-    vi.stubEnv("OMB_BOAT_API", "http://127.0.0.1:9/api/v1");
+    vi.stubEnv("CRYBOT_BOAT_API", "http://127.0.0.1:9/api/v1");
     try {
       expect((await usage({ box: { token: "box_usage" } } as AppConfig)).body).toEqual({ cloudComputers: null, teamComputers: 0 });
     } finally {
-      vi.stubEnv("OMB_BOAT_API", `http://127.0.0.1:${(api.address() as { port: number }).port}/api/v1`);
+      vi.stubEnv("CRYBOT_BOAT_API", `http://127.0.0.1:${(api.address() as { port: number }).port}/api/v1`);
     }
   });
 

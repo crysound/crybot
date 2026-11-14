@@ -5,7 +5,7 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
 
-import { launchVerificationServer, runControlOmb, verificationServerArgs, verificationServerEnvironment } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry, verificationServerArgs, verificationServerEnvironment } from "../scripts/control-cry.ts";
 import { ENVELOPE_MARK } from "./runtime/envelope.ts";
 import { waitForExit } from "./testing/cleanup.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
@@ -14,7 +14,7 @@ import { ownTurnText } from "./testing/room-handoff-agent.ts";
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SETTLED = "Your downstream room requests have settled.";
 const REPORT_FROM_MIRA = "[From @Mira (bot) · report on assignment";
-const RERUN_NOTE = "OpenMausBot restarted while your previous turn here was running";
+const RERUN_NOTE = "Cry Bot restarted while your previous turn here was running";
 const TEAMMATES_CUT = "A restart cut these teammates' turns";
 
 const jsonl = (path: string): any[] => existsSync(path)
@@ -45,7 +45,7 @@ const chipText = (message: any): string => [message.tool?.name, message.tool?.ou
 
 async function scenario(test: (f: any) => Promise<void>) {
   const parentEnv: NodeJS.ProcessEnv = { ...process.env };
-  const session = await launchVerificationServer(parentEnv, undefined, undefined, undefined, undefined, { scripted: true });
+  const session = await launchVerificationServer(parentEnv, undefined, undefined, undefined, { scripted: true });
   const url = session.info.url;
   const dataDir = session.info.dataDir;
   let server: ChildProcess = session.child;
@@ -59,7 +59,7 @@ async function scenario(test: (f: any) => Promise<void>) {
       try { parsed = JSON.parse(raw); } catch {}
       return { status: response.status, body: parsed };
     };
-    const cli = (...args: string[]) => runControlOmb([...args, "--url", url]) as Promise<any>;
+    const cli = (...args: string[]) => runControlCry([...args, "--url", url]) as Promise<any>;
     const bot = async (name: string, section: string) => (await cli("new-bot", "--name", name, "--section", section)).bot;
     const clive = await bot("Clive", "Leadership");
     const mira = await bot("Mira", "Engineering");

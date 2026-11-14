@@ -5,7 +5,6 @@ import { FEEDBACK_URL, HELP_CENTER_URL, desktopAppVersion, openExternalLink } fr
 import { t } from "@/lib/i18n";
 import { useStore } from "@/state/store";
 import { AboutDialog } from "../../AboutDialog";
-import { AnalyticsRow } from "../../AnalyticsRow";
 import { ChatWidthRow, FontRow, SidebarToolsLayoutRow } from "../../AppearanceSelectRows";
 import {
   ColorUserBubblesRow, FollowUpRow, LanguageRow, PinnedCirclesRow, ReplayTourRow, RunCardRow, SendKeyRow, ShowThreadsRow,
@@ -44,7 +43,7 @@ export function AppPage() {
     {ctx.desktop && (
       <SettingsGroup label={t("settings.updates.title")} block="updates">
         <SettingsRows>
-          {window.ogb?.updater ? <UpdatesRow title={appVersionLine} />
+          {window.cry?.updater ? <UpdatesRow title={appVersionLine} />
             // On the app's own page with no updater (a package or store build), the version is live and says why
             // there is no button; only another place's page names This computer.
             : ctx.home || ctx.client ? <SettingRow title={appVersionLine} subtitle={t("settings.updates.fromPackage")}>{null}</SettingRow>
@@ -63,7 +62,7 @@ export function AppPage() {
       </SettingsGroup>
     )}
     {/* Your computers is Advanced: in Simple the rail switches places, and the page stays one window tall. */}
-    {ctx.desktop && ctx.advanced && (window.ogb?.environments
+    {ctx.desktop && ctx.advanced && (window.cry?.environments
       ? <ConnectedWorkspacesSettings label={t("settings.app.computers")} description={t("settings.app.computersLine")} />
       : !ctx.client && <PlacesFromHere />)}
     {ctx.desktop && ctx.advanced && <RemoteComputerSection hideWhenUnavailable legacyOnly />}
@@ -74,7 +73,7 @@ export function AppPage() {
         {ctx.advanced && <SettingsLinkRow title={t("sidebar.menu.feedback")} external onClick={() => void openExternalLink(FEEDBACK_URL)} />}
         {ctx.advanced && <SettingsLinkRow title={t("sidebar.menu.shortcuts")} onClick={() => { dispatch({ type: "toggleAppSettings", open: false }); dispatch({ type: "toggleShortcuts", open: true }); }} />}
         {ctx.advanced && !ctx.client && <ReplayTourRow />}
-        {desk && ctx.advanced && (window.ogb?.exportDiagnostics ? <DiagnosticsRow simple /> : <InertRow title={t("settings.app.diagnostics")}
+        {desk && ctx.advanced && (window.cry?.exportDiagnostics ? <DiagnosticsRow simple /> : <InertRow title={t("settings.app.diagnostics")}
           control={<button type="button" className="ui-button" tabIndex={-1}>{t("settings.diagnostics.export")}</button>} />)}
         <div data-settings-block="about" className="contents">
           <SettingsLinkRow title={t("settings.app.about", { app: productName() })} onClick={() => setAbout(true)} />
@@ -90,7 +89,7 @@ export function AppPage() {
 function PlacesFromHere() {
   const { place } = useSettingsShell();
   const others = useOtherPlaces("app");
-  const workspaces = window.ogb?.workspaces;
+  const workspaces = window.cry?.workspaces;
   if (!workspaces) return null;
   return <>
     <SettingsGroup label={t("settings.app.computers")} description={t("settings.app.computersLine")} block="your-computers">
@@ -122,7 +121,7 @@ export function GeneralPage() {
         <LanguageRow simple />
         <SendKeyRow simple />
         <FollowUpRow simple />
-        {window.ogb?.talkShortcut ? <TalkShortcutRow /> : elsewhere(window.ogb?.talkShortcut, ctx) && ctx.cloud ? <InertRow title={t("settings.search.talk")} control={<span className="text-[13px] leading-5 text-ink-secondary">{t("settings.general.talkOff")}</span>} /> : null}
+        {window.cry?.talkShortcut ? <TalkShortcutRow /> : elsewhere(window.cry?.talkShortcut, ctx) && ctx.cloud ? <InertRow title={t("settings.search.talk")} control={<span className="text-[13px] leading-5 text-ink-secondary">{t("settings.general.talkOff")}</span>} /> : null}
       </SettingsRows>
     </SettingsGroup>
     <SettingsGroup label={t("notifications.title")} block="notifications"
@@ -131,12 +130,9 @@ export function GeneralPage() {
     </SettingsGroup>
     {ctx.desktop && !ctx.client && (
       <SettingsGroup label={t("settings.general.startup")} block="startup">
-        <SettingsRows>{window.ogb?.openAtLogin ? <OpenAtLoginRow simple /> : <InertRow title={t("settings.openAtLogin.title")} control={<Switch checked={false} tabIndex={-1} aria-label={t("settings.openAtLogin.title")} />} />}</SettingsRows>
+        <SettingsRows>{window.cry?.openAtLogin ? <OpenAtLoginRow simple /> : <InertRow title={t("settings.openAtLogin.title")} control={<Switch checked={false} tabIndex={-1} aria-label={t("settings.openAtLogin.title")} />} />}</SettingsRows>
       </SettingsGroup>
     )}
-    <SettingsGroup label={t("settings.general.privacy")} block="privacy">
-      <SettingsRows><AnalyticsRow simple /></SettingsRows>
-    </SettingsGroup>
   </>;
 }
 

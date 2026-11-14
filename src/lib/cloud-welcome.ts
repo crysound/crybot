@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import type { CloudPlanSnapshot } from "../../electron/cloud-account.mjs";
+import type { CloudPlanSnapshot } from "../../electron/cloud-account-types.mjs";
 import { CLOUD_SETUP_HIDDEN, CLOUD_WELCOME_DONE, cloudWelcomeStage } from "@/lib/cloud-setup";
 import type { OnboardingStatus, WelcomeViewer } from "@/lib/onboarding";
 import { api, type Action, type ConfigStatus } from "@/state/store";
@@ -21,7 +21,7 @@ interface Snapshot {
   finishing: boolean;
 }
 
-const DONE_HERE = "omb.cloudWelcome.done";
+const DONE_HERE = "cry.cloudWelcome.done";
 function stored(key: string): string | null {
   try { return globalThis.localStorage?.getItem(key) || null; } catch { return null; }
 }

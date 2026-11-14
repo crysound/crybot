@@ -22,7 +22,7 @@ import { ToolSelectionCard } from "./ToolSelectionCard";
 import { BotApiCard } from "./BotApiCard";
 import { ToolBudgetLine } from "./ToolBudgetLine";
 import { useCloudPlan } from "../ProIntroduction";
-import { xResearchAction } from "@/lib/cloud-plan";
+import { xResearchAction } from "@/lib/cloud-status";
 import { useBotApps } from "./useBotApps";
 import {
   classifyConnectorTool,
@@ -45,7 +45,7 @@ export function useWorkingFolder(bot: Pick<Bot, "id" | "cwd">) {
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const canPick = Boolean(window.ogb?.pickFolder);
+  const canPick = Boolean(window.cry?.pickFolder);
 
   const save = async (cwd: string | null) => {
     setSaving(true);
@@ -60,7 +60,7 @@ export function useWorkingFolder(bot: Pick<Bot, "id" | "cwd">) {
     }
   };
   const pick = async () => {
-    const chosen = await window.ogb?.pickFolder?.(bot.cwd);
+    const chosen = await window.cry?.pickFolder?.(bot.cwd);
     if (chosen) void save(chosen);
   };
   return { draft, setDraft, error, saving, canPick, save, pick };

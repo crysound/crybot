@@ -74,7 +74,7 @@ it("a bridged turn on the chat-completions runtime carries on after use_tool nam
   const agents: NonNullable<SendTurnInput["integrations"]>["agents"] = {
     command: process.execPath,
     args: [join(dirname(fileURLToPath(import.meta.url)), "agents-proxy.ts")],
-    env: { OMB_HARNESS_URL: "http://127.0.0.1:9", OMB_BOT_ID: "bot-chat", OMB_THREAD_ID: "thread-chat", OMB_COMMS_TOKEN: "unused", OMB_TURN_DEPTH: "0", [TOOL_BRIDGE_ENV]: "1" },
+    env: { CRYBOT_HARNESS_URL: "http://127.0.0.1:9", CRYBOT_BOT_ID: "bot-chat", CRYBOT_THREAD_ID: "thread-chat", CRYBOT_COMMS_TOKEN: "unused", CRYBOT_TURN_DEPTH: "0", [TOOL_BRIDGE_ENV]: "1" },
   };
   const threadId = randomUUID();
   await instance.adapter.sendTurn({ threadId, text: "Schedule my morning brief.", model: "fixture-model", integrations: { agents } });

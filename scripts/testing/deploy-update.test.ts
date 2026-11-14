@@ -5,17 +5,18 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 const SCRIPT = join(import.meta.dirname, "..", "..", "deploy", "update.sh");
+const FEED_CURL = join(import.meta.dirname, "fake-update-curl.mjs");
 const FAKE = join(import.meta.dirname, "fake-compose-docker.mjs");
-const REPO = "ghcr.io/milind-soni/openmausbot";
+const REPO = "ghcr.io/crysound/crybot";
 const posix = process.platform !== "win32";
 
 const id = (letter: string) => `sha256:${letter.repeat(64)}`;
 const OLD = { id: id("a"), refs: [`${REPO}:latest`, `${REPO}@${id("1")}`], version: "0.1.150", local: true, engine: true };
 const NEW = { id: id("b"), refs: [`${REPO}@${id("2")}`, `${REPO}:v0.1.151`], version: "0.1.151", local: false, engine: true };
-const ENV = "DOMAIN=maus.example.test\nOMB_SIGNIN_EMAILS=owner@example.test\n";
+const ENV = "DOMAIN=bot.example.test\nCRYBOT_SIGNIN_EMAILS=owner@example.test\n";
 /** .env after a rollback: as it was, with the version that ran before pinned by its digest, so a tag that moved since
  * (the installer's `stable`) cannot bring the undone version back on a later run of the installer. */
-const ROLLED_BACK = `${ENV}OMB_IMAGE=${OLD.refs[1]}\n`;
+const ROLLED_BACK = `${ENV}CRYBOT_IMAGE=${OLD.refs[1]}\n`;
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -36,32 +37,34 @@ function tree(dir: string, prefix = ""): Record<string, string> {
 /** A stable.json as promote-stable.yml writes it: the newest entry first, then every version stable before it. */
 function stableRecord(version: string, image: string, earlier: string[] = []) {
   const history = [version, ...earlier].map((entry, at) => ({ version: entry, promotedAt: `2026-11-${String(10 - at).padStart(2, "0")}T00:00:00.000Z` }));
-  return JSON.stringify({ channel: "stable", version, image, cloudHomeImage: `${REPO}-cloud-home@${id("9")}`, platforms: ["linux/amd64", "linux/arm64"], promotedAt: history[0]!.promotedAt, history }, null, 2);
+  return JSON.stringify({ channel: "stable", version, image, platforms: ["linux/amd64", "linux/arm64"], promotedAt: history[0]!.promotedAt, history }, null, 2);
 }
 
 /** A Compose install on version 0.1.150 with some data, and a stable channel that names `target`. */
 function install(target: Record<string, unknown> = {}, extra: Record<string, unknown> = {}) {
-  const root = mkdtempSync(join(tmpdir(), "omb-update-"));
+  const root = mkdtempSync(join(tmpdir(), "cry-update-"));
   dirs.push(root);
   const deploy = join(root, "deploy");
   const fake = join(root, "fake");
   const data = join(fake, "volumes", "deploy_data");
   mkdirSync(join(root, "bin"));
   mkdirSync(deploy);
-  mkdirSync(join(data, ".openmausbot"), { recursive: true });
-  writeFileSync(join(data, ".openmausbot", "bots.json"), '[{"name":"Mira"}]');
+  mkdirSync(join(data, ".crybot"), { recursive: true });
+  writeFileSync(join(data, ".crybot", "bots.json"), '[{"name":"Mira"}]');
   writeFileSync(join(data, "started-by.txt"), "0.1.150\n");
   copyFileSync(SCRIPT, join(deploy, "update.sh"));
   writeFileSync(join(deploy, "docker-compose.yml"), "services: {}\n");
   writeFileSync(join(deploy, ".env"), ENV);
   writeFileSync(join(root, "bin", "docker"), `#!/bin/sh\nexec "${process.execPath}" "${FAKE}" "$@"\n`);
   chmodSync(join(root, "bin", "docker"), 0o755);
+  writeFileSync(join(root, "bin", "curl"), `#!/bin/sh\nexec "${process.execPath}" "${FEED_CURL}" "$@"\n`);
+  chmodSync(join(root, "bin", "curl"), 0o755);
   const next = { ...NEW, ...target };
   // A version that never answers is waited for; two seconds of that is enough here.
-  const wait = next.behaviour === "silent" ? { OMB_UPDATE_WAIT_S: "2" } : {};
+  const wait = next.behaviour === "silent" ? { CRYBOT_UPDATE_WAIT_S: "2" } : {};
   writeFileSync(join(fake, "state.json"), JSON.stringify({
     serial: 1, composeReadsPin: true, defaultImage: `${REPO}:latest`, dataVolume: "deploy_data", images: [OLD, next],
-    containers: { omb: { id: "omb-1", image: OLD.id, status: "running", restarts: 0 }, caddy: { id: "caddy-1", status: "running" } },
+    containers: { cry: { id: "cry-1", image: OLD.id, status: "running", restarts: 0 }, caddy: { id: "caddy-1", status: "running" } },
     ...extra,
   }));
   writeFileSync(join(root, "stable.json"), stableRecord(next.version, next.refs[0]!));
@@ -74,8 +77,8 @@ function install(target: Record<string, unknown> = {}, extra: Record<string, unk
       env: {
         // sbin: sha256sum is /sbin/sha256sum on macOS.
         PATH: `${join(root, "bin")}:/usr/bin:/bin:/usr/sbin:/sbin`, HOME: root, FAKE_DOCKER_DIR: fake,
-        OMB_STABLE_URL: `file://${join(root, "stable.json")}`, OMB_NEWEST_URL: `file://${join(root, "newest.json")}`,
-        OMB_UPDATE_POLL_S: "0", OMB_UPDATE_WAIT_S: "120", OMB_UPDATE_ENGINE_WAIT_S: "1", ...wait, ...options.env,
+        CRYBOT_UPDATE_URL: "https://feed.example.test/stable.json", FAKE_UPDATE_FEED_DIR: root,
+        CRYBOT_UPDATE_POLL_S: "0", CRYBOT_UPDATE_WAIT_S: "120", CRYBOT_UPDATE_ENGINE_WAIT_S: "1", ...wait, ...options.env,
       },
     });
     return { ...result, said: result.stdout.trim().split("\n") };
@@ -117,8 +120,8 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
       "To go back to it: ./update.sh --rollback",
     ]);
     expect(box.copies()).toEqual([expect.stringMatching(/^deploy_data-before-update-\d{8}T\d{6}Z$/)]);
-    expect(box.env()).toBe(`${ENV}OMB_IMAGE=${NEW.refs[0]}\n`);
-    expect(box.state().containers.omb).toMatchObject({ image: NEW.id, status: "running" });
+    expect(box.env()).toBe(`${ENV}CRYBOT_IMAGE=${NEW.refs[0]}\n`);
+    expect(box.state().containers.cry).toMatchObject({ image: NEW.id, status: "running" });
     expect(tree(box.backup())).toEqual(before);
     expect(tree(box.data)["started-by.txt"]).toBe("0.1.150\n0.1.151\n");
     expect(box.journal()).toBe(false);
@@ -131,7 +134,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     expect(order.every((at) => at >= 0)).toBe(true);
     expect(order).toEqual([...order].sort((a, b) => a - b));
     expect(calls.find((call) => call.includes("--entrypoint cp"))).toBe(
-      `run --rm --network none --user 0:0 --label com.mausbot.role=update-helper -v deploy_data:/from:ro -v ${box.copies()[0]}:/to --entrypoint cp ${OLD.id} -a /from/. /to/`,
+      `run --rm --network none --user 0:0 --label com.crybot.role=update-helper -v deploy_data:/from:ro -v ${box.copies()[0]}:/to --entrypoint cp ${OLD.id} -a /from/. /to/`,
     );
     // The server was stopped, and seen to be stopped, before the copy.
     expect(calls.slice(calls.indexOf("compose stop"), calls.findIndex((call) => call.includes("--entrypoint cp"))).some((call) => call.includes("{{.State.Running}}"))).toBe(true);
@@ -145,7 +148,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     expect(again.status).toBe(0);
     expect(again.said).toEqual(["Downloading 0.1.151…", "This server already runs 0.1.151. Nothing to do."]);
     expect(box.calls().slice(calls).some((call) => /^(compose (stop|up)|run|volume (create|rm))/.test(call))).toBe(false);
-    expect(box.env()).toBe(`${ENV}OMB_IMAGE=${NEW.refs[0]}\n`);
+    expect(box.env()).toBe(`${ENV}CRYBOT_IMAGE=${NEW.refs[0]}\n`);
   });
 
   it("puts back the old image, its settings and the data when the new version never answers", () => {
@@ -160,16 +163,16 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     ]);
     expect(box.env()).toBe(ROLLED_BACK);
     expect(tree(box.data)).toEqual({ ...before, "started-by.txt": "0.1.150\n0.1.150\n" });
-    expect(box.state().containers.omb).toMatchObject({ image: OLD.id, status: "running" });
+    expect(box.state().containers.cry).toMatchObject({ image: OLD.id, status: "running" });
     expect(box.state().containers.caddy.status).toBe("running");
     expect(box.journal()).toBe(false);
   });
 
   it("says why in the server's own last words when the new version stops as it starts", () => {
-    const box = install({ behaviour: "crashes", lastWords: "This data was written by a newer MausBot." });
+    const box = install({ behaviour: "crashes", lastWords: "This data was written by a newer Cry Bot." });
     const failed = box.run();
     expect(failed.status).toBe(1);
-    expect(failed.stdout).toContain("The update to 0.1.151 did not work: it kept stopping as it started (This data was written by a newer MausBot.).");
+    expect(failed.stdout).toContain("The update to 0.1.151 did not work: it kept stopping as it started (This data was written by a newer Cry Bot.).");
     expect(failed.said.at(-1)).toBe("Your server runs 0.1.150 again, with its data as it was before the update.");
     expect(tree(box.data)["started-by.txt"]).toBe("0.1.150\n0.1.150\n");
   });
@@ -183,7 +186,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     const failed = box.run();
     expect(failed.status, failed.stdout).toBe(1);
     expect(failed.stdout).toContain(`The update to 0.1.151 did not work: ${why}.`);
-    expect(box.state().containers.omb.image).toBe(OLD.id);
+    expect(box.state().containers.cry.image).toBe(OLD.id);
     expect(box.env()).toBe(ROLLED_BACK);
   });
 
@@ -197,7 +200,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     for (const [extra, words] of [
       [{ failPull: true }, `Could not download ${NEW.refs[0]}`],
       [{ dataKb: 4_000_000, freeKb: 3_000_000 }, "There is not enough free disk for a copy of the data: it needs about 5320 MB and 2929 MB are free."],
-      [{ composeReadsPin: false }, "does not take its image from OMB_IMAGE"],
+      [{ composeReadsPin: false }, "does not take its image from CRYBOT_IMAGE"],
     ] as const) {
       const box = install({}, extra);
       const refused = box.run();
@@ -216,7 +219,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     const refused = box.run();
     expect(refused.status).toBe(4);
     expect(refused.said.at(-1)).toMatch(/^Copying the data aside failed, .* Nothing was changed, and the server was started again\.$/);
-    expect(box.state().containers.omb).toMatchObject({ image: OLD.id, status: "running" });
+    expect(box.state().containers.cry).toMatchObject({ image: OLD.id, status: "running" });
     expect(box.copies()).toEqual([]);
     expect(tree(box.data)).toEqual({ ...before, "started-by.txt": "0.1.150\n0.1.150\n" });
   });
@@ -258,19 +261,19 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
       images: [{ ...OLD, refs: [...OLD.refs, `${REPO}:v0.1.150`] }, { ...NEW, behaviour: "silent" }],
       signalOn: { match: "/api/health\"", signal: "SIGKILL" },
     });
-    writeFileSync(join(box.deploy, ".env"), `${ENV}OMB_IMAGE=${REPO}:v0.1.150\n`, { mode: 0o600 });
+    writeFileSync(join(box.deploy, ".env"), `${ENV}CRYBOT_IMAGE=${REPO}:v0.1.150\n`, { mode: 0o600 });
     const envBefore = box.env();
     const before = tree(box.data);
     expect(box.run().signal).toBe("SIGKILL");
     expect(box.journal()).toBe(true);
-    expect(box.state().containers.omb.image).toBe(NEW.id);
+    expect(box.state().containers.cry.image).toBe(NEW.id);
     const unanswered = box.run([], { input: "" });
     expect(unanswered.status, unanswered.stdout).toBe(4);
-    expect(box.state().containers.omb.image).toBe(NEW.id);
+    expect(box.state().containers.cry.image).toBe(NEW.id);
     const yes = box.run([], { input: "yes\n" });
     expect(yes.said.at(-1), yes.stdout).toBe("Your server runs 0.1.150 again, with its data as it was before the update.");
     expect(yes.status).toBe(1);
-    expect(box.state().containers.omb.image).toBe(OLD.id);
+    expect(box.state().containers.cry.image).toBe(OLD.id);
     expect(box.env()).toBe(envBefore);
     expect(tree(box.data)).toEqual({ ...before, "started-by.txt": "0.1.150\n0.1.150\n" });
     expect(box.journal()).toBe(false);
@@ -282,7 +285,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     const killed = box.run();
     expect(killed.signal).toBe("SIGKILL");
     expect(box.journal()).toBe(true);
-    expect(box.env()).toContain("OMB_IMAGE=");
+    expect(box.env()).toContain("CRYBOT_IMAGE=");
     const next = box.run(["--check"]);
     expect(next.status).toBe(0);
     expect(next.stdout).toContain("An earlier update did not finish.");
@@ -306,7 +309,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     expect(repaired.status).toBe(1);
     expect(box.env()).toBe(ROLLED_BACK);
     expect(tree(box.data)).toEqual({ ...before, "started-by.txt": "0.1.150\n0.1.150\n" });
-    expect(box.state().containers.omb.image).toBe(OLD.id);
+    expect(box.state().containers.cry.image).toBe(OLD.id);
   });
 
   it("keeps a new version that turned out healthy when the update was killed while waiting for it", () => {
@@ -316,7 +319,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     expect(next.status).toBe(0);
     expect(next.said.slice(0, 2)).toEqual(["The last update was interrupted after the new version had started, and it is healthy.", "Updated from 0.1.150 to 0.1.151."]);
     expect(next.said.at(-1)).toBe("This server already runs 0.1.151. Nothing to do.");
-    expect(box.state().containers.omb.image).toBe(NEW.id);
+    expect(box.state().containers.cry.image).toBe(NEW.id);
   });
 
   it("on Ctrl-C while copying, starts the server again with nothing changed; while waiting, puts the old version back", () => {
@@ -324,7 +327,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     const stopped = copying.run();
     expect(stopped.status).toBe(130);
     expect(stopped.stdout).toContain("The update stopped while it copied the data aside. Nothing was changed, and the server was started again.");
-    expect(copying.state().containers.omb).toMatchObject({ image: OLD.id, status: "running" });
+    expect(copying.state().containers.cry).toMatchObject({ image: OLD.id, status: "running" });
     expect(copying.env()).toBe(ENV);
     expect(copying.journal()).toBe(false);
 
@@ -341,10 +344,10 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     const box = install();
     const before = tree(box.data);
     expect(box.run().status).toBe(0);
-    writeFileSync(join(box.data, ".openmausbot", "bots.json"), "[]");
+    writeFileSync(join(box.data, ".crybot", "bots.json"), "[]");
     const declined = box.run(["--rollback"], { input: "no\n" });
     expect(declined.status).toBe(4);
-    expect(box.state().containers.omb.image).toBe(NEW.id);
+    expect(box.state().containers.cry.image).toBe(NEW.id);
     const back = box.run(["--rollback"], { input: "yes\n" });
     expect(back.status, back.stdout).toBe(0);
     expect(back.said.at(-1)).toBe("Your server runs 0.1.150 again, with its data as it was before the update.");
@@ -358,7 +361,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
   it("puts .env back exactly when it named a tag that does not move", () => {
     for (const named of [`${REPO}:v0.1.150`, OLD.refs[1]!]) {
       const box = install({}, { images: [{ ...OLD, refs: [...OLD.refs, `${REPO}:v0.1.150`] }, NEW] });
-      writeFileSync(join(box.deploy, ".env"), `${ENV}OMB_IMAGE=${named}\n`, { mode: 0o600 });
+      writeFileSync(join(box.deploy, ".env"), `${ENV}CRYBOT_IMAGE=${named}\n`, { mode: 0o600 });
       const before = box.env();
       expect(box.run().status).toBe(0);
       expect(box.env()).not.toBe(before);
@@ -367,13 +370,13 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
       expect(box.env(), named).toBe(before);
     }
     const moving = install();
-    writeFileSync(join(moving.deploy, ".env"), `${ENV}OMB_IMAGE=${REPO}:stable\n`);
+    writeFileSync(join(moving.deploy, ".env"), `${ENV}CRYBOT_IMAGE=${REPO}:stable\n`);
     expect(moving.run().status).toBe(0);
     expect(moving.run(["--rollback", "--yes"]).status).toBe(0);
-    expect(moving.env()).toBe(`${ENV}OMB_IMAGE=${OLD.refs[1]}\n`);
+    expect(moving.env()).toBe(`${ENV}CRYBOT_IMAGE=${OLD.refs[1]}\n`);
   });
 
-  // A hardened server answers `openmausbot doctor` without a session with a refusal, so before the server's own count
+  // A hardened server answers `crybot doctor` without a session with a refusal, so before the server's own count
   // the check that a bot can still start never ran there.
   it("checks a hardened version's engines with the server's own count, where doctor is refused", () => {
     const hardened = { counts: true, doctor: false };
@@ -385,19 +388,19 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     const kept = install(hardened);
     kept.setState({ images: [{ ...OLD, ...hardened }, { ...NEW, ...hardened }] });
     expect(kept.run().status).toBe(0);
-    expect(kept.state().containers.omb.image).toBe(NEW.id);
+    expect(kept.state().containers.cry.image).toBe(NEW.id);
   });
 
   it("moves an install the installer made with Caddy in the server's network to the current files, and back on rollback", () => {
     const box = install();
-    const oldCompose = `# Written by MausBot's installer (deploy/install.sh), and written again each time it runs.
-name: openmausbot
+    const oldCompose = `# Written by CryBot's installer (deploy/install.sh), and written again each time it runs.
+name: crybot
 services:
-  omb:
-    image: \${OMB_IMAGE:?run the installer again}
+  cry:
+    image: \${CRYBOT_IMAGE:?run the installer again}
   caddy:
     image: caddy:2
-    network_mode: "service:omb"
+    network_mode: "service:cry"
 `;
     const oldCaddyfile = "{$DOMAIN} {\n\treverse_proxy 127.0.0.1:8799\n}\n";
     writeFileSync(join(box.deploy, "compose.yaml"), oldCompose);
@@ -411,8 +414,8 @@ services:
     expect((statSync(join(box.deploy, ".update")).mode & 0o777).toString(8)).toBe("700");
     const compose = readFileSync(join(box.deploy, "compose.yaml"), "utf8");
     expect(compose).not.toContain("network_mode");
-    expect(compose).toContain("- edge:/run/openmausbot");
-    expect(readFileSync(join(box.deploy, "Caddyfile"), "utf8")).toContain("reverse_proxy unix//run/openmausbot/http.sock");
+    expect(compose).toContain("- edge:/run/crybot");
+    expect(readFileSync(join(box.deploy, "Caddyfile"), "utf8")).toContain("reverse_proxy unix//run/crybot/http.sock");
     expect(box.run(["--rollback", "--yes"]).status).toBe(0);
     expect(readFileSync(join(box.deploy, "compose.yaml"), "utf8")).toBe(oldCompose);
     expect(readFileSync(join(box.deploy, "Caddyfile"), "utf8")).toBe(oldCaddyfile);
@@ -421,7 +424,7 @@ services:
 
   it("says how to move this repository's docker-compose.yml when it still has Caddy in the server's network", () => {
     const box = install();
-    writeFileSync(join(box.deploy, "docker-compose.yml"), 'services:\n  caddy:\n    network_mode: "service:omb"\n');
+    writeFileSync(join(box.deploy, "docker-compose.yml"), 'services:\n  caddy:\n    network_mode: "service:cry"\n');
     expect(box.run(["--check"]).stdout).toContain("git pull brings the current one");
     const done = box.run();
     expect(done.status).toBe(0);
@@ -435,7 +438,7 @@ services:
     expect(failed.status).toBe(1);
     expect(failed.stdout).toContain("Docker could not start 0.1.151");
     expect(failed.said.at(-1)).toBe("Your server runs 0.1.150 again, with its data as it was before the update.");
-    expect(box.state().containers.omb).toMatchObject({ image: OLD.id, status: "running" });
+    expect(box.state().containers.cry).toMatchObject({ image: OLD.id, status: "running" });
     expect(box.env()).toBe(ROLLED_BACK);
   });
 
@@ -450,8 +453,8 @@ services:
     const left = tree(box.data);
     expect(left).toEqual({ ...before, "started-by.txt": "0.1.150\n0.1.151\n" });
     expect(tree(box.backup())).toEqual(before);
-    expect(box.state().containers.omb.status).toBe("exited");
-    expect(box.env()).toBe(`${ENV}OMB_IMAGE=${NEW.refs[0]}\n`);
+    expect(box.state().containers.cry.status).toBe("exited");
+    expect(box.env()).toBe(`${ENV}CRYBOT_IMAGE=${NEW.refs[0]}\n`);
     expect(box.journal()).toBe(true);
 
     // The next update neither replaces the copy nor touches the data until someone says yes.
@@ -480,7 +483,7 @@ services:
     const done = box.run(["--version", "v0.1.151"]);
     expect(done.status, done.stdout).toBe(0);
     expect(box.calls()).toContain(`pull -q ${REPO}:v0.1.151`);
-    expect(box.env()).toBe(`${ENV}OMB_IMAGE=${NEW.refs[0]}\n`);
+    expect(box.env()).toBe(`${ENV}CRYBOT_IMAGE=${NEW.refs[0]}\n`);
   });
 
   it("reads the version from the record's top level, whatever its history holds", () => {
@@ -507,7 +510,7 @@ services:
     expect(done.signal).toBe(null);
     expect(done.status, done.stdout).toBe(0);
     expect(done.said).toContain("Updated from 0.1.150 to 0.1.151.");
-    expect(box.state().containers.omb.image).toBe(NEW.id);
+    expect(box.state().containers.cry.image).toBe(NEW.id);
     expect(box.journal()).toBe(false);
   });
 
@@ -521,7 +524,7 @@ services:
     expect(stopped.said.slice(-2)).toEqual(["Interrupted.", "Nothing was changed."]);
     expect(box.journal()).toBe(true);
     expect(tree(box.data)).toEqual(since);
-    expect(box.calls().some((call) => call.includes(".omb-restore"))).toBe(false);
+    expect(box.calls().some((call) => call.includes(".cry-restore"))).toBe(false);
   });
 
   it("keeps the server as it is when an earlier update is left unfinished and the owner says keep", () => {
@@ -531,7 +534,7 @@ services:
     expect(kept.status, kept.stdout).toBe(0);
     expect(kept.stdout).toContain("Left as it is.");
     expect(kept.said.at(-1)).toBe("This server already runs 0.1.151. Nothing to do.");
-    expect(box.state().containers.omb.image).toBe(NEW.id);
+    expect(box.state().containers.cry.image).toBe(NEW.id);
     expect(box.journal()).toBe(false);
     expect(box.last()).toBe(true);
   });
@@ -563,7 +566,7 @@ services:
     behind.setState({ images: [{ ...OLD, version: undefined, label: "main", serves: "0.1.150" }, NEW] });
     const moved = behind.run();
     expect(moved.status, moved.stdout).toBe(0);
-    expect(behind.state().containers.omb.image).toBe(NEW.id);
+    expect(behind.state().containers.cry.image).toBe(NEW.id);
   });
 
   it("does not copy the data until the server has stopped, and drops a copy that does not match", () => {
@@ -577,7 +580,7 @@ services:
       expect(refused.status, words).toBe(4);
       expect(refused.said.at(-1)).toContain(words);
       expect(refused.said.at(-1)).toContain("Nothing was changed, and the server was started again.");
-      expect(box.state().containers.omb.image).toBe(OLD.id);
+      expect(box.state().containers.cry.image).toBe(OLD.id);
       expect(box.env()).toBe(ENV);
       expect(box.copies()).toEqual([]);
       expect(box.journal()).toBe(false);
@@ -604,21 +607,21 @@ services:
     expect(box.copies()[0]).not.toBe(first);
   });
 
-  it("takes the newest release until a first version is made stable, and stops on a channel it cannot reach", () => {
+  it("requests the configured feed once on 404 and never falls back", () => {
     const box = install();
     rmSync(join(box.root, "stable.json"));
-    writeFileSync(join(box.root, "newest.json"), JSON.stringify({ tag_name: "v0.1.151", html_url: "https://example.test/release", assets: [{ name: "x", version: "9.9.9" }] }));
-    const done = box.run();
-    expect(done.status, done.stdout).toBe(0);
-    expect(done.said[0]).toBe("No version has been made stable yet, so this takes the newest release, 0.1.151.");
-    expect(box.calls()).toContain(`pull -q ${REPO}:v0.1.151`);
-    expect(box.env()).toBe(`${ENV}OMB_IMAGE=${NEW.refs[0]}\n`);
-
-    const unreachable = install();
-    const refused = unreachable.run([], { env: { OMB_STABLE_URL: "http://127.0.0.1:9/stable.json" } });
-    expect(refused.status).toBe(4);
+    const refused = box.run();
+    expect(refused.status, refused.stdout + refused.stderr).toBe(4);
     expect(refused.stdout).toContain("Could not read the stable channel");
-    expect(unreachable.calls().some((call) => call.startsWith("pull"))).toBe(false);
+    expect(readFileSync(join(box.root, "feed-requests.jsonl"), "utf8").trim().split("\n")).toHaveLength(1);
+    expect(box.calls().some(call => call.startsWith("pull"))).toBe(false);
+  });
+
+  it.each(["http://feed.example.test/feed", "file:///tmp/feed.json"])("rejects insecure feed %s before downloading", url => {
+    const box = install();
+    const refused = box.run([], { env: { CRYBOT_UPDATE_URL: url } });
+    expect(refused.status).toBe(4);
+    expect(box.calls().some(call => call.startsWith("pull"))).toBe(false);
   });
 
   it.skipIf(process.getuid?.() === 0)("says plainly that the install folder cannot be written, and changes nothing", () => {

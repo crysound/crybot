@@ -4,6 +4,7 @@ import test from "node:test";
 import vm from "node:vm";
 import localOrigin from "./local-origin.cjs";
 import environments from "./environments.cjs";
+import { hostedAvailable, hostedDisabledState } from "./cloud-disabled.mjs";
 
 // The preload bridge and the main IPC handler run from their real sources without Electron; the client behind them is a stub.
 const ORIGIN = "http://127.0.0.1:48993";
@@ -12,7 +13,7 @@ function preload({ company = true } = {}) {
   const invoked = [];
   let bridge;
   const context = vm.createContext({
-    process: { platform: "fixture", argv: [`--omb-local-origin=${ORIGIN}`, ...(company ? ["--omb-company-desktop=1"] : [])] },
+    process: { platform: "fixture", argv: [`--cry-local-origin=${ORIGIN}`, ...(company ? ["--cry-company-desktop=1"] : [])] },
     location: { origin: ORIGIN }, TextEncoder, localStorage: { getItem: () => null },
     require: name => {
       assert.equal(name, "electron");
@@ -26,11 +27,12 @@ function preload({ company = true } = {}) {
   return { bridge, invoked };
 }
 
-test("the preload bridge reopens with no renderer-supplied address, and only on the company desktop", async () => {
-  const f = preload();
-  await f.bridge.organization.reopen("https://attacker.example.test", { verificationUri: "https://attacker.example.test" });
-  assert.deepEqual(f.invoked, [["organization:reopen"]]);
-  assert.equal(preload({ company: false }).bridge.organization, undefined);
+test("the preload exposes no organization sign-in or reopen bridge", () => {
+  for (const company of [true, false]) {
+    const f = preload({ company });
+    assert.equal(f.bridge.organization, undefined);
+    assert.deepEqual(f.invoked, []);
+  }
 });
 
 const mainSource = readFileSync(new URL("./main.mjs", import.meta.url), "utf8");
@@ -50,16 +52,17 @@ function main() {
     ipcMain: { handle: (channel, handler) => handlers.set(channel, handler), on: (channel, handler) => handlers.set(channel, handler) },
     localOnly: localOrigin.localOnly, workspaceSenderAllowed: environments.workspaceSenderAllowed,
     mainWindow: { webContents: contents }, rendererOrigin: () => ORIGIN, environmentsState: { environments: [], activeId: "local" },
+    hostedAvailable, hostedDisabledState,
     ensureManagedDesktop: () => client, organizationEntry: {},
   });
   vm.runInContext(registrations, context, { filename: "main.mjs (organization IPC fixture)" });
   return { handlers, calls, context, event: { sender: contents, senderFrame: frame } };
 }
 
-test("organization:reopen passes nothing from the renderer to the managed-desktop client", async () => {
+test("organization:reopen returns disabled without forwarding renderer input to a client", async () => {
   const f = main();
-  assert.deepEqual(await f.handlers.get("organization:reopen")(f.event, "https://attacker.example.test"), { status: "connecting" });
-  assert.deepEqual(f.calls, [[]]);
+  assert.deepEqual(await f.handlers.get("organization:reopen")(f.event, "https://attacker.example.test"), hostedDisabledState);
+  assert.deepEqual(f.calls, []);
 });
 
 test("organization:reopen answers only the local main window's exact main frame", () => {

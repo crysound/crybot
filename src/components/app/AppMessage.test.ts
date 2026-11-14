@@ -92,7 +92,7 @@ beforeEach(() => {
   dispatch.mockReset();
   flushBotPatches.mockClear();
   vi.stubGlobal("fetch", fetchMock);
-  vi.stubGlobal("ogb", { openExternal: vi.fn(async () => true) });
+  vi.stubGlobal("cry", { openExternal: vi.fn(async () => true) });
   // happy-dom's observer never reports: without one, a row counts as in view
   vi.stubGlobal("IntersectionObserver", undefined);
   pool = createAppPool({ limit: 3 });
@@ -134,7 +134,7 @@ describe("the row before its frame runs", () => {
     expect(renderToStaticMarkup(view(row(mcpPayload({ done: { tool: "Create issue", at: 2 } }))))).not.toMatch(/data-app-done[^]*<button/);
     await mount(row(mcpPayload({ done })));
     await act(async () => { find<HTMLButtonElement>("[data-app-done] button")!.click(); });
-    expect((window as unknown as { ogb: { openExternal: ReturnType<typeof vi.fn> } }).ogb.openExternal).toHaveBeenCalledWith("https://github.com/o/r/issues/12");
+    expect((window as unknown as { cry: { openExternal: ReturnType<typeof vi.fn> } }).cry.openExternal).toHaveBeenCalledWith("https://github.com/o/r/issues/12");
   });
 
   it("reads as its text when there is no payload", () => {
@@ -186,7 +186,7 @@ describe("a bot's page", () => {
     expect(button("About this app")!.getAttribute("aria-expanded")).toBe("true");
   });
 
-  it("sends mausbot.send as the person's message from this app, only while they use it", async () => {
+  it("sends crybot.send as the person's message from this app, only while they use it", async () => {
     await mount(row(htmlPayload()));
     await handshake();
     const ask = { jsonrpc: "2.0", id: "m1", method: "ui/message", params: { role: "user", content: [{ type: "text", text: "I have had 3 cups." }] } };
@@ -237,7 +237,7 @@ describe("a bot's page", () => {
     await handshake();
     await engage();
     await fromView({ jsonrpc: "2.0", id: "l1", method: "ui/open-link", params: { url: "https://example.com/a" } });
-    expect((window as unknown as { ogb: { openExternal: ReturnType<typeof vi.fn> } }).ogb.openExternal).toHaveBeenCalledWith("https://example.com/a");
+    expect((window as unknown as { cry: { openExternal: ReturnType<typeof vi.fn> } }).cry.openExternal).toHaveBeenCalledWith("https://example.com/a");
   });
 
   it("update_html mounts the new page at the same height, after the old one is asked to go", async () => {

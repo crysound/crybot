@@ -7,18 +7,18 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
-import { startControlPlaneStub, type ControlPlaneStub } from "./testing/control-plane-stub.ts";
+import { startFakeSmtp, testCertificate, type FakeSmtp } from "./testing/fake-smtp.ts";
 import { openSse } from "./testing/sse.ts";
 import { workerPort } from "./testing/worker-port.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(SERVER_DIR, "..");
 const PORT = workerPort(24000, 5000);
-const HOST = "agentada.test";
+const HOST = "team.example.test";
 
-let home: string;
-let child: ChildProcess;
-let stub: ControlPlaneStub;
+let home: string | undefined;
+let child: ChildProcess | undefined;
+let smtp: FakeSmtp | undefined;
 let stderr = "";
 
 interface Reply {
@@ -27,7 +27,6 @@ interface Reply {
   body: any;
 }
 
-/** A remote browser: a foreign Host and a forwarded address, like a proxy or tunnel hands us. */
 function call(path: string, init: { method?: string; body?: unknown; headers?: Record<string, string>; from?: string } = {}): Promise<Reply> {
   return new Promise((resolve, reject) => {
     const payload = init.body === undefined ? undefined : JSON.stringify(init.body);
@@ -70,9 +69,17 @@ const cookieOf = (reply: Reply): string => {
   return (first ?? "").split(";")[0];
 };
 
+function codeFor(email: string): string {
+  const message = smtp!.received.findLast((mail) => mail.to.includes(email));
+  expect(message, `SMTP message for ${email}`).toBeDefined();
+  const match = /(\d{4}) (\d{4})/.exec(message!.data);
+  expect(match).not.toBeNull();
+  return match!.slice(1).join("");
+}
+
 async function signIn(email: string): Promise<string> {
   expect((await call("/api/auth/email/start", { body: { email } })).status).toBe(200);
-  const reply = await call("/api/auth/email/verify", { body: { email, code: stub.otp } });
+  const reply = await call("/api/auth/email/verify", { body: { email, code: codeFor(email) } });
   expect(reply.status).toBe(200);
   return cookieOf(reply);
 }
@@ -86,15 +93,19 @@ async function openEvents(cookie: string) {
 }
 
 beforeAll(async () => {
-  stub = await startControlPlaneStub();
-  home = mkdtempSync(join(tmpdir(), "omb-email-signin-"));
+  home = mkdtempSync(join(tmpdir(), "cry-email-signin-"));
+  const certificate = testCertificate(["localhost"]);
+  if (!certificate) throw new Error("SMTP fixture requires openssl to create its isolated certificate");
+  const certificatePath = join(home, "smtp-ca.pem");
+  writeFileSync(certificatePath, certificate.cert);
+  smtp = await startFakeSmtp({ certificate, security: "starttls", mechanisms: ["PLAIN"], users: { "signin@example.test": "fixture-password" } });
   const staticDir = join(home, "static");
-  mkdirSync(join(home, ".openmausbot"), { recursive: true });
+  mkdirSync(join(home, ".crybot"), { recursive: true });
   mkdirSync(join(staticDir, "assets"), { recursive: true });
   writeFileSync(join(staticDir, "index.html"), "<!doctype html><title>Served UI</title>");
-  writeFileSync(join(home, ".openmausbot", "config.json"), JSON.stringify({
+  writeFileSync(join(home, ".crybot", "config.json"), JSON.stringify({
     instances: { fixture: { driver: "email-signin-test-shadow" } },
-    signIn: { admins: ["her@example.test", "@agentada.test"], members: ["staff@example.test"] },
+    signIn: { admins: ["her@example.test", "@team.example.test"], members: ["staff@example.test"] },
   }));
   child = spawn(process.execPath, [join(SERVER_DIR, "index.ts")], {
     cwd: ROOT,
@@ -103,14 +114,17 @@ beforeAll(async () => {
       ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
       HOME: home,
       USERPROFILE: home,
-      OMB_PORT: String(PORT),
-      OMB_WEBHOOK_PORT: String(PORT + 1),
-      OMB_STATIC_DIR: staticDir,
-      OMB_PUBLIC_URL: `https://${HOST}`,
-      OMB_ENVIRONMENT_LABEL: "agentada",
-      OMB_BROWSER_CONNECTION: join(home, "browser-test-connection.json"),
-      OMB_CONTROL_PLANE_URL: stub.url,
-      OMB_SSE_HEARTBEAT_MS: "50",
+      CRYBOT_SIGNIN_SMTP_URL: `smtp://signin%40example.test:fixture-password@localhost:${smtp.port}`,
+      NODE_EXTRA_CA_CERTS: certificatePath,
+      CRYBOT_DISABLE_MODEL_MANIFEST_FETCH: "1",
+      CRYBOT_DISABLE_ANNOUNCEMENTS: "1",
+      CRYBOT_PORT: String(PORT),
+      CRYBOT_WEBHOOK_PORT: String(PORT + 1),
+      CRYBOT_STATIC_DIR: staticDir,
+      CRYBOT_PUBLIC_URL: `https://${HOST}`,
+      CRYBOT_ENVIRONMENT_LABEL: "fixture",
+      CRYBOT_BROWSER_CONNECTION: join(home, "browser-test-connection.json"),
+      CRYBOT_SSE_HEARTBEAT_MS: "50",
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -128,14 +142,14 @@ beforeAll(async () => {
 }, 30_000);
 
 afterAll(async () => {
-  await waitForExit(child, { signal: "SIGTERM" });
-  await stub.close();
-  await removeTempDir(home);
+  if (child) await waitForExit(child, { signal: "SIGTERM" });
+  smtp?.close();
+  if (home) await removeTempDir(home);
 });
 
-describe("sign in with your email on a hosted server", () => {
+describe("sign in with your email through self-hosted SMTP", () => {
   it("advertises the option in the public descriptor", async () => {
-    const descriptor = await call("/.well-known/openmausbot/environment");
+    const descriptor = await call("/.well-known/crybot/environment");
     expect(descriptor.status).toBe(200);
     expect(descriptor.body.capabilities.emailSignIn).toBe(true);
   });
@@ -154,24 +168,26 @@ describe("sign in with your email on a hosted server", () => {
     const stranger = await call("/api/auth/email/start", { body: { email: "stranger@example.test" } });
     expect(stranger.status).toBe(403);
     expect(stranger.body.error).toMatch(/not on this server's sign-in list/);
-    expect(stub.calls).not.toContain("POST /api/auth/email-otp/send-verification-otp");
+    expect(smtp!.received).toEqual([]);
   });
 
   it("emails a code to a welcome address, then turns the code into an admin cookie session that shows its email", async () => {
     const started = await call("/api/auth/email/start", { body: { email: "her@example.test" } });
     expect(started.status).toBe(200);
-    expect(stub.calls).toContain("POST /api/auth/email-otp/send-verification-otp");
+    expect(smtp!.received).toHaveLength(1);
+    expect(smtp!.received[0]!.to).toEqual(["her@example.test"]);
 
-    const wrong = await call("/api/auth/email/verify", { body: { email: "her@example.test", code: "00000000", label: "Her iPad" } });
+    const code = codeFor("her@example.test");
+    const wrong = await call("/api/auth/email/verify", { body: { email: "her@example.test", code: code === "00000000" ? "11111111" : "00000000", label: "Her iPad" } });
     expect(wrong.status).toBe(401);
     expect(cookieOf(wrong)).toBe("");
 
-    const right = await call("/api/auth/email/verify", { body: { email: "her@example.test", code: stub.otp, label: "Her iPad" } });
+    const right = await call("/api/auth/email/verify", { body: { email: "her@example.test", code, label: "Her iPad" } });
     expect(right.status).toBe(200);
     expect(right.body.session).toMatchObject({ label: "Her iPad", scopes: ["admin", "client"], email: "her@example.test" });
     expect(right.body.environment.environmentId).toBeTruthy();
     const cookie = cookieOf(right);
-    expect(cookie).toMatch(/^omb_session_/);
+    expect(cookie).toMatch(/^cry_session_/);
     expect(String(right.headers["set-cookie"])).toMatch(/HttpOnly/);
 
     const me = await call("/api/auth/session", { headers: { cookie, origin: `https://${HOST}` } });
@@ -187,7 +203,7 @@ describe("sign in with your email on a hosted server", () => {
 
   it("a member address gets a chat-only session; a domain entry welcomes the whole company", async () => {
     await call("/api/auth/email/start", { body: { email: "staff@example.test" } });
-    const member = await call("/api/auth/email/verify", { body: { email: "staff@example.test", code: stub.otp, label: "Staff phone" } });
+    const member = await call("/api/auth/email/verify", { body: { email: "staff@example.test", code: codeFor("staff@example.test"), label: "Staff phone" } });
     expect(member.status).toBe(200);
     expect(member.body.session.scopes).toEqual(["client"]);
     const cookie = cookieOf(member);
@@ -196,11 +212,10 @@ describe("sign in with your email on a hosted server", () => {
     const config = await call("/api/config", { method: "PUT", body: { language: "en" }, headers: { cookie, origin: `https://${HOST}` } });
     expect(config.status).toBe(403);
 
-    await call("/api/auth/email/start", { body: { email: "anyone@agentada.test" } });
-    const colleague = await call("/api/auth/email/verify", { body: { email: "anyone@agentada.test", code: stub.otp } });
+    await call("/api/auth/email/start", { body: { email: "anyone@team.example.test" } });
+    const colleague = await call("/api/auth/email/verify", { body: { email: "anyone@team.example.test", code: codeFor("anyone@team.example.test") } });
     expect(colleague.status).toBe(200);
     expect(colleague.body.session.scopes).toEqual(["admin", "client"]);
-    // no label and no browser user agent in this test client: the generic fallback
     expect(colleague.body.session.label).toBe("Unnamed device");
   });
 
@@ -212,14 +227,17 @@ describe("sign in with your email on a hosted server", () => {
       if (last === 429) break;
     }
     expect(last).toBe(429);
-    const other = await call("/api/auth/email/verify", { body: { email: "her@example.test", code: stub.otp }, from: "198.51.100.43" });
+    expect((await call("/api/auth/email/start", { body: { email: "her@example.test" }, from: "198.51.100.43" })).status).toBe(200);
+    const code = codeFor("her@example.test");
+    expect((await call("/api/auth/email/verify", { body: { email: "her@example.test", code }, from: "198.51.100.42" })).status).toBe(429);
+    const other = await call("/api/auth/email/verify", { body: { email: "her@example.test", code }, from: "198.51.100.43" });
     expect(other.status).toBe(200);
   });
 
   it("revokes demoted email devices and live streams before the next frame, without changing paired devices", async () => {
     const owner = await signIn("her@example.test");
-    const first = await signIn("anyone@agentada.test");
-    const second = await signIn("anyone@agentada.test");
+    const first = await signIn("anyone@team.example.test");
+    const second = await signIn("anyone@team.example.test");
     const streams = await Promise.all([openEvents(first), openEvents(second)]);
     try {
       const ticket = await call("/api/auth/stream-ticket", { body: {}, headers: { cookie: first } });
@@ -231,7 +249,7 @@ describe("sign in with your email on a hosted server", () => {
       const changed = await call("/api/config", {
         method: "PUT", headers: { cookie: owner },
         body: {
-          signIn: { admins: ["her@example.test"], members: ["staff@example.test", "@agentada.test"] },
+          signIn: { admins: ["her@example.test"], members: ["staff@example.test", "@team.example.test"] },
           profile: { name: "post-demotion-private-marker" },
         },
       });
@@ -243,12 +261,12 @@ describe("sign in with your email on a hosted server", () => {
       expect((await call(`/api/events?ticket=${ticket.body.ticket}`)).status).toBe(401);
       expect((await call("/api/auth/sessions", { headers: { cookie: cookieOf(paired) } })).status).toBe(200);
 
-      const member = await signIn("anyone@agentada.test");
+      const member = await signIn("anyone@team.example.test");
       expect((await call("/api/auth/session", { headers: { cookie: member } })).body.scopes).toEqual(["client"]);
       expect((await call("/api/config", { method: "PUT", headers: { cookie: member }, body: { language: "en" } })).status).toBe(403);
       expect((await call("/api/config", {
         method: "PUT", headers: { cookie: owner },
-        body: { signIn: { admins: ["her@example.test", "@agentada.test"], members: ["staff@example.test"] } },
+        body: { signIn: { admins: ["her@example.test", "@team.example.test"], members: ["staff@example.test"] } },
       })).status).toBe(200);
       expect((await call("/api/auth/session", { headers: { cookie: member } })).body.scopes).toEqual(["client"]);
     } finally { for (const stream of streams) stream.close(); }
@@ -257,10 +275,9 @@ describe("sign in with your email on a hosted server", () => {
   it("ends an idle email stream after an external allow-list removal and never revives the old cookie", async () => {
     const cookie = await signIn("staff@example.test");
     const stream = await openEvents(cookie);
-    const configPath = join(home, ".openmausbot", "config.json");
+    const configPath = join(home!, ".crybot", "config.json");
     const config = JSON.parse(readFileSync(configPath, "utf8"));
     try {
-      // The fleet agent and CLI update this file outside the running server.
       writeFileSync(configPath, JSON.stringify({ ...config, signIn: { ...config.signIn, members: [] } }));
       await expect(stream.until(() => false, 2_000)).rejects.toThrow("SSE stream closed");
       expect((await call("/api/bots", { headers: { cookie } })).status).toBe(401);

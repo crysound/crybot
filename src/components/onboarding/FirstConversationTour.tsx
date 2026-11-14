@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { hintSeenPatch, welcomeDue } from "@/lib/onboarding";
 import { useAdvancedMode } from "@/lib/interface-mode";
-import { emailGateDone } from "@/lib/analytics";
+import { emailGateDone } from "@/lib/welcome-progress";
 import { anchorFor, cardAnswered, nextSpotlight, placementFor, tourComplete, type ChatObservation, type SpotlightId } from "@/lib/first-conversation";
 import { t } from "@/lib/i18n";
-import type { MausState } from "@/lib/mascot";
+import type { BotState } from "@/lib/mascot";
 import { api, useStore } from "@/state/store";
 import { Spotlight } from "./Spotlight";
 
-const COPY: Record<SpotlightId, { key: "onboarding.spot.composer" | "onboarding.spot.model" | "onboarding.spot.approval" | "onboarding.spot.connector"; mascot: MausState }> = {
+const COPY: Record<SpotlightId, { key: "onboarding.spot.composer" | "onboarding.spot.model" | "onboarding.spot.approval" | "onboarding.spot.connector"; mascot: BotState }> = {
   "spot.composer": { key: "onboarding.spot.composer", mascot: "happy" },
   "spot.model": { key: "onboarding.spot.model", mascot: "curious" },
   "spot.approval": { key: "onboarding.spot.approval", mascot: "suspicious" },
@@ -19,7 +19,7 @@ const COPY: Record<SpotlightId, { key: "onboarding.spot.composer" | "onboarding.
 export function FirstConversationTour({ quiet = false }: { quiet?: boolean }) {
   const { state, dispatch } = useStore();
   const advanced = useAdvancedMode();
-  const remoteClient = window.ogb?.remoteClient?.active === true;
+  const remoteClient = window.cry?.remoteClient?.active === true;
   const record = state.config?.onboarding;
   const [dismissed, setDismissed] = useState<string[]>([]);
   const seen = useMemo(() => [...(record?.hintsSeen ?? []), ...dismissed, "spot.composer", "spot.model"], [record?.hintsSeen, dismissed]);

@@ -4,7 +4,7 @@ import { api, ApiError, useStore } from "@/state/store";
 import { intlLocale, t } from "@/lib/i18n";
 import { openExternalLink } from "@/lib/app-links";
 import { useCopyFeedback } from "@/lib/copy-text";
-import { engineSignedIn } from "@/lib/product-events";
+
 import type { LocaleKey } from "@/locales";
 import { deviceSignInHasCode, deviceSignInLink, isDeviceSignInCode, type DeviceSignInProvider } from "../../shared/device-sign-in";
 import { CodexMark } from "./ProviderIcons";
@@ -134,7 +134,7 @@ export function DeviceSignInProgress({ auth, browserPkce = false, provider = "co
         </button>
       </div></>}
       <a href={link} target="_blank" rel="noopener noreferrer" onClick={(event) => {
-        if (window.ogb?.openExternal) { event.preventDefault(); void openExternalLink(link); }
+        if (window.cry?.openExternal) { event.preventDefault(); void openExternalLink(link); }
       }} className={browserPkce ? chatgptButton : "flex items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2 text-[13px] font-semibold text-white hover:brightness-110"}>
         {browserPkce && <CodexMark size={16} className="fill-current" />}
         {t(browserPkce ? "engineSetup.chatgpt.start" : copy.open)} <ExternalLink size={13} />
@@ -169,7 +169,7 @@ export function DeviceSignIn({ instanceId, browserPkce = false, provider = "code
 
   // The sign-in already succeeded: a failed catalog refresh must not read as a failed sign-in.
   const refresh = async () => {
-    engineSignedIn(provider, browserPkce ? "browser" : "device_code");
+
     try { await refreshInstances(); } catch {}
     try { await refreshModels(instanceId); } catch {}
     onDone?.(true);

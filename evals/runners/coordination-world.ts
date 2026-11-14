@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launchVerificationServer, runControlOmb, type VerificationServer } from "../../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry, type VerificationServer } from "../../scripts/control-cry.ts";
 import type { Scenario, Step } from "../types.ts";
 import { buildScriptedPlan } from "../providers/mock/scripted-plan.ts";
 import { BaseWorld, type WorldContext } from "./base-world.ts";
@@ -19,7 +19,7 @@ export class CoordinationWorld extends BaseWorld {
   private latestRuns = new Map<string, string>();
 
   override async boot(scenario: Scenario): Promise<void> {
-    this.session = await launchVerificationServer(process.env, undefined, undefined, undefined, undefined, { scripted: true });
+    this.session = await launchVerificationServer(process.env, undefined, undefined, undefined, { scripted: true });
     this.dataDir = this.session.info.dataDir;
     this.planPath = join(this.dataDir, "room-plan.json");
     await this.initBase(this.session.info.url, this.planPath + ".evidence.jsonl", join(this.dataDir, "eval-gates"));
@@ -29,7 +29,7 @@ export class CoordinationWorld extends BaseWorld {
     for (const bot of scenario.bots) {
       const argv = ["new-bot", "--name", bot.name];
       if (bot.section !== undefined) argv.push("--section", bot.section);
-      const created = (await runControlOmb(argv, { env: { OPENMAUSBOT_URL: this.session.info.url } })) as { bot: { id: string; activeTaskId: string } };
+      const created = (await runControlCry(argv, { env: { CRYBOT_URL: this.session.info.url } })) as { bot: { id: string; activeTaskId: string } };
       this.bots.set(bot.key, { id: created.bot.id, threadId: created.bot.activeTaskId });
     }
     for (const bot of scenario.bots) {

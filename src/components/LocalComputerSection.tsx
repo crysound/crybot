@@ -960,7 +960,7 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
     return body as Status;
   };
 
-  const confirmAction = (message: string) => window.ogb?.confirm ? window.ogb.confirm(message) : window.confirm(message);
+  const confirmAction = (message: string) => window.cry?.confirm ? window.cry.confirm(message) : window.confirm(message);
 
   const act = async (action: Action) => {
     if (pending !== null || actionController.current) return;

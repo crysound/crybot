@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { EFFECTS, type CursorState } from "./CursorAvatar";
+import { EFFECTS, type MascotState } from "./AnimatedMascot";
 import {
   FULL_FRAME_MS,
   GLYPH_EASE_MS,
@@ -16,7 +16,7 @@ import {
 
 const NOW = 10_000;
 
-function delay(state: CursorState, sizePx: number, extra: Partial<CadenceInput> = {}): number {
+function delay(state: MascotState, sizePx: number, extra: Partial<CadenceInput> = {}): number {
   return nextMascotFrame(NOW, {
     motion: MOTION[state],
     effects: EFFECTS[state],

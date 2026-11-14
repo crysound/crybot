@@ -92,7 +92,7 @@ beforeEach(() => {
   fixture.endCall.mockClear();
   fixture.track.mockClear();
   fixture.dispatch.mockClear();
-  vi.stubGlobal("window", { ogb: { speechStart: () => {} } });
+  vi.stubGlobal("window", { cry: { speechStart: () => {} } });
 });
 afterEach(() => {
   resetLiveMedia();
@@ -110,7 +110,6 @@ describe("composer call button", () => {
 
   it("starts the call with the same telemetry as the header button did", () => {
     render().button.props.onClick!();
-    expect(fixture.track).toHaveBeenCalledWith("call_started", { driver: "codex", mode: "turns" });
     expect(fixture.startCall).toHaveBeenCalledWith("pepper");
     expect(fixture.endCall).not.toHaveBeenCalled();
   });
@@ -125,7 +124,6 @@ describe("composer call button", () => {
     }
     renderToStaticMarkup(createElement(Capture));
     findButton(tree)!.props.onClick!();
-    expect(fixture.track.mock.calls).toEqual([["call_started", { driver: "claude", mode: "turns" }]]);
   });
 
   it("shows a hang-up state during the call and hangs up", () => {
@@ -163,7 +161,6 @@ describe("composer call button", () => {
     button.props.onClick!();
     expect(getUserMedia).toHaveBeenCalledTimes(1);
     expect(liveMedia()).toMatchObject({ phase: "starting", botId: "pepper" });
-    expect(fixture.track).toHaveBeenCalledWith("call_started", { driver: "codex", mode: "live" });
   });
 
   it("is a Live call on a server's page in the Windows app and the Mac app alike", () => {

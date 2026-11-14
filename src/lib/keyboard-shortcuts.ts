@@ -204,8 +204,8 @@ export function shouldOpenKeyboardShortcuts(event: KeyboardEvent): boolean {
 }
 
 export function isMacPlatform(): boolean {
-  if (typeof window !== "undefined" && window.ogb?.platform) {
-    return window.ogb.platform === "darwin";
+  if (typeof window !== "undefined" && window.cry?.platform) {
+    return window.cry.platform === "darwin";
   }
   if (typeof navigator !== "undefined" && navigator.userAgent) {
     return navigator.userAgent.includes("Mac");

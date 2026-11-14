@@ -4,24 +4,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   BotAvatar,
-  MausAvatar,
+  MascotAvatar,
   resolveBotAvatarOutcome,
   type BotAvatarProps,
-  type MausAvatarProps,
+  type MascotAvatarProps,
 } from "./Avatar";
 import { MASCOT_BODIES } from "../../shared/mascot-bodies";
 
-const render = (props: Partial<MausAvatarProps>) =>
-  renderToStaticMarkup(createElement(MausAvatar, { color: "green", animated: false, ...props }));
+const render = (props: Partial<MascotAvatarProps>) =>
+  renderToStaticMarkup(createElement(MascotAvatar, { color: "green", animated: false, ...props }));
 
 const renderBot = (bot: Partial<BotAvatarProps["bot"]>) =>
   renderToStaticMarkup(
     createElement(BotAvatar, { bot: { color: "green", ...bot }, animated: false }),
   );
 
-describe("MausAvatar body", () => {
-  it("wears the cursor when no body is given", () => {
-    expect(render({})).toContain(MASCOT_BODIES.cursor.fit);
+describe("MascotAvatar body", () => {
+  it("wears the dome when no body is given", () => {
+    expect(render({})).toContain(MASCOT_BODIES.dome.fit);
   });
 
   it("wears the body it is given", () => {
@@ -29,11 +29,11 @@ describe("MausAvatar body", () => {
     expect(markup).toContain(MASCOT_BODIES.star.fit);
   });
 
-  it("falls back to the cursor for an unknown body", () => {
+  it("falls back to the dome for an unknown body", () => {
     // SAFETY: "hexagram" is deliberately not a MascotBodyId, to exercise the runtime fallback for persisted or streamed
     // data.
-    expect(render({ bodyId: "hexagram" as MausAvatarProps["bodyId"] })).toContain(
-      MASCOT_BODIES.cursor.fit,
+    expect(render({ bodyId: "hexagram" as MascotAvatarProps["bodyId"] })).toContain(
+      MASCOT_BODIES.dome.fit,
     );
   });
 
@@ -48,7 +48,7 @@ describe("MausAvatar body", () => {
 describe("mascot facial feature colors", () => {
   it.each(["white", "black"] as const)("uses %s for both eyes and mouth on every body type", (mascotFaceColor) => {
     const ink = mascotFaceColor === "white" ? "#ffffff" : "#000000";
-    for (const mascotBody of ["cursor", "star", "pumpkin", "vampire"] as const) {
+    for (const mascotBody of ["dome", "star", "pumpkin", "vampire"] as const) {
       for (const color of ["green", "chrome"] as const) {
         const markup = renderBot({ color, mascotBody, mascotFaceColor });
         expect(markup).toContain(`fill="${ink}"`);
@@ -59,9 +59,9 @@ describe("mascot facial feature colors", () => {
   });
 
   it("keeps default inks when an override is reset or comes from an older profile", () => {
-    expect(renderBot({ color: "chrome", mascotFaceColor: null })).toContain('stroke="#1E2833"');
+    expect(renderBot({ color: "chrome", mascotFaceColor: null })).toContain('stroke="#170057"');
     expect(renderBot({ mascotBody: "pumpkin" })).toContain('stroke="#0d0a10"');
-    expect(renderBot({})).toContain('stroke="#ffffff"');
+    expect(renderBot({})).toContain('stroke="#170057"');
   });
 
   it("does not paint features over an uploaded image", () => {

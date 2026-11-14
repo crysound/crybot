@@ -205,7 +205,7 @@ describe("phone MCP text input", () => {
 });
 
 describe("phone MCP lazy claim gate", () => {
-  const harnessEnv = { OMB_HARNESS_URL: "http://127.0.0.1:8799", OMB_PHONE_TOKEN: "tok" };
+  const harnessEnv = { CRYBOT_HARNESS_URL: "http://127.0.0.1:8799", CRYBOT_PHONE_TOKEN: "tok" };
   const stub = (handler: (request: Request) => Promise<{ ok: boolean; status: number }>) => {
     const calls: Request[] = [];
     const fetchImpl = (async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
@@ -278,7 +278,7 @@ const PERSON_TEXT = "A person has taken control of the phone, so this call was N
 const HANDED_BACK_TEXT = "The person has handed the phone back. This call was NOT performed: the screen may have changed. Call read_screen, then continue the task.";
 
 describe("phone MCP claim while a person may hold the phone", () => {
-  const harnessEnv = { OMB_HARNESS_URL: "http://127.0.0.1:8799", OMB_PHONE_TOKEN: "tok" };
+  const harnessEnv = { CRYBOT_HARNESS_URL: "http://127.0.0.1:8799", CRYBOT_PHONE_TOKEN: "tok" };
   const answering = (answer: () => Response) => (async () => answer()) as unknown as typeof fetch;
   const refusal = (body: unknown) => answering(() => new Response(JSON.stringify(body), { status: 423 }));
 
@@ -290,7 +290,7 @@ describe("phone MCP claim while a person may hold the phone", () => {
   it.each([
     [{ reason: "person" }, PERSON_TEXT],
     [{ reason: "handed-back" }, HANDED_BACK_TEXT],
-    [{}, "OpenMausBot could not reserve the phone for this call. This call was not performed; try again, or start a new turn if it keeps failing."],
+    [{}, "Cry Bot could not reserve the phone for this call. This call was not performed; try again, or start a new turn if it keeps failing."],
   ])("tells the bot what a 423 %j means", async (body, message) => {
     await expect(createPhoneClaim(harnessEnv, refusal(body))()).resolves.toEqual({ ok: false, message });
   });
@@ -319,7 +319,7 @@ describe("phone MCP calls claim before each command sent to the phone", () => {
   const onPhone = (...command: string[]) => ["-s", "USB123", ...command];
   const DUMP = onPhone("shell", "uiautomator", "dump", "/dev/tty");
   const APPS = onPhone("shell", "cmd", "package", "query-activities", "--brief", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER");
-  const SAVED_DUMP = "/data/local/tmp/openmaus-window.xml";
+  const SAVED_DUMP = "/data/local/tmp/crybot-window.xml";
   const SAVE_READ_AND_REMOVE = onPhone("shell", `rm -f ${SAVED_DUMP}; uiautomator dump ${SAVED_DUMP} >/dev/null && cat ${SAVED_DUMP}; status=$?; rm -f ${SAVED_DUMP}; exit $status`);
   const namingTheSavedDumpWithoutRemovingIt = (commands: string[][]) =>
     commands.filter((command) => command.join(" ").includes(SAVED_DUMP) && !command.join(" ").includes(`rm -f ${SAVED_DUMP}`));
@@ -392,7 +392,7 @@ describe("phone MCP calls claim before each command sent to the phone", () => {
   }
 
   beforeEach(() => {
-    vi.stubEnv("OMB_ADB_PATH", process.execPath);
+    vi.stubEnv("CRYBOT_ADB_PATH", process.execPath);
     vi.stubEnv("PH_ANDROID_SERIAL", "");
   });
   afterEach(() => {
@@ -512,7 +512,7 @@ describe("phone MCP calls claim before each command sent to the phone", () => {
       },
     });
 
-    const result = await callPhoneTool("tap_text", { text: "Where to?" }, createPhoneClaim({ OMB_HARNESS_URL: "http://127.0.0.1:8799", OMB_PHONE_TOKEN: "tok" }, harness), adb);
+    const result = await callPhoneTool("tap_text", { text: "Where to?" }, createPhoneClaim({ CRYBOT_HARNESS_URL: "http://127.0.0.1:8799", CRYBOT_PHONE_TOKEN: "tok" }, harness), adb);
 
     expect(result).toEqual({ content: [{ type: "text", text: HANDED_BACK_TEXT }], isError: true });
     expect(commands.filter((command) => command.includes("input"))).toEqual([]);

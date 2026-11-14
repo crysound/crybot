@@ -12,9 +12,6 @@ import { z } from "zod";
 
 export const ANNOUNCEMENTS_FILE = "announcements/announcements.json";
 export const ANNOUNCEMENTS_SCHEMA_FILE = "announcements/announcements.schema.json";
-export const ANNOUNCEMENTS_URL = `https://raw.githubusercontent.com/milind-soni/OpenMausBot/main/${ANNOUNCEMENTS_FILE}`;
-/** Pictures: files in the repository's announcements/ folder on main, as raw.githubusercontent.com serves them. */
-export const ANNOUNCEMENT_IMAGE_PREFIX = "https://raw.githubusercontent.com/milind-soni/OpenMausBot/main/announcements/";
 
 /** An install reads at most this many cards, in file order; CI refuses a longer list. */
 export const MAX_CARDS = 20;
@@ -36,11 +33,11 @@ export type AnnouncementMark = (typeof ANNOUNCEMENT_MARKS)[number];
 
 export const ANNOUNCEMENT_PLATFORMS = ["mac", "windows", "linux", "ios", "android"] as const;
 export type AnnouncementPlatform = (typeof ANNOUNCEMENT_PLATFORMS)[number];
-/** `desktop`: the desktop app's own page. `cloud`: a MausBot Cloud's page, in a browser or in the desktop's window.
+/** `desktop`: the desktop app's own page. `cloud`: a CryBot Cloud's page, in a browser or in the desktop's window.
  * `server`: any other server's page, a self-hosted one or the app in a browser. */
 export const ANNOUNCEMENT_SURFACES = ["desktop", "cloud", "server"] as const;
 export type AnnouncementSurface = (typeof ANNOUNCEMENT_SURFACES)[number];
-/** `none`: no MausBot Cloud plan of one's own (signed out, or a free account). `cloud`: a Cloud of one's own, or its
+/** `none`: no CryBot Cloud plan of one's own (signed out, or a free account). `cloud`: a Cloud of one's own, or its
  * page. `team`: a Team Cloud's page. */
 export const ANNOUNCEMENT_PLANS = ["none", "cloud", "team"] as const;
 export type AnnouncementPlan = (typeof ANNOUNCEMENT_PLANS)[number];
@@ -77,10 +74,12 @@ export function isHttpsUrl(value: string): boolean {
   }
 }
 
-export function isAnnouncementImageUrl(value: string): boolean {
-  if (!isHttpsUrl(value) || !value.startsWith(ANNOUNCEMENT_IMAGE_PREFIX)) return false;
-  const rest = value.slice(ANNOUNCEMENT_IMAGE_PREFIX.length);
-  return IMAGE_PATH.test(rest) && !rest.split("/").some((part) => part === "" || part === "." || part === "..");
+export function isAnnouncementImageUrl(value: string, feedOrigin: string | undefined): boolean {
+  if (!feedOrigin || !isHttpsUrl(value) || /(?:^|\/)\.\.?(?:\/|$)/.test(value)) return false;
+  const url = new URL(value);
+  if (url.origin !== feedOrigin || url.search || url.hash) return false;
+  const rest = url.pathname.slice(1);
+  return IMAGE_PATH.test(rest) && !rest.split("/").some(part => part === "" || part === "." || part === "..");
 }
 
 type ObjectOf = typeof z.object;
@@ -114,9 +113,9 @@ export const actionSchema = z.union([
 ]);
 export type AnnouncementAction = z.infer<typeof actionSchema>;
 
-function imageSchema(objectOf: ObjectOf, strict: boolean) {
+function imageSchema(objectOf: ObjectOf, strict: boolean, feedOrigin?: string) {
   return z.union([
-    objectOf({ url: z.string().max(LIMITS.url).refine(isAnnouncementImageUrl, `a .png, .jpg or .webp file under ${ANNOUNCEMENT_IMAGE_PREFIX}`), alt: text(LIMITS.alt, strict).optional() }),
+    objectOf({ url: z.string().max(LIMITS.url).refine(value => isAnnouncementImageUrl(value, feedOrigin), "a .png, .jpg or .webp file on the feed origin"), alt: text(LIMITS.alt, strict).optional() }),
     objectOf({ mark: z.enum(ANNOUNCEMENT_MARKS) }),
   ]);
 }
@@ -142,7 +141,7 @@ function buttonSchema(objectOf: ObjectOf, strict: boolean) {
   return objectOf({ label: text(LIMITS.button, strict), action: actionSchema });
 }
 
-function cardSchema(strict: boolean) {
+function cardSchema(strict: boolean, feedOrigin?: string) {
   const objectOf = strict ? (z.strictObject as unknown as ObjectOf) : z.object;
   return objectOf({
     id: z.string().min(3).max(LIMITS.id).regex(ID),
@@ -151,7 +150,7 @@ function cardSchema(strict: boolean) {
     title: text(LIMITS.title, strict),
     body: text(LIMITS.body, strict, true),
     // An install shows a card whose picture it cannot read without it; CI refuses the picture.
-    image: strict ? imageSchema(objectOf, strict).optional() : z.unknown().optional(),
+    image: strict ? imageSchema(objectOf, strict, feedOrigin).optional() : z.unknown().optional(),
     primary: buttonSchema(objectOf, strict),
     secondary: buttonSchema(objectOf, strict).optional(),
     starts: z.iso.datetime({ offset: true }).optional(),
@@ -162,7 +161,6 @@ function cardSchema(strict: boolean) {
 
 const strictCard = cardSchema(true);
 const lenientCard = cardSchema(false);
-const lenientImage = imageSchema(z.object, false);
 
 export type AnnouncementImage = { url: string; alt?: AnnouncementText } | { mark: AnnouncementMark };
 export type AnnouncementCard = Omit<z.infer<typeof lenientCard>, "image" | "audience"> & {
@@ -207,11 +205,11 @@ function issue(error: z.ZodError, where: string): string {
 }
 
 /** One card, or why it was skipped. */
-export function parseAnnouncementCard(value: unknown, options: { strict?: boolean } = {}): { ok: true; card: AnnouncementCard } | { ok: false; error: string } {
-  const parsed = (options.strict ? strictCard : lenientCard).safeParse(value);
+export function parseAnnouncementCard(value: unknown, options: { strict?: boolean; feedOrigin?: string } = {}): { ok: true; card: AnnouncementCard } | { ok: false; error: string } {
+  const parsed = (options.strict ? cardSchema(true, options.feedOrigin) : lenientCard).safeParse(value);
   if (!parsed.success) return { ok: false, error: issue(parsed.error, "card") };
   const { image, ...card } = parsed.data as z.infer<typeof lenientCard>;
-  const picture = image === undefined ? undefined : lenientImage.safeParse(image);
+  const picture = image === undefined ? undefined : imageSchema(z.object, false, options.feedOrigin).safeParse(image);
   return { ok: true, card: { ...card, ...(picture?.success ? { image: picture.data as AnnouncementImage } : {}) } as AnnouncementCard };
 }
 
@@ -220,7 +218,7 @@ export function parseAnnouncementCard(value: unknown, options: { strict?: boolea
  * that does not parse, or repeats an earlier card's id, is skipped and named in `skipped`, and only the first MAX_CARDS
  * are read; `strict` refuses the file for any of those instead.
  */
-export function parseAnnouncementFeed(value: unknown, options: { strict?: boolean; nowMs?: number } = {}): FeedResult {
+export function parseAnnouncementFeed(value: unknown, options: { strict?: boolean; nowMs?: number; feedOrigin?: string } = {}): FeedResult {
   const strict = options.strict === true;
   const outer = feedSchema(strict, options.nowMs ?? Date.now()).safeParse(value);
   if (!outer.success) return { ok: false, error: issue(outer.error, "") || "feed" };
@@ -228,7 +226,7 @@ export function parseAnnouncementFeed(value: unknown, options: { strict?: boolea
   const skipped: string[] = [];
   const ids = new Set<string>();
   for (const [index, raw] of outer.data.cards.slice(0, MAX_CARDS).entries()) {
-    const parsed = parseAnnouncementCard(raw, { strict });
+    const parsed = parseAnnouncementCard(raw, { strict, feedOrigin: options.feedOrigin });
     const problem = !parsed.ok ? parsed.error : ids.has(parsed.card.id) ? `card: the id ${parsed.card.id} is used twice` : null;
     if (problem) {
       if (strict) return { ok: false, error: `cards.${index} ${problem}` };

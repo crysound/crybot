@@ -1,10 +1,10 @@
 import { createRoot } from "react-dom/client";
 import type { CloudSwatch } from "../../electron/cloud-list.mjs";
-import type { AddCloudView, RailPlace, RailState } from "../../electron/cloud-rail.mjs";
+import type { RailPlace, RailState } from "../../electron/rail.mjs";
 import type { PlaceLook } from "../../electron/place-look.mjs";
 import App from "../../src/App";
 import { ChromeRail } from "../../src/components/ChromeRail";
-import { setAnalyticsEnabled, setEmailGateDone } from "../../src/lib/analytics";
+import { setEmailGateDone } from "../../src/lib/welcome-progress";
 import { setAdvancedMode } from "../../src/lib/interface-mode";
 import { NOTICES } from "../../src/lib/notices";
 import { setSidebarDensity, SIDEBAR_WIDTH_KEY, SIMPLE_SIDEBAR_WIDTH_KEY } from "../../src/lib/sidebar-preferences";
@@ -33,7 +33,7 @@ import "../../src/styles.css";
 // starts again. ?settings=frame opens Settings at the window frame's switch. Each page starts with the sidebar at its
 // own width.
 const params = new URLSearchParams(location.search);
-setAnalyticsEnabled(false);
+
 setEmailGateDone("skipped");
 markSimpleModePromptSeen();
 localStorage.setItem(GROK_MOVE_NOTICE, "1");
@@ -90,18 +90,10 @@ const onScreen = computer ? "local" : onTeam ? "acme" : "home";
 const painted = (entry: RailPlace): RailPlace => (entry.opens || entry.server ? { ...entry, paint: { swatch: entry.color ? SWATCH[entry.color] ?? null : null,
   ...(member && entry.id === "acme" ? { locked: "member" as const } : {}) } } : entry);
 const rail: RailState = { places: listed.map(({ active: _active, ...entry }) => painted(entry.id === onScreen ? { ...entry, color, active: true as const } : entry)),
-  add: { cloud: true, link: true, address: computer } };
+  add: { cloud: false, link: true, address: computer } };
 let look: PlaceLook = { name: computer ? "This computer" : onTeam ? teamName : "My Cloud", color, swatch: color ? SWATCH[color] ?? null : null,
   change: computer ? "local" : member ? null : "admin", ...(member ? { reason: "member" as const } : {}) };
 let openSettings: ((section?: string) => void) | null = null;
-const offer = { recommended: "pro", refundDays: 14, plans: [
-  { tier: "starter", label: "Starter", amount: 1500, allowances: { cpus: 2, cpuKind: "shared" as const, memoryMb: 2048, diskGb: 10, maxDiskGb: 20, computers: 15, computerHours: 100, voiceCharacters: 30_000, sleeps: true as const } },
-  { tier: "pro", label: "Pro", amount: 4900, allowances: { cpus: 4, cpuKind: "shared" as const, memoryMb: 4096, diskGb: 10, maxDiskGb: 100, computers: 15, computerHours: 300, voiceCharacters: 60_000 } },
-  { tier: "max", label: "Max", amount: 9900, allowances: { cpus: 8, cpuKind: "shared" as const, memoryMb: 8192, diskGb: 10, maxDiskGb: 100, computers: 15, computerHours: 800, voiceCharacters: 180_000 } },
-] };
-const adding = params.get("adding") === "setting_up"
-  ? { adding: { name: "Client C", color: "rose" as const, tier: "pro", startedAt: Date.now(), status: "setting_up" as const, progress: 0.55, link: true as const } } : {};
-const addView: AddCloudView = { signedIn: true, hasCloud: true, supported: true, canAdd: true, offer, count: 3, home: { name: "My Cloud", color: "blue" }, ...adding };
 const ok = async () => {};
 const windows = params.get("platform") === "win32";
 const chrome = params.has("chrome");
@@ -122,15 +114,14 @@ const recolor = async (id: string, swatch: CloudSwatch) => {
   rail.places = rail.places.map((entry) => (entry.id === id ? { ...entry, color: COLOR[swatch], paint: { swatch: COLOR[swatch] ? swatch : null } } : entry));
   return { outcome: "saved", look: null };
 };
-const cloudAdd = { state: async () => addView, start: async () => ({ outcome: "opened" }), reopen: async () => true, copyLink: async () => true, open: ok, interest: ok, sheet: ok };
 
 if (params.has("railpage")) {
   // The window's own rail page: see-through but for the rail, as main.tsx draws it.
   document.documentElement.style.background = document.body.style.background = "transparent";
-  Object.assign(window, { ogb: {
+  Object.assign(window, { cry: {
     platform: windows ? "win32" : "darwin", getCapabilities: capabilities, onCapabilitiesChanged: () => () => {}, applySkin: ok,
     workspaces: { places: async () => rail, open: ok, add: ok, recolor, onChanged: () => () => {} },
-    cloudAdd, rail: { expand: ok, onSkin: () => () => {} },
+    rail: { expand: ok, onSkin: () => () => {} },
   } });
   createRoot(document.getElementById("root")!).render(<ChromeRail />);
 } else {
@@ -147,7 +138,7 @@ if (params.has("railpage")) {
   };
   besidePage();
   const update = params.get("update");
-  Object.assign(window, { ogb: {
+  Object.assign(window, { cry: {
     platform: windows ? "win32" : "darwin",
     app: { version: "0.1.130", ownPage: computer },
     getCapabilities: capabilities,
@@ -157,7 +148,7 @@ if (params.has("railpage")) {
     workspaces: {
       state: async () => (computer ? { local: true, name: "This computer" }
         : onTeam ? { local: false, name: teamName, origin: "https://acme.example", color: "purple", role: "Admin" }
-          : { local: false, name: "My Cloud", origin: "https://omb-u-1.fly.dev", color: "blue" }),
+          : { local: false, name: "My Cloud", origin: "https://cry-u-1.fly.dev", color: "blue" }),
       menu: ok, line: async () => null, open: ok, add: ok,
       places: async () => (hidden ? { ...rail, places: [] } : chrome ? { ...rail, places: [], beside: true as const } : rail),
       onChanged: (heard: () => void) => { placesHeard.add(heard); return () => { placesHeard.delete(heard); }; },
@@ -165,7 +156,6 @@ if (params.has("railpage")) {
       recolor,
       color: async (swatch: CloudSwatch) => { look = { ...look, swatch: COLOR[swatch] ? swatch : null, color: COLOR[swatch] }; return { outcome: "saved", look }; },
     },
-    cloudAdd,
     windowFrame: {
       state: async () => ({ on: frameOn, restart: windows && framePending }),
       set: async (on: boolean) => { frameOn = on; for (const heard of capabilitiesHeard) heard(await capabilities()); return { on, restart: windows }; },
@@ -226,7 +216,7 @@ if (params.has("railpage")) {
     bar.setAttribute("aria-hidden", "true");
     const dark = ["midnight", "foundry", "graphite", "dusk", "halloween", "diwali", "aurora"].includes(params.get("skin") ?? "midnight");
     bar.style.cssText = `position:fixed;inset:0 0 auto 0;height:31px;display:flex;align-items:center;z-index:100;font:12px "Segoe UI",sans-serif;padding-left:12px;${dark ? "background:#202020;color:#fff" : "background:#f3f3f3;color:#000"}`;
-    bar.innerHTML = `<span style="flex:1">MausBot</span>${["\u2013", "\u2610", "\u2715"].map((glyph) => `<span style="width:46px;text-align:center">${glyph}</span>`).join("")}`;
+    bar.innerHTML = `<span style="flex:1">Cry Bot</span>${["\u2013", "\u2610", "\u2715"].map((glyph) => `<span style="width:46px;text-align:center">${glyph}</span>`).join("")}`;
     document.body.append(bar);
     const below = document.createElement("style");
     below.textContent = "html { padding-top: 31px !important; box-sizing: border-box !important; } #root { height: calc(100vh - 31px) !important; }";

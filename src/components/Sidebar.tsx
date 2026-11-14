@@ -24,7 +24,7 @@ import type { LocaleKey } from "@/locales";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { BulkSelectFilters, ThreadListFooter, deleteThreadsInBulk, useBulkSelect } from "./BulkSelectBar";
  
-import { StackedMauses } from "./StackedMauses";
+import { StackedBots } from "./StackedBots";
 import { LocalComputerAutoWarning } from "./LocalComputerAutoWarning";
 import { nextRename } from "@/lib/rename";
 import { useDesktopCapabilities, windowFramed } from "./DesktopCapabilities";
@@ -73,7 +73,7 @@ import { PhoneHero } from "./SidebarPhoneHero";
 import { SidebarProfileMenu } from "./SidebarProfileMenu";
 import { PHONE_LAYOUT, useMediaQuery } from "@/lib/use-media-query";
 import { GlassBar, GlassScrollFrame, GlassScroller } from "./GlassScrollFrame";
-import { DesktopWorkspaceSwitcher, endCloudHowTo } from "./DesktopWorkspaceSwitcher"; import { PlaceTint } from "./PlaceTint"; import { ChromeRailToggle } from "./ChromeRailToggle";
+import { DesktopWorkspaceSwitcher } from "./DesktopWorkspaceSwitcher"; import { PlaceTint } from "./PlaceTint"; import { ChromeRailToggle } from "./ChromeRailToggle";
 import { useCloudOwner } from "./CloudOwner";
 import { SidebarSectionHeader } from "./SidebarSectionHeader";
 import { NeedsYouButton, OwnerPickerHost } from "./TeamOwner"; import { SidebarPeople } from "./SidebarPeople"; import { SidebarInboxRow } from "./SidebarInboxRow"; import { TeamSideSwitch, useTeamSideLists } from "./TeamSideSwitch"; import { SidebarActiveThreads } from "./SidebarActiveThreads"; import { setAttentionPinned, useAttentionPinned } from "./inbox/attention-pinned"; import { useInboxSupport } from "@/state/inbox";
@@ -194,7 +194,7 @@ export const GroupListItem = memo(function GroupListItem({
       title={density === "icons" ? group.name : undefined}
       aria-label={density === "icons" ? group.name : undefined}
     >
-      <StackedMauses members={members} density={railTile ? "comfortable" : density} large={simpleRow || railTile} />
+      <StackedBots members={members} density={railTile ? "comfortable" : density} large={simpleRow || railTile} />
       <div className={cn("min-w-0 flex-1", density === "icons" && "hidden")}>
         <div className={cn("flex items-baseline justify-between gap-2", simpleRow && "pr-7")}>
           <span className={cn("truncate text-[14px] text-ink", simpleRow ? "font-medium leading-5" : "font-semibold")}>{group.name}</span>
@@ -239,7 +239,7 @@ function RoomContextMenu({
   const motion = useHeldMenuMotion(menu);
   const shown = motion.value;
   const dispatch = useStoreDispatch(), store = useStoreRef();
-  const remoteClient = window.ogb?.remoteClient?.active === true;
+  const remoteClient = window.cry?.remoteClient?.active === true;
   const group = useStoreSelector((s) => shown ? s.groups.find((g) => g.id === shown.groupId) : undefined);
   const [renaming, setRenaming] = useState(false);
   const [describing, setDescribing] = useState(false);
@@ -700,7 +700,7 @@ export const BotListItem = memo(function BotListItem(props: BotRowProps) {
   const { bot, selected, deleting, mascotMotion, reveal, pendingQueued, instances, liveCall, density, query, dispatch, onMenu, renameRequest, botDrag: drag, botDrop: drop, botDragging: dragging } = props;
   const showThreads = useShowThreads();
   const liveMedia = useLiveMedia();
-  const remoteClient = typeof window !== "undefined" && window.ogb?.remoteClient?.active === true;
+  const remoteClient = typeof window !== "undefined" && window.cry?.remoteClient?.active === true;
   const [renaming, setRenaming] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
   const [threadsOpen, setThreadsOpen] = useSearchDisclosure(`bot:${bot.id}`, showThreads ? query : "", searchMatchesThreads(query, bot.tasks, bot.projects));
@@ -929,9 +929,8 @@ export const Sidebar = memo(function Sidebar({ open, onClose, collapseToIcons = 
   const state = useStoreSelector(sidebarState, sameFields), dispatch = useStoreDispatch();
   const now = useRelativeNow();
   const cloudOwner = useCloudOwner(state.config?.cloudHome === true);
-  const endHowTo = useCallback(() => endCloudHowTo(dispatch), [dispatch]);
   const showThreads = useShowThreads();
-  const remoteClient = window.ogb?.remoteClient?.active === true;
+  const remoteClient = window.cry?.remoteClient?.active === true;
   const { capabilities } = useDesktopCapabilities();
   const phone = useMediaQuery(PHONE_LAYOUT, false);
   const importReturnRef = useRef<HTMLButtonElement>(null);
@@ -1027,7 +1026,7 @@ export const Sidebar = memo(function Sidebar({ open, onClose, collapseToIcons = 
 
   useEffect(() => {
     if (remoteClient) return;
-    return window.ogb?.onPackageInstall?.((url) => {
+    return window.cry?.onPackageInstall?.((url) => {
       setTeamInstallUrl(url);
       setTeamLibraryOpen(true);
     });
@@ -1287,7 +1286,7 @@ export const Sidebar = memo(function Sidebar({ open, onClose, collapseToIcons = 
           <div data-sidebar-top-slot className={cn("@container/sidebar-top flex min-w-0 flex-1 items-center", simple && "justify-end")}>
             {!simple && <div data-sidebar-top-spacer className="min-w-0 flex-1 @min-[96px]/sidebar-top:min-w-6" />}
             <div data-sidebar-top-switcher className={simple ? "flex min-w-0 items-center" : "flex min-w-0 max-w-[140px] items-center"}>
-              <DesktopWorkspaceSwitcher inline pill={simple} cloudHome={state.config?.cloudHome === true} place={state.config?.team?.name} owner={cloudOwner} howTo={state.cloudHowTo} onMenuClosed={endHowTo} />
+              <DesktopWorkspaceSwitcher inline pill={simple} cloudHome={state.config?.cloudHome === true} place={state.config?.team?.name} owner={cloudOwner} />
             </div>
           </div>
         ))}
@@ -1311,7 +1310,7 @@ export const Sidebar = memo(function Sidebar({ open, onClose, collapseToIcons = 
         </div>}
       </div>
 
-      {density === "icons" && !rail && <DesktopWorkspaceSwitcher compact cloudHome={state.config?.cloudHome === true} place={state.config?.team?.name} owner={cloudOwner} howTo={state.cloudHowTo} onMenuClosed={endHowTo} />}
+      {density === "icons" && !rail && <DesktopWorkspaceSwitcher compact cloudHome={state.config?.cloudHome === true} place={state.config?.team?.name} owner={cloudOwner} />}
       <OrganizationIdentity compact={density === "icons"} />
       {phone ? null : simple ? searchShown && <SidebarSearchPill query={query} onQuery={setQuery} onClose={closeSearch} /> : <div className={cn("pt-1 pb-3", density === "icons" ? "hidden" : "px-3")}>
         <div className={cn("flex h-8 items-center gap-2 rounded-full px-3 focus-within:ring-focus", ELEVATED_CONTROL)}>

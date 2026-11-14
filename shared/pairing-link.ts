@@ -1,4 +1,4 @@
-// The one `openmausbot://pair` link builder, read by the Android and iOS
+// The one `crybot://pair` link builder, read by the Android and iOS
 // scanners (`PairingInvite.parse`). Every value is written with
 // encodeURIComponent, so a space is `%20`.
 
@@ -18,14 +18,25 @@ export interface PairingE2EDescriptor {
 }
 
 const B64U_FIELD = /^[A-Za-z0-9_-]+$/;
-const RELAY_HOST = /^relay[1-9][0-9]?\.openmausbot\.com$/;
+const DNS_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
+const RELAY_HOST = new RegExp(`^(?=.{1,253}$)(?=[^.]*\\.)${DNS_LABEL}(?:\\.${DNS_LABEL})+$`, "i");
+const NUMERIC_HOST_LAST_LABEL = /^(?:\d+|0x[0-9a-f]*)$/i;
+export const isRelayHost = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const lower = value.toLowerCase();
+  const lastLabel = lower.slice(lower.lastIndexOf(".") + 1);
+  return lower !== "localhost"
+    && !lower.endsWith(".localhost")
+    && !NUMERIC_HOST_LAST_LABEL.test(lastLabel)
+    && RELAY_HOST.test(value);
+};
 
 /** The QR's `e2e` value, or null for anything a phone would refuse: then the link goes out without it, as from a
  * computer without the encrypted connection. A QR never says "local": a restriction is set per phone, later. */
 export function encodePairingE2E(descriptor: PairingE2EDescriptor | null | undefined): string | null {
   if (!descriptor || descriptor.v !== 1 || typeof descriptor.k !== "string" || descriptor.k.length !== 87 || !B64U_FIELD.test(descriptor.k)) return null;
   const relay = typeof descriptor.h === "string" && Array.isArray(descriptor.r) && descriptor.r.length >= 1 && descriptor.r.length <= 4
-    && descriptor.h.length === 22 && B64U_FIELD.test(descriptor.h) && descriptor.r.every((node) => RELAY_HOST.test(node))
+    && descriptor.h.length === 22 && B64U_FIELD.test(descriptor.h) && descriptor.r.every((node) => isRelayHost(node))
     ? { h: descriptor.h, r: descriptor.r }
     : {};
   const json = JSON.stringify({ v: 1, k: descriptor.k, ...relay });
@@ -174,7 +185,7 @@ export function phonePairingLink({
   e2e,
 }: PhonePairingLinkOptions): string | null {
   const dial = linkAddress(address, port);
-  if (!dial || !/^omb_pair_[A-Za-z0-9_-]{43}$/.test(token)) return null;
+  if (!dial || !/^cry_pair_[A-Za-z0-9_-]{43}$/.test(token)) return null;
   if (code !== undefined && !/^\d{6}$/.test(code)) return null;
 
   const fields: Array<[string, string]> = [["address", dial], ["token", token]];
@@ -194,5 +205,5 @@ export function phonePairingLink({
   const descriptor = encodePairingE2E(e2e);
   if (descriptor) fields.push(["e2e", descriptor]);
 
-  return `openmausbot://pair?${fields.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&")}`;
+  return `crybot://pair?${fields.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&")}`;
 }

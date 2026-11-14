@@ -99,8 +99,8 @@ beforeAll(async () => {
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const { port } = server.address() as { port: number };
-  vi.stubEnv("OMB_CLOUD_BOAT_URL", `http://127.0.0.1:${port}/relay/api/box/v1`);
-  vi.stubEnv("OMB_CLOUD_BOAT_TOKEN", "box_omb_synthetic");
+  vi.stubEnv("CRYBOT_CLOUD_BOAT_URL", `http://127.0.0.1:${port}/relay/api/box/v1`);
+  vi.stubEnv("CRYBOT_CLOUD_BOAT_TOKEN", "box_cry_synthetic");
 });
 afterAll(async () => {
   vi.unstubAllEnvs();
@@ -141,7 +141,7 @@ beforeEach(async () => {
   pendingDeletes.clear();
   deleteDelayMs = 0; autoOn = true; deleteSpans.length = 0; teamOwners.clear(); watched.clear();
   at += 24 * 60 * 60_000;
-  file = join(mkdtempSync(join(tmpdir(), "omb-repl-")), "boat-replacements.json");
+  file = join(mkdtempSync(join(tmpdir(), "cry-repl-")), "boat-replacements.json");
   await load();
   start();
 });
@@ -569,9 +569,9 @@ describe("with automatic replacement off, the default", () => {
     const on = recoveryModule.cloudComputerAutoReplace;
     expect(on({}, {})).toBe(false);
     expect(on({ features: { cloudComputerAutoReplace: true } }, {})).toBe(true);
-    expect(on({}, { OMB_CLOUD_COMPUTER_AUTO_REPLACE: "1" })).toBe(true);
-    expect(on({ features: { cloudComputerAutoReplace: true } }, { OMB_CLOUD_COMPUTER_AUTO_REPLACE: "0" })).toBe(false);
-    expect(on({}, { OMB_CLOUD_COMPUTER_AUTO_REPLACE: "yes" })).toBe(false);
+    expect(on({}, { CRYBOT_CLOUD_COMPUTER_AUTO_REPLACE: "1" })).toBe(true);
+    expect(on({ features: { cloudComputerAutoReplace: true } }, { CRYBOT_CLOUD_COMPUTER_AUTO_REPLACE: "0" })).toBe(false);
+    expect(on({}, { CRYBOT_CLOUD_COMPUTER_AUTO_REPLACE: "yes" })).toBe(false);
   });
 
   it("never deletes a computer the provider reports in error: the bot and the person hear it once", async () => {

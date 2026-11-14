@@ -7,6 +7,7 @@ import localOrigin from "./local-origin.cjs";
 import environments from "./environments.cjs";
 import { randomUUID } from "node:crypto";
 import { createCompanyBackupSchedule } from "./company-backup-schedule.mjs";
+import { hostedDisabledState } from "./cloud-disabled.mjs";
 
 // Production main functions without importing Electron main (which would start the app); all IO is synthetic.
 // Windows checkouts can have CRLF line endings; the source checks below match "\n".
@@ -49,6 +50,7 @@ function fixture() {
     disconnect: async () => { f.generation++; f.connection = null; f.state = { status: "signed-out" }; f.onState(f.state); return f.state; } };
   localOrigin.setLocalOrigin(ORIGIN);
   const context = vm.createContext({
+    hostedAvailable: true, hostedDisabledState,
     AbortController, AbortSignal, Date, Headers, setTimeout, clearTimeout, path, randomUUID, Buffer,
     app: { isPackaged: true, getPath: () => "/unused-synthetic-backup-fixture", getVersion: () => "fixture" },
     os: { hostname: () => "Fixture computer" }, process: { platform: "fixture" },
@@ -61,7 +63,6 @@ function fixture() {
     tailnetShare: { recheck: () => { f.tailnetRechecks = (f.tailnetRechecks ?? 0) + 1; } },
     createOrgLibrary: options => { f.libraryOptions = options; return f.library; },
     managedDesktopRelay: { sendLibrary: async (proc, library) => { f.librarySent.push({ proc, library }); } },
-    installCloudPlanIpc: () => {},
     createCompanyBackupSchedule: options => {
       f.scheduleOptions = options;
       return createCompanyBackupSchedule({ ...options, now: () => f.now,
@@ -207,9 +208,9 @@ test("scheduled native transfer receives fresh client state and disable cancels 
   f.now += 24 * 3600_000;
   const firing = f.scheduleTimer(); await nextTurn();
   const request = snapshotRequest(f); assert(request?.requestId);
-  f.invoke("client-state", { requestId: request.requestId, clientState: { "omb-drafts": "latest synthetic draft" } });
+  f.invoke("client-state", { requestId: request.requestId, clientState: { "cry-drafts": "latest synthetic draft" } });
   const { input, signal } = await started.promise;
-  assert.equal(input.clientState["omb-drafts"], "latest synthetic draft");
+  assert.equal(input.clientState["cry-drafts"], "latest synthetic draft");
   await f.invoke("configure-schedule", { enabled: false }); assert.equal(signal.aborted, true);
   completion.resolve({ id: STAGE }); await firing;
   assert.equal(f.savedSchedule, null); assert.equal(f.context.companyBackupState.schedule.enabled, false);
@@ -250,7 +251,7 @@ for (const [name, mutate] of [
     const f = fixture(), controller = new AbortController();
     const collecting = f.context.collectCompanyBackupClientState(controller.signal, f.context.companyBackupScope(), f.context.serverProc);
     const request = snapshotRequest(f); mutate(f);
-    f.invoke("client-state", { requestId: request.requestId, clientState: { "omb-drafts": "fixture" } });
+    f.invoke("client-state", { requestId: request.requestId, clientState: { "cry-drafts": "fixture" } });
     await assert.rejects(collecting, { code: "workspace_busy" });
     assert.equal(f.context.companyBackupClientStateRequest, null);
   });
@@ -263,13 +264,13 @@ test("client-state receipts are one-shot and unsolicited or other-frame replies 
   f.invoke("client-state", { requestId: "not-the-request", clientState: {} });
   f.invoke("client-state", { requestId: request.requestId, clientState: {} }, { sender: f.event.sender, senderFrame: { url: `${ORIGIN}/` } });
   assert(f.context.companyBackupClientStateRequest);
-  f.invoke("client-state", { requestId: request.requestId, clientState: { "omb-skin": "fresh fixture skin" } });
-  assert.equal((await collecting)["omb-skin"], "fresh fixture skin");
+  f.invoke("client-state", { requestId: request.requestId, clientState: { "cry-skin": "fresh fixture skin" } });
+  assert.equal((await collecting)["cry-skin"], "fresh fixture skin");
   assert.equal(f.context.companyBackupClientStateRequest, null);
-  f.invoke("client-state", { requestId: request.requestId, clientState: { "omb-skin": "ignored duplicate" } });
+  f.invoke("client-state", { requestId: request.requestId, clientState: { "cry-skin": "ignored duplicate" } });
 });
 
-for (const value of [{ unavailable: true }, { clientState: [] }, { clientState: { "omb-drafts": 42 } }, { clientState: { "omb-drafts": "x".repeat(2 * 1024 * 1024) } }]) {
+for (const value of [{ unavailable: true }, { clientState: [] }, { clientState: { "cry-drafts": 42 } }, { clientState: { "cry-drafts": "x".repeat(2 * 1024 * 1024) } }]) {
   test(`malformed or unavailable client-state reply is deferred (${Object.keys(value)[0]}, ${typeof value.clientState})`, async () => {
     const f = fixture(), controller = new AbortController();
     const collecting = f.context.collectCompanyBackupClientState(controller.signal, f.context.companyBackupScope(), f.context.serverProc);
@@ -333,9 +334,12 @@ test("backup IPC requires the local main window's exact main frame", async () =>
   const anotherWindow = { sender: { mainFrame: f.event.senderFrame }, senderFrame: f.event.senderFrame };
   const external = { sender: f.event.sender, senderFrame: { url: "https://untrusted.example.test/" } };
   const missingFrame = { sender: f.event.sender };
-  for (const sender of [subframe, anotherWindow, external, missingFrame]) {
-    for (const channel of ["state", "list", "create", "preview", "cancel", "delete", "restore", "configure-schedule"]) {
-      assert.throws(() => f.invoke(channel, { id: STAGE, confirmation: "REPLACE" }, sender), /only available/);
+  for (const available of [false, true]) {
+    f.context.hostedAvailable = available;
+    for (const sender of [subframe, anotherWindow, external, missingFrame]) {
+      for (const channel of ["state", "list", "create", "preview", "cancel", "delete", "restore", "configure-schedule"]) {
+        assert.throws(() => f.invoke(channel, { id: STAGE, confirmation: "REPLACE" }, sender), /only available/);
+      }
     }
   }
   assert.equal(f.requests.length, 0);
@@ -347,6 +351,9 @@ test("even a selected remote workspace main frame cannot use local backup IPC", 
   const f = fixture();
   f.context.environmentsState = { activeId: "remote", environments: [{ id: "remote", origin: "https://workspace.example.test", name: "Remote" }] };
   f.event.senderFrame.url = "https://workspace.example.test/";
-  assert.throws(() => f.invoke("state"), /only available while using the local server/);
+  for (const available of [false, true]) {
+    f.context.hostedAvailable = available;
+    assert.throws(() => f.invoke("state"), /only available while using the local server/);
+  }
   assert.equal(f.requests.length, 0);
 });

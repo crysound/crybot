@@ -1,5 +1,5 @@
 import { computerPersonAwayText } from "../computer-wait.ts";
-import { CONTROL_BUSY, CONTROL_HANDED_BACK, CONTROL_REFUSAL_PLAIN, CONTROL_TURN_ENDED, CONTROL_UNCONFIRMED, CONTROL_WAITED } from "../control-client.ts";
+import { CONTROL_BUSY, CONTROL_HANDED_BACK, CONTROL_REFUSAL_PLAIN, CONTROL_TURN_ENDED, CONTROL_UNCONFIRMED, CONTROL_WAITED } from "../computer-control-client.ts";
 import { ChatMcpClient } from "../drivers/chat-mcp-tools.ts";
 import type { CallOutcome, ComputerCaller } from "./resolve.ts";
 
@@ -43,12 +43,12 @@ export function callOutcome(result: unknown): CallOutcome {
 }
 
 function unjournalled(env: Record<string, string>): Record<string, string> {
-  return { ...env, OMB_COMPUTER_JOURNAL: "0" };
+  return { ...env, CRYBOT_COMPUTER_JOURNAL: "0" };
 }
 
 export async function openComputerCaller(computer: LocalComputerSpec, signal: AbortSignal): Promise<ComputerCaller & { close(): Promise<void> }> {
   // Security invariant: a replay drives only the turn's gated proxy, so the control gate and the person's consent still apply.
-  if (!computer.env.OMB_CONTROL_URL || !computer.env.OMB_CONTROL_TOKEN) throw new Error("this computer is not behind its control gate");
+  if (!computer.env.CRYBOT_CONTROL_URL || !computer.env.CRYBOT_CONTROL_TOKEN) throw new Error("this computer is not behind its control gate");
   const client = new ChatMcpClient({ command: computer.command, args: computer.args, env: unjournalled(computer.env) }, true);
   try {
     await client.tools(signal);

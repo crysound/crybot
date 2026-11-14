@@ -17,7 +17,7 @@ const files = (phase: CloudFilesState["phase"]): CloudFilesState =>
 let host: HTMLDivElement, root: Root, emit: (state: CloudFilesState) => void;
 const dispatch = vi.fn(), off = vi.fn();
 function bridge(phase: CloudFilesState["phase"]) {
-  window.ogb = { cloudAccount: { files: { state: vi.fn().mockResolvedValue(files(phase)), onState: (callback: typeof emit) => { emit = callback; return off; } } } } as unknown as typeof window.ogb;
+  window.cry = { cloudAccount: { files: { state: vi.fn().mockResolvedValue(files(phase)), onState: (callback: typeof emit) => { emit = callback; return off; } } } } as unknown as typeof window.cry;
 }
 async function render(density: SidebarDensity = "comfortable", state: Partial<AppState> = {}, rail = false) {
   const store = { state: { ...initialState, ...state }, dispatch } as unknown as ReturnType<typeof useStore>;
@@ -32,7 +32,7 @@ beforeEach(() => {
   mode.advanced = false; dispatch.mockReset(); off.mockReset();
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
 });
-afterEach(() => { act(() => root.unmount()); host.remove(); delete window.ogb; });
+afterEach(() => { act(() => root.unmount()); host.remove(); delete window.cry; });
 
 it("leaves Files out of Simple mode's footer and rail, since the account menu holds it", async () => {
   bridge("idle");
@@ -59,7 +59,7 @@ it("hides Files without a Ready My Cloud, and shows it when main says My Cloud i
   expect(row()).toBeTruthy();
   await act(async () => emit(files("unavailable")));
   expect(row()).toBeNull();
-  delete window.ogb;
+  delete window.cry;
   await render();
   expect(row()).toBeNull();
 });

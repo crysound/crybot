@@ -23,7 +23,7 @@ describe("managed Composio desktop registration", () => {
   });
 
   it("uses the default service only in a shipped build (the packaged app, a Cloud home's image); an explicit URL wins", () => {
-    expect(DEFAULT_MANAGED_COMPOSIO_BROKER_URL).toMatch(/^https:\/\//);
+    expect(DEFAULT_MANAGED_COMPOSIO_BROKER_URL).toBe("");
     expect(managedComposioBrokerUrl(undefined, true)).toBe(DEFAULT_MANAGED_COMPOSIO_BROKER_URL);
     expect(managedComposioBrokerUrl("  ", true)).toBe(DEFAULT_MANAGED_COMPOSIO_BROKER_URL);
     expect(managedComposioBrokerUrl(undefined, false)).toBe("");
@@ -61,16 +61,16 @@ describe("managed Composio desktop registration", () => {
     expect(
       managedComposioChildEnvironment("http://broker.example", credentials, {
         PATH: "/usr/bin",
-        OMB_COMPOSIO_BROKER_URL: "http://attacker.example",
-        OMB_COMPOSIO_BROKER_TOKEN: "attacker-controlled",
+        CRYBOT_COMPOSIO_BROKER_URL: "http://attacker.example",
+        CRYBOT_COMPOSIO_BROKER_TOKEN: "attacker-controlled",
       }),
     ).toEqual({ PATH: "/usr/bin" });
     expect(
       managedComposioChildEnvironment("http://[::1]:8787", credentials, { PATH: "/usr/bin" }),
     ).toEqual({
       PATH: "/usr/bin",
-      OMB_COMPOSIO_BROKER_URL: "http://[::1]:8787",
-      OMB_COMPOSIO_BROKER_TOKEN: TOKEN,
+      CRYBOT_COMPOSIO_BROKER_URL: "http://[::1]:8787",
+      CRYBOT_COMPOSIO_BROKER_TOKEN: TOKEN,
     });
   });
 
@@ -188,15 +188,15 @@ describe("keeping the desktop app off the managed service", () => {
     expect(ownComposioKey({ composioApiKey: "ak_owner" })).toBe(true);
   });
 
-  it("OMB_COMPOSIO_BROKER=off stops registration, check-in and the token handed to the server, with or without a key", async () => {
-    vi.stubEnv("OMB_COMPOSIO_BROKER", " Off ");
+  it("CRYBOT_COMPOSIO_BROKER=off stops registration, check-in and the token handed to the server, with or without a key", async () => {
+    vi.stubEnv("CRYBOT_COMPOSIO_BROKER", " Off ");
     vi.stubEnv("COMPOSIO_API_KEY", "");
     expect(managedComposioBrokerUrl(undefined, true)).toBe("");
     expect(managedComposioBrokerUrl("https://broker.example", true)).toBe("");
     expect(managedComposioAccess("https://broker.example", { composioBrokerToken: TOKEN })).toBeNull();
     expect(managedComposioChildEnvironment("https://broker.example", { composioBrokerToken: TOKEN }, {
-      PATH: "/usr/bin", OMB_COMPOSIO_BROKER: "off", OMB_COMPOSIO_BROKER_URL: "https://broker.example", OMB_COMPOSIO_BROKER_TOKEN: TOKEN,
-    })).toEqual({ PATH: "/usr/bin", OMB_COMPOSIO_BROKER: "off" });
+      PATH: "/usr/bin", CRYBOT_COMPOSIO_BROKER: "off", CRYBOT_COMPOSIO_BROKER_URL: "https://broker.example", CRYBOT_COMPOSIO_BROKER_TOKEN: TOKEN,
+    })).toEqual({ PATH: "/usr/bin", CRYBOT_COMPOSIO_BROKER: "off" });
 
     expect(await launch({ composioBrokerToken: TOKEN })).not.toHaveBeenCalled();
     expect(await launch({})).not.toHaveBeenCalled();
@@ -205,7 +205,7 @@ describe("keeping the desktop app off the managed service", () => {
   });
 
   it("any other value of the switch leaves the service on", () => {
-    vi.stubEnv("OMB_COMPOSIO_BROKER", "on");
+    vi.stubEnv("CRYBOT_COMPOSIO_BROKER", "on");
     expect(managedComposioBrokerUrl(undefined, true)).toBe(DEFAULT_MANAGED_COMPOSIO_BROKER_URL);
   });
 });

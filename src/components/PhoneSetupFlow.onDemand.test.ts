@@ -6,7 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setLocale } from "@/lib/i18n";
-import type { CompanionAccountState } from "../types/ogb";
+import type { CompanionAccountState } from "../types/cry";
 import { PhoneSetupFlowView, usePhoneSetupController, type CompanionState } from "./PhoneSetupFlow";
 
 /** Settings' pairing panel: the flow with its own controller, as CompanionSection mounts it. */
@@ -14,7 +14,7 @@ function PhoneSetupFlow() {
   return createElement(PhoneSetupFlowView, { controller: usePhoneSetupController() });
 }
 
-const HOSTED = "https://c-opaque.openmausbot.com";
+const HOSTED = "https://server.example.test";
 const FULL =
   "Secure HTTPS links are temporarily full. Try again in 10 minutes, or pair on this Wi-Fi or with Tailscale.";
 
@@ -40,7 +40,7 @@ function desktop() {
         companion = {
           ...companion,
           pairing: open
-            ? { code: "123456", token: `omb_pair_${"a".repeat(43)}`, expiresAt: Date.now() + 120_000 }
+            ? { code: "123456", token: `cry_pair_${"a".repeat(43)}`, expiresAt: Date.now() + 120_000 }
             : null,
         };
         return companion;
@@ -108,11 +108,11 @@ beforeEach(() => {
 afterEach(() => {
   flushSync(() => root.unmount());
   host.remove();
-  delete (globalThis as { ogb?: unknown }).ogb;
+  delete (globalThis as { cry?: unknown }).cry;
 });
 
 async function startPairing(fake: ReturnType<typeof desktop>) {
-  (globalThis as { ogb?: unknown }).ogb = fake.bridge;
+  (globalThis as { cry?: unknown }).cry = fake.bridge;
   flushSync(() => root.render(createElement(PhoneSetupFlow)));
   await vi.waitFor(() => expect(button("Pair a device")?.disabled).toBe(false));
   button("Pair a device")!.click();

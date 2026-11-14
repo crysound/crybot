@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import environments from "./environments.cjs";
-import { installCloudRail, railPlaces } from "./cloud-rail.mjs";
+import { installRail, railPlaces } from "./rail.mjs";
 import { accountRows, ACCOUNT_PLACE, withAccounts } from "./rail-accounts.mjs";
 
 const { LOCAL_ID } = environments;
 // The owner's list of cases for the rail with several accounts: each is a test here, by its number.
-const A = "alice@omb-test.example", B = "bob@omb-test.example", C = "carol@omb-test.example";
+const A = "alice@cry-test.example", B = "bob@cry-test.example", C = "carol@cry-test.example";
 const myCloud = (origin, id = origin) => ({ id, kind: "remote", origin, name: "My Cloud", home: true });
 const ownCloud = (origin, name, id = origin) => ({ id, kind: "remote", origin, name, cloud: { id: `c-${id}`, role: "owner" } });
 const teamCloud = (origin, name, id = origin) => ({ id, kind: "remote", origin, name, team: { id: `t-${origin}`, role: "member" } });
@@ -118,7 +118,7 @@ test("an account whose sign-in ended keeps its rows, and says so", () => {
 function railWith({ rows, switched = async () => ({ outcome: "switched" }), after = rows }) {
   const handlers = new Map(), opened = [], asked = [];
   let current = rows;
-  installCloudRail({ ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) }, guard: (handler) => handler, trusted: () => true, lists: (event) => event.rail === true, places: () => current, open: async (id) => opened.push(id),
+  installRail({ ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) }, guard: (handler) => handler, trusted: () => true, lists: (event) => event.rail === true, places: () => current, open: async (id) => opened.push(id),
     add: { choices: () => ({ cloud: false, link: false, address: false }), run() {} }, account: () => null, clipboard: {}, openCloud: async (id) => opened.push(`cloud:${id}`), targets: () => [],
     switchAccount: async (id) => { asked.push(id); const said = await switched(id); if (said.outcome === "switched") current = after; return said; } });
   return { call: (channel, ...args) => handlers.get(channel)({ rail: true }, ...args), page: (channel, ...args) => handlers.get(channel)({ rail: false }, ...args), opened, asked };
