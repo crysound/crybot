@@ -1,0 +1,10 @@
+{
+  "attempt": {
+    "id": "00000000-0000-4000-8000-000000000000",
+    "outcome": "accepted",
+    "receivedAt": 1767225600000,
+    "statusCode": 200,
+    "webhookId": "00000000-0000-4000-8000-000000000001"
+  },
+  "kind": "webhook.attempt"
+}

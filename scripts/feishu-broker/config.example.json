@@ -1,0 +1,5 @@
+{
+  "tokenUrl": "https://example.invalid/token",
+  "credentialFile": "/etc/crybot-feishu-broker/credential.json",
+  "socketPath": "/run/crybot-feishu-broker/token.sock"
+}

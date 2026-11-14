@@ -42,12 +42,17 @@ function list(value: string | undefined): string[] {
   return [...new Set((value ?? "").split(",").map((item) => item.trim()).filter(Boolean))];
 }
 
-function identityList(value: string | undefined, name: string): string[] {
+export function identityList(value: string | undefined, name: string, allowWildcard = true): string[] {
   const result: string[] = [];
   let warned = false;
   for (const item of list(value)) {
     if (item.includes("@")) {
       if (!warned) { const key = `${name}:email`; if (!warnings.has(key)) { warnings.add(key); console.warn(`${name} accepts union_id values only; email entries were ignored.`); } warned = true; }
+      continue;
+    }
+    if (item === "*" && !allowWildcard) {
+      const key = `${name}:wildcard`;
+      if (!warnings.has(key)) { warnings.add(key); console.warn(`${name} does not allow *; wildcard entry was ignored.`); }
       continue;
     }
     if (item === "*" || /^[A-Za-z0-9][A-Za-z0-9:_-]{0,255}$/.test(item)) result.push(item);

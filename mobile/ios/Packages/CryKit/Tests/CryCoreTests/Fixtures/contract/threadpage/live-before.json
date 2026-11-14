@@ -1,0 +1,71 @@
+{
+  "activeLeafId": "00000000-0000-4000-8000-000000000008",
+  "hasMore": false,
+  "messages": [
+    {
+      "at": 1767225600000,
+      "id": "00000000-0000-4000-8000-000000000000",
+      "kind": "text",
+      "parentId": null,
+      "role": "bot",
+      "setupChoices": [
+        "Research and digging into topics",
+        "Keeping an eye on things for me",
+        "Email, calendar and messages",
+        "Bookings, shopping and errands",
+        "Data, spreadsheets and reports"
+      ],
+      "setupOffer": true,
+      "text": "Hi, I'm Contract Bot. What would you like me to do?"
+    },
+    {
+      "at": 1767225600000,
+      "id": "00000000-0000-4000-8000-000000000001",
+      "kind": "text",
+      "parentId": "00000000-0000-4000-8000-000000000000",
+      "requestPending": false,
+      "role": "user",
+      "sender": {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "Member"
+      },
+      "text": "Contract message"
+    },
+    {
+      "at": 1767225600000,
+      "id": "00000000-0000-4000-8000-000000000003",
+      "itemId": "00000000-0000-4000-8000-000000000005",
+      "kind": "text",
+      "parentId": "00000000-0000-4000-8000-000000000001",
+      "requestMessageId": "00000000-0000-4000-8000-000000000001",
+      "role": "bot",
+      "text": "hello from fake claude",
+      "turnCompletedAt": 1767225600000,
+      "turnId": "00000000-0000-4000-8000-000000000004",
+      "turnSucceeded": true,
+      "turnTerminal": true
+    },
+    {
+      "at": 1767225600000,
+      "id": "00000000-0000-4000-8000-000000000006",
+      "kind": "activity",
+      "parentId": "00000000-0000-4000-8000-000000000003",
+      "requestMessageId": "00000000-0000-4000-8000-000000000001",
+      "role": "bot",
+      "tool": {
+        "input": "{\n  \"command\": \"echo hi\"\n}",
+        "itemId": "00000000-0000-4000-8000-000000000007",
+        "name": "Bash",
+        "ok": true,
+        "output": "[\n  {\n    \"type\": \"text\",\n    \"text\": \"hi\"\n  }\n]",
+        "spoken": "running a command",
+        "step": {
+          "activity": "command",
+          "target": "echo hi"
+        },
+        "summary": "echo hi"
+      },
+      "turnId": "00000000-0000-4000-8000-000000000004"
+    }
+  ]
+}

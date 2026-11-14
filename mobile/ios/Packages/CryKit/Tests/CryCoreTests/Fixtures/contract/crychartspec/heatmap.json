@@ -1,0 +1,5 @@
+{
+  "type": "heatmap",
+  "x": "category",
+  "y": "value"
+}

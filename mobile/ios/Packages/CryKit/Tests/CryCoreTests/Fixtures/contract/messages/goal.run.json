@@ -1,0 +1,17 @@
+{
+  "at": 1767225600000,
+  "goalRun": {
+    "coordinatorBotId": "00000000-0000-4000-8000-000000000002",
+    "coordinatorName": "Example",
+    "goal": "Example",
+    "maxTurns": 1,
+    "runId": "00000000-0000-4000-8000-000000000001",
+    "startedAt": 1767225600000,
+    "status": "failed",
+    "turnCount": 1
+  },
+  "id": "00000000-0000-4000-8000-000000000000",
+  "kind": "goal.run",
+  "role": "bot",
+  "text": "Example message"
+}

@@ -1,0 +1,16 @@
+{
+  "mcpRequest": {
+    "action": "enable",
+    "botId": "00000000-0000-4000-8000-000000000001",
+    "name": "Example",
+    "requestId": "00000000-0000-4000-8000-000000000000",
+    "targetHash": "Example",
+    "threadId": "00000000-0000-4000-8000-000000000002"
+  },
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "subtitle": "Example request",
+  "title": "Approve request"
+}

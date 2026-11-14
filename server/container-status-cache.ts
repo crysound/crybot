@@ -1,5 +1,5 @@
 import { clearLocalVmWakeFailure } from "./local-vm-resume.ts";
-import type { CommandRunner, ContainerComputerStatus, LocalVmTarget } from "./container-computer.ts";
+import { containerTargetOf, type CommandRunner, type ContainerComputerStatus, type LocalVmTarget } from "./container-computer.ts";
 
 const STATUS_TTL_MS = 5_000;
 export type StatusOptions = { probeDesktop?: boolean; cache?: boolean; fresh?: boolean };
@@ -11,8 +11,9 @@ const targetStatusGenerations = new Map<string, number>();
 const changingTargets = new Map<string, number>();
 
 export function invalidateContainerComputerStatus(target?: LocalVmTarget): void {
-  clearLocalVmWakeFailure(target?.key);
-  if (target) targetStatusGenerations.set(target.key, ++statusGeneration);
+  const keyOf = (value: LocalVmTarget) => containerTargetOf(value).key;
+  clearLocalVmWakeFailure(target ? keyOf(target) : undefined);
+  if (target) targetStatusGenerations.set(keyOf(target), ++statusGeneration);
   else {
     targetStatusGenerations.clear();
     statusGeneration += 1;
@@ -24,10 +25,11 @@ export function cachedContainerStatus(runner: CommandRunner, platform: NodeJS.Pl
   if (!options.cache) return probe();
   let cache = statusCaches.get(runner);
   if (!cache) { cache = new Map(); statusCaches.set(runner, cache); }
-  const key = JSON.stringify([platform, target.key, target.containerName, target.workspaceDir, target.viewerPort, target.label, options.probeDesktop !== false]);
-  const generation = Math.max(allStatusGeneration, targetStatusGenerations.get(target.key) ?? 0);
+  const containerKey = containerTargetOf(target).key;
+  const key = JSON.stringify([platform, containerKey, target.containerName, target.workspaceDir, target.viewerPort, target.label, options.probeDesktop !== false]);
+  const generation = Math.max(allStatusGeneration, targetStatusGenerations.get(containerKey) ?? 0);
   const cached = cache.get(key);
-  const cacheable = !changingTargets.has(target.key);
+  const cacheable = !changingTargets.has(containerKey);
   if (!options.fresh && cacheable && cached && cached.generation === generation && cached.expiresAt > Date.now()) {
     return cached.result.then(status => ({ ...status }));
   }
@@ -41,11 +43,12 @@ export function cachedContainerStatus(runner: CommandRunner, platform: NodeJS.Pl
 
 export function changingContainerStatus(target: LocalVmTarget, all: boolean): () => void {
   invalidateContainerComputerStatus(all ? undefined : target);
-  changingTargets.set(target.key, (changingTargets.get(target.key) ?? 0) + 1);
+  const key = containerTargetOf(target).key;
+  changingTargets.set(key, (changingTargets.get(key) ?? 0) + 1);
   return () => {
-    const remaining = (changingTargets.get(target.key) ?? 1) - 1;
-    if (remaining) changingTargets.set(target.key, remaining);
-    else changingTargets.delete(target.key);
+    const remaining = (changingTargets.get(key) ?? 1) - 1;
+    if (remaining) changingTargets.set(key, remaining);
+    else changingTargets.delete(key);
     invalidateContainerComputerStatus(all ? undefined : target);
   };
 }

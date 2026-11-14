@@ -3,12 +3,19 @@ import { describe, expect, it } from "vitest";
 
 import { BOX_ENV_NAMES, BOX_ENV_NEVER, BOX_ENV_CRYBOT_NAMES, BOX_ENV_CRYBOT_PREFIXES, boxEnvironment, boxEnvironmentAllows, instanceEnvNames } from "./env.ts";
 
-/** Every other `CRYBOT_` name the server's code knows: decided to stay on the server, never in a bot's environment. A name
+/** Every other `CRYBOT_` name the server's code knows: kept on the server unless explicitly granted to one spawn. A name
  * ending in `_` is a family (`CRYBOT_CLOUD_*`). */
 const SERVER_ONLY_CRYBOT: ReadonlySet<string> = new Set([
+  // Passed only via docker exec -e to the container package-install script.
+  "CRYBOT_PACKAGE_SCREEN",
   "CRYBOT_APP_HOST", "CRYBOT_HOSTED_WORKSPACE",
   "CRYBOT_FEISHU_ADMINS", "CRYBOT_FEISHU_ALLOW", "CRYBOT_FEISHU_APP_ID", "CRYBOT_FEISHU_APP_SECRET", "CRYBOT_FEISHU_APP_SECRET_FILE",
   "CRYBOT_FEISHU_SESSION_MAX_DAYS", "CRYBOT_FEISHU_TENANTS", "CRYBOT_FEISHU_TOKEN_ENDPOINT", "CRYBOT_FEISHU_USER_INFO_ENDPOINT",
+  // 安全边界：飞书能力只能逐轮显式放行，不能全局继承。
+  "CRYBOT_FEISHU_CLI_USERS", "CRYBOT_FEISHU_AUTHORIZATION_URL", "CRYBOT_FEISHU_BROKER_SOCKET",
+  "CRYBOT_FEISHU_USER_TOKEN", "CRYBOT_FEISHU_EXPIRES_AT", "CRYBOT_LARK_CLI_EXECUTABLE",
+  // 清理整个继承变量族才能阻止未知飞书凭证泄漏；这个扫描命中的前缀不是一个环境变量。
+  "CRYBOT_FEISHU_",
   "CRYBOT_ANDROID_CERT_SHA256", "CRYBOT_ANDROID_PACKAGE", "CRYBOT_APPLE_APP_IDS", "CRYBOT_APP_LINK_ORIGIN",
   "CRYBOT_ACP_LIMIT_QUIET_MS", "CRYBOT_ACP_NO_SIGNS_STOP_MS", "CRYBOT_ACP_PLAN_LINES", "CRYBOT_ACP_QUIET_NOTICE_MS",
   "CRYBOT_ACP_QUIET_TICK_MS", "CRYBOT_ACP_SESSION_IDLE_", "CRYBOT_ACP_SHARED_RECYCLE_MS", "CRYBOT_ADMIN_", "CRYBOT_ADMIN_MEMBERSHIP",

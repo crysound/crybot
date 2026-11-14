@@ -1,0 +1,26 @@
+{
+  "at": 1767225600000,
+  "attachments": [
+    {
+      "kind": "image",
+      "mime": "image/png",
+      "path": "/api/attachments/example.png"
+    },
+    {
+      "kind": "file",
+      "mime": "text/plain",
+      "name": "example.txt",
+      "path": "/api/attachments/example.txt"
+    },
+    {
+      "durationMs": 1000,
+      "kind": "audio",
+      "mime": "audio/wav",
+      "path": "/api/attachments/example.wav"
+    }
+  ],
+  "id": "00000000-0000-4000-8000-000000000000",
+  "kind": "text",
+  "role": "bot",
+  "text": "Example message"
+}
