@@ -5,7 +5,7 @@ import { SHARED_LOCAL_VM_TARGET, perBotLocalVmTarget, type LocalVmTarget } from 
 import type { RequestAuth } from "../request-auth.ts";
 import type { BotRecord } from "../store.ts";
 import { teamComputerOwner } from "../team-computers.ts";
-import { createSharedVmControl, SHARED_VM_CONTROL_KEY as DESK } from "./shared-vm-control.ts";
+import { createSharedVmControl, screenControlKey, screenResource, screenViewer, SHARED_VM_CONTROL_KEY as DESK } from "./shared-vm-control.ts";
 
 type Fixture = {
   mode?: "shared" | "per-bot" | "pool";
@@ -62,6 +62,10 @@ const keyRows = [
   { row: "shared, cloud, conversation pinned to the VM", f: { bots: [{ id: "ada", computer: "cloud" }], tasks: { t: ["ada", "vm"] } }, thread: "t", key: DESK },
   { row: "shared, cloud, asked without the conversation", f: { bots: [{ id: "ada", computer: "cloud" }], tasks: { t: ["ada", "vm"] } }, thread: undefined, key: "ada" },
   { row: "shared, Auto, conversation pinned to this computer", f: { tasks: { t: ["ada", "local"] } }, thread: "t", key: "ada" },
+  ...["cloud", "local", "off", "browser", "vps"].flatMap(place => [SHARED_LOCAL_VM_TARGET, { ...SHARED_LOCAL_VM_TARGET, key: "shared:s1" }].map(target => ({
+    row: `shared, place=${place}, running turn on ${target.key}`,
+    f: { tasks: { t: ["ada", place] }, vmTurns: { t: target } }, thread: "t", key: "ada", armed: false,
+  }))),
   { row: "shared, Auto on a VPS, unpinned conversation", f: { bots: [{ id: "ada", cloudBackend: "vps" }], tasks: { t: ["ada", undefined] } }, thread: "t", key: "ada" },
   { row: "shared, Auto on a VPS, unpinned conversation whose running turn is on the shared VM",
     f: { bots: [{ id: "ada", cloudBackend: "vps" }], tasks: { t: ["ada", undefined] }, vmTurns: { t: SHARED_LOCAL_VM_TARGET } }, thread: "t", key: DESK },
@@ -74,14 +78,19 @@ const keyRows = [
   { row: "a team's cloud computer", f: { team: { ada: "c1" } }, thread: undefined, key: teamComputerOwner("c1") },
   { row: "a turn on a team's cloud computer", f: { teamTurns: { t: { computerId: "c2", botId: "ada" } } }, thread: "t", key: teamComputerOwner("c2") },
   { row: "another bot's turn on a team's cloud computer", f: { bots: [{ id: "ada" }, { id: "bea" }], teamTurns: { t: { computerId: "c2", botId: "bea" } } }, thread: "t", key: DESK },
-] as Array<{ row: string; f: Fixture; thread?: string; key: string }>;
+] as Array<{ row: string; f: Fixture; thread?: string; key: string; armed?: boolean }>;
 
 describe("the one control key", () => {
-  it.each(keyRows)("$row", ({ f, thread, key }) => {
+  it.each(keyRows)("$row", ({ f, thread, key, armed }) => {
     const { vm, bot } = fixture(f);
     expect(vm.keyFor(bot("ada"), thread)).toBe(key);
     expect(vm.signInKey(bot("ada"), thread ?? "t", "vm")).toBe(vm.keyFor(bot("ada"), thread ?? "t"));
     expect(vm.signInKey(bot("ada"), "t", "browser")).toBe("ada");
+    expect(vm.holdKey(bot("ada"), thread)).toBe(key);
+    if (armed !== undefined) {
+      expect(vm.armed(phone, bot("ada"), thread, key)).toBe(armed);
+      expect(vm.holdKey(bot("ada"), thread, "local/shared")).toBeNull();
+    }
   });
 
   it.each(keyRows)("the bot list tells the bot about every hold a take through its panels lands on: $row", ({ f, thread }) => {
@@ -96,6 +105,57 @@ describe("the one control key", () => {
 });
 
 describe("what a hold on the shared desktop reaches", () => {
+  it("gives each assigned screen its own control and resource keys", () => {
+    const s1 = { ...SHARED_LOCAL_VM_TARGET, key: "shared:s1", label: "shared-s1" };
+    const s2 = { ...SHARED_LOCAL_VM_TARGET, key: "shared:s2", label: "shared-s2" };
+    const { control, vm, bot } = fixture({
+      bots: [{ id: "ada" }, { id: "bea" }],
+      tasks: { t: ["ada", "vm"], u: ["bea", "vm"] }, vmTurns: { t: s1, u: s2 },
+    });
+    expect(screenViewer(1)).toBe("local/shared-s1");
+    expect(screenResource(1)).toBe("computer:vm:shared:s1");
+    expect(vm.keyFor(bot("ada"), "t")).toBe(screenControlKey(1));
+    expect(vm.leaseKey(bot("ada"), "t")).toBe(screenControlKey(1));
+    expect(vm.leaseKey(bot("bea"), "u")).toBe(screenControlKey(2));
+    expect(vm.holdKey(bot("ada"), "t", screenViewer(1))).toBe(screenControlKey(1));
+    expect(vm.holdKey(bot("ada"), undefined, screenViewer(1))).toBe(screenControlKey(1));
+    control.take(screenControlKey(1));
+    expect(vm.heldOnTarget(s1)).toBe(true);
+    expect(vm.heldOnTarget(s2)).toBe(false);
+    expect(vm.personHolds(screenResource(1))).toBe(true);
+    expect(vm.personHolds(screenResource(2))).toBe(false);
+    expect(vm.snapshot("bea", "u").held).toBe(false);
+    const lease = "screen-two-lease-0123456789";
+    expect(control.acquireLease(vm.leaseKey(bot("bea"), "u"), lease).owned).toBe(true);
+    expect(vm.check(bot("bea"), "u", lease)).toMatchObject({ held: true, owned: true });
+    expect(control.ownsLease(screenControlKey(2), lease)).toBe(true);
+    expect(vm.heldOnTarget(s1)).toBe(true);
+    vm.release(bot("bea"), "u", lease);
+  });
+
+  it.each([1, 2, 3, 4])("arms phone control of screen s%i", screen => {
+    const target = { ...SHARED_LOCAL_VM_TARGET, key: `shared:s${screen}` };
+    const { vm, bot } = fixture({ tasks: { t: ["ada", "vm"] }, vmTurns: { t: target } });
+    const key = vm.holdKey(bot("ada"), "t", screenViewer(screen))!;
+    expect(key).toBe(screenControlKey(screen));
+    expect(vm.armed(phone, bot("ada"), "t", key, screenViewer(screen))).toBe(true);
+    expect(vm.armed({ ...desktop, companionDevice: "phone-1" }, bot("ada"), "t", key, screenViewer(screen))).toBe(true);
+    expect(vm.armed(desktop, bot("ada"), "t", key, screenViewer(screen))).toBe(false);
+  });
+
+  it.each(["cloud", "local", "off", "browser", "vps"])("a turn still on a screen waits for its hold after its place moves to %s", place => {
+    const { control, vm, bot } = fixture({
+      bots: [{ id: "ada", computer: "cloud" }], tasks: { t: ["ada", place] },
+      vmTurns: { t: { ...SHARED_LOCAL_VM_TARGET, key: "shared:s1" } },
+    });
+    expect(vm.keyFor(bot("ada"), "t")).toBe("ada");
+    control.take(screenControlKey(2));
+    expect(vm.snapshot("ada", "t").held).toBe(false);
+    control.take(screenControlKey(1));
+    expect(vm.snapshot("ada", "t").held).toBe(true);
+    expect(vm.snapshot("ada").held).toBe(false);
+  });
+
   it("a thread-less hold on a bot's default key pauses its conversation elsewhere, and a hold on the desktop pauses every Auto bot", () => {
     const { control, vm } = fixture({ bots: [{ id: "ada" }, { id: "bea" }], tasks: { t: ["ada", "cloud"] } });
     control.take(DESK);
