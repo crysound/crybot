@@ -1,3 +1,4 @@
+import { screenFilePath, screenFileRoot, type ScreenFileAccess } from "../screen-files.ts";
 // Finds the sites a bot published to Netlify from the records its publish helper leaves in the bot's own folders
 // (skills/publish-to-netlify/site-record.md), and deletes one on Netlify.
 //
@@ -6,7 +7,7 @@
 // plain https ones, the account page only on Netlify's own host.
 import type { Dirent } from "node:fs";
 import { lstat, readdir, readFile, unlink } from "node:fs/promises";
-import { dirname, join, resolve, sep } from "node:path";
+import { dirname, join, posix, resolve, sep } from "node:path";
 import { z } from "zod";
 
 import type { VaultReader, VaultStore } from "../vault-store.ts";
@@ -88,31 +89,46 @@ export const within = (folder: string, root: string) => folder === root || folde
 /** The site records under these folders: at most `SCAN_LIMITS` deep and wide, no hidden folders, nothing through a
  * link. A folder that holds the person's whole home (or more) is not searched: listing it would read far outside
  * anything a bot was given. */
-export async function findNetlifySites(roots: readonly string[], options: { home: string; env: NodeJS.ProcessEnv }): Promise<NetlifySite[]> {
-  const home = resolve(options.home);
+export async function findNetlifySites(roots: readonly string[], options: { home: string; env: NodeJS.ProcessEnv; access?: ScreenFileAccess }): Promise<NetlifySite[]> {
+  const home = resolve(options.home), access = options.access;
+  const paths = access ? posix : { join, resolve };
   const sites: NetlifySite[] = [], seen = new Set<string>();
   let folders = 0;
-  const queue = [...new Set(roots.map((root) => resolve(root)))].filter((root) => !within(home, root)).map((folder) => ({ folder, depth: 0 }));
+  const queue = [...new Set((access ? [screenFileRoot(access)] : roots).map((root) => paths.resolve(root)))].filter((root) => !within(home, root)).map((folder) => ({ folder, depth: 0 }));
   for (let next = queue.shift(); next && folders < SCAN_LIMITS.folders && sites.length < SCAN_LIMITS.sites; next = queue.shift()) {
     if (seen.has(next.folder)) continue;
     seen.add(next.folder);
     folders += 1;
-    let entries: Dirent[];
-    try { entries = await readdir(next.folder, { withFileTypes: true }); } catch { continue; }
+    let entries: Pick<Dirent, "name" | "isFile" | "isDirectory">[];
+    try {
+      if (access) {
+        entries = [];
+        for (const name of await access.list(next.folder)) {
+          if (name !== SITE_FILE && (name.startsWith(".") || SKIPPED_FOLDERS.has(name))) continue;
+          const info = await access.stat(paths.join(next.folder, name)).catch(() => null);
+          entries.push({ name, isFile: () => info?.isFile === true, isDirectory: () => info?.isFile === false });
+        }
+      } else entries = await readdir(next.folder, { withFileTypes: true });
+    } catch { continue; }
     for (const entry of entries) {
       if (entry.name === SITE_FILE && entry.isFile()) {
-        const site = await readSite(join(next.folder, entry.name), options.env);
+        const site = await readSite(paths.join(next.folder, entry.name), options.env, access);
         if (site && (site.hosting || !sites.some((other) => !other.hosting && other.siteId === site.siteId))) sites.push(site);
       } else if (entry.isDirectory() && next.depth < SCAN_LIMITS.depth && !entry.name.startsWith(".") && !SKIPPED_FOLDERS.has(entry.name)) {
-        queue.push({ folder: join(next.folder, entry.name), depth: next.depth + 1 });
+        queue.push({ folder: paths.join(next.folder, entry.name), depth: next.depth + 1 });
       }
     }
   }
   return sites.slice(0, SCAN_LIMITS.sites);
 }
 
-export async function readSite(file: string, env: NodeJS.ProcessEnv): Promise<NetlifySite | null> {
+export async function readSite(file: string, env: NodeJS.ProcessEnv, access?: ScreenFileAccess): Promise<NetlifySite | null> {
   try {
+    if (access) {
+      const path = screenFilePath(access, file);
+      const data = await access.readFile(path, SCAN_LIMITS.recordBytes);
+      return parseSiteRecord(data.toString(), path, 0, env);
+    }
     const info = await lstat(file);
     if (!info.isFile() || info.size > SCAN_LIMITS.recordBytes) return null;
     return parseSiteRecord(await readFile(file, "utf8"), file, info.mtimeMs, env);

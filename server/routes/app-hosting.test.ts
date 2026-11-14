@@ -1,3 +1,5 @@
+import type { ScreenFileAccess } from "../screen-files.ts";
+import { screenFilesFixture } from "../testing/screen-files-fixture.ts";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
@@ -15,11 +17,11 @@ function fakePublisher() {
   } satisfies AppPublisher;
 }
 
-async function call(publisher: AppPublisher, input: { path?: string; method?: string; body?: unknown; vmWorkspace?: string | null } = {}) {
+async function call(publisher: AppPublisher, input: { path?: string; method?: string; body?: unknown; vmWorkspace?: string | null; access?: ScreenFileAccess } = {}) {
   const sent: { status?: number; body?: any } = {};
   const json = ((_res: unknown, status: number, body: unknown) => { sent.status = status; sent.body = body; }) as AppHostingContext["json"];
   const out = await createAppHostingInternalRoutes(publisher)({ method: input.method ?? "POST", path: input.path ?? "/api/internal/apps/publish", res: {} as AppHostingContext["res"], json, botId: "bot-1",
-    readBody: async () => input.body ?? {}, folders: async () => ({ roots: ["/work/bot-1"], vmWorkspace: input.vmWorkspace ?? null }) });
+    readBody: async () => input.body ?? {}, folders: async () => ({ roots: ["/work/bot-1"], vmWorkspace: input.vmWorkspace ?? null, ...(input.access ? { access: input.access } : {}) }) });
   return { out, ...sent };
 }
 
@@ -68,4 +70,79 @@ describe("publish_app's internal route", () => {
   it("is closed to a turn that came in from outside", () => {
     expect(outsideRouteRefused("POST", "/api/internal/apps/publish")).toBe(true);
   });
+});
+
+it.skipIf(process.platform === "win32")("forwards screen file access with guest paths for publish, status and delete", async () => {
+  const f = await screenFilesFixture();
+  try {
+    const publisher = fakePublisher();
+    const path = "/home/cua/workspace/screens/s2/site";
+    for (const action of ["publish", "status", "delete"]) {
+      await call(publisher, { body: { action, path, title: "Screen page" }, vmWorkspace: f.workspace, access: f.access });
+    }
+    for (const invoke of [publisher.publish, publisher.status, publisher.remove]) {
+      expect(invoke).toHaveBeenCalledWith(expect.objectContaining({ path, access: f.access, vmWorkspace: f.workspace }));
+    }
+  } finally { await f.cleanup(); }
+});
+
+it.skipIf(process.platform === "win32")("publishes screen bytes and keeps, discovers and removes its record through screen access", async () => {
+  const { createAppPublisher } = await import("../host/app-publisher.ts");
+  const { createIncludedHosting } = await import("../host/included-hosting.ts");
+  const f = await screenFilesFixture();
+  try {
+    await f.access.writeFile("site/index.html", Buffer.from("<h1>Private screen page</h1>"));
+    await f.access.writeFile("site/.env", Buffer.from("hidden"));
+    const uploaded: Buffer[] = [], keys: string[] = [];
+    const app = { key: "fixture-app", title: "Screen page", state: "ready", url: "https://app.example.test/" };
+    const fetcher: typeof fetch = async (input, init) => {
+      const url = String(input);
+      if (url === app.url) return new Response("<h1>Page</h1>", { headers: { "content-type": "text/html" } });
+      if (init?.method === "PUT" && url.includes("/files/")) uploaded.push(Buffer.from(init.body as Uint8Array));
+      if (init?.method === "PUT" && !url.includes("/files/")) {
+        const manifest = JSON.parse(String(init.body));
+        keys.push(url);
+        return Response.json({ app, created: true, required: manifest.files.map((file: { sha1: string }) => ({ sha1: file.sha1 })), allowance: {} });
+      }
+      return Response.json({ app, apps: [app], allowance: {} });
+    };
+    const hosting = createIncludedHosting({ dataDir: f.root, credential: () => ({ api: "https://hosting.example.test", token: "fixture-only", included: true }), fetch: fetcher });
+    const publisher = createAppPublisher({ hosting, botName: () => "Screen bot", botFolder: () => f.root, home: "/unused", env: {}, fetch: fetcher });
+    const input = { botId: "screen-bot", roots: [f.workspace], path: "site", title: "Screen page", access: f.access };
+    const beforePublish = (await f.calls()).length;
+    expect(await publisher.publish(input)).toMatchObject({ status: 200, body: { live: true, files: 1 } });
+    const publishCalls = (await f.calls()).length - beforePublish;
+    expect(uploaded.map((buffer) => buffer.toString())).toEqual(["<h1>Private screen page</h1>"]);
+    expect(JSON.parse((await f.access.readFile("site/.netlify-site.json", 16_384)).toString())).toMatchObject({ hosting: "included", title: "Screen page" });
+    expect(await publisher.status({ botId: input.botId, roots: input.roots, access: f.access })).toMatchObject({ status: 200, body: { projects: [expect.objectContaining({ folder: "/home/cua/workspace/screens/s2/site" })] } });
+    const { writeFile, mkdir } = await import("node:fs/promises");
+    for (let n = 0; n < 25; n++) await writeFile(join(f.screenDir, "site", `${n}.css`), `body{order:${n}}`);
+    const beforeLargePublish = (await f.calls()).length;
+    expect(await publisher.publish(input)).toMatchObject({ status: 200 });
+    expect((await f.calls()).length - beforeLargePublish).toBe(publishCalls);
+    expect(publishCalls).toBe(7);
+    expect(keys[0]).toBe(keys[1]);
+    expect(await publisher.remove(input)).toMatchObject({ status: 200, body: { deleted: true } });
+    expect(await f.access.stat("site/.netlify-site.json")).toBeNull();
+    expect(await publisher.publish({ ...input, path: "../s1/site" })).toMatchObject({ status: 400 });
+    const own = join(f.root, "bot");
+    await mkdir(own);
+    await writeFile(join(own, "index.html"), "host page");
+    const hostInput = { ...input, path: own, roots: [own, f.workspace] };
+    expect(await publisher.publish(hostInput)).toMatchObject({ status: 200, body: { files: 1 } });
+    expect(await publisher.status(hostInput)).toMatchObject({ status: 200 });
+    expect(await publisher.remove(hostInput)).toMatchObject({ status: 200 });
+    expect(await publisher.publish({ ...input, path: "/home/crybot-s2/workspace/site" })).toMatchObject({ status: 200 });
+    const wrapped = { ...hostInput, access: { ...f.access }, vmWorkspace: f.workspace };
+    for (const path of [join(f.screenDir, "site"), f.workspace]) {
+      expect(await publisher.publish({ ...wrapped, path })).toMatchObject({ status: 400 });
+      expect(await publisher.status({ ...wrapped, path })).toMatchObject({ status: 400 });
+      expect(await publisher.remove({ ...wrapped, path })).toMatchObject({ status: 400 });
+    }
+    expect(await publisher.publish(wrapped)).toMatchObject({ status: 200 });
+    expect(await publisher.remove(wrapped)).toMatchObject({ status: 200 });
+    for (const path of [join(f.screenDir, "site"), "/home/crybot-s1/workspace/site"]) {
+      expect(await publisher.publish({ ...hostInput, path })).toMatchObject({ status: 400 });
+    }
+  } finally { await f.cleanup(); }
 });

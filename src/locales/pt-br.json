@@ -10584,5 +10584,7 @@
   "vm.screens.idleMinutes": "Ocioso há {minutes} min",
   "vm.screens.idleMinute": "Ocioso há {minutes} min",
   "vm.screens.waitedMinutes": "Aguardando há {minutes} min",
-  "vm.screens.waitedMinute": "Aguardando há {minutes} min"
+  "vm.screens.waitedMinute": "Aguardando há {minutes} min",
+  "serverError.secret.saving": "Esta credencial está sendo salva.",
+  "serverError.secret.screenUnavailable": "Este bot não tem mais acesso à tela destinada a esta credencial. Peça a ele que solicite a credencial novamente."
 }

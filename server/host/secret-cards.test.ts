@@ -1,3 +1,4 @@
+import { screenFilesFixture } from "../testing/screen-files-fixture.ts";
 import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -20,7 +21,7 @@ const dirs: string[] = [];
 afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }); });
 
 /** `privateTo`: a Team Cloud's private chats, by conversation, and whose each is; any other conversation is the team's. */
-function fixture(language?: string, linked?: (vaultStore: VaultStore) => SecretCardsDeps["botLogins"], privateTo: Record<string, string> = {}) {
+function fixture(language?: string, linked?: (vaultStore: VaultStore) => SecretCardsDeps["botLogins"], privateTo: Record<string, string> = {}, over: Partial<SecretCardsDeps> = {}) {
   const dataDir = mkdtempSync(join(tmpdir(), "cry-secret-cards-"));
   dirs.push(dataDir);
   const lines: Message[] = [];
@@ -46,7 +47,7 @@ function fixture(language?: string, linked?: (vaultStore: VaultStore) => SecretC
     botLogins: linked?.(vaultStore) ?? { credentialConfig: (config) => ({ ...config, onePassword: { connected: false } }), linkedSecret: async () => null },
     phoneSecrets: { provide: async () => {}, open: () => {} } as never, phoneSecretSubmissions: { has: () => false } as never,
     connectorThread: () => ({ bot, group: undefined }), answerCardNode: (_thread, _id, text) => { resumed.push(text); return true; }, followCard: () => {}, dataDir, providerKeysRefused: false,
-    layerFolder: () => dataDir, turnVm: () => undefined, ...(language ? { threadLanguage: () => language } : {}),
+    layerFolder: () => dataDir, turnVm: () => undefined, ...(language ? { threadLanguage: () => language } : {}), ...over,
   });
   return { cards, lines, bot, vaultStore, resumed, dataDir };
 }
@@ -566,4 +567,180 @@ describe("a secret a linked 1Password holds", () => {
     expect(await ask(one)).toEqual({ status: 502, body: { error: "notion-token is in a linked password manager, but it could not be read: Could not reach 1Password. Check the internet connection and try again." } });
     expect(one.lines).toEqual([]);
   });
+});
+
+it.skipIf(process.platform === "win32")("delivers a screen card before resuming, using that screen's identity and private file", async () => {
+  const f = await screenFilesFixture();
+  try {
+    const checked: unknown[][] = [];
+    const fileAccess = (vm: string, botId?: string, threadId?: string) => {
+      checked.push([vm, botId, threadId]);
+      return vm === "shared:s2" && botId === "ledger" && threadId === "screen-thread" ? f.access : undefined;
+    };
+    const one = fixture(undefined, undefined, {}, { turnVm: () => "shared:s2", fileAccess });
+    const card = await one.cards.requestCredential(one.bot, "screen-thread", { label: "Fixture token", reason: "Test delivery", delivery: "file" });
+    expect(card.status).toBe(201);
+    const id = String(card.body.messageId);
+    expect((await one.cards.saveCustomSecretAsync("ledger", "screen-thread", id, "fixture-screen-value")).status).toBe(200);
+    const file = `.crybot-secrets/screen-thread/${id}`;
+    expect(await f.access.readFile(file, 100)).toEqual(Buffer.from("fixture-screen-value"));
+    const write = (await f.calls()).find((args) => args.at(-2) === "write");
+    expect(write?.slice(0, 4)).toEqual(["exec", "-i", "-u", "crybot-s2"]);
+    expect(write?.at(-1)).toBe(String(0o600));
+    expect(JSON.stringify(write)).not.toContain("fixture-screen-value");
+    expect(one.resumed[0]).toContain(`/home/cua/workspace/screens/s2/${file}`);
+    expect(one.resumed[0]).not.toContain("fixture-screen-value");
+    const reused = await one.cards.requestCredential(one.bot, "screen-thread", { label: "Fixture token", reason: "Reuse", delivery: "file" });
+    expect(reused.status).toBe(200);
+    expect(reused.body.text).toContain("/home/cua/workspace/screens/s2/.crybot-secrets/");
+    expect(checked.filter((call) => call[1] !== undefined)).toEqual([
+      ["shared:s2", "ledger", "screen-thread"], ["shared:s2", "ledger", "screen-thread"], ["shared:s2", "ledger", "screen-thread"],
+    ]);
+  } finally { await f.cleanup(); }
+});
+
+it("rejects a concurrent save before it can change the vault or screen file", async () => {
+  const f = await screenFilesFixture();
+  try {
+    const { vi } = await import("vitest");
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const write = f.access.writeFile.bind(f.access);
+    const writes = vi.spyOn(f.access, "writeFile").mockImplementation(async (...args) => { await gate; await write(...args); });
+    const one = fixture(undefined, undefined, {}, { turnVm: () => "shared:s2", fileAccess: (vm) => vm === "shared:s2" ? f.access : undefined });
+    const card = await one.cards.requestCredential(one.bot, "thread", { label: "Concurrent token", reason: "Test delivery", delivery: "file" });
+    const id = String(card.body.messageId);
+    const saves = vi.spyOn(one.vaultStore, "saveSecret");
+    const first = one.cards.saveCustomSecretAsync("ledger", "thread", id, "first-value");
+    expect(await one.cards.saveCustomSecretAsync("ledger", "thread", id, "second-value")).toMatchObject({ status: 409 });
+    expect(saves).toHaveBeenCalledTimes(1);
+    expect(writes).toHaveBeenCalledTimes(1);
+    release();
+    expect(await first).toMatchObject({ status: 200 });
+    expect(await f.access.readFile(`.crybot-secrets/thread/${id}`, 100)).toEqual(Buffer.from("first-value"));
+    expect(one.vaultStore.listSecrets(TEAM_READER)).toHaveLength(1);
+    expect(one.resumed).toHaveLength(1);
+  } finally { await f.cleanup(); }
+});
+
+it.each(["desktop", "saved", "phone"] as const)("holds one card lock while %s writes and rejects every competing delivery", async (winner) => {
+  const { vi } = await import("vitest");
+  const { PhoneSecretSubmissionRegistry } = await import("../phone-secret.ts");
+  const f = await screenFilesFixture();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  let writing!: () => void;
+  const started = new Promise<void>((resolve) => { writing = resolve; });
+  const original = f.access.writeFile.bind(f.access);
+  const writes = vi.spyOn(f.access, "writeFile").mockImplementation(async (...args) => { writing(); await gate; await original(...args); });
+  try {
+    const opened = vi.fn(async () => "phone-value");
+    const one = fixture(undefined, undefined, {}, {
+      turnVm: () => "shared:s2", fileAccess: (vm) => vm === "shared:s2" ? f.access : undefined,
+      phoneSecrets: { open: opened } as never, phoneSecretSubmissions: new PhoneSecretSubmissionRegistry(),
+    });
+    const saved = one.vaultStore.saveSecret({ name: "Concurrent token", value: "saved-value", source: "card", bots: [], refOnly: false });
+    const card = await one.cards.requestCredential(one.bot, "thread", { label: "Concurrent token", reason: "Test delivery", delivery: "file", replace: true });
+    const id = String(card.body.messageId);
+    const secret = one.lines.find((line) => line.id === id)!.secret!;
+    const context = { version: 1 as const, keyId: "a".repeat(22), deviceId: "phone", botId: "ledger", threadId: "thread", messageId: id,
+      target: secret.target, requestKey: secret.requestKey, encapsulatedKey: "sealed-key", ciphertext: "sealed-value" };
+    const save = () => one.cards.saveCustomSecretAsync("ledger", "thread", id, "desktop-value");
+    const use = () => one.cards.useSavedSecret("ledger", "thread", id, saved.id);
+    const phone = () => one.cards.provideSecretFromPhone(context, "phone");
+    const saves = vi.spyOn(one.vaultStore, "saveSecret"), grants = vi.spyOn(one.vaultStore, "updateSecret");
+    const first = winner === "desktop" ? save() : winner === "saved" ? use() : phone();
+    await started;
+    expect(await save()).toMatchObject({ status: 409, body: { errorKey: "serverError.secret.saving" } });
+    expect(await use()).toMatchObject({ status: 409, body: { errorKey: "serverError.secret.saving" } });
+    await expect(phone()).rejects.toMatchObject({ status: 409 });
+    expect(one.cards.saveCustomSecret("ledger", "thread", id, "sync-value")).toMatchObject({ status: 409 });
+    expect(writes).toHaveBeenCalledTimes(1);
+    expect(saves).toHaveBeenCalledTimes(winner === "saved" ? 0 : 1);
+    expect(grants).toHaveBeenCalledTimes(winner === "saved" ? 1 : 0);
+    expect(opened).toHaveBeenCalledTimes(winner === "phone" ? 1 : 0);
+    release();
+    expect(await first).toMatchObject(winner === "phone" ? { provided: true, resumed: true } : { status: 200 });
+    expect(await f.access.readFile(`.crybot-secrets/thread/${id}`, 100)).toEqual(Buffer.from(`${winner}-value`));
+    expect(one.resumed).toHaveLength(1);
+  } finally { release(); await f.cleanup(); vi.restoreAllMocks(); }
+});
+
+it("releases the card lock after a failed screen write so a retry can finish", async () => {
+  const { vi } = await import("vitest");
+  const f = await screenFilesFixture();
+  try {
+    const one = fixture(undefined, undefined, {}, { turnVm: () => "shared:s2", fileAccess: (vm) => vm === "shared:s2" ? f.access : undefined });
+    const card = await one.cards.requestCredential(one.bot, "thread", { label: "Retry token", reason: "Test retry", delivery: "file" });
+    const id = String(card.body.messageId);
+    vi.spyOn(f.access, "writeFile").mockRejectedValueOnce(new Error("fixture write failed"));
+    expect(await one.cards.saveCustomSecretAsync("ledger", "thread", id, "first-value")).toMatchObject({ status: 500 });
+    expect(await one.cards.saveCustomSecretAsync("ledger", "thread", id, "retry-value")).toMatchObject({ status: 200 });
+    expect(one.resumed).toHaveLength(1);
+  } finally { await f.cleanup(); vi.restoreAllMocks(); }
+});
+
+it("skips sweep ticks while the previous sweep is pending and resumes afterwards", async () => {
+  const { vi } = await import("vitest");
+  const { SecretVault } = await import("../secret-vault.ts");
+  const f = await screenFilesFixture();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  vi.useFakeTimers();
+  try {
+    const sweeps = vi.spyOn(SecretVault.prototype, "sweepAccess").mockImplementation(async () => { await gate; })
+      .mockRejectedValueOnce(new Error("fixture sweep failed"));
+    fixture(undefined, undefined, {}, { fileAccess: () => f.access });
+    expect(sweeps).toHaveBeenCalledTimes(4);
+    await vi.advanceTimersByTimeAsync(30 * 60_000);
+    expect(sweeps).toHaveBeenCalledTimes(4);
+    release();
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(sweeps).toHaveBeenCalledTimes(8);
+  } finally { release(); vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); await f.cleanup(); }
+});
+
+it.each(["desktop", "desktop-sync", "saved", "phone", "mint"] as const)("refuses %s file delivery after the card's screen is reassigned", async (delivery) => {
+  const { vi } = await import("vitest");
+  const { PhoneSecretSubmissionRegistry } = await import("../phone-secret.ts");
+  const f = await screenFilesFixture();
+  try {
+    let occupant = "ledger";
+    const fileAccess = vi.fn((vm: string, botId?: string, threadId?: string) =>
+      vm === "shared:s2" && botId === occupant && threadId === "screen-thread" ? f.access : undefined);
+    const writes = vi.spyOn(f.access, "writeFile");
+    const one = fixture(undefined, undefined, {}, {
+      turnVm: () => "shared:s2", fileAccess,
+      phoneSecrets: { open: async () => "phone-value" } as never,
+      phoneSecretSubmissions: new PhoneSecretSubmissionRegistry(),
+    });
+    const saved = delivery === "saved" || delivery === "mint"
+      ? one.vaultStore.saveSecret({ name: "Reassigned token", value: "saved-value", source: "card", bots: delivery === "saved" ? [] : ["ledger"], refOnly: false })
+      : undefined;
+    const card = await one.cards.requestCredential(one.bot, "screen-thread", { label: "Reassigned token", reason: "Test ownership", delivery: "file", replace: true });
+    expect(card.status).toBe(201);
+    const id = String(card.body.messageId);
+    const secret = one.lines.find((line) => line.id === id)!.secret!;
+    expect(secret.vm).toBe("shared:s2");
+    occupant = "another-bot";
+    const errorKey = "serverError.secret.screenUnavailable";
+    if (delivery === "phone") {
+      const context = { version: 1 as const, keyId: "a".repeat(22), deviceId: "phone", botId: "ledger", threadId: "screen-thread", messageId: id,
+        target: secret.target, requestKey: secret.requestKey, encapsulatedKey: "sealed-key", ciphertext: "sealed-value" };
+      await expect(one.cards.provideSecretFromPhone(context, "phone")).rejects.toMatchObject({ errorKey });
+    } else {
+      const result = delivery === "desktop" ? await one.cards.saveCustomSecretAsync("ledger", "screen-thread", id, "typed-value")
+        : delivery === "desktop-sync" ? one.cards.saveCustomSecret("ledger", "screen-thread", id, "typed-value")
+        : delivery === "saved" ? await one.cards.useSavedSecret("ledger", "screen-thread", id, saved!.id)
+        : await one.cards.requestCredential(one.bot, "screen-thread", { label: "Reassigned token", reason: "Reuse", delivery: "file" });
+      expect(result).toMatchObject({ status: 409, body: { errorKey } });
+    }
+    expect(fileAccess).toHaveBeenLastCalledWith("shared:s2", "ledger", "screen-thread");
+    expect(writes).not.toHaveBeenCalled();
+    expect(await f.access.stat(".crybot-secrets")).toBeNull();
+    expect(one.lines.find((line) => line.id === id)!.secret!.savedAt).toBeUndefined();
+    expect(one.resumed).toEqual([]);
+    expect(one.vaultStore.listSecrets(TEAM_READER).map((item) => item.id)).toEqual(saved ? [saved.id] : []);
+    if (saved) expect(one.vaultStore.secret(saved.id)?.value).toBe("saved-value");
+  } finally { await f.cleanup(); vi.restoreAllMocks(); }
 });

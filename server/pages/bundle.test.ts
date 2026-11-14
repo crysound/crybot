@@ -110,3 +110,63 @@ describe("pageSignature", () => {
     expect(await pageSignature(page, { videos: true })).not.toBe(withVideos);
   });
 });
+
+it.skipIf(process.platform === "win32")("bundles private screen files and excludes secret folders, hidden files and escaped links", async () => {
+  const { screenFilesFixture } = await import("../testing/screen-files-fixture.ts");
+  const f = await screenFilesFixture();
+  try {
+    await f.access.writeFile("site/index.html", Buffer.from("<h1>Screen two</h1>"));
+    await f.access.writeFile("site/style.css", Buffer.from("h1{color:teal}"));
+    await f.access.writeFile("site/.env", Buffer.from("hidden"));
+    await f.access.writeFile("site/.crybot-secrets/value", Buffer.from("private"));
+    symlinkSync(f.root, join(f.screenDir, "site", "escape"));
+    const bundle = await readPageBundle("site", ["/unused/host"], undefined, {}, f.access);
+    expect(bundle.source).toBe("/home/cua/workspace/screens/s2/site");
+    expect(bundle.files.map((file) => file.path)).toEqual(["index.html", "style.css"]);
+    expect(bundle.files[0]!.data.toString()).toBe("<h1>Screen two</h1>");
+    expect(bundle.skipped).toContainEqual({ path: "escape", why: "link" });
+    expect(JSON.stringify(bundle)).not.toContain(".crybot-secrets");
+    await expect(readPageBundle("../s1/site", [], undefined, {}, f.access)).rejects.toMatchObject({ status: 403 });
+    await expect(readPageBundle("site", [], { bytes: 3, files: 2 }, {}, f.access)).rejects.toMatchObject({ status: 413 });
+  } finally { await f.cleanup(); }
+});
+
+it("bundles own host pages with screen access while excluding VM paths and other screen aliases", async () => {
+  const { screenFilesFixture } = await import("../testing/screen-files-fixture.ts");
+  const f = await screenFilesFixture();
+  try {
+    const host = join(f.root, "bot");
+    mkdirSync(host);
+    writeFileSync(join(host, "index.html"), "host page");
+    expect((await readPageBundle(host, [host, f.workspace], undefined, {}, f.access)).files[0]?.data.toString()).toBe("host page");
+    mkdirSync(join(f.workspace, "legacy"));
+    writeFileSync(join(f.workspace, "legacy/index.html"), "legacy");
+    symlinkSync(join(f.workspace, "legacy"), join(host, "vm-link"));
+    for (const path of [join(f.workspace, "legacy"), join(host, "vm-link"), "/home/crybot-s1/workspace/site"]) {
+      await expect(readPageBundle(path, [host, f.workspace], undefined, {}, f.access)).rejects.toMatchObject({ status: 403 });
+    }
+    await f.access.writeFile("site/index.html", Buffer.from("alias page"));
+    expect((await readPageBundle("/home/crybot-s2/workspace/site", [host], undefined, {}, f.access)).files[0]?.data.toString()).toBe("alias page");
+  } finally { await f.cleanup(); }
+});
+
+it("passes explicit VM exclusions through bot bundles and sources with wrapped access", async () => {
+  const { screenFilesFixture } = await import("../testing/screen-files-fixture.ts");
+  const { readBotPageBundle, botFileSource } = await import("./bundle.ts");
+  const f = await screenFilesFixture();
+  try {
+    const own = join(f.root, "bot"), legacy = join(f.workspace, "legacy");
+    mkdirSync(own);
+    mkdirSync(legacy);
+    writeFileSync(join(own, "index.html"), "own");
+    writeFileSync(join(legacy, "index.html"), "legacy");
+    symlinkSync(legacy, join(own, "vm-link"));
+    const folders = async () => ({ roots: [own, f.workspace], vmWorkspace: f.workspace, access: { ...f.access } });
+    expect((await readBotPageBundle(own, folders)).files[0]?.data.toString()).toBe("own");
+    expect(await botFileSource(own, folders)).toBe(own);
+    for (const path of [legacy, join(own, "vm-link")]) {
+      await expect(readBotPageBundle(path, folders)).rejects.toMatchObject({ status: 403 });
+      await expect(botFileSource(path, folders)).rejects.toMatchObject({ status: 403 });
+    }
+  } finally { await f.cleanup(); }
+});

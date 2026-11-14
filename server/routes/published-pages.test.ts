@@ -1,3 +1,5 @@
+import type { ScreenFileAccess } from "../screen-files.ts";
+import { screenFilesFixture } from "../testing/screen-files-fixture.ts";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { PagePublisher } from "../pages/publisher.ts";
@@ -19,11 +21,11 @@ function sink() {
   return { sent, json, res: {} as PagesInternalContext["res"] };
 }
 
-async function internal(handler: ReturnType<typeof createPagesInternalRoutes>, input: { path?: string; method?: string; body?: unknown; vmWorkspace?: string | null } = {}) {
+async function internal(handler: ReturnType<typeof createPagesInternalRoutes>, input: { path?: string; method?: string; body?: unknown; vmWorkspace?: string | null; access?: ScreenFileAccess } = {}) {
   const { sent, json, res } = sink();
   const post = vi.fn(() => "message-1");
   const out = await handler({ method: input.method ?? "POST", path: input.path ?? "/api/internal/pages/publish", res, json, botId: "bot-1", threadId: "thread-1",
-    readBody: async () => input.body ?? {}, folders: async () => ({ roots: ["/work/bot-1"], vmWorkspace: input.vmWorkspace ?? null }), post,
+    readBody: async () => input.body ?? {}, folders: async () => ({ roots: ["/work/bot-1"], vmWorkspace: input.vmWorkspace ?? null, ...(input.access ? { access: input.access } : {}) }), post,
     requireActive: () => {}, signal: new AbortController().signal });
   return { out, post, ...sent };
 }
@@ -89,4 +91,65 @@ describe("the card's Unpublish", () => {
     expect((await call(handler, "/api/published-pages/abcdefghijklmnopqrstuvwxyz/unpublish", "GET")).out).toBe(PASS);
     expect((await call(handler, "/api/published-pages/short/unpublish")).out).toBe(PASS);
   });
+});
+
+it.skipIf(process.platform === "win32")("passes screen access to both page publishing and path-based unpublishing", async () => {
+  const f = await screenFilesFixture();
+  try {
+    const publisher = fakePublisher(), handler = createPagesInternalRoutes(publisher);
+    const path = "/home/cua/workspace/screens/s2/site";
+    await internal(handler, { body: { path, title: "Screen page" }, vmWorkspace: f.workspace, access: f.access });
+    await internal(handler, { path: "/api/internal/pages/unpublish", body: { path }, access: f.access, vmWorkspace: f.workspace });
+    expect(publisher.publish).toHaveBeenCalledWith(expect.objectContaining({ path, access: f.access, vmWorkspace: f.workspace }));
+    expect(publisher.unpublish).toHaveBeenCalledWith(expect.objectContaining({ path, access: f.access, vmWorkspace: f.workspace }));
+  } finally { await f.cleanup(); }
+});
+
+it.skipIf(process.platform === "win32")("publishes screen pages, refreshes changed bytes and unpublishes the same source", async () => {
+  const { createPagePublisher } = await import("../pages/publisher.ts");
+  const { PublishedPagesStore } = await import("../pages/store.ts");
+  const f = await screenFilesFixture();
+  try {
+    await f.access.writeFile("site/index.html", Buffer.from("<h1>One</h1>"));
+    const pageId = "abcdefghijklmnopqrstuvwx";
+    const publish = vi.fn(async () => ({ ok: true as const, pageId, url: "https://page.example.test/", usage: { pages: 1, limit: 10 }, badge: false }));
+    const unpublish = vi.fn(async () => ({ ok: true as const, pageId, usage: { pages: 0, limit: 10 } }));
+    const store = new PublishedPagesStore(join(f.root, "pages.json"));
+    const publisher = createPagePublisher({ client: { publish, unpublish }, store, patch: () => {}, liveAccess: () => f.access });
+    const input = { botId: "screen-bot", threadId: "screen-thread", path: "site", title: "Screen page", roots: [f.workspace], access: f.access, live: true, post: () => "card" };
+    expect(await publisher.publish(input)).toMatchObject({ status: 200 });
+    expect(store.get(pageId)?.source).toBe("/home/cua/workspace/screens/s2/site");
+    expect(publish).toHaveBeenCalledWith(expect.objectContaining({ files: [expect.objectContaining({ data: expect.any(Buffer) })] }), undefined);
+    const now = Date.now() + 120_000;
+    expect(await publisher.refreshLive(now)).toBe(0);
+    await f.access.writeFile("site/index.html", Buffer.from("<h1>Two</h1>"));
+    expect(await publisher.refreshLive(now + 120_000)).toBe(1);
+    expect(await publisher.unpublish({ botId: input.botId, path: "site", roots: [], access: f.access })).toMatchObject({ status: 200 });
+    expect(unpublish).toHaveBeenCalledWith(pageId, undefined);
+    expect(store.get(pageId)).toBeNull();
+  } finally { await f.cleanup(); }
+});
+
+it.each([false, true])("stops a screen page after reassignment (liveAccess provided: %s)", async (withResolver) => {
+  const { createPagePublisher } = await import("../pages/publisher.ts");
+  const { PublishedPagesStore } = await import("../pages/store.ts");
+  const f = await screenFilesFixture();
+  try {
+    await f.access.writeFile("site/index.html", Buffer.from("old bot"));
+    const pageId = "abcdefghijklmnopqrstuvwx";
+    const publish = vi.fn(async () => ({ ok: true as const, pageId, url: "https://page.example.test/", usage: { pages: 1, limit: 10 }, badge: false }));
+    const store = new PublishedPagesStore(join(f.root, "pages.json"));
+    let assignedBot = "old-bot";
+    const publisher = createPagePublisher({ client: { publish, unpublish: vi.fn() }, store, patch: () => {},
+      liveRoots: () => [f.workspace], ...(withResolver ? { liveAccess: (botId: string) => assignedBot === botId ? f.access : null } : {}) });
+    expect(await publisher.publish({ botId: "old-bot", threadId: "thread", path: "site", title: "Old page", roots: [f.workspace], access: f.access, live: true, post: () => "card" })).toMatchObject({ status: 200 });
+    assignedBot = "new-bot";
+    await f.access.writeFile("site/index.html", Buffer.from("new bot private content"));
+    const calls = (await f.calls()).length;
+    expect(await publisher.refreshLive(Date.now() + 120_000)).toBe(0);
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect((await f.calls()).length).toBe(calls);
+    expect(store.get(pageId)).not.toBeNull();
+    expect(store.get(pageId)?.live).not.toBe(true);
+  } finally { await f.cleanup(); }
 });

@@ -10584,5 +10584,7 @@
   "vm.screens.waitedMinute": "Waiting for {minutes} minute",
   "vm.screens.take": "Take control of this screen",
   "vm.screens.count": "Number of screens",
-  "vm.screens.resources": "Shared defaults: 8 GB memory · 3 CPUs, limited by the host."
+  "vm.screens.resources": "Shared defaults: 8 GB memory · 3 CPUs, limited by the host.",
+  "serverError.secret.saving": "This credential is being saved.",
+  "serverError.secret.screenUnavailable": "This bot no longer has access to the screen for this credential. Ask it to request the credential again."
 }
