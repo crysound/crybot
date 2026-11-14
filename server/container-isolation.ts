@@ -18,7 +18,7 @@ const HARDENED_CAP_SETS = [SUPERVISOR_CAPS, PACKAGE_INSTALL_CAPS];
 const SUPERVISORD = "/usr/bin/supervisord -c /etc/supervisor/supervisord.conf";
 /** Runs as PID 1 before supervisord and gives cua the host workspace owner's ids. Files move before /etc/passwd does, so a
  * start interrupted mid-way finds the old ids again and finishes; it fails closed if /etc/passwd did not take them. */
-const GUEST_IDS_SCRIPT = [
+export const GUEST_IDS_SCRIPT_BODY = [
   "set -eu",
   'uid="$1"; gid="$2"; old_uid="$(id -u cua)"; old_gid="$(id -g cua)"',
   'if [ "$old_uid:$old_gid" != "$uid:$gid" ]; then',
@@ -37,8 +37,8 @@ const GUEST_IDS_SCRIPT = [
   '  sed -i "s/^cua:x:$old_gid:/cua:x:$gid:/" /etc/group',
   '  [ "$(id -u cua):$(id -g cua)" = "$uid:$gid" ] || { echo "cua did not take uid $uid gid $gid" >&2; exit 1; }',
   "fi",
-  `exec ${SUPERVISORD}`,
 ].join("\n");
+const GUEST_IDS_SCRIPT = `${GUEST_IDS_SCRIPT_BODY}\nexec ${SUPERVISORD}`;
 
 export function guestIdsCommand(ids: HostUser): string[] {
   return ["sh", "-c", GUEST_IDS_SCRIPT, "crybot-desktop", String(ids.uid), String(ids.gid)];

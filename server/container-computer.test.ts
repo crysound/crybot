@@ -1,9 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
+import { spawn } from "node:child_process";
+import { EventEmitter } from "node:events";
+import { PassThrough } from "node:stream";
+
+vi.mock("node:child_process", async (original) => {
+  const actual = await original<typeof import("node:child_process")>();
+  return { ...actual, spawn: vi.fn(actual.spawn) };
+});
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  screenIdentityArgs, screenExecArgs, sharedScreenTarget, screenStates, stopScreen, startScreen,
+  containerExec, installScreenPackages, SCREENS_LAYOUT_LABEL,
   BASE_IMAGE,
   BASE_IMAGE_DIGEST,
   BASE_IMAGE_LABEL,
@@ -1578,5 +1588,226 @@ describe("short container status cache", () => {
     unblock();
     await stopping;
     expect((await containerComputerStatus(run, "linux", undefined, { cache: true })).container).toBe("stopped");
+  });
+});
+
+describe("screen execution regressions", () => {
+  it("executes the requested program directly with the full screen identity", async () => {
+    const exec = vi.fn(async () => ({ code: 0, stdout: "61002\n", stderr: "" }));
+    await containerExec(sharedScreenTarget(2), "id -u", { runtime: "docker", timeoutSeconds: 10, exec });
+    expect(exec).toHaveBeenCalledExactlyOnceWith("docker", [
+      "exec", "-u", "crybot-s2", "-w", "/home/cua/workspace/screens/s2",
+      "-e", "HOME=/home/crybot-s2", "-e", "DISPLAY=:2", "-e", "XDG_RUNTIME_DIR=/run/user/61002",
+      "-e", "TMPDIR=/run/user/61002/tmp", "-e", "CUA_DRIVER_INSTALL_CHANNEL=python_package",
+      "-e", "CUA_DRIVER_RS_TELEMETRY_ENABLED=0", CONTAINER, "env", "-u", "VNC_PW",
+      "prlimit", "--nproc=1500", "--", "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
+      "timeout", "-k", "5", "10", "sh", "-lc", "id -u",
+    ], { timeout: 30_000 });
+  });
+
+  it.each([false, true])("places workdir before the user flag (interactive=%s)", interactive => {
+    expect(screenExecArgs(SHARED_LOCAL_VM_TARGET, ["--version"], { interactive, workdir: "/w" })).toEqual([
+      "exec", ...(interactive ? ["-i"] : []), "-w", "/w", "-u", "cua",
+      "-e", "HOME=/home/cua", "-e", "DISPLAY=:1", "-e", "CUA_DRIVER_INSTALL_CHANNEL=python_package",
+      "-e", "CUA_DRIVER_RS_TELEMETRY_ENABLED=0", CONTAINER, CUA_EXECUTABLE, "--version",
+    ]);
+  });
+
+  it.each(["", "short", "1234567", "12345678\n"])("rejects invalid VNC credentials before spawning", async password => {
+    await expect(startScreen("docker", sharedScreenTarget(2), password)).rejects.toThrow("password");
+  });
+
+  it("stops as root then kills remaining screen processes", async () => {
+    const run = vi.fn(async () => ({ stdout: "" }));
+    await stopScreen("docker", sharedScreenTarget(2), run);
+    expect(run.mock.calls).toEqual([
+      ["docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "supervisorctl", "-c", "/etc/crybot/supervisord.conf", "stop", "screen-s2:*"], 30_000],
+      ["docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000],
+    ]);
+  });
+
+  it.each(["-o", ".", "+x", "sudo-", "vim+"])("rejects package %s before runtime execution", async name => {
+    const run = vi.fn(async () => ({ stdout: "" }));
+    await expect(installScreenPackages(sharedScreenTarget(2), [name], { runtime: "docker", runner: run })).rejects.toThrow("invalid package");
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("installs validated packages only through root exec with an audit screen", async () => {
+    const run = vi.fn(async () => ({ stdout: "" }));
+    await installScreenPackages(sharedScreenTarget(2), ["python3-pip", "g++"], { runtime: "docker", runner: run });
+    expect(run).toHaveBeenCalledExactlyOnceWith("docker", ["exec", "-u", "0", "-e", "CRYBOT_PACKAGE_SCREEN=s2", CONTAINER,
+      "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "/usr/local/sbin/crybot-pkg", "python3-pip", "g++"], 300_000);
+  });
+});
+
+describe("supervisor screen state aggregation", () => {
+  it("isolates the root supervisorctl environment from the container HOME", async () => {
+    const run = vi.fn(async () => ({ stdout: "" }));
+    await screenStates("docker", CONTAINER, run);
+    expect(run).toHaveBeenCalledExactlyOnceWith("docker", [
+      "exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1",
+      "supervisorctl", "-c", "/etc/crybot/supervisord.conf", "status",
+    ], 30_000);
+  });
+
+  it.each([
+    [["RUNNING", "RUNNING", "RUNNING", "RUNNING"], "running"],
+    [["STOPPED", "STOPPED", "STOPPED", "STOPPED"], "off"],
+    [["RUNNING", "BACKOFF", "RUNNING", "RUNNING"], "failed"],
+    [["FATAL", "RUNNING", "RUNNING", "RUNNING"], "failed"],
+    [["RUNNING", "RUNNING", "EXITED", "STARTING"], "failed"],
+    [["RUNNING", "STARTING", "RUNNING", "RUNNING"], "starting"],
+    [["STOPPING", "RUNNING", "STOPPED", "STOPPED"], "stopping"],
+  ])("aggregates %j as %s even when supervisor exits 3", async (programs, expected) => {
+    const stdout = (programs as string[]).map((state, i) => `screen-s2:screen-s2-${["x", "dbus", "session", "cua"][i]} ${state}`).join("\n");
+    for (const code of [0, 3]) {
+      const run: CommandRunner = async () => {
+        if (code === 3) throw Object.assign(new Error("not all running"), { code, stdout });
+        return { stdout };
+      };
+      expect(await screenStates("docker", CONTAINER, run)).toEqual({ 2: expected });
+    }
+  });
+
+  it.each([Object.assign(new Error("daemon unavailable"), { code: 125 }), Object.assign(new Error("timeout"), { code: 3, stdout: "", killed: true })])("propagates runtime failures", async error => {
+    await expect(screenStates("docker", CONTAINER, async () => { throw error; })).rejects.toBe(error);
+  });
+});
+
+describe("shared container probes for screen targets", () => {
+  function multiRunner(fallback = false) {
+    const detail = JSON.parse(readyInspect())[0];
+    detail.Config.Labels[SCREENS_LAYOUT_LABEL] = "multi";
+    const fake = runner({
+      "/usr/bin/which docker": "docker\n",
+      "docker info --format {{.ServerVersion}}": "29.0\n",
+      [`docker image inspect ${IMAGE}`]: preparedImageInspect(),
+      [`docker inspect ${CONTAINER}`]: JSON.stringify([detail]),
+      [`docker exec -u 0 ${CONTAINER} env -u VNC_PW HOME=/root PYTHONNOUSERSITE=1 sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`]: fallback ? "single\n" : "multi\n",
+      [versionProbe]: `cua-driver ${CUA_DRIVER_VERSION}`,
+      [statusProbe]: "ready",
+      [healthProbe]: JSON.stringify({ schema_version: "1", overall: "ok", checks: [] }),
+      [["docker", ...screenExecArgs(sharedScreenTarget(2), ["call", "get_desktop_state", "{}", "--socket", "/run/user/61002/crybot-cua.sock", "--screenshot-out-file", "/run/user/61002/crybot-preview.png"])].join(" ")]: "{}",
+      [["docker", ...screenIdentityArgs(sharedScreenTarget(2), ["base64", "-w0", "/run/user/61002/crybot-preview.png"])].join(" ")]: validPng.toString("base64"),
+    });
+    return fake;
+  }
+
+  it("querying stopped s3 first cannot poison s2 status or screenshot", async () => {
+    const fake = multiRunner();
+    const s3 = await containerComputerStatus(fake.run, "linux", sharedScreenTarget(3), { cache: true });
+    const s2 = await containerComputerStatus(fake.run, "linux", sharedScreenTarget(2), { cache: true });
+    expect(s3.target_key).toBe("shared:s3");
+    expect(s2.target_key).toBe("shared:s2");
+    expect(s2.ready).toBe(true);
+    expect(fake.calls.filter(call => call === `docker inspect ${CONTAINER}`)).toHaveLength(1);
+    expect(fake.calls.some(call => call.includes("crybot-cua.sock"))).toBe(false);
+    expect(await containerComputerFrame(fake.run, "linux", sharedScreenTarget(2))).toEqual({ png: validPng.toString("base64"), format: "png" });
+    const screenCalls = fake.calls.filter(call => call.includes("-u crybot-s"));
+    expect(screenCalls).toHaveLength(2);
+    expect(screenCalls.every(call => call.includes("env -u VNC_PW"))).toBe(true);
+    expect(fake.calls.some(call => call.includes("61003"))).toBe(false);
+  });
+
+  it("reads the fallback marker and probes the single desktop", async () => {
+    const fake = multiRunner(true);
+    const status = await containerComputerStatus(fake.run, "linux");
+    expect(status.screens_layout).toBe("single");
+    expect(status.ready).toBe(true);
+    expect(fake.calls).toContain(statusProbe);
+  });
+
+  it("reads the podman fallback marker and probes the single desktop", async () => {
+    const detail = JSON.parse(readyInspect())[0];
+    detail.Config.Labels[SCREENS_LAYOUT_LABEL] = "multi";
+    detail.EffectiveCaps = [...PACKAGE_INSTALL_CAPS, "CAP_SYS_CHROOT"];
+    detail.BoundingCaps = detail.EffectiveCaps;
+    const markerProbe = `podman exec -u 0 ${CONTAINER} env -u VNC_PW HOME=/root PYTHONNOUSERSITE=1 sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`;
+    const fake = runner({
+      "/usr/bin/which docker": new Error("missing"),
+      "/usr/bin/which podman": "podman\n",
+      "podman info --format json": '{"host":{"arch":"amd64"}}\n',
+      [`podman image inspect ${IMAGE}`]: preparedImageInspect(),
+      [`podman inspect ${CONTAINER}`]: JSON.stringify([detail]),
+      [markerProbe]: "single\n",
+      [versionProbe.replace(/^docker /, "podman ")]: `cua-driver ${CUA_DRIVER_VERSION}`,
+      [statusProbe.replace(/^docker /, "podman ")]: "ready",
+      [healthProbe.replace(/^docker /, "podman ")]: JSON.stringify({ schema_version: "1", overall: "ok", checks: [] }),
+    });
+    const status = await containerComputerStatus(fake.run, "linux");
+    expect(status.runtime).toBe("podman");
+    expect(status.screens_layout).toBe("single");
+    expect(status.ready).toBe(true);
+    expect(fake.calls).toContain(markerProbe);
+    expect(fake.calls).toContain(statusProbe.replace(/^docker /, "podman "));
+  });
+
+  it("keeps container health fields when the screen layout marker probe fails", async () => {
+    const detail = JSON.parse(readyInspect())[0];
+    detail.Config.Labels[SCREENS_LAYOUT_LABEL] = "multi";
+    const fake = runner({
+      "/usr/bin/which docker": "docker\n",
+      "/usr/bin/which podman": new Error("missing"),
+      "docker info --format {{.ServerVersion}}": "29.0\n",
+      [`docker image inspect ${IMAGE}`]: preparedImageInspect(),
+      [`docker inspect ${CONTAINER}`]: JSON.stringify([detail]),
+      [`docker exec -u 0 ${CONTAINER} env -u VNC_PW HOME=/root PYTHONNOUSERSITE=1 sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`]: new Error("marker unavailable"),
+    });
+    const status = await containerComputerStatus(fake.run, "linux");
+    expect(status).toMatchObject({
+      imageMatches: true,
+      managed: true,
+      network: "loopback",
+      security: "hardened",
+      persistence: "durable",
+      screens_layout: "multi",
+      desktopReady: false,
+    });
+    expect(status.desktop_error).toContain("screen layout probe failed");
+    expect(status.ready).toBe(false);
+  });
+});
+
+describe("screen password transport", () => {
+  function fakeChild() {
+    const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() });
+    vi.mocked(spawn).mockReturnValueOnce(child as unknown as ReturnType<typeof spawn>);
+    return child;
+  }
+
+  it("feeds vncpasswd on stdin and writes the protected file before starting as root", async () => {
+    const child = fakeChild();
+    const pending = startScreen("docker", sharedScreenTarget(2), "fixture-secret");
+    expect(child.stdin.read().toString()).toBe("fixture-secret\n");
+    const args = vi.mocked(spawn).mock.calls.at(-1)![1] as string[];
+    expect(args.slice(0, 12)).toEqual(["exec", "-i", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c"]);
+    expect(args.join(" ")).not.toContain("fixture-secret");
+    expect(args[12]).toBe("set -eu; umask 077; vncpasswd -f > /run/crybot/screens/s2/passwd.tmp; chown crybot-s2:crybot-s2 /run/crybot/screens/s2/passwd.tmp; chmod 0400 /run/crybot/screens/s2/passwd.tmp; mv -f /run/crybot/screens/s2/passwd.tmp /run/crybot/screens/s2/passwd; supervisorctl -c /etc/crybot/supervisord.conf start screen-s2:*");
+    child.emit("close", 0);
+    await pending;
+  });
+
+  it("kills a stalled password write after 30 seconds without disclosing stdin", async () => {
+    vi.useFakeTimers();
+    try {
+      const child = fakeChild();
+      const pending = startScreen("docker", sharedScreenTarget(2), "fixture-secret");
+      const failed = expect(pending).rejects.toThrow("timed out after 30 seconds");
+      child.stderr.write("fixture-secret");
+      await vi.advanceTimersByTimeAsync(30_000);
+      await failed;
+      expect(child.kill).toHaveBeenCalledExactlyOnceWith("SIGKILL");
+      child.emit("close", null);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not include container stderr in password failure errors", async () => {
+    const child = fakeChild();
+    const pending = startScreen("docker", sharedScreenTarget(2), "fixture-secret");
+    child.stderr.write("fixture-secret");
+    child.emit("close", 1);
+    await expect(pending).rejects.toThrow(/^docker exec failed \(exit 1\)$/);
   });
 });
