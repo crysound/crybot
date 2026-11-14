@@ -132,7 +132,7 @@ MCP 失败的仍是用户说明中的 4 个子进程桥接用例，未修改或�
      × answers ping locally so the bundled cua-driver is not invoked 222ms
      × never hands an engine an error result that carries a screenshot 212ms
 SyntaxError: Unexpected end of JSON input
-AssertionError: expected '' to be '{"jsonrpc":"2.0","id":1,"method":"too…' // Object.is equality
+AssertionError: expected '' to be '{"jsonrpc":"2.0","id":1,"method":"too…' // Object.is() equality
 AssertionError: expected [] to deeply equal [ …(2) ]
 SyntaxError: Unexpected end of JSON input
 ```
