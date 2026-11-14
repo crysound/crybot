@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypt
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
+import { personKey } from "./person-key.ts";
 import { hasMultipleSessionPeople } from "./person-name.ts";
 import { cleanAccessEmail, cleanIdentityClaim } from "./access-claims.ts";
 import { writeFileAtomic } from "./atomic.ts";
@@ -814,6 +815,15 @@ export class SessionRegistry {
   hasMultiplePeople(): boolean {
     this.prune();
     return hasMultipleSessionPeople(this.sessions);
+  }
+
+  feishuUnionIdForPerson(person: string | undefined): string | undefined {
+    if (!person) return undefined;
+    this.prune();
+    const identities = new Set(this.sessions.filter(session => !session.token && !session.owner &&
+      !this.personal(session.scopes) && personKey(session) === person && session.accessIdentity?.startsWith("feishu:"))
+      .map(session => session.accessIdentity!.slice("feishu:".length)));
+    return identities.size === 1 ? [...identities][0] : undefined;
   }
 
   list(): PublicSession[] {
