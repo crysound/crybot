@@ -1,0 +1,406 @@
+name: Cry Bot release
+# 只允许维护者手动触发：外部 PR 拿不到签名密钥。
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Full commit SHA on main to build (empty = the dispatched ref)
+        default: ''
+        required: false
+        type: string
+      targets:
+        description: Comma-separated server,mac,win,android,ios (or all)
+        default: server,mac,win,android,ios
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: crybot-build-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: false
+env:
+  CRYBOT_SERVER_URL: ${{ secrets.CRYBOT_SERVER_URL }}
+  CRYBOT_DEFAULT_SERVER_URL: ${{ secrets.CRYBOT_SERVER_URL }}
+  CRYBOT_LOGIN_HOSTS: ${{ secrets.CRYBOT_LOGIN_HOSTS }}
+  CRYBOT_UPDATE_FEED_URL: ${{ secrets.CRYBOT_UPDATE_FEED_URL }}
+defaults:
+  run:
+    shell: bash
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    outputs:
+      commit: ${{ steps.lock.outputs.commit }}
+      targets: ${{ steps.lock.outputs.targets }}
+      version: ${{ steps.source.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - id: lock
+        env:
+          TARGETS: ${{ inputs.targets || 'server,mac,win,android,ios' }}
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re
+          lock = os.environ['COMMIT'] or os.environ['GITHUB_SHA']
+          if not re.fullmatch(r'[0-9a-f]{40}', lock):
+              raise SystemExit('commit must be one full lowercase SHA')
+          allowed = ['server', 'mac', 'win', 'android', 'ios']
+          targets = [s.strip() for s in os.environ['TARGETS'].split(',')]
+          if targets == ['all']:
+              targets = allowed
+          if not targets or any(t not in allowed for t in targets):
+              raise SystemExit('Unknown or empty target')
+          if any(t in targets for t in ['mac', 'win', 'android', 'ios']):
+              for key in ['CRYBOT_SERVER_URL', 'CRYBOT_LOGIN_HOSTS']:
+                  if not os.environ.get(key):
+                      raise SystemExit('Missing Actions variable: ' + key)
+          if any(t in targets for t in ['mac', 'win']) and not os.environ.get('CRYBOT_UPDATE_FEED_URL'):
+              raise SystemExit('Missing Actions variable: CRYBOT_UPDATE_FEED_URL')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'commit={lock.strip()}\ntargets={json.dumps(targets)}\n')
+          PY
+      - uses: ./.github/actions/source
+        id: source
+        with:
+          commit: ${{ steps.lock.outputs.commit }}
+      - name: Validate iOS version
+        if: contains(fromJSON(steps.lock.outputs.targets), 'ios')
+        env:
+          VERSION: ${{ steps.source.outputs.version }}
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+      - name: Build provenance
+        env:
+          COMMIT: ${{ steps.lock.outputs.commit }}
+          VERSION: ${{ steps.source.outputs.version }}
+          TARGETS: ${{ steps.lock.outputs.targets }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          with open('build-info.json', 'w') as f:
+              json.dump(dict(commit=os.environ['COMMIT'], version=os.environ['VERSION'],
+                             run_id=os.environ['GITHUB_RUN_ID'], build=os.environ['GITHUB_RUN_NUMBER'],
+                             targets=json.loads(os.environ['TARGETS'])), f)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          retention-days: 1
+          name: build-info
+          path: build-info.json
+          if-no-files-found: error
+  server:
+    needs: prepare
+    if: contains(fromJSON(needs.prepare.outputs.targets), 'server')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/source
+        with:
+          commit: ${{ needs.prepare.outputs.commit }}
+          version: ${{ needs.prepare.outputs.version }}
+      - name: Build server package
+        working-directory: product
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build:server
+          pnpm exec vite build
+          node scripts/build-npm-package.mjs
+          (cd release/npm && npm pack)
+          if [[ -f scripts/check-brand-residue.mjs ]]; then node scripts/check-brand-residue.mjs; fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          retention-days: 1
+          name: crybot-server
+          path: product/release/npm/*.tgz
+          if-no-files-found: error
+  mac:
+    needs: prepare
+    if: contains(fromJSON(needs.prepare.outputs.targets), 'mac')
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/source
+        with:
+          commit: ${{ needs.prepare.outputs.commit }}
+          version: ${{ needs.prepare.outputs.version }}
+      - name: Select Xcode 26
+        run: |
+          set -euo pipefail
+          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -vi beta | sort -V | tail -1 || true)
+          if [[ -z "$xcode" ]]; then echo 'Xcode 26 is not installed:'; ls -d /Applications/Xcode*.app || true; exit 1; fi
+          sudo xcode-select -s "$xcode/Contents/Developer"
+          xcodebuild -version
+      - working-directory: product
+        run: pnpm install --frozen-lockfile
+      - name: Decode signing material
+        env:
+          CERT: ${{ secrets.MAC_CERT_P12_BASE64 }}
+          API_KEY: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+        run: |
+          python3 - <<'PY'
+          import base64, os, pathlib
+          os.umask(0o077)
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'crybot-signing'
+          root.mkdir()
+          for key, name in [('CERT', 'mac.p12'), ('API_KEY', 'api.p8')]:
+              (root / name).write_bytes(base64.b64decode(os.environ[key], validate=True))
+          PY
+      - name: Sign and notarize macOS
+        working-directory: product
+        env:
+          TMPDIR: ${{ runner.temp }}
+          CSC_LINK: ${{ runner.temp }}/crybot-signing/mac.p12
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          APPLE_API_KEY: ${{ runner.temp }}/crybot-signing/api.p8
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          pnpm package:mac --config.mac.notarize=true --config.forceCodeSigning=true
+          shopt -s nullglob
+          dmgs=(release/*.dmg)
+          zips=(release/*.zip)
+          maps=(release/*.blockmap)
+          test "${#dmgs[@]}" -gt 0
+          test "${#zips[@]}" -gt 0
+          test "${#maps[@]}" -gt 0
+          test -f release/latest-mac.yml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          retention-days: 1
+          name: crybot-mac
+          path: |
+            product/release/*.dmg
+            product/release/*.zip
+            product/release/latest-mac.yml
+            product/release/*.blockmap
+          if-no-files-found: error
+      - name: Remove signing files and temporary keychains
+        if: always()
+        run: |
+          # electron-builder creates and normally removes its own temporary keychain.
+          find "$RUNNER_TEMP" -type f \( -name '*.keychain' -o -name '*.keychain-db' \) -exec security delete-keychain {} \; || true
+          rm -rf "$RUNNER_TEMP/crybot-signing"
+  win:
+    needs: prepare
+    if: contains(fromJSON(needs.prepare.outputs.targets), 'win')
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/source
+        with:
+          commit: ${{ needs.prepare.outputs.commit }}
+          version: ${{ needs.prepare.outputs.version }}
+      - name: Build unsigned NSIS
+        working-directory: product
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm package:win --config.win.target=nsis
+          shopt -s nullglob
+          exes=(release/*.exe)
+          maps=(release/*.blockmap)
+          test "${#exes[@]}" -gt 0
+          test "${#maps[@]}" -gt 0
+          test -f release/latest.yml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          retention-days: 1
+          name: crybot-win
+          path: |
+            product/release/*.exe
+            product/release/latest.yml
+            product/release/*.blockmap
+          if-no-files-found: error
+  android:
+    needs: prepare
+    if: contains(fromJSON(needs.prepare.outputs.targets), 'android')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/source
+        with:
+          commit: ${{ needs.prepare.outputs.commit }}
+          version: ${{ needs.prepare.outputs.version }}
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Decode keystore
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          python3 - <<'PY'
+          import base64, os, pathlib
+          os.umask(0o077)
+          (pathlib.Path(os.environ['RUNNER_TEMP']) / 'crybot.keystore').write_bytes(base64.b64decode(os.environ['KEYSTORE'], validate=True))
+          PY
+      - name: Build and verify APK
+        working-directory: product/mobile/android
+        env:
+          CRYBOT_VERSION_CODE: ${{ github.run_number }}
+          CRYBOT_VERSION_NAME: ${{ needs.prepare.outputs.version }}
+          CRYBOT_ANDROID_KEYSTORE: ${{ runner.temp }}/crybot.keystore
+          CRYBOT_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          CRYBOT_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          CRYBOT_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          gradle --no-daemon assembleRelease
+          mapfile -t apks < <(find app/build/outputs/apk/release -name '*.apk')
+          test "${#apks[@]}" -eq 1
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          test -n "$signer"
+          "$signer" verify --verbose "${apks[0]}"
+          mkdir -p "$GITHUB_WORKSPACE/apk"
+          cp "${apks[0]}" "$GITHUB_WORKSPACE/apk/CryBot-${CRYBOT_VERSION_NAME}.apk"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          retention-days: 1
+          name: crybot-android
+          path: apk/*.apk
+          if-no-files-found: error
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/crybot.keystore"
+  ios:
+    needs: prepare
+    if: contains(fromJSON(needs.prepare.outputs.targets), 'ios')
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/source
+        with:
+          commit: ${{ needs.prepare.outputs.commit }}
+          version: ${{ needs.prepare.outputs.version }}
+      - name: Install xcodegen
+        run: brew install xcodegen
+      - name: Prepare manual signing
+        env:
+          CERT: ${{ secrets.IOS_DIST_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_DIST_P12_PASSWORD }}
+          PROFILE: ${{ secrets.IOS_PROFILE_BASE64 }}
+          WATCH_PROFILE: ${{ secrets.IOS_WATCH_PROFILE_BASE64 }}
+          API_KEY: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -vi beta | sort -V | tail -1 || true)
+          if [[ -z "$xcode" ]]; then echo 'Xcode 26 is not installed:'; ls -d /Applications/Xcode*.app || true; exit 1; fi
+          sudo xcode-select -s "$xcode/Contents/Developer"
+          xcodebuild -version
+          python3 - <<'PY'
+          import base64, os, pathlib, secrets
+          os.umask(0o077)
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'crybot-signing'
+          root.mkdir()
+          for key, name in [('CERT', 'ios.p12'), ('PROFILE', 'app.mobileprovision'), ('WATCH_PROFILE', 'watch.mobileprovision'), ('API_KEY', f"AuthKey_{os.environ['API_KEY_ID']}.p8")]:
+              (root / name).write_bytes(base64.b64decode(os.environ[key], validate=True))
+          (root / 'keychain-password').write_text(secrets.token_hex(32))
+          PY
+          signing="$RUNNER_TEMP/crybot-signing"
+          security list-keychains -d user > "$signing/keychains.before"
+          security create-keychain -p "$(cat "$signing/keychain-password")" "$signing/ios.keychain-db"
+          security set-keychain-settings -lut 21600 "$signing/ios.keychain-db"
+          security unlock-keychain -p "$(cat "$signing/keychain-password")" "$signing/ios.keychain-db"
+          security import "$signing/ios.p12" -P "$CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security -t cert -f pkcs12 -k "$signing/ios.keychain-db" >/dev/null
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$(cat "$signing/keychain-password")" "$signing/ios.keychain-db" >/dev/null
+          security list-keychains -d user -s "$signing/ios.keychain-db" "$HOME/Library/Keychains/login.keychain-db"
+          security cms -D -i "$signing/app.mobileprovision" > "$signing/app.plist"
+          security cms -D -i "$signing/watch.mobileprovision" > "$signing/watch.plist"
+          python3 - <<'PY'
+          import os, pathlib, plistlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'crybot-signing'
+          profiles = pathlib.Path.home() / 'Library/MobileDevice/Provisioning Profiles'
+          xcode_profiles = pathlib.Path.home() / 'Library/Developer/Xcode/UserData/Provisioning Profiles'
+          profiles.mkdir(parents=True, exist_ok=True)
+          xcode_profiles.mkdir(parents=True, exist_ok=True)
+          uuids, links = {}, []
+          for name, bundle in [('app', 'com.crysound.crybot'), ('watch', 'com.crysound.crybot.watchkitapp')]:
+              profile = plistlib.loads((root / f'{name}.plist').read_bytes())
+              if profile['Entitlements']['application-identifier'] != os.environ['TEAM_ID'] + '.' + bundle:
+                  raise SystemExit(f'Provisioning profile bundle/team mismatch: {name}')
+              uuids[bundle] = profile['UUID']
+              for folder in (profiles, xcode_profiles):
+                  target = folder / (profile['UUID'] + '.mobileprovision')
+                  target.write_bytes((root / f'{name}.mobileprovision').read_bytes())
+                  links.append(str(target))
+          (root / 'profile-links').write_text('\n'.join(links))
+          keys = pathlib.Path.home() / '.appstoreconnect/private_keys'
+          keys.mkdir(parents=True, exist_ok=True)
+          key = keys / f"AuthKey_{os.environ['API_KEY_ID']}.p8"
+          key.write_bytes((root / key.name).read_bytes())
+          (root / 'api-link').write_text(str(key))
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write(f"IOS_PROFILE_UUID={uuids['com.crysound.crybot']}\n")
+              f.write(f"IOS_WATCH_PROFILE_UUID={uuids['com.crysound.crybot.watchkitapp']}\n")
+          opts = dict(method='app-store-connect', signingStyle='manual', teamID=os.environ['TEAM_ID'],
+                      signingCertificate='Apple Distribution', manageAppVersionAndBuildNumber=False,
+                      provisioningProfiles=uuids)
+          (root / 'ExportOptions.plist').write_bytes(plistlib.dumps(opts))
+          PY
+      - name: Archive and export
+        working-directory: product/mobile/ios
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          MARKETING_VERSION: ${{ needs.prepare.outputs.version }}
+          CURRENT_PROJECT_VERSION: ${{ github.run_number }}
+        run: |
+          xcodegen generate
+          xcodebuild -project CryBot.xcodeproj -scheme CryBot -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/CryBot.xcarchive" archive \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' \
+            CRYBOT_IOS_PROFILE_SPECIFIER="$IOS_PROFILE_UUID" CRYBOT_WATCH_PROFILE_SPECIFIER="$IOS_WATCH_PROFILE_UUID" \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION" \
+            CRYBOT_SERVER_URL="$CRYBOT_SERVER_URL" CRYBOT_LOGIN_HOSTS="$CRYBOT_LOGIN_HOSTS" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/crybot-signing/ios.keychain-db"
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/CryBot.xcarchive" \
+            -exportPath "$RUNNER_TEMP/crybot-ipa" -exportOptionsPlist "$RUNNER_TEMP/crybot-signing/ExportOptions.plist"
+      - name: Upload TestFlight
+        env:
+          API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          shopt -s nullglob
+          ipas=("$RUNNER_TEMP/crybot-ipa/"*.ipa)
+          test "${#ipas[@]}" -eq 1
+          xcrun altool --upload-app -f "${ipas[0]}" -t ios --apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER"
+      - name: Remove signing material
+        if: always()
+        run: |
+          signing="$RUNNER_TEMP/crybot-signing"
+          if [[ -f "$signing/keychains.before" ]]; then
+            python3 - <<'PY'
+          import os, pathlib, shlex, subprocess
+          p = pathlib.Path(os.environ['RUNNER_TEMP']) / 'crybot-signing/keychains.before'
+          subprocess.run(['security', 'list-keychains', '-d', 'user', '-s', *shlex.split(p.read_text())], check=True)
+          PY
+          fi
+          security delete-keychain "$signing/ios.keychain-db" || true
+          if [[ -f "$signing/profile-links" ]]; then while IFS= read -r file; do rm -f "$file"; done < "$signing/profile-links"; fi
+          if [[ -f "$signing/api-link" ]]; then rm -f "$(cat "$signing/api-link")"; fi
+          rm -rf "$signing"
