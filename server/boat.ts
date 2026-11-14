@@ -889,7 +889,7 @@ export async function readyBoat(cfg: AppConfig, botId: string, budgetMs = 60_000
 
 export const boatAccount = (cfg: AppConfig): ServiceCredential | null => boatCredential(cfg.box?.token);
 
-export const boatConfigured = (cfg: AppConfig) => Boolean(boatAccount(cfg));
+export const boatConfigured = (cfg: AppConfig) => process.env.CRYBOT_PROVIDER_LOCK !== "1" && Boolean(boatAccount(cfg));
 
 const usesIncludedBoat = (cfg: AppConfig): boolean => boatAccount(cfg)?.included === true;
 

@@ -29,8 +29,8 @@ export function usePlaceViews(bot: Bot): Record<Place, { view: PlaceView; reacha
   const entry = (place: Place) => {
     const view = placeViewFor(placeFacts({ bot, place, seat, config: state.config, instances: state.instances, local }));
     const policy = (place === "cloud" ? allowed[backend] : place === "vm" ? allowed.localVm : place === "local" ? allowed.thisComputer : true)
-      && placeOffered(place, state.config);
-    const listed = placeOffered(place, state.config) && !(place === "local" && pageOnRemoteServer(capabilities));
+      && placeOffered(place, state.config, backend);
+    const listed = placeOffered(place, state.config, backend) && !(place === "local" && pageOnRemoteServer(capabilities));
     return { view, policy, listed, reachable: policy && !placeBlocked(view) };
   };
   return { cloud: entry("cloud"), vm: entry("vm"), local: entry("local"), browser: entry("browser") };
@@ -49,11 +49,13 @@ export function usePlaceMenuItem({ bot, task, disabled = false, onPin }: {
   onPin: (surface: Place | null) => void;
 }): SidebarMenuItem {
   const places = usePlaceViews(bot);
-  const effective = effectivePlace(bot, task);
-  const pin = personPin(task);
+  const hideCloud = !places.cloud.listed;
+  const current = effectivePlace(bot, task);
+  const effective = hideCloud && current === "cloud" ? "auto" : current;
+  const pin = hideCloud && personPin(task) === "cloud" ? undefined : personPin(task);
   const pinned = Boolean(pin);
   const off = effective === "off";
-  const botDefault = bot.computer ?? "auto";
+  const botDefault = hideCloud && bot.computer === "cloud" ? "auto" : bot.computer ?? "auto";
   const followsAuto = botDefault === "auto";
   const check = <Check size={14} className="text-accent" aria-hidden="true" />;
   const choose = (surface: Place | null) => { if (surface !== (pin ?? null)) onPin(surface); };
@@ -106,8 +108,10 @@ export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
   const motion = useMenuMotion(open);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const places = usePlaceViews(bot);
-  const effective = effectivePlace(bot, task);
-  const pin = personPin(task);
+  const hideCloud = !places.cloud.listed;
+  const current = effectivePlace(bot, task);
+  const effective = hideCloud && current === "cloud" ? "auto" : current;
+  const pin = hideCloud && personPin(task) === "cloud" ? undefined : personPin(task);
   const pinned = Boolean(pin);
   const off = effective === "off";
   const label = t(placeLabelKey(effective));
@@ -124,7 +128,7 @@ export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
   }, [open]);
 
   const choose = (surface: Place | null) => { setOpen(false); if (surface !== (pin ?? null)) onPin(surface); };
-  const botDefault = bot.computer ?? "auto";
+  const botDefault = hideCloud && bot.computer === "cloud" ? "auto" : bot.computer ?? "auto";
   const followsAuto = botDefault === "auto";
 
   return (

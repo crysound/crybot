@@ -2472,3 +2472,41 @@ describe("a key the desktop app hands the server as an environment variable", ()
     expect(instanceConfigs(loadConfig())[instanceId]?.environment?.[engineEnv]).toBe(`fixture-${variable}`);
   });
 });
+
+describe("provider lock", () => {
+  afterEach(() => vi.unstubAllEnvs());
+  const endpoint = {
+    driver: "claudeAgent", displayName: "Example endpoint", access: "custom" as const,
+    config: { endpointModels: ["claude-sonnet-5"] },
+    environment: { ANTHROPIC_BASE_URL: "https://gateway.example", ANTHROPIC_AUTH_TOKEN: "fixture-token" },
+  };
+  const cfg: AppConfig = { instances: { claude: { driver: "claudeAgent" }, gateway: endpoint, bedrock: { driver: "claudeAgent", config: { bedrock: true, endpointModels: [] } }, other: { driver: "codex" } } };
+
+  it("keeps the original fleet and configuration when disabled or unset", () => {
+    vi.stubEnv("CRYBOT_PROVIDER_LOCK", undefined);
+    const original = instanceConfigs(cfg), empty = instanceConfigs({});
+    for (const value of ["0", "true", ""]) {
+      vi.stubEnv("CRYBOT_PROVIDER_LOCK", value);
+      expect(instanceConfigs(cfg)).toEqual(original);
+      expect(instanceConfigs({})).toEqual(empty);
+    }
+    expect(original.gateway.displayName).toBe("Example endpoint");
+    expect(original.other.driver).toBe("codex");
+  });
+
+  it("keeps only custom Claude endpoints and applies the brand without changing saved configuration", () => {
+    vi.stubEnv("CRYBOT_PROVIDER_LOCK", "1");
+    expect(instanceConfigs(cfg)).toEqual({ gateway: { ...endpoint, displayName: "Cry Bot", hidden: false, icon: { kind: "preset", preset: "crybot" } } });
+    expect(cfg.instances?.gateway).toEqual(endpoint);
+    expect(persistableInstanceConfigs(cfg).gateway).toEqual(endpoint);
+    expect(persistableInstanceConfigs(cfg).other.driver).toBe("codex");
+  });
+
+  it("has no default fleet without an endpoint and preserves a chosen endpoint icon", () => {
+    vi.stubEnv("CRYBOT_PROVIDER_LOCK", "1");
+    expect(instanceConfigs({})).toEqual({});
+    expect(instanceConfigs({ instances: { claude: { driver: "claudeAgent" } }, openai: { key: "fixture-key" } })).toEqual({});
+    expect(instanceConfigs({ instances: { gateway: { ...endpoint, hidden: true, icon: { kind: "preset", preset: "anthropic" } } } }).gateway)
+      .toEqual({ ...endpoint, hidden: false, displayName: "Cry Bot", icon: { kind: "preset", preset: "anthropic" } });
+  });
+});

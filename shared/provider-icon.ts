@@ -1,4 +1,5 @@
 export const PROVIDER_ICON_PRESETS = [
+  "crybot",
   "openai", "anthropic", "google", "azure", "aws", "xai", "deepseek",
   "meta", "mistral", "qwen", "moonshot", "cohere", "openrouter", "ollama",
 ] as const;
@@ -14,6 +15,7 @@ export const PROVIDER_ICON_MAX_DIMENSION = 1024;
 export const PROVIDER_ICON_MEDIA_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
 export const PROVIDER_ICON_LABELS: Record<ProviderIconPreset, string> = {
+  crybot: "Cry Bot",
   openai: "OpenAI",
   anthropic: "Anthropic",
   google: "Google Gemini",

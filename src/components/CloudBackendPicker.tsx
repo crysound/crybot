@@ -13,7 +13,7 @@ export function CloudBackendPicker({
   onChange: (backend: CloudBackend) => void;
 }) {
   const { state } = useStore();
-  if (state.config?.cloudHome) return null;
+  if (state.config?.cloudHome || state.config?.providerLock) return null;
   return (
     <div className="mt-3 rounded-lg bg-inset p-3">
       <div className="text-[12px] font-medium text-ink">{compact ? t("botAccess.cloud.provider") : t("botAccess.cloud.backend")}</div>

@@ -1707,6 +1707,10 @@ export class Store {
       let dirty = false;
       const selected = ids.get(bot.modelSelection.instanceId);
       if (selected) { bot.modelSelection = { ...bot.modelSelection, instanceId: selected }; dirty = true; }
+      if (bot.fallback?.some((candidate) => ids.has(candidate.instanceId))) {
+        bot.fallback = bot.fallback.map((candidate) => ({ ...candidate, instanceId: ids.get(candidate.instanceId) ?? candidate.instanceId }));
+        dirty = true;
+      }
       if (touches(bot.resumeCursors)) { bot.resumeCursors = rename(bot.resumeCursors); dirty = true; }
       for (const task of bot.tasks ?? []) {
         const taskSelected = task.modelSelection && ids.get(task.modelSelection.instanceId);

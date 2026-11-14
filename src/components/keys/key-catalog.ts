@@ -8,14 +8,18 @@ import type { ProviderIconPreset } from "../../../shared/provider-icon";
 
 export type KeySectionId = "ai" | "servers" | "voice" | "computers" | "apps" | "helpers";
 
-export const KEY_SECTIONS: ReadonlyArray<{ id: KeySectionId; titleKey: LocaleKey; purposeKey: LocaleKey }> = [
+export const KEY_SECTIONS: ReadonlyArray<{ id: KeySectionId; titleKey: LocaleKey; purposeKey: LocaleKey; lockedPurposeKey?: LocaleKey }> = [
   { id: "ai", titleKey: "keys.section.ai", purposeKey: "keys.section.ai.purpose" },
   { id: "servers", titleKey: "keys.section.servers", purposeKey: "keys.section.servers.purpose" },
   { id: "voice", titleKey: "keys.section.voice", purposeKey: "keys.section.voice.purpose" },
-  { id: "computers", titleKey: "keys.section.computers", purposeKey: "keys.section.computers.purpose" },
+  { id: "computers", titleKey: "keys.section.computers", purposeKey: "keys.section.computers.purpose", lockedPurposeKey: "keys.section.computers.purpose.locked" },
   { id: "apps", titleKey: "keys.section.apps", purposeKey: "keys.section.apps.purpose" },
   { id: "helpers", titleKey: "keys.section.helpers", purposeKey: "keys.section.helpers.purpose" },
 ];
+
+export function sectionPurposeKey(section: (typeof KEY_SECTIONS)[number], config: ConfigStatus | null | undefined): LocaleKey {
+  return config?.providerLock && section.lockedPurposeKey ? section.lockedPurposeKey : section.purposeKey;
+}
 
 export type TestableProvider = "anthropic" | "openai" | "openrouter" | "openaiCompat" | "xai" | "mistral" | "cerebras" | "groq" | "greenference" | "modelgo" | "meta" | "treg";
 
@@ -238,6 +242,7 @@ export function savedState(entry: KeyEntry, config: ConfigStatus | null | undefi
 
 /** With Azure or Fish Audio chosen, Live calls do not use the OpenAI key the Live calls row points at, so that row is hidden. */
 export function keyHidden(id: KeyId, config: ConfigStatus | null | undefined): boolean {
+  if (config?.providerLock && (id === "box" || KEY_CATALOG.find((entry) => entry.id === id)?.section === "ai")) return true;
   const provider = config?.live?.provider;
   return id === "liveCalls" && (provider === "azure" || provider === "fish");
 }
