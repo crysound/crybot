@@ -218,6 +218,7 @@ mobile/ios/CryBot/WatchSync.swift:3:import WebKit
 -CryFixtureScenario shell-signed-out
 -CryFixtureScenario shell-basic -CryGallery Sidebar -CryAppearance light
 -CryFixtureScenario shell-basic -CryGallery WebHost -CryAppearance dark
+
 ```
 
 App 内截图可分别使用 `WebHostGallery(scene: .screen/.menu/.summary)`，注入隔离的 `AppStore.fixture(scenario: "shell-basic")`。本任务只提供 Gallery，不修改 04 的截图 Support 或 UITests；菜单展开后的截图、三屏宽深浅色及 Accessibility L 均待 Actions。
@@ -285,3 +286,33 @@ denylist: skipped (no key)
 ```
 
 首次从 Node 内启动 git 的方式被沙箱以 `spawnSync git EPERM` 拒绝；改为 shell 导出 diff 后完成扫描，无需修改权限。此结果只覆盖工作区新增行的可用规则，HMAC 名单无密钥未执行，Actions Public scan 仍待协调者推分支后验收。
+
+## 第 5 轮：2026-11-14（iOS 协作线程栈溢出修复）
+
+本轮针对 Mobile builds 中 7 个测试在协作线程崩溃的问题修改 CryKit。`WireMessage`、`WireAttachment`、`ServerFrame` 及同文件的其他间接联合类型继续使用堆间接存储，并把已知 case 的编码从「先将整份 payload 交给 JSONEncoder，再转成 JSONValue、补 kind」改为在当前 Encoder 的 keyed container 写入 discriminator 后直接调用 payload 的 `encode(to:)`。未知 kind 仍直接编码保存的原始 JSONValue，因此 kind 字段、额外字段、未知消息原样往返的 JSON 形状保持不变；ServerFrame 的 SSE frame 编码也走同一条路径。
+
+新增 `CryCoreTests/WireMessageStackTests.swift`：在 `Task.detached` 协作线程中编码并解码 500 条轮换 kind 的消息数组、ThreadPage，以及把同一批消息放入快照机器人的 BotsSnapshot，断言三者往返相等。该测试覆盖了原崩溃发生的异步编码上下文。
+
+本沙箱没有 Swift/Xcode（`swift`、`swiftc` 和 `/opt/swift/usr/bin/swiftc` 均不存在），**未在沙箱编译，也未执行 Swift XCTest**；Mobile builds 的编译和测试结果需以 Actions 为准。未改 TS 或契约样本，因此没有运行 vitest。依赖准备已执行：`crybot-link-deps` 成功链接 73 项依赖。沙箱禁止监听端口，端口 e2e 未运行。
+
+本轮改动文件：
+
+- `mobile/ios/Packages/CryKit/Sources/CryCore/JSONValue.swift`：增加直接写入 discriminator 的 tagged payload 编码辅助函数。
+- `mobile/ios/Packages/CryKit/Sources/CryCore/WireModels.swift`：移除 WireAttachment、OptionCardDataOutsideWrite、CardAnswerer、WireMessage、GroupDefaultResponder、ServerFrame 编码中的整 payload `JSONValue(encoding:)` 递归。
+- `mobile/ios/Packages/CryKit/Tests/CryCoreTests/WireMessageStackTests.swift`：新增 500 消息数组、线程页和快照的 detached 往返回归测试。
+
+`git diff --stat`（未包含未跟踪的新测试文件）输出：
+
+```text
+ .../CryKit/Sources/CryCore/JSONValue.swift         |   6 +
+ .../CryKit/Sources/CryCore/WireModels.swift        | 164 +++++++++------------
+ 2 files changed, 78 insertions(+), 92 deletions(-)
+```
+
+## 第 6 轮：2026-11-14（回归测试夹具修复）
+
+本轮只修改 `mobile/ios/Packages/CryKit/Tests/CryCoreTests/WireMessageStackTests.swift` 并追加本报告。核对 `ContractTests.swift` 的 `fixture(_:named:)` 实现后确认，它从 `Fixtures/manual/protocol.json` 选择样本，其中唯一的 BotsSnapshot 样本 `bots` 为空。测试现在基于默认快照加载现有 WireBot 夹具，为机器人设置 500 条消息，再放入快照；移除 `snapshot.bots[0]` 下标访问，解码后的首个机器人用 `XCTUnwrap` 获取，缺失时报告断言失败而不会越界崩溃。
+
+保留 500 条轮换 kind 消息在 `Task.detached` 内编码、解码的路径，以及消息数组、ThreadPage 和快照内消息的往返相等断言；补充完整 BotsSnapshot 的相等断言。
+
+本地执行 `crybot-link-deps`，成功链接 73 项依赖；用 Python 读取 JSON 确认默认 BotsSnapshot 的机器人数量为 0，且 WireBot 夹具存在。`git diff --check` 通过。这些仅为静态检查，**未在沙箱编译**，未执行 Swift XCTest；协调者需在 Linux Swift 和 Actions「Mobile builds」实跑验收。沙箱不能监听 TCP 端口，端口 e2e 未运行，以 Actions 为准。未提交 git。

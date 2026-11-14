@@ -144,15 +144,12 @@ public indirect enum WireAttachment: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`image`(let value): raw = try JSONValue(encoding: value)
-        case .`file`(let value): raw = try JSONValue(encoding: value)
-        case .`audio`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .`image`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`file`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`audio`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 }
 
@@ -1060,14 +1057,11 @@ public indirect enum OptionCardDataOutsideWrite: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`roomBulletin`(let value): raw = try JSONValue(encoding: value)
-        case .`memory`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .`roomBulletin`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`memory`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 }
 
@@ -1460,16 +1454,13 @@ public indirect enum CardAnswerer: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`session`(let value): raw = try JSONValue(encoding: value)
-        case .`loopback`(let value): raw = try JSONValue(encoding: value)
-        case .`worker`(let value): raw = try JSONValue(encoding: value)
-        case .`bot`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .`session`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`loopback`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`worker`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`bot`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 }
 
@@ -2765,29 +2756,24 @@ public indirect enum WireMessage: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`text`(let value): raw = try JSONValue(encoding: value)
-        case .`options`(let value): raw = try JSONValue(encoding: value)
-        case .`activity`(let value): raw = try JSONValue(encoding: value)
-        case .`screen`(let value): raw = try JSONValue(encoding: value)
-        case .`connector`(let value): raw = try JSONValue(encoding: value)
-        case .`secret`(let value): raw = try JSONValue(encoding: value)
-        case .`signin`(let value): raw = try JSONValue(encoding: value)
-        case .`routineRun`(let value): raw = try JSONValue(encoding: value)
-        case .`goalRun`(let value): raw = try JSONValue(encoding: value)
-        case .`burst`(let value): raw = try JSONValue(encoding: value)
-        case .`digest`(let value): raw = try JSONValue(encoding: value)
-        case .`compaction`(let value): raw = try JSONValue(encoding: value)
-        case .`call`(let value): raw = try JSONValue(encoding: value)
-        case .`widget`(let value): raw = try JSONValue(encoding: value)
-        case .`app`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value):
-            try value.encode(to: encoder)
-            return
+        case .`text`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`options`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`activity`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`screen`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`connector`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`secret`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`signin`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`routineRun`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`goalRun`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`burst`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`digest`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`compaction`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`call`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`widget`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`app`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 
     public var fields: WireMessageFields? {
@@ -5114,16 +5100,13 @@ public indirect enum GroupDefaultResponder: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`member`(let value): raw = try JSONValue(encoding: value)
-        case .`everyone`(let value): raw = try JSONValue(encoding: value)
-        case .`mentions`(let value): raw = try JSONValue(encoding: value)
-        case .`auto`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .`member`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`everyone`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`mentions`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`auto`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 }
 
@@ -6522,50 +6505,47 @@ public indirect enum ServerFrame: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`sections`(let value): raw = try JSONValue(encoding: value)
-        case .`botQueued`(let value): raw = try JSONValue(encoding: value)
-        case .`message`(let value): raw = try JSONValue(encoding: value)
-        case .`messagePatch`(let value): raw = try JSONValue(encoding: value)
-        case .`thread`(let value): raw = try JSONValue(encoding: value)
-        case .`bot`(let value): raw = try JSONValue(encoding: value)
-        case .`group`(let value): raw = try JSONValue(encoding: value)
-        case .`notify`(let value): raw = try JSONValue(encoding: value)
-        case .`notificationsRead`(let value): raw = try JSONValue(encoding: value)
-        case .`groupDeleted`(let value): raw = try JSONValue(encoding: value)
-        case .`routine`(let value): raw = try JSONValue(encoding: value)
-        case .`routineDeleted`(let value): raw = try JSONValue(encoding: value)
-        case .`routineRun`(let value): raw = try JSONValue(encoding: value)
-        case .`webhook`(let value): raw = try JSONValue(encoding: value)
-        case .`webhookAttempt`(let value): raw = try JSONValue(encoding: value)
-        case .`webhookDeleted`(let value): raw = try JSONValue(encoding: value)
-        case .`appTrigger`(let value): raw = try JSONValue(encoding: value)
-        case .`appTriggerAttempt`(let value): raw = try JSONValue(encoding: value)
-        case .`appTriggerDeleted`(let value): raw = try JSONValue(encoding: value)
-        case .`appTriggerService`(let value): raw = try JSONValue(encoding: value)
-        case .`runtime`(let value): raw = try JSONValue(encoding: value)
-        case .`mcpChanged`(let value): raw = try JSONValue(encoding: value)
-        case .`screen`(let value): raw = try JSONValue(encoding: value)
-        case .`computer`(let value): raw = try JSONValue(encoding: value)
-        case .`computerControl`(let value): raw = try JSONValue(encoding: value)
-        case .`data`(let value): raw = try JSONValue(encoding: value)
-        case .`botDeleted`(let value): raw = try JSONValue(encoding: value)
-        case .`botsOrder`(let value): raw = try JSONValue(encoding: value)
-        case .`groupsOrder`(let value): raw = try JSONValue(encoding: value)
-        case .`liveCall`(let value): raw = try JSONValue(encoding: value)
-        case .`deviceJob`(let value): raw = try JSONValue(encoding: value)
-        case .`teamPresence`(let value): raw = try JSONValue(encoding: value)
-        case .`threadPresence`(let value): raw = try JSONValue(encoding: value)
-        case .`teamPeople`(let value): raw = try JSONValue(encoding: value)
-        case .`config`(let value): raw = try JSONValue(encoding: value)
-        case .`hello`(let value): raw = try JSONValue(encoding: value)
-        case .`ping`(let value): raw = try JSONValue(encoding: value)
-        case .`snapshot`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .`sections`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`botQueued`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`message`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`messagePatch`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`thread`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`bot`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`group`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`notify`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`notificationsRead`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`groupDeleted`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`routine`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`routineDeleted`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`routineRun`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`webhook`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`webhookAttempt`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`webhookDeleted`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`appTrigger`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`appTriggerAttempt`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`appTriggerDeleted`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`appTriggerService`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`runtime`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`mcpChanged`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`screen`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`computer`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`computerControl`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`data`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`botDeleted`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`botsOrder`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`groupsOrder`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`liveCall`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`deviceJob`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`teamPresence`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`threadPresence`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`teamPeople`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`config`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`hello`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`ping`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`snapshot`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 }
 
