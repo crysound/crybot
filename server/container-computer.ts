@@ -38,7 +38,7 @@ import {
   type HostUser,
 } from "./container-isolation.ts";
 import { SPAWNED_PROXIES } from "./proxy-paths.ts";
-import { multiScreenInitScript, SCREENS_LAYOUT_LABEL, SCREENS_FALLBACK_FILE, SCREENS_SUPERVISOR_CONFIG, SCREEN_DRIVER_ENV, SCREEN_DRIVER_OPTIONS, screensLayoutOf, validateScreenPackages } from "./container-screens.ts";
+import { rootContainerExecArgs, multiScreenInitScript, SCREENS_LAYOUT_LABEL, SCREENS_FALLBACK_FILE, SCREENS_SUPERVISOR_CONFIG, SCREEN_DRIVER_ENV, SCREEN_DRIVER_OPTIONS, screensLayoutOf, validateScreenPackages } from "./container-screens.ts";
 export { screensLayoutOf } from "./container-screens.ts";
 export { SCREENS_LAYOUT_LABEL } from "./container-screens.ts";
 
@@ -703,8 +703,7 @@ async function probeContainerComputerStatus(
 
   if (options.probeDesktop !== false && status.runtime !== "container" && status.screens_layout === "multi" && status.container === "running") {
     try {
-      const fallback = await runner(status.runtime, ["exec", "-u", "0", target.containerName,
-        "env", "-u", "VNC_PW", "sh", "-c", `if [ -f ${SCREENS_FALLBACK_FILE} ]; then echo single; else echo multi; fi`], 8000);
+      const fallback = await runner(status.runtime, rootContainerExecArgs(target.containerName, ["sh", "-c", `if [ -f ${SCREENS_FALLBACK_FILE} ]; then echo single; else echo multi; fi`]), 8000);
       status.screens_layout = fallback.stdout.trim() === "multi" ? "multi" : "single";
     } catch (error) {
       status.desktop_error = error instanceof Error ? `screen layout probe failed: ${error.message.slice(0, 280)}` : "screen layout probe failed";
@@ -1076,19 +1075,18 @@ export async function startScreen(runtime: Runtime, target: LocalVmTarget, passw
   if (password.length < 8 || /[\r\n\0]/.test(password)) throw new Error("screen password requires at least 8 characters and no line breaks");
   const n = target.screen;
   const path = `/run/crybot/screens/s${n}/passwd`;
-  await execContainerWithInput(runtime, [
-    "exec", "-i", "-u", "0", target.containerName, "env", "-u", "VNC_PW", "sh", "-c",
+  await execContainerWithInput(runtime, rootContainerExecArgs(target.containerName, ["sh", "-c",
     `set -eu; umask 077; vncpasswd -f > ${path}.tmp; chown ${screenUser(n)}:${screenUser(n)} ${path}.tmp; chmod 0400 ${path}.tmp; mv -f ${path}.tmp ${path}; supervisorctl -c ${SCREENS_SUPERVISOR_CONFIG} start screen-s${n}:*`,
-  ], `${password}\n`);
+  ], { interactive: true }), `${password}\n`);
 }
 
 export async function stopScreen(runtime: Runtime, target: LocalVmTarget, runner: CommandRunner = sh): Promise<void> {
   if (!isScreenTarget(target)) throw new Error("stopScreen requires a screen target");
   try {
-    await runner(runtime, ["exec", "-u", "0", target.containerName, "env", "-u", "VNC_PW", "supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "stop", `screen-s${target.screen}:*`], 30_000);
+    await runner(runtime, rootContainerExecArgs(target.containerName, ["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "stop", `screen-s${target.screen}:*`]), 30_000);
   } finally {
-    await runner(runtime, ["exec", "-u", "0", target.containerName, "env", "-u", "VNC_PW", "sh", "-c",
-      `setpriv --reuid=${screenUid(target.screen)} --regid=${screenUid(target.screen)} --clear-groups pkill -KILL -u ${screenUser(target.screen)} || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }`], 30_000);
+    await runner(runtime, rootContainerExecArgs(target.containerName, ["sh", "-c",
+      `setpriv --reuid=${screenUid(target.screen)} --regid=${screenUid(target.screen)} --clear-groups pkill -KILL -u ${screenUser(target.screen)} || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }`]), 30_000);
   }
 }
 
@@ -1097,7 +1095,7 @@ export type ContainerScreenState = "running" | "off" | "starting" | "stopping" |
 export async function screenStates(runtime: Runtime, containerName: string, runner: CommandRunner = sh): Promise<Record<number, ContainerScreenState>> {
   let stdout: string;
   try {
-    ({ stdout } = await runner(runtime, ["exec", "-u", "0", containerName, "env", "-u", "VNC_PW", "supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "status"], 30_000));
+    ({ stdout } = await runner(runtime, rootContainerExecArgs(containerName, ["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "status"]), 30_000));
   } catch (error) {
     const failure = error as { code?: number; stdout?: unknown; killed?: boolean; signal?: string };
     if (failure.code !== 3 || typeof failure.stdout !== "string" || failure.killed || failure.signal ||
@@ -1127,8 +1125,8 @@ export async function installScreenPackages(target: LocalVmTarget, names: string
   validateScreenPackages(names);
   const runtime = options.runtime ?? (await containerRuntimeStatus()).runtime;
   if (!runtime) throw new Error("No container runtime is available");
-  await (options.runner ?? sh)(runtime, ["exec", "-u", "0", "-e", `CRYBOT_PACKAGE_SCREEN=s${target.screen}`,
-    target.containerName, "env", "-u", "VNC_PW", "/usr/local/sbin/crybot-pkg", ...names], 300_000);
+  await (options.runner ?? sh)(runtime, rootContainerExecArgs(target.containerName,
+    ["/usr/local/sbin/crybot-pkg", ...names], { env: { CRYBOT_PACKAGE_SCREEN: `s${target.screen}` } }), 300_000);
 }
 
 export type ScreenshotCheck = { ok: boolean; mime: "image/png" | "image/jpeg" };

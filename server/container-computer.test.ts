@@ -1621,8 +1621,8 @@ describe("screen execution regressions", () => {
     const run = vi.fn(async () => ({ stdout: "" }));
     await stopScreen("docker", sharedScreenTarget(2), run);
     expect(run.mock.calls).toEqual([
-      ["docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "supervisorctl", "-c", "/etc/crybot/supervisord.conf", "stop", "screen-s2:*"], 30_000],
-      ["docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000],
+      ["docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "supervisorctl", "-c", "/etc/crybot/supervisord.conf", "stop", "screen-s2:*"], 30_000],
+      ["docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000],
     ]);
   });
 
@@ -1636,11 +1636,20 @@ describe("screen execution regressions", () => {
     const run = vi.fn(async () => ({ stdout: "" }));
     await installScreenPackages(sharedScreenTarget(2), ["python3-pip", "g++"], { runtime: "docker", runner: run });
     expect(run).toHaveBeenCalledExactlyOnceWith("docker", ["exec", "-u", "0", "-e", "CRYBOT_PACKAGE_SCREEN=s2", CONTAINER,
-      "env", "-u", "VNC_PW", "/usr/local/sbin/crybot-pkg", "python3-pip", "g++"], 300_000);
+      "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "/usr/local/sbin/crybot-pkg", "python3-pip", "g++"], 300_000);
   });
 });
 
 describe("supervisor screen state aggregation", () => {
+  it("isolates the root supervisorctl environment from the container HOME", async () => {
+    const run = vi.fn(async () => ({ stdout: "" }));
+    await screenStates("docker", CONTAINER, run);
+    expect(run).toHaveBeenCalledExactlyOnceWith("docker", [
+      "exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1",
+      "supervisorctl", "-c", "/etc/crybot/supervisord.conf", "status",
+    ], 30_000);
+  });
+
   it.each([
     [["RUNNING", "RUNNING", "RUNNING", "RUNNING"], "running"],
     [["STOPPED", "STOPPED", "STOPPED", "STOPPED"], "off"],
@@ -1674,7 +1683,7 @@ describe("shared container probes for screen targets", () => {
       "docker info --format {{.ServerVersion}}": "29.0\n",
       [`docker image inspect ${IMAGE}`]: preparedImageInspect(),
       [`docker inspect ${CONTAINER}`]: JSON.stringify([detail]),
-      [`docker exec -u 0 ${CONTAINER} env -u VNC_PW sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`]: fallback ? "single\n" : "multi\n",
+      [`docker exec -u 0 ${CONTAINER} env -u VNC_PW HOME=/root PYTHONNOUSERSITE=1 sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`]: fallback ? "single\n" : "multi\n",
       [versionProbe]: `cua-driver ${CUA_DRIVER_VERSION}`,
       [statusProbe]: "ready",
       [healthProbe]: JSON.stringify({ schema_version: "1", overall: "ok", checks: [] }),
@@ -1713,7 +1722,7 @@ describe("shared container probes for screen targets", () => {
     detail.Config.Labels[SCREENS_LAYOUT_LABEL] = "multi";
     detail.EffectiveCaps = [...PACKAGE_INSTALL_CAPS, "CAP_SYS_CHROOT"];
     detail.BoundingCaps = detail.EffectiveCaps;
-    const markerProbe = `podman exec -u 0 ${CONTAINER} env -u VNC_PW sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`;
+    const markerProbe = `podman exec -u 0 ${CONTAINER} env -u VNC_PW HOME=/root PYTHONNOUSERSITE=1 sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`;
     const fake = runner({
       "/usr/bin/which docker": new Error("missing"),
       "/usr/bin/which podman": "podman\n",
@@ -1742,7 +1751,7 @@ describe("shared container probes for screen targets", () => {
       "docker info --format {{.ServerVersion}}": "29.0\n",
       [`docker image inspect ${IMAGE}`]: preparedImageInspect(),
       [`docker inspect ${CONTAINER}`]: JSON.stringify([detail]),
-      [`docker exec -u 0 ${CONTAINER} env -u VNC_PW sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`]: new Error("marker unavailable"),
+      [`docker exec -u 0 ${CONTAINER} env -u VNC_PW HOME=/root PYTHONNOUSERSITE=1 sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`]: new Error("marker unavailable"),
     });
     const status = await containerComputerStatus(fake.run, "linux");
     expect(status).toMatchObject({
@@ -1771,9 +1780,9 @@ describe("screen password transport", () => {
     const pending = startScreen("docker", sharedScreenTarget(2), "fixture-secret");
     expect(child.stdin.read().toString()).toBe("fixture-secret\n");
     const args = vi.mocked(spawn).mock.calls.at(-1)![1] as string[];
-    expect(args.slice(0, 10)).toEqual(["exec", "-i", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "sh", "-c"]);
+    expect(args.slice(0, 12)).toEqual(["exec", "-i", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c"]);
     expect(args.join(" ")).not.toContain("fixture-secret");
-    expect(args[10]).toBe("set -eu; umask 077; vncpasswd -f > /run/crybot/screens/s2/passwd.tmp; chown crybot-s2:crybot-s2 /run/crybot/screens/s2/passwd.tmp; chmod 0400 /run/crybot/screens/s2/passwd.tmp; mv -f /run/crybot/screens/s2/passwd.tmp /run/crybot/screens/s2/passwd; supervisorctl -c /etc/crybot/supervisord.conf start screen-s2:*");
+    expect(args[12]).toBe("set -eu; umask 077; vncpasswd -f > /run/crybot/screens/s2/passwd.tmp; chown crybot-s2:crybot-s2 /run/crybot/screens/s2/passwd.tmp; chmod 0400 /run/crybot/screens/s2/passwd.tmp; mv -f /run/crybot/screens/s2/passwd.tmp /run/crybot/screens/s2/passwd; supervisorctl -c /etc/crybot/supervisord.conf start screen-s2:*");
     child.emit("close", 0);
     await pending;
   });

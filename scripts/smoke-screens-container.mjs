@@ -13,7 +13,7 @@ const {
   BASE_IMAGE, IMAGE, SHARED_LOCAL_VM_TARGET, containerRunArgs, managedImageDockerfile,
   sharedScreenTarget, screenIdentityArgs, screenExecArgs, screenSocket, startScreen, stopScreen, screenStates,
 } = await import("../server/container-computer.ts");
-const { SCREENS_SUPERVISOR_CONFIG } = await import("../server/container-screens.ts");
+const { SCREENS_SUPERVISOR_CONFIG, rootContainerExecArgs } = await import("../server/container-screens.ts");
 const name = `crybot-screens-smoke-${randomBytes(6).toString("hex")}`;
 const image = `localhost/crybot/screens-smoke:${randomBytes(6).toString("hex")}`;
 const workspace = join(fixture, "workspace");
@@ -39,7 +39,42 @@ function docker(args, { input, timeout = 60_000, inherit = false } = {}) {
   });
 }
 
-const root = args => ["exec", "-u", "0", name, "env", "-u", "VNC_PW", ...args];
+const root = args => rootContainerExecArgs(name, args);
+const systemPython = ["env", "-u", "PYTHONNOUSERSITE", "/usr/bin/python3"];
+
+async function assertNotRootMarker(marker) {
+  await docker(root(["sh", "-c", 'test ! -e "$1" || [ "$(stat -c %u "$1")" -ne 0 ]', "usercustomize-marker", marker]));
+}
+
+async function userSiteDiagnostics(execArgs) {
+  await docker(execArgs(["/usr/bin/python3", "-c", "import site, sys; print('interpreter:', sys.executable); print('version:', sys.version); print('site.ENABLE_USER_SITE:', site.ENABLE_USER_SITE); print('user site:', site.getusersitepackages())"]), { inherit: true }).catch(error => console.warn(error.message));
+  await docker(execArgs(["sh", "-c", 'directory=$(/usr/bin/python3 -c "import site; print(site.getusersitepackages())"); ls -la -- "$directory"']), { inherit: true }).catch(error => console.warn(error.message));
+}
+
+async function checkUsercustomize(userExec, home, uid, check) {
+  const marker = `/tmp/crybot-usercustomize-${home.split("/").at(-1)}`;
+  let userSite;
+  try {
+    console.log((await docker(userExec([...systemPython, "-c", "import sys; print(sys.executable, sys.version)"]))).stdout.trim());
+    userSite = (await docker(userExec([...systemPython, "-c", "import site; print(site.getusersitepackages())"]))).stdout.trim();
+    await docker(root(["rm", "-f", marker]));
+    await docker(userExec(["sh", "-c", 'mkdir -p -- "$1"; printf \'%s\\n\' "$2" > "$1/usercustomize.py"', "usercustomize-fixture", userSite,
+      `open(${JSON.stringify(marker)}, "w").write("injected\\n")`]));
+    await docker(userExec([...systemPython, "-c", "pass"]));
+    assert.equal((await docker(root(["stat", "-c", "%u", marker]))).stdout.trim(), uid);
+    await docker(root(["rm", "-f", marker]));
+    await check(marker);
+  } catch (error) {
+    console.error(`usercustomize check failed for ${home}`);
+    await userSiteDiagnostics(args => userExec(["env", "-u", "PYTHONNOUSERSITE", ...args]));
+    await userSiteDiagnostics(args => root(["env", "-u", "PYTHONNOUSERSITE", `HOME=${home}`, ...args]));
+    await userSiteDiagnostics(root);
+    throw error;
+  } finally {
+    if (userSite) await docker(root(["sh", "-c", 'rm -f -- "$1/usercustomize.py" "$1"/__pycache__/usercustomize.*.pyc "$2"', "usercustomize-cleanup", userSite, marker])).catch(error => console.warn(error.message));
+  }
+}
+
 async function waitForScreens(expected) {
   let last;
   for (let attempt = 0; attempt < 60; attempt++) {
@@ -176,7 +211,7 @@ try {
   const port = (await docker(["port", name, "6901/tcp"])).stdout.trim().split(":").at(-1);
   await tokenHandshake(port, 1);
   await tokenHandshake(port, 2);
-  console.log((await docker(["exec", "-i", "-u", "0", name, "env", "-u", "VNC_PW", "python3", "-c", rfbCheck], { input: JSON.stringify(passwords) })).stdout.trim());
+  console.log((await docker(rootContainerExecArgs(name, ["python3", "-c", rfbCheck], { interactive: true }), { input: JSON.stringify(passwords) })).stdout.trim());
   const processes = (await docker(root(["ps", "-eo", "user:20,args"]))).stdout;
   assert.doesNotMatch(processes, /(?:start-vnc\.sh|start-novnc\.sh|start-crybot-cua-driver\.sh)/);
   assert.match(processes, /^cua\s+.*\/usr\/bin\/websockify\b/m);
@@ -200,23 +235,31 @@ try {
   }
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "! test -r /home/crybot-s1 && ! test -r /home/cua/workspace/screens/s1 && ! test -r /run/user/61001/crybot-cua.sock"]));
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "sleep 300 >/dev/null 2>&1 &"]));
-  await docker(root(["rm", "-f", "/tmp/crybot-usercustomize-s2"]));
-  const userSite = (await docker(screenIdentityArgs(screen(2), ["python3", "-c", "import site; print(site.getusersitepackages())"]))).stdout.trim();
-  await docker(screenIdentityArgs(screen(2), ["sh", "-c", "mkdir -p -- \"$1\"; printf '%s\\n' 'open(\"/tmp/crybot-usercustomize-s2\", \"w\").write(\"injected\\n\")' > \"$1/usercustomize.py\"", "usercustomize-fixture", userSite]));
-  await docker(screenIdentityArgs(screen(2), ["python3", "-c", "pass"]));
-  assert.equal((await docker(root(["stat", "-c", "%u", "/tmp/crybot-usercustomize-s2"]))).stdout.trim(), "61002");
-  await docker(root(["rm", "-f", "/tmp/crybot-usercustomize-s2"]));
-  await stopScreen("docker", screen(2));
-  await waitForScreens({ 1: "running", 2: "off" });
+  await checkUsercustomize(args => screenIdentityArgs(screen(2), args), "/home/crybot-s2", "61002", async marker => {
+    await docker(root(["env", "-u", "PYTHONNOUSERSITE", "HOME=/home/crybot-s2",
+      "/usr/local/libexec/crybot/screen-process", "crybot-s2", "true"]));
+    await assertNotRootMarker(marker);
+    await stopScreen("docker", screen(2));
+    await waitForScreens({ 1: "running", 2: "off" });
+    for (let attempt = 0; ; attempt++) {
+      try { await docker(root(["sh", "-c", "! pgrep -u crybot-s2"])); break; }
+      catch (error) { if (attempt >= 10) throw error; await delay(500); }
+    }
+    await startScreen("docker", screen(2), passwords[1]);
+    await waitForScreens({ 1: "running", 2: "running" });
+    await assertNotRootMarker(marker);
+  });
+  const cua = args => ["exec", "-u", "cua", name, "env", "-u", "VNC_PW", "HOME=/home/cua", ...args];
+  const cuaUid = (await docker(cua(["id", "-u"]))).stdout.trim();
+  await checkUsercustomize(cua, "/home/cua", cuaUid, async marker => {
+    await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "status", "crybot-websockify"]));
+    await assertNotRootMarker(marker);
+  });
+  await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "stop", "crybot-websockify"]));
   for (let attempt = 0; ; attempt++) {
-    try { await docker(root(["sh", "-c", "! pgrep -u crybot-s2"])); break; }
+    try { await docker(root(["sh", "-c", "! pgrep -u cua -f /usr/bin/websockify"])); break; }
     catch (error) { if (attempt >= 10) throw error; await delay(500); }
   }
-  await startScreen("docker", screen(2), passwords[1]);
-  await waitForScreens({ 1: "running", 2: "running" });
-  await docker(root(["sh", "-c", "test ! -e /tmp/crybot-usercustomize-s2 || [ \"$(stat -c %u /tmp/crybot-usercustomize-s2)\" -ne 0"]));
-  await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "stop", "crybot-websockify"]));
-  await docker(root(["sh", "-c", "! pgrep -u cua -f /usr/bin/websockify"]));
   await docker(root(["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "start", "crybot-websockify"]));
   await tokenHandshake(port, 1);
   await docker(root(["sh", "-c", "mkdir -p /root/crybot-runtime-target; chown 0:0 /root/crybot-runtime-target; stat -c %u:%g /root/crybot-runtime-target"]));

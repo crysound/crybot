@@ -105,6 +105,8 @@ describe("container screen layout", () => {
     expect(script).toContain(GUEST_IDS_SCRIPT_BODY);
     expect(guestIdsCommand({ uid: 1234, gid: 2345 })[2]).toBe(`${GUEST_IDS_SCRIPT_BODY}\nexec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf`);
     expect(script).toContain("rm -f /etc/sudoers.d/cua");
+    expect(script).toContain("exec env -u VNC_PW HOME=/root PYTHONNOUSERSITE=1 /usr/bin/supervisord -c /etc/crybot/supervisord.conf");
+    expect(script).toContain("exec env HOME=/root PYTHONNOUSERSITE=1 /usr/bin/supervisord -c /etc/supervisor/supervisord.conf");
     expect(script).not.toContain("NOPASSWD");
     expect(script).not.toContain("ulimit -u");
     expect(script).not.toContain("/proc/$(id");
@@ -116,6 +118,86 @@ describe("container screen layout", () => {
       expect(script).toContain(`rm -rf /run/user/${61000 + n}\ninstall -d -o crybot-s${n} -g crybot-s${n} -m 0700 /run/user/${61000 + n}\ninstall -d -o crybot-s${n} -g crybot-s${n} -m 0700 /run/user/${61000 + n}/tmp`);
     }
     execFileSync("sh", ["-n", "-c", script], { timeout: 3000, stdio: "ignore" });
+  });
+
+  it("detects usercustomize injection when only Python isolated mode is removed", () => {
+    execFileSync("/usr/bin/python3", ["-I", "-c", String.raw`
+import os, pathlib, subprocess, sys, tempfile
+with tempfile.TemporaryDirectory(prefix="crybot-usercustomize-") as directory:
+    home = pathlib.Path(directory)
+    env = {key: value for key, value in os.environ.items() if not key.startswith("PYTHON")}
+    env["HOME"] = directory
+    site = pathlib.Path(subprocess.check_output([sys.executable, "-c", "import site; print(site.getusersitepackages())"], env=env, text=True).strip())
+    site.mkdir(parents=True)
+    marker = home / "marker"
+    (site / "usercustomize.py").write_text(f"open({str(marker)!r}, 'w').write('injected')")
+    program = home / "screen-process"
+    program.write_text(sys.argv[1].splitlines()[0] + "\npass\n")
+    program.chmod(0o700)
+    subprocess.run([str(program)], env=env, check=True)
+    assert not marker.exists(), "isolated mode loaded usercustomize"
+    program.write_text(program.read_text().replace(" -I\n", "\n", 1))
+    subprocess.run([str(program)], env=env, check=True)
+    assert marker.exists(), "removing only -I must fail the no-marker assertion"
+    assert marker.stat().st_uid == os.getuid()
+`, screenProcessScript()], { timeout: 5000, stdio: "inherit" });
+  });
+
+  it.skipIf(process.platform !== "linux")("kills the desktop child when its guardian is killed", () => {
+    execFileSync("python3", ["-I", "-c", String.raw`
+import os, pathlib, pwd, signal, subprocess, sys, tempfile, time
+with tempfile.TemporaryDirectory(prefix="crybot-parent-death-") as directory:
+    home = pathlib.Path(directory)
+    program = home / "screen-process"
+    source = sys.argv[1].replace('if os.geteuid() != 0:', 'if False:').replace('os.setgroups([])', 'pass')
+    program.write_text(source)
+    program.chmod(0o700)
+    ready = home / "ready"
+    command = "import os, pathlib, time; pathlib.Path(%r).write_text(str(os.getpid())); time.sleep(30)" % str(ready)
+    parent = subprocess.Popen([str(program), pwd.getpwuid(os.getuid()).pw_name, sys.executable, "-I", "-c", command])
+    child = None
+    try:
+        deadline = time.monotonic() + 3
+        while not ready.exists():
+            assert parent.poll() is None, "guardian exited before exec"
+            assert time.monotonic() < deadline, "child did not exec"
+            time.sleep(0.01)
+        child = int(ready.read_text())
+        parent.kill()
+        parent.wait(timeout=2)
+        while True:
+            status = pathlib.Path(f"/proc/{child}/stat")
+            if not status.exists() or status.read_text().split()[2] == "Z":
+                break
+            assert time.monotonic() < deadline, "child survived guardian SIGKILL"
+            time.sleep(0.01)
+    finally:
+        if parent.poll() is None:
+            parent.kill()
+        parent.wait(timeout=2)
+        if child is not None:
+            try: os.kill(child, signal.SIGKILL)
+            except ProcessLookupError: pass
+`, screenProcessScript()], { timeout: 8000, stdio: "inherit" });
+  });
+
+  it("logs signal forwarding errors and restores the guardian identity", () => {
+    execFileSync("python3", ["-I", "-c", String.raw`
+import ast, contextlib, io, signal, sys, types
+from unittest.mock import Mock
+tree = ast.parse(sys.argv[1])
+forward = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "forward")
+for failure in [ProcessLookupError(), PermissionError("denied"), OSError("failed")]:
+    os = types.SimpleNamespace(seteuid=Mock(), killpg=Mock(side_effect=failure))
+    namespace = {"os": os, "user": types.SimpleNamespace(pw_uid=61002), "pid": 123, "sys": sys}
+    exec(compile(ast.Module(body=[forward], type_ignores=[]), "forward", "exec"), namespace)
+    output = io.StringIO()
+    with contextlib.redirect_stderr(output):
+        namespace["forward"](signal.SIGTERM, None)
+    assert [call.args for call in os.seteuid.call_args_list] == [(61002,), (0,)]
+    if not isinstance(failure, ProcessLookupError):
+        assert "could not forward signal" in output.getvalue()
+`, screenProcessScript()], { timeout: 3000, stdio: "inherit" });
   });
 
   it.each(["-o", ".", "+x", "sudo-", "vim+", "", "vim;id", "a\nb"])("rejects unsafe package %j in server and shell", name => {
@@ -135,13 +217,13 @@ describe("container screen layout", () => {
   it("records failed installations in a protected audit file", () => {
     const dir = mkdtempSync(join(tmpdir(), "crybot-package-audit-"));
     try {
-      writeFileSync(join(dir, "apt-get"), "#!/bin/sh\nexit 7\n", { mode: 0o700 });
+      writeFileSync(join(dir, "apt-get"), '#!/bin/sh\n[ "$HOME" = /root ] && [ "$PYTHONNOUSERSITE" = 1 ] && [ -z "${VNC_PW+x}" ] || exit 99\nexit 7\n', { mode: 0o700 });
       const script = crybotPkgScript()
         .replace('[ "$(id -u)" = 0 ]', '[ 0 = 0 ]')
         .replaceAll("/var/log/crybot", join(dir, "audit"))
         .replace("-o root -g root ", "");
       const result = spawnSync("sh", ["-c", script, "fixture", "python3-pip", "g++"], {
-        stdio: "ignore", env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, CRYBOT_PACKAGE_SCREEN: "s2" }, timeout: 3000,
+        stdio: "ignore", env: { ...process.env, HOME: dir, PYTHONNOUSERSITE: "", VNC_PW: "fixture", PATH: `${dir}:${process.env.PATH}`, CRYBOT_PACKAGE_SCREEN: "s2" }, timeout: 3000,
       });
       expect(result.status).toBe(7);
       expect(readFileSync(join(dir, "audit/packages.log"), "utf8")).toMatch(/^\d{4}-.*Z screen=s2 packages=python3-pip g\+\+ result=7\n$/);

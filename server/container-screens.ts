@@ -5,6 +5,13 @@ export const SCREENS_FALLBACK_FILE = "/run/crybot/screens-layout-single";
 export const SCREENS_SUPERVISOR_CONFIG = "/etc/crybot/supervisord.conf";
 export const SCREEN_DRIVER_ENV = "CUA_DRIVER_BROWSER_NO_SANDBOX=1 CUA_DRIVER_INSTALL_CHANNEL=python_package CUA_DRIVER_RS_TELEMETRY_ENABLED=0 CUA_DRIVER_WINDOW_CHANGE_TIMEOUT_MS=200 NO_COLOR=1";
 export const SCREEN_DRIVER_OPTIONS = "--permission-mode standard --grant existing-profile --cursor-reduced-motion on";
+const ROOT_PYTHON_ENV = ["HOME=/root", "PYTHONNOUSERSITE=1"];
+
+export function rootContainerExecArgs(containerName: string, args: string[], opts: { interactive?: boolean; env?: Record<string, string> } = {}): string[] {
+  return ["exec", ...(opts.interactive ? ["-i"] : []), "-u", "0",
+    ...Object.entries(opts.env ?? {}).flatMap(([key, value]) => ["-e", `${key}=${value}`]),
+    containerName, "env", "-u", "VNC_PW", ...ROOT_PYTHON_ENV, ...args];
+}
 
 export function screensLayoutOf(labels: Record<string, string> | undefined, fallback = false): "single" | "multi" {
   return !fallback && labels?.[SCREENS_LAYOUT_LABEL] === "multi" ? "multi" : "single";
@@ -98,7 +105,7 @@ umask 077
 install -d -o root -g root -m 0700 /var/log/crybot
 log=/var/log/crybot/packages.log
 result=0
-apt-get install -y --no-install-recommends -- "$@" || result=$?
+env -u VNC_PW ${ROOT_PYTHON_ENV.join(" ")} apt-get install -y --no-install-recommends -- "$@" || result=$?
 printf '%s screen=%s packages=%s result=%s\\n' "$(date -u +%FT%TZ)" "$CRYBOT_PACKAGE_SCREEN" "$*" "$result" >> "$log"
 exit "$result"
 `;
@@ -107,6 +114,7 @@ exit "$result"
 // Linux kill(2) requires CAP_KILL across UIDs; the fixed desktop capability set omits it.
 export function screenProcessScript(): string {
   return `#!/usr/bin/python3 -I
+import ctypes
 import os
 import pwd
 import signal
@@ -115,6 +123,11 @@ import sys
 if os.geteuid() != 0:
     sys.exit("screen-process requires root")
 user = pwd.getpwnam(sys.argv[1])
+parent_pid = os.getpid()
+libc = ctypes.CDLL(None, use_errno=True)
+libc.prctl.argtypes = [ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong]
+libc.prctl.restype = ctypes.c_int
+PR_SET_PDEATHSIG = 1
 ready_read, ready_write = os.pipe()
 pid = os.fork()
 if pid == 0:
@@ -123,6 +136,11 @@ if pid == 0:
     os.setgroups([])
     os.setgid(user.pw_gid)
     os.setuid(user.pw_uid)
+    # Linux clears the parent-death signal on setuid; arm it after dropping privileges.
+    if libc.prctl(PR_SET_PDEATHSIG, signal.SIGKILL, 0, 0, 0) != 0:
+        raise OSError(ctypes.get_errno(), "prctl(PR_SET_PDEATHSIG) failed")
+    if os.getppid() != parent_pid:
+        os.kill(os.getpid(), signal.SIGKILL)
     os.environ.update({
         "HOME": user.pw_dir,
         "USER": user.pw_name,
@@ -148,6 +166,8 @@ def forward(signum, frame):
         os.killpg(pid, signum)
     except ProcessLookupError:
         pass
+    except OSError as error:
+        print(f"screen-process could not forward signal {signum}: {error}", file=sys.stderr, flush=True)
     finally:
         os.seteuid(0)
 
@@ -171,7 +191,7 @@ fi
 install -d -m 0755 /run/crybot
 if ! command -v useradd >/dev/null 2>&1 || ! command -v supervisorctl >/dev/null 2>&1; then
   touch ${SCREENS_FALLBACK_FILE}
-  exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
+  exec env ${ROOT_PYTHON_ENV.join(" ")} /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
 fi
 rm -f ${SCREENS_FALLBACK_FILE}
 mkdir -p /home/cua/workspace/screens
@@ -236,6 +256,6 @@ ${screensSupervisorConf(max)}
 CONF
 chown root:root ${SCREENS_SUPERVISOR_CONFIG}
 chmod 0644 ${SCREENS_SUPERVISOR_CONFIG}
-exec env -u VNC_PW /usr/bin/supervisord -c ${SCREENS_SUPERVISOR_CONFIG}
+exec env -u VNC_PW ${ROOT_PYTHON_ENV.join(" ")} /usr/bin/supervisord -c ${SCREENS_SUPERVISOR_CONFIG}
 `;
 }

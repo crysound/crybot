@@ -110,3 +110,32 @@
 本沙箱无法运行容器或监听端口型 E2E，无法本地验证真实镜像冒烟。本条必须由协调者推分支后看 Actions「Real VM screens」全绿结果，目前未作该结论。
 
 单屏 fixture、`server/index.ts`、`server/vps-computer.ts`、`IMAGE_LAYER_VERSION`、端口安全判定均未改动；`scripts/public-scan/allow-domains.txt` 末尾协调者添加的两行保留。没有提交 git 或推送分支。
+
+## 第 5 轮返工（2026-11-14）
+
+### 本轮修改
+
+- usercustomize 冒烟的版本打印、user site 查询和正向执行统一显式使用 `/usr/bin/python3`，与 `screen-process` shebang 一致，避免镜像 PATH 中 venv Python 禁用 user site 或版本不一致造成假通过。s2 正向对照检查标记属主为 61002，随后删除标记。
+- 新增直接的 `-I` 反向对照：root 以 `HOME=/home/crybot-s2` 执行 `/usr/local/libexec/crybot/screen-process crybot-s2 true`，并显式取消 `PYTHONNOUSERSITE`，使新增的 root 环境加固不会掩盖 `-I` 回归；断言标记不存在或不属 root。保留停启 s2 后的相同反向断言。
+- 新增 `rootContainerExecArgs`，统一服务端多屏 root exec 与冒烟的 `env -u VNC_PW HOME=/root PYTHONNOUSERSITE=1`。覆盖写入口令并启动、停止与残留进程清理、读取状态、布局标记探测和包安装。多屏初始化的正常及回退 supervisord 启动均使用该安全环境；`crybot-pkg` 内部的 apt-get 执行也固定这两个变量并清除 VNC_PW。
+- 冒烟以 cua 身份向 `/home/cua` 下系统 Python 的 user site 写入钩子，先确认普通 Python 能加载且标记属于 cua，删除标记后以加固的 root 环境执行一次 `supervisorctl status crybot-websockify`，检查没有 root 标记。两个用户的检查均在 finally 中清理钩子、对应字节码和标记；失败时打印用户环境、指定 HOME 的 root 对照环境及加固 root 环境的解释器路径/版本、`site.ENABLE_USER_SITE`、user site 路径与 `ls -la`。
+- 监护脚本通过 ctypes 调用 Linux `prctl(PR_SET_PDEATHSIG, SIGKILL)`，位置在子进程 setuid 之后、exec 之前；同时核对父 PID，覆盖设置信号前父进程已死亡的窗口。killpg 的其他 OSError（包括 PermissionError）记录到 stderr 后继续，finally 恢复 root 有效 UID。
+- websockify stop 后的无残留检查增加与 s2 相同的有限重试（500ms 间隔，最多重试 10 次）。
+
+### 隔离验证和边界
+
+已先运行 `crybot-link-deps`。当前 worktree 仍缺少 `docs/verification/README.md`；所有本地验证使用 mock、临时 HOME 或隔离子进程，没有访问用户 live app/data，也没有运行真实 apt 安装。没有使用 systemd，测试文件逐个执行。
+
+- `pnpm exec vitest run server/container-screens.test.ts`：25/25 通过，包含原有 108 组单屏参数检查。
+- `pnpm exec vitest run server/container-computer.test.ts`：150/150 通过，覆盖 root 启动、停止、清理、状态和包安装的两个环境变量。
+- `pnpm exec vitest run server/container-mcp.test.ts`：9/13 通过；原有 4 个子进程桥接用例因 stdout 为空失败，未修改或跳过。独立最小复现 `spawnSync(process.execPath, ['-e', 'console.log(123)'])` 返回 `error.code=EPERM`、status=0、空 stdout/stderr，与前几轮本沙箱的管道限制相同。完整桥接结果仍以 Actions 为准，本地不能声称三个文件全绿。
+- `pnpm exec tsc -b`、`pnpm exec tsc -p tsconfig.server.json`：通过。
+- 本轮 5 个改动 TS/MJS 文件的 `pnpm exec oxlint --deny-warnings`、`node --check scripts/smoke-screens-container.mjs`、`git diff --check`：通过。
+
+`-I` 单变量变异验证已通过：新增单测使用本机 `/usr/bin/python3`（3.13.5）和临时 HOME，在该解释器查询出的 user site 写入钩子，运行采用 `screen-process` 原始 shebang 的等价纯 Python 脚本（正文仅 `pass`）。带 `-I` 时没有标记；只把 shebang 的 `-I` 临时去掉、HOME 和其他环境保持一致时，标记出现且属于执行 UID，因此新的“没有执行身份所写标记”反向断言会失败。沙箱执行者为 uid 1000，此演示验证 Python 启动隔离，不冒充容器 root/61002 的实际权限验收；容器冒烟对同样情况检查的是属主 0。
+
+父进程死亡测试运行生成的监护脚本；为适配本地非 root 身份，临时 fixture 仅绕过 root 入口检查与清空附加组，使用当前用户的 setgid/setuid，保留真实 fork、prctl、exec。测试等待子进程 exec 就绪，再 SIGKILL 监护进程，确认子进程消失或已终止为 zombie。另一个隔离测试对生成的 forward 函数注入 ProcessLookupError、PermissionError 和 OSError，确认错误处理及 UID 恢复；包安装 fixture 则在假 apt-get 内实际检查 HOME、PYTHONNOUSERSITE 和 VNC_PW。
+
+本沙箱不能运行真实容器或监听端口型 E2E；真实镜像的解释器版本、root/屏幕身份隔离、supervisor 和 websockify 行为，必须以协调者推分支后的 Actions「Real VM screens」全绿为准，本轮未声称已完成该验收。
+
+未改动单屏 fixture、`server/index.ts`、`server/vps-computer.ts`、IMAGE_LAYER_VERSION 或端口安全判定。`scripts/public-scan/allow-domains.txt` 保持原样，协调者添加的末尾行保留。未提交 git、未推送分支。
