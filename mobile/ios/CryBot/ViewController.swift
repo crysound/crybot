@@ -10,11 +10,13 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
     private var webView: WKWebView!
     private var serverURL = ""
     private var loginHosts = Set<String>()
+    private let linkHost = Bundle.main.object(forInfoDictionaryKey: "CRYBOT_APP_LINK_HOST") as? String ?? ""
     private var downloadLocations = [ObjectIdentifier: URL]()
     private var serverWasInjected = false
     private var authenticationSession: ASWebAuthenticationSession?
     private var pendingLoginState: String?
     private var pendingLoginKey: P256.KeyAgreement.PrivateKey?
+    private var browserLoginStartedAt: Date?
     private var completingLogin = false
 
     override func viewDidLoad() {
@@ -150,8 +152,26 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         return host != URL(string: serverURL)?.host?.lowercased() && loginHosts.contains(host)
     }
 
+    private var canRetryBrowserLogin: Bool {
+        return !linkHost.isEmpty && authenticationSession == nil
+    }
+
+    private func clearPendingLogin() {
+        pendingLoginState = nil
+        pendingLoginKey = nil
+        browserLoginStartedAt = nil
+    }
+
+    private func expireBrowserLogin() {
+        guard canRetryBrowserLogin, let startedAt = browserLoginStartedAt else { return }
+        let age = Date().timeIntervalSince(startedAt)
+        if age < 0 || age >= 10 * 60 { clearPendingLogin() }
+    }
+
     private func startLogin() {
-        guard pendingLoginState == nil, !completingLogin, !loginHosts.isEmpty else { return }
+        expireBrowserLogin()
+        guard pendingLoginState == nil || canRetryBrowserLogin, !completingLogin, !loginHosts.isEmpty else { return }
+        clearPendingLogin()
         var bytes = [UInt8](repeating: 0, count: 32)
         guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess,
               var url = URLComponents(string: serverURL), view.window != nil else {
@@ -167,12 +187,28 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
         guard let handoffURL = url.url else { showError(login: true); return }
         pendingLoginState = state
         pendingLoginKey = privateKey
-        let session = ASWebAuthenticationSession(url: handoffURL, callbackURLScheme: "crybot") { [weak self] callback, _ in
+        let completion: ASWebAuthenticationSession.CompletionHandler = { [weak self] callback, _ in
             DispatchQueue.main.async {
                 guard let self, self.pendingLoginState == state else { return }
                 if let callback, self.handleAuthCallback(callback) { return }
                 self.failLogin()
             }
+        }
+        let session: ASWebAuthenticationSession
+        if linkHost.isEmpty {
+            session = ASWebAuthenticationSession(url: handoffURL, callbackURLScheme: "crybot", completionHandler: completion)
+        } else if #available(iOS 17.4, *) {
+            session = ASWebAuthenticationSession(url: handoffURL, callback: .https(host: linkHost, path: "/auth/app-return"), completionHandler: completion)
+        } else {
+            browserLoginStartedAt = Date()
+            showError(login: true)
+            UIApplication.shared.open(handoffURL, options: [:]) { [weak self] opened in
+                DispatchQueue.main.async {
+                    guard let self, self.pendingLoginState == state else { return }
+                    if !opened { self.failLogin() }
+                }
+            }
+            return
         }
         session.prefersEphemeralWebBrowserSession = false
         session.presentationContextProvider = self
@@ -185,8 +221,7 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
     }
 
     private func failLogin() {
-        pendingLoginState = nil
-        pendingLoginKey = nil
+        clearPendingLogin()
         completingLogin = false
         let session = authenticationSession
         authenticationSession = nil
@@ -195,14 +230,19 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
     }
 
     func handleAuthCallback(_ url: URL) -> Bool {
-        guard url.scheme == "crybot", url.host == "auth",
-              let state = pendingLoginState else { return false }
+        if !linkHost.isEmpty, url.scheme == "crybot", url.host == "auth" { return true }
+        if linkHost.isEmpty {
+            guard url.scheme == "crybot", url.host == "auth" else { return false }
+        } else {
+            guard url.scheme == "https", url.host?.lowercased() == linkHost.lowercased(), url.path == "/auth/app-return" else { return false }
+        }
+        expireBrowserLogin()
+        guard let state = pendingLoginState else { return false }
         guard let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
               items.filter({ $0.name == "state" }).count == 1,
               items.first(where: { $0.name == "state" })?.value == state else { return true }
         let privateKey = pendingLoginKey
-        pendingLoginState = nil
-        pendingLoginKey = nil
+        clearPendingLogin()
         completingLogin = true
         let session = authenticationSession
         authenticationSession = nil
@@ -318,12 +358,14 @@ final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         webView.scrollView.refreshControl?.endRefreshing()
-        if pendingLoginState == nil && !completingLogin && isNetworkFailure(error) { showError() }
+        expireBrowserLogin()
+        if (pendingLoginState == nil || canRetryBrowserLogin) && !completingLogin && isNetworkFailure(error) { showError(login: pendingLoginState != nil) }
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         webView.scrollView.refreshControl?.endRefreshing()
-        if pendingLoginState == nil && !completingLogin && isNetworkFailure(error) { showError() }
+        expireBrowserLogin()
+        if (pendingLoginState == nil || canRetryBrowserLogin) && !completingLogin && isNetworkFailure(error) { showError(login: pendingLoginState != nil) }
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

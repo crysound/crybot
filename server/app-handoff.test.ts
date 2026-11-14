@@ -223,6 +223,27 @@ describe("mobile app login handoff", () => {
     expect(result.headers.location).toBeUndefined();
   });
 
+  it.each([undefined, "custom-app"])("uses only an HTTPS callback when app links are configured, scheme=%s", async scheme => {
+    const token = await jwt();
+    const result = await fixture({ ...env, CRYBOT_APP_LINK_ORIGIN: "https://crybot-app.example/", CRYBOT_APP_SCHEME: scheme }).get({ "cf-access-jwt-assertion": token });
+    const url = callbackURL(result.body);
+    expect(result.status).toBe(200);
+    expect(url.href).toMatch(new RegExp(`^https://crybot-app\\.example/auth/app-return\\?v=1&state=${state}&epk=`));
+    expect([...url.searchParams.keys()]).toEqual(["v", "state", "epk", "iv", "ct"]);
+    expect(result.body).not.toContain("crybot://");
+    expect(result.body).not.toContain("custom-app://");
+    expect(result.body).not.toContain(token);
+    expect(result.body).not.toContain('<script');
+    expect(result.body).not.toContain('http-equiv="refresh"');
+    expect(decryptCallback(url)).toBe(token);
+  });
+
+  it.each(["http://crybot-app.example", "https://crybot-app.example/path", "https://crybot-app.example?query"])("keeps the legacy callback for an invalid app link origin: %s", async origin => {
+    const result = await fixture({ ...env, CRYBOT_APP_LINK_ORIGIN: origin }).get({ "cf-access-jwt-assertion": await jwt() });
+    expect(callbackURL(result.body).protocol).toBe("crybot:");
+    expect(callbackURL(result.body).host).toBe("auth");
+  });
+
   it("escapes the verified JWT email displayed on the confirmation page", async () => {
     const email = '<b>"owner"&\'account\'</b>@crybot.example';
     const token = await jwt({ email });
