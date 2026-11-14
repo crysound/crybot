@@ -1,4 +1,4 @@
-import { viewerTargetId } from "../shared/desktop-viewer.ts";
+import { screenOfViewerTarget, viewerTargetId } from "../shared/desktop-viewer.ts";
 import type { ContainerComputerStatus, LocalVmTarget } from "./container-computer.ts";
 import type { RequestAuth } from "./request-auth.ts";
 import { desktopViewerUrl, type DesktopTarget } from "./routes/desktop-viewer.ts";
@@ -14,6 +14,7 @@ export function localVmViewerStatus<T extends { target_key: string; viewer_url: 
 export function localDesktopTarget(target: LocalVmTarget, deps: {
   status: (target: LocalVmTarget) => Promise<ContainerComputerStatus>;
   touch: (target: LocalVmTarget) => void;
+  screenPassword?: (screen: number) => string | null;
 }): DesktopTarget {
   return {
     key: target.key,
@@ -23,10 +24,14 @@ export function localDesktopTarget(target: LocalVmTarget, deps: {
         || !status.viewer_url) {
         throw Object.assign(new Error("Local VM unavailable"), { status: 409 });
       }
+      const screen = screenOfViewerTarget(viewerTargetId(target));
+      const statusPassword = new URLSearchParams(new URL(status.viewer_url).hash.slice(1)).get("password");
       return {
         port: status.viewer_port ?? 0,
-        password: new URLSearchParams(new URL(status.viewer_url).hash.slice(1)).get("password"),
+        password: screen === null ? statusPassword : deps.screenPassword?.(screen) ?? null,
+        live: true,
         touch: () => deps.touch(target),
+        ...(screen === null ? {} : { path: `/websockify?token=s${screen}` }),
       };
     },
   };
