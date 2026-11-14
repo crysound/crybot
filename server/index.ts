@@ -512,7 +512,7 @@ import {
 } from "./presets.ts";
 import { OrgLibrary } from "./org-library.ts";
 import { shouldMountLocalComputer } from "./local-routing.ts";
-import { autoLocalVmAttachable, localVmDesktopPending, type ContainerComputerStatus } from "./container-computer.ts";
+import { autoLocalVmAttachable, localVmDesktopPending, localVmWakeAction, type ContainerComputerStatus } from "./container-computer.ts";
 import { startStoppedPodmanMachine } from "./podman-machine.ts";
 import { keepTransient, startAutoVmClaim, withinBudget, type AutoVmClaimSlot, type AutoVmClaimTable } from "./auto-vm-claims.ts";
 import { CONTROL_ACT_WITHIN_MS, CONTROL_WAIT_MS, controlRefusal } from "./computer-control-client.ts";
@@ -5993,7 +5993,8 @@ async function computerPreviewSurface(bot: BotRecord, threadId?: string) {
     if (remote.ready || vpsDesktopOutdated(remote)) return "cloud";
   }
   const target = localVmTargetForStatus(bot.id, threadId);
-  if (!CLOUD_HOME && instance?.adapter.capabilities.computerMcp && localVmSeen.has(target.key)) {
+  const sharedVmMayExist = localVmMode(cfg) === "shared" && target.key === SHARED_LOCAL_VM_TARGET.key;
+  if (!CLOUD_HOME && instance?.adapter.capabilities.computerMcp && (localVmSeen.has(target.key) || sharedVmMayExist)) {
     const vm = await containerComputerStatus(undefined, undefined, target).catch(() => null);
     if (vm && (autoLocalVmAttachable(vm) || localVmUpdates.observe(target, vm))) return "vm";
   }
@@ -6044,8 +6045,10 @@ async function selectableComputers(bot: BotRecord) {
         const target = localVmTargetForStatus(bot.id);
         const status = await containerComputerStatus(undefined, undefined, target);
         ready = status.ready;
-        canCreate = !ready && autoLocalVmAttachable(status);
-        if (ready || canCreate) noteLocalVmSeen(target, status);
+        const wakeAction = localVmWakeAction(status);
+        canStart = wakeAction === "start";
+        canCreate = wakeAction === "run";
+        if (ready || wakeAction !== null) noteLocalVmSeen(target, status);
         const updating = localVmUpdates.observe(target, status);
         ownDesktopAwaitsUpdate ||= updating;
         reason = (updating ? LOCAL_VM_UPDATING_PROBLEM : status.problem) ?? reason;

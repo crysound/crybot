@@ -4577,6 +4577,7 @@
   "computer.chooseCloudOpen": "Выберите облачный рабочий стол для открытия",
   "computer.chooseCloudManage": "Выберите облачный рабочий стол для управления",
   "computer.createVm": "Создать личный рабочий стол {name}",
+  "computer.wakeVm": "Wake the desktop",
   "computer.replaceVm": "Заменить личный рабочий стол {name}",
   "computer.openVmSetup": "Открыть настройку личного рабочего стола",
   "computer.openVpsSettings": "Открыть настройки VPS",
@@ -7249,5 +7250,6 @@
   "computer.recovery.replaceTitle": "Удалить этот облачный компьютер и дать боту новый. Файлы, которые есть только на нём, будут потеряны.",
   "settings.profile.nameFromLogin": "Из вашей учётной записи",
   "botOverview.preference.cloud.locked": "настроенный сервер",
-  "keys.section.computers.purpose.locked": "Ваш собственный сервер и вход на сайты."
+  "keys.section.computers.purpose.locked": "Ваш собственный сервер и вход на сайты.",
+  "vm.setup.step4Wake": "Wake the private desktop"
 }
