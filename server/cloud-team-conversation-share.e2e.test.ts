@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
+import { fixtureOutput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const ENGINE = `process.env.FAKE_CLAUDE_DUMP = process.env.FAKE_CLAUDE_FIXTURE_DIR + "/dump.json";
@@ -51,12 +52,12 @@ async function until(done: () => Promise<boolean>, timeoutMs = 60_000): Promise<
   }
 }
 async function turn(who: Who, botId: string, threadId: string, text: string): Promise<Dump> {
-  rmSync(join(team.home, "dump.json"), { force: true });
+  rmSync(fixtureOutput(team.home, botId, "dump.json"), { force: true });
   const before = ((await messages(who, threadId)).body.messages as unknown[]).length;
   const sent = await as(who, "POST", `/api/bots/${botId}/messages`, { text, threadId });
   expect(sent.status, JSON.stringify(sent.body)).toBe(202);
-  await until(async () => await idle(who) && ((await messages(who, threadId)).body.messages as unknown[]).length >= before + 2 && existsSync(join(team.home, "dump.json")));
-  return JSON.parse(readFileSync(join(team.home, "dump.json"), "utf8")) as Dump;
+  await until(async () => await idle(who) && ((await messages(who, threadId)).body.messages as unknown[]).length >= before + 2 && existsSync(fixtureOutput(team.home, botId, "dump.json")));
+  return JSON.parse(readFileSync(fixtureOutput(team.home, botId, "dump.json"), "utf8")) as Dump;
 }
 const opened = async (who: Who, botId: string, title: string) => {
   const made = await as(who, "POST", `/api/bots/${botId}/tasks`, { title });
@@ -66,7 +67,7 @@ const opened = async (who: Who, botId: string, title: string) => {
 const lastLine = async (who: Who, threadId: string) => ((await messages(who, threadId)).body.messages as Array<{ id: string; role: string }>).at(-1)!.id;
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-share-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-share", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-share-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-share", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   for (const [who, person] of [["olive", OLIVE], ["rui", RUI], ["marta", MARTA], ["ana", ANA], ["ben", BEN]] as const) tokens[who] = (await team.pair(person)).token!;
   const created = await as("olive", "POST", "/api/bots", { name: "Scout", visibility: "everyone" });

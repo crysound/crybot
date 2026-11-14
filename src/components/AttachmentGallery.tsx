@@ -1,13 +1,13 @@
 // Security: local files and videos load only after an explicit action, through the server's exact-message file
 // authorization.
-import { useEffect, useMemo, useRef, useState } from "react";
 import { fromMarkdown } from "mdast-util-from-markdown";
+import { windowsPathDestinations } from "../../shared/markdown-windows-paths";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Download, Film, LoaderCircle, Music, Play, X } from "lucide-react";
 import { attachmentBasename, PREVIEW_MAX_BYTES, type TranscriptFileAttachment, type TranscriptImageAttachment } from "@/lib/composer-attachments";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
-import { windowsPathDestinations } from "../../shared/markdown-windows-paths";
-import { localFilePath } from "./ChatMarkdown";
+import { localFilePath } from "./chat-markdown-links";
 import {
   AttachedFileChip,
   AttachmentPreviewDialog,

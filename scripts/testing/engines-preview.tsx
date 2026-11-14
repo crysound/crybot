@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { WelcomeFlow } from "../../src/components/onboarding/WelcomeFlow";
@@ -6,6 +7,8 @@ import { DesktopCapabilitiesProvider } from "../../src/components/DesktopCapabil
 import { StoreProvider, useStore } from "../../src/state/store";
 import { applySkin } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 function Preview() {
   const { state, dispatch, refreshInstances } = useStore();

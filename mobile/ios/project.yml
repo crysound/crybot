@@ -1,7 +1,9 @@
 name: CryBot
 options:
+  developmentLanguage: en
+  knownRegions: [en, de, es, fr, hi, it, ja, ko, pl, pt-BR, ru, tr, uk, vi, zh-Hans, zh-Hant]
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
   createIntermediateGroups: true
 settings:
   base:
@@ -10,17 +12,56 @@ settings:
     CODE_SIGN_STYLE: Automatic
     CRYBOT_SERVER_URL: ""
     CRYBOT_LOGIN_HOSTS: ""
+    CRYBOT_API_URL: ""
+    CRYBOT_APP_LINK_HOST: ""
+    CRYBOT_IOS_ENTITLEMENTS: CryBot/CryBot.entitlements
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
+packages:
+  CryKit:
+    path: Packages/CryKit
+  SwiftMarkdown:
+    url: https://github.com/apple/swift-markdown.git
+    exactVersion: 0.9.0
+  SwiftMath:
+    url: https://github.com/mgriebling/SwiftMath.git
+    exactVersion: 1.7.3
+  HighlightSwift:
+    url: https://github.com/appstefan/HighlightSwift.git
+    exactVersion: 1.1.0
+  LiveKit:
+    url: https://github.com/livekit/client-sdk-swift.git
+    exactVersion: 2.19.0
+  LiveKitWebRTC:
+    url: https://github.com/livekit/webrtc-xcframework.git
+    exactVersion: 150.7871.04
 targets:
   CryBot:
     type: application
     platform: iOS
-    deploymentTarget: "16.0"
+    deploymentTarget: "17.0"
     sources:
       - path: CryBot
       - path: Shared
     dependencies:
+      - package: CryKit
+        product: CryCore
+      - package: CryKit
+        product: CryNetLogic
+      - package: CryKit
+        product: CryNet
+      - package: CryKit
+        product: CryRFB
+      - package: SwiftMarkdown
+        product: Markdown
+      - package: SwiftMath
+        product: SwiftMath
+      - package: HighlightSwift
+        product: HighlightSwift
+      - package: LiveKit
+        product: LiveKit
+      - package: LiveKitWebRTC
+        product: LiveKitWebRTC
       - target: CryBotWatch
         embed: true
         link: false
@@ -30,6 +71,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.crysound.crybot
+        CODE_SIGN_ENTITLEMENTS: $(CRYBOT_IOS_ENTITLEMENTS)
         PROVISIONING_PROFILE_SPECIFIER: $(CRYBOT_IOS_PROFILE_SPECIFIER)
         PRODUCT_NAME: Cry Bot
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -39,6 +81,7 @@ targets:
       path: CryBot/Info.plist
       properties:
         CFBundleDisplayName: Cry Bot
+        CFBundleLocalizations: [en, de, es, fr, hi, it, ja, ko, pl, pt-BR, ru, tr, uk, vi, zh-Hans, zh-Hant]
         CFBundleExecutable: $(EXECUTABLE_NAME)
         CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
         CFBundleName: $(PRODUCT_NAME)
@@ -54,6 +97,10 @@ targets:
         NSMicrophoneUsageDescription: Cry Bot needs microphone access for voice features.
         NSCameraUsageDescription: Cry Bot needs camera access for video features.
         NSPhotoLibraryUsageDescription: Cry Bot needs photo library access to choose files.
+        NSPhotoLibraryAddUsageDescription: Cry Bot needs permission to save images to your photo library.
+        UIBackgroundModes: [audio]
+        CRYBOT_API_URL: $(CRYBOT_API_URL)
+        CRYBOT_APP_LINK_HOST: $(CRYBOT_APP_LINK_HOST)
         CRYBOT_SERVER_URL: $(CRYBOT_SERVER_URL)
         CRYBOT_LOGIN_HOSTS: $(CRYBOT_LOGIN_HOSTS)
         UILaunchScreen:
@@ -65,6 +112,33 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+  CryBotTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: CryBotTests
+    dependencies:
+      - target: CryBot
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.crysound.crybot.tests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Cry Bot.app/Cry Bot
+        BUNDLE_LOADER: $(TEST_HOST)
+        GENERATE_INFOPLIST_FILE: YES
+  CryBotUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: CryBotUITests
+    dependencies:
+      - target: CryBot
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.crysound.crybot.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: CryBot
   CryBotWatch:
     type: application
     platform: watchOS
@@ -94,7 +168,7 @@ targets:
   CryBotWatchTests:
     type: bundle.unit-test
     platform: iOS
-    deploymentTarget: "16.0"
+    deploymentTarget: "17.0"
     sources:
       - path: CryBotWatchTests
       - path: Shared
@@ -109,6 +183,14 @@ schemes:
     build:
       targets:
         CryBot: all
+        CryBotTests: [test]
+        CryBotWatchTests: [test]
+        CryBotUITests: [test]
+    test:
+      targets:
+        - CryBotTests
+        - CryBotWatchTests
+        - CryBotUITests
   CryBotWatch:
     shared: true
     build:

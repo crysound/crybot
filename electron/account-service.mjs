@@ -926,24 +926,26 @@ export function createCompanionAccountService({
   };
 
   const signOut = () => serialize(async () => {
-    if (!configured) return settledState();
     resetAutoRetry();
-    if (!storedAccount(credentials())) {
-      await clearAfterCleanup();
-      return settledState();
+    const account = storedAccount(credentials());
+    if (configured && account) {
+      phase = { status: "connecting", email: account.email };
+      try {
+        await cleanupCurrentAccount();
+        healthy = true;
+        lastHealthCheck = now();
+        return settledState();
+      } catch (error) {
+        failAction(error);
+      }
     }
-    const email = storedAccount(credentials())?.email;
-    phase = { status: "connecting", email };
     try {
-      // No health preflight: local access must stop on Sign out even when the control plane is down.
-      await cleanupCurrentAccount();
-      healthy = true;
-      lastHealthCheck = now();
-      return settledState();
+      await clearAfterCleanup();
     } catch (error) {
-      failAction(error, { email });
-      return settledState();
+      const message = failAction(error);
+      return publicState({ ...settledState(), status: "error", message });
     }
+    return settledState();
   });
 
   const restore = () => serialize(async () => {

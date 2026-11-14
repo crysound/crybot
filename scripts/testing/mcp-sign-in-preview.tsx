@@ -1,8 +1,11 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { createRoot } from "react-dom/client";
 import { McpServersPanel } from "../../src/components/McpServersPanel";
 import { StoreProvider } from "../../src/state/store";
 import { applySkin, readSkin } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 
 applySkin(readSkin());

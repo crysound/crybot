@@ -27,6 +27,22 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(bots.first?.name, "Assistant")
     }
 
+    func testListsBotsWithBearerOnlyAndNoCookieOrOrigin() async throws {
+        let credentials = WatchCredentials(server: "https://bot.example.com", sessionToken: "fixture-session",
+                                           cfAuthorization: nil, cfExpires: nil)
+        FixtureProtocol.setHandler { request in
+            XCTAssertEqual(request.url?.absoluteString, "https://bot.example.com/api/bots?messages=5")
+            XCTAssertEqual(request.httpMethod, "GET")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fixture-session")
+            XCTAssertNil(request.value(forHTTPHeaderField: "Cookie"))
+            XCTAssertNil(request.value(forHTTPHeaderField: "Origin"))
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
+            return (200, WatchFixtures.bots)
+        }
+        let bots = try await client().bots(credentials: credentials)
+        XCTAssertEqual(bots.map(\.id), ["bot-1", "bot-2"])
+    }
+
     func testFetchesLatestTwentyMessages() async throws {
         FixtureProtocol.setHandler { request in
             XCTAssertEqual(request.url?.path, "/api/threads/thread-1/messages")

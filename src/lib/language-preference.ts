@@ -122,6 +122,6 @@ export function usePageLanguage(language: string, windowPage = false): void {
     void loadLocale(language || globalThis.navigator?.language).then((shown) => {
       if (windowPage) desktop()?.shown?.(shown);
       setShown((count) => count + 1);
-    });
+    }).catch(() => {});
   }, [language, windowPage]);
 }

@@ -10,6 +10,7 @@ import { DatabaseSync } from "node:sqlite";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
 import { personKey } from "./person-key.ts";
+import { fixtureInput, fixtureOutput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OWNER = { email: "olive@acme.test", role: "owner" as const };
@@ -26,9 +27,9 @@ let owner = "", admin = "", bob = "";
 let bot: { id: string; mainThreadId: string };
 let bobThread = "", bobFile = "", bobDoc = "", bobUnsent = "", adminThread = "";
 
-const dump = () => JSON.parse(readFileSync(join(team.home, "dump.json"), "utf8")) as { systemPrompt: string };
+const dump = () => JSON.parse(readFileSync(fixtureOutput(team.home, bot.id, "dump.json"), "utf8")) as { systemPrompt: string };
 const scriptToolCalls = (calls: unknown[] | null) => {
-  const file = join(team.home, "tool-calls.json");
+  const file = fixtureInput(team.home, "tool-calls.json");
   if (calls) writeFileSync(file, JSON.stringify(calls)); else rmSync(file, { force: true });
 };
 const dataDir = (...rest: string[]) => join(team.home, ".crybot", ...rest);
@@ -36,11 +37,11 @@ const messages = (token: string, threadId: string) => team.as(token, "GET", `/ap
 const idle = async (token: string) => ((await team.as(token, "GET", "/api/bots")).body.bots as Array<{ activity?: string; busy?: boolean }>)
   .every((entry) => entry.activity !== "working" && !entry.busy);
 async function turn(token: string, threadId: string, text: string) {
-  rmSync(join(team.home, "dump.json"), { force: true });
+  rmSync(fixtureOutput(team.home, bot.id, "dump.json"), { force: true });
   const before = ((await messages(token, threadId)).body.messages as unknown[]).length;
   const sent = await team.as(token, "POST", `/api/bots/${bot.id}/messages`, { text, threadId });
   expect(sent.status, JSON.stringify(sent.body)).toBe(202);
-  await until(async () => await idle(token) && ((await messages(token, threadId)).body.messages as unknown[]).length >= before + 2 && existsSync(join(team.home, "dump.json")));
+  await until(async () => await idle(token) && ((await messages(token, threadId)).body.messages as unknown[]).length >= before + 2 && existsSync(fixtureOutput(team.home, bot.id, "dump.json")));
   return dump();
 }
 /** expect.poll, usable in beforeAll too. */
@@ -67,7 +68,7 @@ async function listen(token: string, headers: Record<string, string> = {}) {
 }
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   owner = (await team.pair(OWNER)).token!;
   admin = (await team.pair(ADMIN)).token!;

@@ -1,6 +1,6 @@
 import type { SendKey } from "./send-key";
-import { t } from "@/lib/i18n";
-import { en, type LocaleKey } from "@/locales";
+import { hasLocaleKey, t } from "@/lib/i18n";
+import type { LocaleKey } from "@/locales";
 
 export interface ShortcutItem {
   id: string;
@@ -148,7 +148,7 @@ const CATEGORY_KEY: Record<string, LocaleKey> = {
 
 export const shortcutDescription = (item: ShortcutItem): string => {
   const key = `shortcuts.${item.id}`;
-  return Object.hasOwn(en, key) ? t(key as LocaleKey) : item.description;
+  return hasLocaleKey(key) ? t(key as LocaleKey) : item.description;
 };
 export const shortcutCategory = (group: ShortcutGroup): string => {
   const key = CATEGORY_KEY[group.category];

@@ -7,6 +7,8 @@ import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("./cloud-welcome/CloudWelcome", () => ({ CloudWelcome: () => null }));
+
 const screens = await import("./lazy-screens");
 const { lazyScreen, preloadScreens } = screens;
 const stubPreloads = () => Object.values(screens)
@@ -39,6 +41,14 @@ afterEach(() => {
 });
 
 describe("lazyScreen", () => {
+  it("shows a loading placeholder for CloudWelcome", async () => {
+    const name = "CloudWelcome" as const;
+    render(createElement(screens[name], {} as never));
+    expect(document.querySelector('[role="status"] svg.animate-spin')).not.toBeNull();
+    await settle();
+    expect(document.querySelector('[role="status"]')).toBeNull();
+  });
+
   it("renders an already fetched screen in the same commit that mounts it", async () => {
     const Screen = lazyScreen("Settings", async () => Label);
     await Screen.preload();
@@ -54,6 +64,17 @@ describe("lazyScreen", () => {
     await settle();
     expect(document.body.innerHTML).toBe("<div><p>Routines</p></div>");
     expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a content placeholder visible until the screen arrives", async () => {
+    let arrive!: (component: typeof Label) => void;
+    const Screen = lazyScreen("GroupView", (): Loaded => new Promise((resolve) => { arrive = resolve; }), createElement("div", { role: "status" }, "Loading"));
+    render(createElement(Screen, { text: "Group" }));
+    expect(document.querySelector('[role="status"]')?.textContent).toBe("Loading");
+    arrive(Label);
+    await settle();
+    expect(document.body.textContent).toBe("Group");
+    expect(document.querySelector('[role="status"]')).toBeNull();
   });
 
   it("fetches a chunk once, however many places ask for it", async () => {
@@ -155,7 +176,7 @@ describe("preloadScreens", () => {
   it("a page on this machine fetches nothing ahead: each screen loads when it opens", () => {
     vi.useFakeTimers();
     const preloads = stubPreloads();
-    expect(preloads.length).toBe(20);
+    expect(preloads.length).toBe(23);
     for (const host of ["127.0.0.1", "localhost", "[::1]"]) preloadScreens(host);
     vi.runAllTimers();
     for (const preload of preloads) expect(preload).not.toHaveBeenCalled();
@@ -200,9 +221,15 @@ describe("preloadScreens", () => {
     preloadScreens("cloud.example");
     for (const preload of preloads) expect(preload).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(60_000);
-    const rarelyOpened = [screens.GrokMoveDialog, screens.PhoneAppDialog, screens.ShareTeamDialog, screens.TeamLibraryPanel];
+    expect(screens.SCREENS).toEqual([
+      screens.SettingsModal, screens.BotSettingsDialog, screens.PluginsPanel, screens.ComputerPanel,
+      screens.TriggersPage, screens.ActivityPanel, screens.FilesView, screens.InspectorPanel,
+      screens.KeyboardShortcutsModal, screens.LocalVmWorkspace, screens.NewBotDialog,
+      screens.RemoteAgentSettingsPanel, screens.RemoteDesktopPanel, screens.RoomPanel,
+      screens.TeamMapPage, screens.PublishedAppsPage,
+    ]);
     const stubbed = Object.values(screens).filter((value): value is ReturnType<typeof lazyScreen> => typeof value === "function" && "preload" in value);
-    for (const screen of stubbed) expect(screen.preload).toHaveBeenCalledTimes(rarelyOpened.includes(screen as never) ? 0 : 1);
+    for (const screen of stubbed) expect(screen.preload).toHaveBeenCalledTimes(screens.SCREENS.includes(screen as never) ? 1 : 0);
     expect(preloads.length).toBe(stubbed.length);
   });
 
@@ -260,8 +287,11 @@ describe("launch bundle", () => {
     const reached = launchModules();
     expect(reached.has("App.tsx")).toBe(true);
     expect(reached.has("components/Sidebar.tsx")).toBe(true);
+    for (const name of ["LiveCallHost", "NewBotName", "conversation-share/ConversationShareDialogs", "TeamWelcome", "onboarding/FirstConversationTour", "CloudIntent", "CloudSetup", "CloudEngineSignIn", "MemberApps", "onboarding/GuidedTour"]) {
+      expect(reached.has(`components/${name}.tsx`), name).toBe(true);
+    }
     const deferred = [
-      "ActivityPanel", "BotSettingsDialog", "CloudAddDialog", "ComputerPanel", "InspectorPanel", "KeyboardShortcutsModal",
+      "GroupView", "ActivityPanel", "BotSettingsDialog", "CloudAddDialog", "ComputerPanel", "InspectorPanel", "KeyboardShortcutsModal",
       "LocalVmWorkspace", "NewBotDialog", "PhoneAppDialog", "PhoneSetupFlow", "PluginsPanel", "published-apps/PublishedAppsPage", "RemoteAgentSettingsPanel", "remote-desktop-panel", "RoutineCalendarPage",
       "RoutinesPage", "SettingsModal", "ShareTeamDialog", "TeamLibraryPanel", "TeamMapPage", "TriggersPage", "WebhookTrigger", "room-panel/RoomPanel",
     ].map((name) => `components/${name}.tsx`);
@@ -276,8 +306,8 @@ describe("launch bundle", () => {
     expect(["App.tsx", "state/store.tsx", "components/Sidebar.tsx", "components/ChatView.tsx"].filter((file) => page.has(file))).toEqual([]);
   });
 
-  it("carries English and no other language: the one a person chose loads before the first render", () => {
-    expect([...launchModules()].filter((file) => file.startsWith("locales/")).sort()).toEqual(["locales/en.json", "locales/index.ts"]);
+  it("loads every language on demand before the first render", () => {
+    expect([...launchModules()].filter((file) => file.startsWith("locales/")).sort()).toEqual(["locales/index.ts"]);
   });
 
   it("gives the window's rail a page of its own that leaves the app out", () => {
@@ -285,6 +315,6 @@ describe("launch bundle", () => {
     expect(rail.has("components/PlacesRail.tsx")).toBe(true);
     expect(rail.has("components/PlaceAddSheet.tsx")).toBe(true);
     expect(["App.tsx", "state/store.tsx", "components/Sidebar.tsx", "components/ChatView.tsx"].filter((file) => rail.has(file))).toEqual([]);
-    expect([...rail].filter((file) => file.startsWith("locales/")).sort()).toEqual(["locales/en.json", "locales/index.ts"]);
+    expect([...rail].filter((file) => file.startsWith("locales/")).sort()).toEqual(["locales/index.ts"]);
   });
 });

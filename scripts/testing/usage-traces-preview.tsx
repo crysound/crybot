@@ -1,8 +1,11 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { createRoot } from "react-dom/client";
 import { UsageSection } from "../../src/components/UsageSection";
 import { applySkin, readSkin } from "../../src/lib/skins";
 import { StoreProvider } from "../../src/state/store";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 // Served only by scripts/verify-usage-traces.ts: the Usage page alone, at the width of the Settings page it lives on.
 

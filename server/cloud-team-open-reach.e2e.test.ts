@@ -5,10 +5,10 @@
 // engine is the synthetic Claude CLI playing a scripted plan through the real agents tools, so it proves the routing,
 // not a model's judgement.
 import { randomBytes } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { writeFileSync } from "node:fs";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
+import { fixtureInput, fixtureLines, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OLIVE = { email: "olive@acme.test", role: "owner" as const };
@@ -29,9 +29,8 @@ let scout: Bot, quill: Bot, bolt: Bot, chief: Bot;
 let room: { id: string; threadId: string };
 let bobsChat = "";
 
-const planPath = () => join(team.home, "plan.json");
-const turns = (): Turn[] => existsSync(`${planPath()}.evidence.jsonl`)
-  ? readFileSync(`${planPath()}.evidence.jsonl`, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line) as Turn) : [];
+const planPath = () => fixtureInput(team.home, "plan.json");
+const turns = (): Turn[] => fixtureLines<Turn>(team.home);
 const messages = async (token: string, threadId: string) => {
   const read = await team.as(token, "GET", `/api/threads/${threadId}/messages?limit=200`);
   return { status: read.status, messages: (read.body.messages ?? []) as Message[] };
@@ -47,7 +46,7 @@ const settled = async () => {
 };
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   olive = (await team.pair(OLIVE)).token!;
   bob = (await team.pair(BOB)).token!;

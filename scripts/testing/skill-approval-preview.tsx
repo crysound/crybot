@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 // Real conversation and task controls, connected only to the disposable server.
 import { createRoot } from "react-dom/client";
 import { ChatView } from "../../src/components/ChatView";
@@ -5,6 +6,8 @@ import { DesktopCapabilitiesProvider } from "../../src/components/DesktopCapabil
 import { StoreProvider, useStore } from "../../src/state/store";
 import { applySkin } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 function Fixture() {
   const { state } = useStore();

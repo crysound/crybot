@@ -10,6 +10,7 @@ import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } 
 import { audienceHome } from "./engine-homes/layout.ts";
 import { claudeProjectSlug } from "./engine-homes/migrate.ts";
 import { personKey } from "./person-key.ts";
+import { fixtureInput, fixtureOutput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const posix = process.platform !== "win32";
@@ -38,23 +39,23 @@ const credentials = (home: string, token: string, expiresAt = Date.now() + 86_40
 };
 const teamToken = () => JSON.parse(readFileSync(join(team.home, ".claude", ".credentials.json"), "utf8")).claudeAiOauth.accessToken as string;
 type Dump = { env: Record<string, string>; argv: string[]; cwd: string; signedInAs?: string | null };
-const dumpOf = (home: string) => JSON.parse(readFileSync(join(home, "dump.json"), "utf8")) as Dump;
+const dumpOf = (file: string) => JSON.parse(readFileSync(file, "utf8")) as Dump;
 const scriptToolCalls = (calls: unknown[] | null) => {
-  const file = join(team.home, "tool-calls.json");
+  const file = fixtureInput(team.home, "tool-calls.json");
   if (calls) writeFileSync(file, JSON.stringify(calls)); else rmSync(file, { force: true });
 };
-const shellLog = () => readFileSync(join(team.home, "shell.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line) as { command: string; output: string });
+const shellLog = () => readFileSync(fixtureOutput(team.home, bot.id, "shell.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line) as { command: string; output: string });
 const messages = async (token: string, threadId: string) => (await team.as(token, "GET", `/api/threads/${threadId}/messages?limit=200`)).body.messages as Array<{ role: string; kind?: string; text?: string }>;
 const idle = async (token: string) => ((await team.as(token, "GET", "/api/bots")).body.bots as Array<{ activity?: string; busy?: boolean }>)
   .every((entry) => entry.activity !== "working" && !entry.busy);
 async function turn(token: string, threadId: string, text: string): Promise<Dump> {
-  rmSync(join(team.home, "dump.json"), { force: true });
+  rmSync(fixtureOutput(team.home, bot.id, "dump.json"), { force: true });
   const before = (await messages(token, threadId)).length;
   const sent = await team.as(token, "POST", `/api/bots/${bot.id}/messages`, { text, threadId });
   expect(sent.status, JSON.stringify(sent.body)).toBe(202);
-  await expect.poll(async () => await idle(token) && (await messages(token, threadId)).length >= before + 2 && existsSync(join(team.home, "dump.json")),
+  await expect.poll(async () => await idle(token) && (await messages(token, threadId)).length >= before + 2 && existsSync(fixtureOutput(team.home, bot.id, "dump.json")),
     { timeout: 60_000, interval: 100 }).toBe(true);
-  return dumpOf(team.home);
+  return dumpOf(fixtureOutput(team.home, bot.id, "dump.json"));
 }
 const newThread = async (token: string, title: string) => {
   const created = await team.as(token, "POST", `/api/bots/${bot.id}/tasks`, { title });
@@ -66,7 +67,7 @@ const transcriptsUnder = (dir: string): string[] => (existsSync(dir) ? readdirSy
 
 beforeAll(async () => {
   if (!posix) return;
-  fx = await launchCloudSendFixture({ onePasswordToken: TOKEN, team: { id: "team-acme-homes", name: "Acme", engine: HOME_FILES }, cloudEngine: HOME_FILES });
+  fx = await launchCloudSendFixture({ onePasswordToken: TOKEN, team: { id: "team-acme-homes", name: "Acme", engine: withFixtureState(HOME_FILES) }, cloudEngine: HOME_FILES });
   team = fx.team!;
   dataDir = join(team.home, ".crybot");
   bobHome = audienceHome(dataDir, `member:${personKey({ id: "", email: BOB.email })}`);
@@ -184,7 +185,7 @@ it.runIf(posix)("My Cloud is unchanged: its engine runs in the server's HOME and
   rmSync(join(cloudHome, "dump.json"), { force: true });
   expect((await fx.onCloud("POST", `/api/bots/${solo.id}/messages`, { text: "Hello.", threadId: solo.mainThreadId })).status).toBe(202);
   await expect.poll(() => existsSync(join(cloudHome, "dump.json")), { timeout: 60_000, interval: 100 }).toBe(true);
-  const seen = dumpOf(cloudHome);
+  const seen = dumpOf(join(cloudHome, "dump.json"));
   expect(seen.env.HOME).toBe(cloudHome);
   expect(seen.signedInAs).toBe("tok-home");
   await expect.poll(() => transcriptsUnder(join(cloudHome, ".claude", "projects")).length, { timeout: 30_000, interval: 100 }).toBeGreaterThan(0);

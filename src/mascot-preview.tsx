@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "./testing/preview-locale";
 import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -19,6 +20,8 @@ import {
 import { EXPRESSION_COUNT } from "@/components/AnimatedMascot";
 import "./styles.css";
 import "./mascot-preview.css";
+
+await preparePreviewLocale();
 
 interface ScenarioLabels extends Partial<Record<BotState, string>> {}
 

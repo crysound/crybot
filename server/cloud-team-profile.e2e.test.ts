@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { seedTeamProfile } from "../electron/team-profile-seed.mjs";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
+import { fixtureOutput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const ADA = { email: "ada@acme.test", role: "owner" as const };
@@ -30,19 +31,19 @@ const you = async (token: string) => {
   expect(config.status, JSON.stringify(config.body)).toBe(200);
   return config.body.profile as Profile;
 };
-const dump = () => JSON.parse(readFileSync(join(team.home, "dump.json"), "utf8")) as { systemPrompt: string; prompt: unknown };
+const dump = () => JSON.parse(readFileSync(fixtureOutput(team.home, bot.id, "dump.json"), "utf8")) as { systemPrompt: string; prompt: unknown };
 const messages = async (token: string, threadId: string) =>
   (await team.as(token, "GET", `/api/threads/${threadId}/messages?limit=200`)).body.messages as Array<{ role: string; kind: string; text?: string; sender?: { name: string; id?: string } }>;
 const idle = async (token: string) => ((await team.as(token, "GET", "/api/bots")).body.bots as Array<{ activity?: string; busy?: boolean }>)
   .every((entry) => entry.activity !== "working" && !entry.busy);
 async function turn(token: string, threadId: string, text: string, room?: string) {
-  rmSync(join(team.home, "dump.json"), { force: true });
+  rmSync(fixtureOutput(team.home, bot.id, "dump.json"), { force: true });
   const before = (await messages(token, threadId)).length;
   const sent = room
     ? await team.as(token, "POST", `/api/groups/${room}/messages`, { text, threadId })
     : await team.as(token, "POST", `/api/bots/${bot.id}/messages`, { text, threadId });
   expect(sent.status, JSON.stringify(sent.body)).toBe(202);
-  await expect.poll(async () => await idle(token) && (await messages(token, threadId)).length >= before + 2 && existsSync(join(team.home, "dump.json")),
+  await expect.poll(async () => await idle(token) && (await messages(token, threadId)).length >= before + 2 && existsSync(fixtureOutput(team.home, bot.id, "dump.json")),
     { timeout: 60_000, interval: 100 }).toBe(true);
   return dump();
 }
@@ -83,7 +84,7 @@ async function configFrames(token: string, trigger: () => Promise<unknown>, unti
 }
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-profile-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-profile-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   // A Team Cloud from before: its owner set Settings → Profile inside the team, into the server's one profile.
   const config = JSON.parse(readFileSync(configFile(), "utf8")) as Record<string, unknown>;

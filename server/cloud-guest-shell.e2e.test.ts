@@ -1,5 +1,6 @@
 // The real server booted the way the image's launcher boots it (secrets over a pipe, never the environment), synthetic
 // engines. No guest can connect, so what a guest left behind is written into the records while the server is stopped.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { BOT_API_ENGINE_REFUSAL } from "./bot-api-fence.ts";
 import { randomBytes, randomUUID } from "node:crypto";
 import { connect } from "node:net";
@@ -59,7 +60,7 @@ const probeOf = (name: string) => join(home, `${name}-probe.json`);
 /** A wrapper around a fake engine that first reads what an engine's shell
  * could: its own environment and its parent's (the server's) starting one. */
 function probing(name: string, fake: string, extra: string): string {
-  const cli = join(home, `${name}-cli.mjs`);
+  const cli = fixtureEnginePath(join(home, ".crybot"), `${name}-cli.mjs`);
   writeFileSync(cli, `#!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -193,10 +194,22 @@ it("no engine a bot runs finds the Cloud's secrets: not in its own environment, 
   expect((await say(owner, bot, "Hello.", mine)).status).toBe(202);
   await expect.poll(() => existsSync(probeOf("claude")), { timeout: hostTimeout(15_000) }).toBe(true);
   const probe = JSON.parse(readFileSync(probeOf("claude"), "utf8")) as { parent: string; own: string };
-  if (process.platform !== "win32") expect(probe.parent).toContain("CRYBOT_CLOUD_MACHINE_ID=3f9c2a4e");
   for (const where of [probe.parent, probe.own]) {
     expect(where).not.toContain(secret);
     expect(where).not.toContain(relayToken);
+  }
+  if (process.platform !== "win32") {
+    expect(probe.own).not.toContain("CRYBOT_CLOUD_MACHINE_ID=");
+    expect(probe.parent).not.toMatch(/^unreadable:/);
+    if (log.includes("bot box: on")) {
+      expect(probe.parent).not.toContain("CRYBOT_CLOUD_MACHINE_ID=");
+      const serverEnvironment = readFileSync(`/proc/${child.pid}/environ`, "utf8");
+      expect(serverEnvironment).toContain("CRYBOT_CLOUD_MACHINE_ID=");
+      expect(serverEnvironment).not.toContain(secret);
+      expect(serverEnvironment).not.toContain(relayToken);
+    } else {
+      expect(probe.parent).toContain("CRYBOT_CLOUD_MACHINE_ID=");
+    }
   }
   expect((await api("POST", `/api/bots/${bot.id}/interrupt`, { token: owner, body: { threadId: mine } })).status).toBe(200);
 }, hostTimeout(60_000));
