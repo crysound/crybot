@@ -39,7 +39,7 @@ export function appArmorProfile(executable: string): string {
   if (!isAbsolute(executable) || /[\s*?[\]{}"'\\^]/.test(executable) || !executable.startsWith("/opt/")) {
     throw new Error(`The browser's AppArmor exemption is only for a root-owned path under /opt, not ${executable}.`);
   }
-  return `# Written for CryBot: lets its Chrome use its sandbox.
+  return `# Written for Cry Bot: lets its Chrome use its sandbox.
 abi <abi/4.0>,
 include <tunables/global>
 

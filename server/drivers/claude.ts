@@ -146,7 +146,7 @@ export function claudeInheritWarning(env: NodeJS.ProcessEnv): ProviderSnapshot["
   return {
     title: "Bots inherit this machine's Claude Code setup",
     message:
-      "CRYBOT_CLAUDE_INHERIT_USER_CONFIG=1 is set on the CryBot process, so every Claude bot also loads this " +
+      "CRYBOT_CLAUDE_INHERIT_USER_CONFIG=1 is set on the Cry Bot process, so every Claude bot also loads this " +
       "computer's own MCP servers, connectors, skills, hooks and personal CLAUDE.md on every turn — often thousands " +
       "of extra tokens per model call, and tools nobody gave the bot. Unless a bot genuinely needs a server from " +
       "your user-scope Claude config, remove the variable and restart; add the server under Settings → MCP servers " +
@@ -245,7 +245,7 @@ export function claudeCliUpdate(version: string | null, cli: string): ProviderSn
   const missing = (Object.keys(CLAUDE_FLAG_FLOORS) as (keyof typeof CLAUDE_FLAG_FLOORS)[])
     .filter((flag) => !claudeCliSupports(parsed, flag));
   const effects = [
-    ...(missing.includes("--autocompact") ? ["no compaction window picked by CryBot"] : []),
+    ...(missing.includes("--autocompact") ? ["no compaction window picked by Cry Bot"] : []),
     ...(missing.includes("--setting-sources") ? ["bots still see this machine's own Claude Code setup"] : []),
     ...(missing.includes("--system-prompt-snapshot") ? ["resumed turns cannot refresh stale system prompts"] : []),
   ];
@@ -341,13 +341,13 @@ type AskBehavior = "allow" | "deny" | "answer";
 type AskResolutionSource = "user" | "timeout" | "system";
 
 const DENY_TIMEOUT_NOTE =
-  "CryBot: nobody answered this permission request in time. Skip this action and finish what you can without it.";
-const DUPLICATE_ASK_ID_NOTE = "CryBot: duplicate ask id — skipping this request.";
+  "Cry Bot: nobody answered this permission request in time. Skip this action and finish what you can without it.";
+const DUPLICATE_ASK_ID_NOTE = "Cry Bot: duplicate ask id — skipping this request.";
 
 function systemEndedReply(kind: Ask["kind"]): { behavior: AskBehavior; message: string } {
   return kind === "question"
-    ? { behavior: "answer", message: "CryBot: the turn is ending — wrap up." }
-    : { behavior: "deny", message: "CryBot: the turn ended" };
+    ? { behavior: "answer", message: "Cry Bot: the turn is ending — wrap up." }
+    : { behavior: "deny", message: "Cry Bot: the turn ended" };
 }
 
 function askQuestions(ask: Ask): AskQuestion[] | null {

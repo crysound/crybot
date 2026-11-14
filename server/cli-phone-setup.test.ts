@@ -122,7 +122,7 @@ describe("phone pairing instructions", () => {
 
   it("sends an Android phone to the app first, and still offers the browser", () => {
     const text = phonePairingInstructions("android", { origin: "https://bot.example", ready: true }).join("\n");
-    expect(text).toContain("open the CryBot app and scan the QR with its pairing scanner");
+    expect(text).toContain("open the Cry Bot app and scan the QR with its pairing scanner");
     expect(text).toContain("Camera will not open it in a browser");
     expect(text).toContain("https://bot.example/pair");
     expect(text).not.toContain("not the Android native pairing scanner");

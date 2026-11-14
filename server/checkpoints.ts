@@ -22,7 +22,7 @@ export const CHECKPOINTS_DIR = join(DATA_DIR, "checkpoints");
 const COMMIT_HASH = /^[0-9a-f]{40}$/;
 
 // What a checkpoint never carries, so a digest never lists it; categories follow Roo-Code's checkpoint excludes.
-const EXCLUDES = `# CryBot checkpoint excludes — never snapshotted
+const EXCLUDES = `# Cry Bot checkpoint excludes — never snapshotted
 .git/
 .svn/
 .hg/
@@ -191,9 +191,9 @@ function gitEnv(shadow: string, cwd: string): NodeJS.ProcessEnv {
   env.GIT_WORK_TREE = resolve(cwd);
   env.GIT_CONFIG_GLOBAL = join(shadow, "gitconfig");
   env.GIT_CONFIG_SYSTEM = join(shadow, "gitconfig_empty");
-  env.GIT_AUTHOR_NAME = "CryBot Checkpoint";
+  env.GIT_AUTHOR_NAME = "Cry Bot Checkpoint";
   env.GIT_AUTHOR_EMAIL = "checkpoint@crybot.local";
-  env.GIT_COMMITTER_NAME = "CryBot Checkpoint";
+  env.GIT_COMMITTER_NAME = "Cry Bot Checkpoint";
   env.GIT_COMMITTER_EMAIL = "checkpoint@crybot.local";
   return env;
 }

@@ -436,7 +436,7 @@ describe("CryBot's managed connected apps", () => {
     expect(calls.slice(before)).toEqual([]);
 
     const reply = await callTool(managed, "XERO_LIST_INVOICES");
-    expect(reply.result.content[1]!.text).toContain("CryBot's built-in connected apps cannot use. Tell the person: add their own Composio project key in Settings → API keys");
+    expect(reply.result.content[1]!.text).toContain("Cry Bot's built-in connected apps cannot use. Tell the person: add their own Composio project key in Settings → API keys");
     expect(reply.result.content[1]!.text).toContain("CryBot then picks that auth config up on its own");
     expect(calls.slice(before).some((call) => call.path.startsWith("/api/"))).toBe(false);
   });

@@ -318,7 +318,7 @@ function serializePayload(payload: JsonValue): string {
     }
   }
   if (text.length <= MAX_EVENT_CHARS) return text;
-  return `${text.slice(0, MAX_EVENT_CHARS)}\n\n[Payload truncated by CryBot]`;
+  return `${text.slice(0, MAX_EVENT_CHARS)}\n\n[Payload truncated by Cry Bot]`;
 }
 
 function previewPayload(payload: JsonValue): string {

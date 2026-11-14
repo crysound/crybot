@@ -8935,7 +8935,7 @@
   "vm.workspace.holdNotAcquired": "The Local VM control hold was not acquired",
   "routines.cron.editToMove": "Edit this routine's schedule to change its cron timing.",
   "teamImport.noTeam": "This file does not contain a team.",
-  "teamImport.unknownFormat": "This is not an Cry Bot backup, BotMRR playbook or legacy team.",
+  "teamImport.unknownFormat": "This is not a Cry Bot backup, BotMRR playbook or legacy team.",
   "teamImport.teamVersion": "Team file version {version} is not supported.",
   "teamImport.teamMissing": "This team file is missing its team definition.",
   "teamImport.teamNoName": "This team does not have a name.",

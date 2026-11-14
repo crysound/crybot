@@ -936,7 +936,7 @@ export class Store {
       detail: string;
       finishedAt: number;
     } | null,
-    fallbackDetail = "CryBot restarted before this goal finished.",
+    fallbackDetail = "Cry Bot restarted before this goal finished.",
     fallbackFinishedAt = Date.now(),
   ): number {
     const ownedThreadIds = new Set<string>(this.bots.flatMap((bot) => (bot.tasks ?? []).map((task) => task.threadId)));

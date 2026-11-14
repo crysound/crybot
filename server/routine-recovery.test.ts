@@ -313,7 +313,7 @@ describe("an unattended run whose bot is busy when it starts", () => {
     h.refuse(null);
     await h.advance(2 * SECOND);
     expect(h.started.map((turn) => turn.threadId)).toEqual(["thread-1"]);
-    expect(h.started[0]!.prompt).not.toContain("CryBot: this run's first start");
+    expect(h.started[0]!.prompt).not.toContain("Cry Bot: this run's first start");
     h.complete("thread-1");
     expect(h.run(run.id)).toMatchObject({ status: "completed", attention: undefined });
     expect(h.run(run.id).retried).toBeUndefined();
@@ -500,7 +500,7 @@ describe("a run that CryBot's shutdown cuts off", () => {
     expect(h.failed).toEqual([]);
 
     h.restart();
-    expect(h.run(run.id)).toMatchObject({ status: "queued", retried: "restarted", threadId: "thread-1", attention: "Starting again shortly after CryBot restarted while it ran" });
+    expect(h.run(run.id)).toMatchObject({ status: "queued", retried: "restarted", threadId: "thread-1", attention: "Starting again shortly after Cry Bot restarted while it ran" });
     expect(h.cut.map((cut) => cut.id)).toEqual([run.id]);
     h.restart();
     expect(h.cut).toHaveLength(1);

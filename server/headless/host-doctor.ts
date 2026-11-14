@@ -74,7 +74,7 @@ function systemCheck(probe: HostProbe): HostCheck {
 function archCheck(probe: HostProbe): HostCheck {
   if (probe.arch === "x64") return ok("arch", "x86_64");
   if (probe.arch === "arm64") return warn("arch", "arm64: the server runs here, but a self-hosted Team server is supported on x86_64 only");
-  return fail("arch", `${probe.arch}: CryBot's images are built for x86_64 and arm64 only`, "use an x86_64 server");
+  return fail("arch", `${probe.arch}: Cry Bot's images are built for x86_64 and arm64 only`, "use an x86_64 server");
 }
 
 async function containerCheck(probe: HostProbe): Promise<HostCheck> {
@@ -115,10 +115,10 @@ export async function connectorReport(probe: HostProbe): Promise<ConnectorReport
 function connectorChecks(report: ConnectorReport | null): HostCheck[] {
   if (!report) return [];
   const problems = report.checks.filter((check) => !check.ok || check.warning);
-  if (!problems.length) return [ok("connector", `CryBot connector: its ${report.checks.length} checks pass, the bots' box among them`)];
+  if (!problems.length) return [ok("connector", `Cry Bot connector: its ${report.checks.length} checks pass, the bots' box among them`)];
   return problems.map((check) => check.ok
-    ? warn(`connector-${check.id}`, `CryBot connector: ${check.id}`, check.fix)
-    : fail(`connector-${check.id}`, `CryBot connector: the ${check.id} check fails`, check.fix ?? "run CryBot's install command again"));
+    ? warn(`connector-${check.id}`, `Cry Bot connector: ${check.id}`, check.fix)
+    : fail(`connector-${check.id}`, `Cry Bot connector: the ${check.id} check fails`, check.fix ?? "run Cry Bot's install command again"));
 }
 
 function userNamespaceCheck(probe: HostProbe, connector: ConnectorReport | null): HostCheck {
@@ -130,10 +130,10 @@ function userNamespaceCheck(probe: HostProbe, connector: ConnectorReport | null)
   if (sysctl("kernel.apparmor_restrict_unprivileged_userns") === "1") {
     // A CryBot home runs under its own AppArmor profile (cry-home-narrow), which allows them for that container alone.
     if (connector?.checks.some((check) => check.id === "box" && check.ok)) {
-      return ok("userns", "Unprivileged user namespaces: AppArmor restricts them here, and CryBot's home has them through its own AppArmor profile");
+      return ok("userns", "Unprivileged user namespaces: AppArmor restricts them here, and Cry Bot's home has them through its own AppArmor profile");
     }
     return fail("userns", "Bot sandbox: AppArmor blocks unprivileged user namespaces", connector
-      ? "run CryBot's install command again: it loads the home's own AppArmor profile, so this server-wide switch can stay on"
+      ? "run Cry Bot's install command again: it loads the home's own AppArmor profile, so this server-wide switch can stay on"
       : keep("kernel.apparmor_restrict_unprivileged_userns=0"));
   }
   if (sysctl("kernel.unprivileged_userns_clone") === "0") {
@@ -212,7 +212,7 @@ async function portChecks(probe: HostProbe, options: HostOptions): Promise<HostC
   const taken = listeningPorts(probe);
   const ours = taken.has(options.port) && await probe.serverAnswers(options.port);
   const server = !taken.has(options.port) ? ok("port", `Port ${options.port} is free for the server`)
-    : ours ? ok("port", `CryBot already answers on port ${options.port}`)
+    : ours ? ok("port", `Cry Bot already answers on port ${options.port}`)
       : fail("port", `Port ${options.port} is taken by another program`, `stop it (sudo ss -ltnp 'sport = :${options.port}' names it), or run the server with --port N`);
   const web = [80, 443].filter((port) => taken.has(port));
   if (!web.length) return [server, ok("web-ports", "Ports 80 and 443 are free")];
@@ -241,7 +241,7 @@ async function clockCheck(probe: HostProbe): Promise<HostCheck> {
 export async function checkHost(probe: HostProbe, options: HostOptions): Promise<HostCheck[]> {
   if (probe.platform !== "linux") {
     const name = probe.platform === "darwin" ? "macOS" : probe.platform === "win32" ? "Windows" : probe.platform;
-    return [fail("platform", `doctor --host checks a Linux server, and this is ${name}`, "run it on the Linux server that will host CryBot")];
+    return [fail("platform", `doctor --host checks a Linux server, and this is ${name}`, "run it on the Linux server that will host Cry Bot")];
   }
   const [containers, ports, clock, connector] = await Promise.all([containerCheck(probe), portChecks(probe, options), clockCheck(probe), connectorReport(probe)]);
   return [systemCheck(probe), archCheck(probe), containers, userNamespaceCheck(probe, connector), seccompCheck(probe), cgroupCheck(probe),

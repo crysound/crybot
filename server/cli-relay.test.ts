@@ -23,7 +23,7 @@ describe("crybot serve --relay", () => {
   it("prints the relay QR for a phone code, and the usual block for everything else", () => {
     const body = { inviteUrl: invite, expiresAt: Date.now() + 600_000, relay: status() };
     const block = relayPairingBlock(body, true, "crybot")!;
-    expect(block).toContain("Scan with the CryBot app. It connects through CryBot Relay, end-to-end encrypted");
+    expect(block).toContain("Scan with the Cry Bot app. It connects through Cry Bot Relay, end-to-end encrypted");
     expect(block).toContain("Paired phones: 1 of 20. Remove one: crybot devices revoke ID");
     expect(relayPairingBlock(body, false, "crybot")).toBeNull();
     expect(relayPairingBlock({ ...body, relay: undefined }, true, "crybot")).toBeNull();
@@ -31,10 +31,10 @@ describe("crybot serve --relay", () => {
   });
 
   it("says why a phone cannot pair yet, in the person's terms", () => {
-    expect(relayProblemLines(null, "crybot")).toEqual(["CryBot Relay is off on this server. Start it with: crybot serve --relay"]);
+    expect(relayProblemLines(null, "crybot")).toEqual(["Cry Bot Relay is off on this server. Start it with: crybot serve --relay"]);
     expect(relayProblemLines(status({ grant: "signed-out", relay: "off" }), "crybot")[0]).toMatch(/CRYBOT_PHONE_RELAY_TOKEN/);
     expect(relayProblemLines(status({ grant: "unavailable", relay: "off" }), "npx crybot")[0]).toMatch(/not available for this machine right now\. The server keeps working here/);
-    expect(relayProblemLines(status({ relay: "connecting", node: null }), "crybot")[0]).toMatch(/^Can't reach CryBot Relay yet\. The server keeps working here/);
+    expect(relayProblemLines(status({ relay: "connecting", node: null }), "crybot")[0]).toMatch(/^Can't reach Cry Bot Relay yet\. The server keeps working here/);
     expect(relayProblemLines(status(), "crybot")).toEqual([]);
   });
 

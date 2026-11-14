@@ -309,7 +309,7 @@ async function showPhonePairing(options: CliOptions, origin: string | undefined,
   if (options.relay) return showRelayPairing({ tty: process.stdout.isTTY === true, status: async () => (await api(options.port, "/api/auth/pairing")).body?.relay, mint: () => mintPairing(options.port, { client: true, label: options.label ?? (options.phone === "android" ? "Android" : "iPhone / iPad"), phone: options.phone ?? "ios" }), log, prefix: cliPrefix() });
   const ready = !!origin && await verifyPhoneEndpoint(options.port, origin);
   if (!ready) {
-    log("Phone access is not reachable yet. CryBot is ready on this computer; no phone pairing code was created.");
+    log("Phone access is not reachable yet. Cry Bot is ready on this computer; no phone pairing code was created.");
     log(`Check the HTTPS connection, then run ${cliCommand("pair")} again with the same --data-dir and --port.`);
     return false;
   }
@@ -336,7 +336,7 @@ async function mintPairing(port: number, options: { label?: string; client?: boo
 /** Never asks anything: the running server's own address (its routes) goes in the link. */
 export async function runPair(options: CliOptions): Promise<number> {
   if (!(await serverUp(options.port))) {
-    console.error(`No CryBot server is running here. Start it: ${cliCommand("serve")}${options.port !== 8799 ? ` (or name its port: --port ${options.port})` : ""}`);
+    console.error(`No Cry Bot server is running here. Start it: ${cliCommand("serve")}${options.port !== 8799 ? ` (or name its port: --port ${options.port})` : ""}`);
     return 1;
   }
   const advertised = await api(options.port, "/api/auth/pairing").catch(() => ({ status: 0, body: {} as any }));
@@ -351,7 +351,7 @@ export async function runPair(options: CliOptions): Promise<number> {
 
 export async function runSessions(options: CliOptions): Promise<number> {
   if (!(await serverUp(options.port))) {
-    console.error(`no CryBot server on http://127.0.0.1:${options.port}`);
+    console.error(`no Cry Bot server on http://127.0.0.1:${options.port}`);
     return 1;
   }
   if (options.revoke) {
@@ -392,9 +392,9 @@ export async function runSessions(options: CliOptions): Promise<number> {
 export async function runStatus(options: CliOptions, io: CliIo = defaultIo()): Promise<number> {
   const body: any = await fetch(`http://127.0.0.1:${options.port}/.well-known/crybot/environment`).then((r) => r.json()).catch(() => null);
   if (body && options.json) io.log(JSON.stringify(body, null, 2));
-  if (!body) io.error(`No CryBot server is running here. Start it: ${cliCommand("serve")}`);
+  if (!body) io.error(`No Cry Bot server is running here. Start it: ${cliCommand("serve")}`);
   if (body && !options.json) {
-    io.log(`Server "${body.label}"   running · CryBot ${body.version} on ${body.platform}\n  Local        127.0.0.1:${options.port}`);
+    io.log(`Server "${body.label}"   running · Cry Bot ${body.version} on ${body.platform}\n  Local        127.0.0.1:${options.port}`);
     const address = await api(options.port, "/api/auth/pairing").then((r) => (typeof r.body?.publicUrl === "string" ? r.body.publicUrl as string : null)).catch(() => null);
     if (!address || isLoopbackHost(new URL(address).hostname)) io.log(`  Address      none: reachable from this machine only. Ways in: ${cliCommand("serve --help")}`);
     else for (const line of reachLines(address.startsWith("http:") ? "lan" : "public-url", address, options.port, cliPrefix(), address.startsWith("http:") ? undefined : await checkReach(options.port, address))) io.log(`  ${line.replace(/^Reach   /, "Address     ")}`);
@@ -642,12 +642,12 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
       await new Promise((r) => setTimeout(r, 250));
     }
     if (exited !== null) {
-      if (exited !== 0) log(`CryBot could not start.${logPath ? ` Details: ${logPath}` : " See the output above."}`);
+      if (exited !== 0) log(`Cry Bot could not start.${logPath ? ` Details: ${logPath}` : " See the output above."}`);
       return exited;
     }
     if (stopping) return await childExit;
     if (!(await serverUp(options.port, child.pid))) {
-      console.error(`CryBot did not become ready within a minute.${logPath ? ` Details: ${logPath}` : " See its output above."}`);
+      console.error(`Cry Bot did not become ready within a minute.${logPath ? ` Details: ${logPath}` : " See its output above."}`);
       await stop();
       return 1;
     }
@@ -670,7 +670,7 @@ export async function runServe(options: CliOptions, log: (line: string) => void 
     const route: Route | null = options.domain ? "domain" : tailscaleShare ? "tailscale" : publicUrl ? "public-url" : env.CRYBOT_LAN === "1" ? "lan" : null;
     const origin = route === "lan" ? lanUrl(options.port, env) : publicUrl ?? null;
     log("");
-    log(`CryBot ${serverVersion()} · server "${described?.body?.label ?? options.label ?? "this machine"}"`);
+    log(`Cry Bot ${serverVersion()} · server "${described?.body?.label ?? options.label ?? "this machine"}"`);
     if (options.guided) {
       log("Your bots and conversations are saved automatically.");
       log(`Details if you need help: ${logPath}`);
@@ -718,7 +718,7 @@ export async function serveUntilStopped(options: CliOptions, run: (options: CliO
   for (;;) {
     const code = await run(launch);
     if (!policy.again(code)) return code;
-    console.log("\nCryBot is starting again to finish installing a copy from the desktop app…");
+    console.log("\nCry Bot is starting again to finish installing a copy from the desktop app…");
     launch = { ...options, pair: false, open: false };
   }
 }

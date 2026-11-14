@@ -30,7 +30,7 @@ export interface AcpOneShotInput {
   timeoutMs?: number;
 }
 
-const REFUSAL = "CryBot background text allows no tools, files, terminals or approvals.";
+const REFUSAL = "Cry Bot background text allows no tools, files, terminals or approvals.";
 
 export function runAcpOneShot(input: AcpOneShotInput): Promise<string> {
   const { signal, onUsage } = input.options ?? {};

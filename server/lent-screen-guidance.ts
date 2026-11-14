@@ -21,16 +21,16 @@ const NEEDS_SETUP = /\bbrowser_(?:requires_setup|route_unavailable)\b/u;
 
 const RAW_FAILURES: ReadonlyArray<[RegExp, string]> = [
   [/\bspawn\b.*\bcua-driver(?:\.exe)?\b.*\b(?:ENOENT|EPERM|EACCES|EBUSY|UNKNOWN)\b|\bcua-driver binary not found\b/iu,
-    "Computer control could not start on this computer: its helper, cua-driver, is missing or blocked. Tell the person in one sentence: Windows Security may have quarantined it, so on that PC open Windows Security → Virus & threat protection → Protection history, restore or allow cua-driver.exe (or reinstall CryBot), then restart CryBot. Do not retry until they say it is fixed."],
+    "Computer control could not start on this computer: its helper, cua-driver, is missing or blocked. Tell the person in one sentence: Windows Security may have quarantined it, so on that PC open Windows Security → Virus & threat protection → Protection history, restore or allow cua-driver.exe (or reinstall Cry Bot), then restart Cry Bot. Do not retry until they say it is fixed."],
   [/^Computer-control transport closed$/u,
-    "Computer control stopped on this computer because its helper exited and CryBot is restarting it by itself, so try the action once more in a few seconds, and if it fails the same way, tell the person to quit and reopen CryBot on that computer (on Windows, after restoring cua-driver.exe from Windows Security's Protection history if it was quarantined)."],
+    "Computer control stopped on this computer because its helper exited and Cry Bot is restarting it by itself, so try the action once more in a few seconds, and if it fails the same way, tell the person to quit and reopen Cry Bot on that computer (on Windows, after restoring cua-driver.exe from Windows Security's Protection history if it was quarantined)."],
   [/^Computer control is unavailable\. Enable it in the local app and grant OS permissions first\.$/u,
-    "Computer control is not running on this computer. Tell the person in one sentence to open CryBot on it: on Windows, restore cua-driver.exe if Windows Security quarantined it (Protection history) or reinstall; on a Mac, allow Accessibility and Screen Recording for CryBot. Then try again."],
+    "Computer control is not running on this computer. Tell the person in one sentence to open Cry Bot on it: on Windows, restore cua-driver.exe if Windows Security quarantined it (Protection history) or reinstall; on a Mac, allow Accessibility and Screen Recording for Cry Bot. Then try again."],
   // Older desktops say this for any failed screen check, though it is rarely a person.
   [/^This computer is in use locally or held by a person\. Wait, then observe it again before acting\.$/u,
-    "This computer did not let this call use its screen, so it was not performed. Another bot on it may be using the screen, or CryBot on it could not check; it is not necessarily a person. Try again in a minute; if it keeps saying this, tell the person to update CryBot on that computer, or quit and reopen it."],
+    "This computer did not let this call use its screen, so it was not performed. Another bot on it may be using the screen, or Cry Bot on it could not check; it is not necessarily a person. Try again in a minute; if it keeps saying this, tell the person to update Cry Bot on that computer, or quit and reopen it."],
   [/^fetch failed$/u,
-    "CryBot on this computer is not answering its own screen-control check. Tell the person to restart CryBot on that computer, then try again."],
+    "Cry Bot on this computer is not answering its own screen-control check. Tell the person to restart Cry Bot on that computer, then try again."],
 ];
 
 function textOf(result: ToolResult): string {

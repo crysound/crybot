@@ -337,7 +337,7 @@ export const CURSOR_SIGN_IN: DeviceSignIn = {
   homeDir: ".cursor",
   loginArgs: ["login"],
   env: { NO_OPEN_BROWSER: "1" },
-  install: "Install Cursor's CLI (https://cursor.com/docs/cli/installation) for the user running CryBot, then try again.",
+  install: "Install Cursor's CLI (https://cursor.com/docs/cli/installation) for the user running Cry Bot, then try again.",
   failure: cursorLoginFailure,
   status: { args: ["status", "--format", "json"], read: readCursorStatus },
 };

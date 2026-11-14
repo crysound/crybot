@@ -35,7 +35,7 @@ export async function runPhoneSetup(
     options: { ...options, ...route, client: true, pair: true }, phone,
   });
   for (;;) {
-    const device = await io.choose("Use CryBot on your phone?", [
+    const device = await io.choose("Use Cry Bot on your phone?", [
       "Skip for now",
       "iPhone / iPad — native app or Safari",
       "Android — app or browser",
@@ -64,7 +64,7 @@ export async function runPhoneSetup(
       if (route === 2) { back = true; continue; }
       if (route === 0) {
         io.log("Tailscale must already be installed and signed in on this computer and phone, with HTTPS certificates enabled for the tailnet.");
-        if (!await io.confirm("Allow CryBot to serve HTTPS to your tailnet while it runs?", false)) continue;
+        if (!await io.confirm("Allow Cry Bot to serve HTTPS to your tailnet while it runs?", false)) continue;
         return selected(phone, { tailscale: true, publicUrl: undefined });
       }
       io.log("Use an HTTPS reverse proxy you already configured for this server. Enter only its origin, without a password, pairing code, path, query or fragment.");
@@ -89,12 +89,12 @@ export function phonePairingInstructions(
   const origin = input.origin ? normalizePhoneOrigin(input.origin) : null;
   if (!input.ready || !origin) {
     return ["Phone access is not ready yet. No phone QR should be shown until the HTTPS connection is verified.",
-      "Your local CryBot can still be used on this computer."];
+      "Your local Cry Bot can still be used on this computer."];
   }
   return [
     phone === "ios"
-      ? "On iPhone or iPad, scan the QR with Camera to open Safari. If you already have the CryBot iOS app, use its pairing scanner or paste the full pairing link there."
-      : "On Android, open the CryBot app and scan the QR with its pairing scanner. The QR is an app link, so Camera will not open it in a browser.",
+      ? "On iPhone or iPad, scan the QR with Camera to open Safari. If you already have the Cry Bot iOS app, use its pairing scanner or paste the full pairing link there."
+      : "On Android, open the Cry Bot app and scan the QR with its pairing scanner. The QR is an app link, so Camera will not open it in a browser.",
     `Or open ${origin}/pair on your phone and enter the code.`,
     "Choose Connect on the phone. Scanning a QR does not mean the phone is paired.",
     "The code works once and expires after five minutes. This phone receives client access: chat and approvals, not settings or pairing administration.",

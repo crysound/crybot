@@ -300,13 +300,13 @@ const EMAIL_LOGIN = "An email sign-in";
 export const CODE_FROM_INBOX = "If the site sent it to the person's own email or phone, read it from their connected email or messages and type it in yourself; otherwise call request_sign_in so the person enters it.";
 
 const CODE_MISS: Record<CodeMiss, string> = {
-  "wrong-sender": "An email that looked like a sign-in code arrived, but not from an address of this site, so CryBot did not use it.",
-  ambiguous: "The site's email held more than one possible code, or two different codes arrived, so CryBot typed none rather than guess.",
-  used: "The only code in the site's email had already been tried here, so CryBot did not type it again.",
+  "wrong-sender": "An email that looked like a sign-in code arrived, but not from an address of this site, so Cry Bot did not use it.",
+  ambiguous: "The site's email held more than one possible code, or two different codes arrived, so Cry Bot typed none rather than guess.",
+  used: "The only code in the site's email had already been tried here, so Cry Bot did not type it again.",
   "not-found": "No email with a code from this site arrived in the connected mailbox within about a minute.",
-  unreadable: "CryBot could not read the connected mailbox just now.",
+  unreadable: "Cry Bot could not read the connected mailbox just now.",
 };
-const FROM_MAILBOX = " CryBot read the code from the person's connected email and typed it; you never see it or the email.";
+const FROM_MAILBOX = " Cry Bot read the code from the person's connected email and typed it; you never see it or the email.";
 
 interface PageState { href: string; title: string; present: boolean; busy: boolean; submitted: boolean; leaving: boolean; alert: string; human: boolean }
 
@@ -665,7 +665,7 @@ class LoginRun {
     if (answer.kind === "miss") this.codeHelp = `${CODE_MISS[answer.why]} ${CODE_FROM_INBOX}`;
     if (answer.kind === "no-mailbox") {
       this.wantsMailbox = true;
-      this.codeHelp = "No email account is connected for CryBot to read it.";
+      this.codeHelp = "No email account is connected for Cry Bot to read it.";
     }
     return answer;
   }

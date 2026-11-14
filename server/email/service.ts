@@ -286,7 +286,7 @@ export function createEmailService(deps: EmailServiceDeps) {
       const problem = sendingProblem(account);
       if (problem) return { ok: false, error: problem };
       try {
-        await live.send(account, guard, { to: [account.address], subject: "CryBot test", text: `This message is a test from CryBot: sending from ${account.address} works.` });
+        await live.send(account, guard, { to: [account.address], subject: "Cry Bot test", text: `This message is a test from Cry Bot: sending from ${account.address} works.` });
         return { ok: true };
       } catch (error) {
         if (error instanceof SendingError && LASTING_SENDING_FAULTS.has(error.fault)) store.markSendingProblem(account, error.message);

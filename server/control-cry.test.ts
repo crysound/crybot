@@ -132,7 +132,7 @@ describe("control-cry command mapping", () => {
       callTool: vi.fn() as any,
       env: {},
     })).rejects.toMatchObject({
-      message: "mutating commands require an explicit CryBot instance",
+      message: "mutating commands require an explicit Cry Bot instance",
     });
   });
 
@@ -184,7 +184,7 @@ describe("control-cry command mapping", () => {
       callTool: vi.fn() as any,
       env: {},
     })).rejects.toMatchObject({
-      message: "mutating commands require an explicit CryBot instance",
+      message: "mutating commands require an explicit Cry Bot instance",
     });
   });
 
@@ -230,7 +230,7 @@ describe("control-cry command mapping", () => {
     });
     await expect(runControlCry(["set-model", "--bot", "bot-1", "--instance", "claude", "--model", "model-b"], {
       callTool: callTool as any, env: {},
-    })).rejects.toThrow("explicit CryBot instance");
+    })).rejects.toThrow("explicit Cry Bot instance");
   });
 });
 

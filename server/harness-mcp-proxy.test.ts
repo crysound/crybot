@@ -51,7 +51,7 @@ describe("harness MCP capability proxy", () => {
   it("sends Email calls to their own harness route with the Email instructions", async () => {
     status = 200;
     payload = { result: { tools: [{ name: "EMAIL_READ_MESSAGE" }], instructions: "mail" } };
-    await expect(harnessMcpRequest(frame("initialize"), connection("email"))).resolves.toMatchObject({ result: { serverInfo: { name: "crybot-email" }, instructions: expect.stringContaining("CryBot holds the password") } });
+    await expect(harnessMcpRequest(frame("initialize"), connection("email"))).resolves.toMatchObject({ result: { serverInfo: { name: "crybot-email" }, instructions: expect.stringContaining("Cry Bot holds the password") } });
     await expect(harnessMcpRequest(frame("tools/list"), connection("email"))).resolves.toEqual({ jsonrpc: "2.0", id: 1, result: { tools: [{ name: "EMAIL_READ_MESSAGE" }], instructions: "mail" } });
     expect(requests.at(-1)).toEqual({ path: "/api/internal/email/mcp", auth: "Bearer scoped-capability", body: { method: "tools/list", params: {} } });
     status = 401;

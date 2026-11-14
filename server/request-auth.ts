@@ -89,7 +89,7 @@ function loopbackTrust(input: Parameters<typeof resolveLoopbackTrust>[0]): { tru
   const raw = (input.env ?? process.env).CRYBOT_LOOPBACK_TRUST;
   const requested = raw?.trim().toLowerCase();
   if (input.cloudHome) {
-    return { trust: "service", reason: "CryBot Cloud home", ...(raw !== undefined && requested !== "service" ? { warning: "CRYBOT_LOOPBACK_TRUST is ignored on a CryBot Cloud home: a local request is always a service" } : {}) };
+    return { trust: "service", reason: "Cry Bot Cloud home", ...(raw !== undefined && requested !== "service" ? { warning: "CRYBOT_LOOPBACK_TRUST is ignored on a Cry Bot Cloud home: a local request is always a service" } : {}) };
   }
   if (input.desktopManaged) {
     return { trust: "owner", reason: "desktop app", ...(raw !== undefined ? { warning: "CRYBOT_LOOPBACK_TRUST is ignored in the desktop app" } : {}) };

@@ -120,12 +120,12 @@ export function lentLine(name: string, state: Exclude<LentState, { kind: "ready"
   const { computer, device } = state;
   const theirs = personal && device !== "computer" ? `your ${device} (${computer})` : computer;
   switch (state.kind) {
-    case "offline": return `${name} runs on ${theirs}, which is offline right now: CryBot on it is closed, or the ${device} is asleep or off.`;
-    case "stopped": return `${name} runs on ${theirs}, which no longer lends itself to ${place}: CryBot on it is paused or signed out.`;
-    case "never": return `${name} runs on ${theirs}, which isn't lent to ${place}: it works once CryBot is open on that computer and signed in to ${place}.`;
-    case "outdated": return `${name} runs on ${theirs}, whose CryBot is too old to run it for ${place}: update CryBot on that ${device}.`;
+    case "offline": return `${name} runs on ${theirs}, which is offline right now: Cry Bot on it is closed, or the ${device} is asleep or off.`;
+    case "stopped": return `${name} runs on ${theirs}, which no longer lends itself to ${place}: Cry Bot on it is paused or signed out.`;
+    case "never": return `${name} runs on ${theirs}, which isn't lent to ${place}: it works once Cry Bot is open on that computer and signed in to ${place}.`;
+    case "outdated": return `${name} runs on ${theirs}, whose Cry Bot is too old to run it for ${place}: update Cry Bot on that ${device}.`;
     case "port": return `${name} runs on ${theirs}, which reaches only an MCP server on its own port, 1024 or higher, at that ${device}'s address: save ${name} with the port its server listens on.`;
-    case "no-terminal": return `${name} starts a program on ${theirs}, which doesn't let ${place} run programs right now: turn on "Let Clouds run commands on this ${device}" from the CryBot icon on that ${device}.`;
+    case "no-terminal": return `${name} starts a program on ${theirs}, which doesn't let ${place} run programs right now: turn on "Let Clouds run commands on this ${device}" from the Cry Bot icon on that ${device}.`;
   }
 }
 

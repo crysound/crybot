@@ -91,7 +91,7 @@ function secretValues(category: string, content: OnePasswordItemContent): Map<st
 /** The SDK did not load: a fault in this installation, never in the person's token, which was not even checked. */
 export class OnePasswordUnavailableError extends Error {
   constructor() {
-    super("1Password could not start on this server, so your token was not checked: this installation is missing its 1Password part. Update CryBot, then connect again.");
+    super("1Password could not start on this server, so your token was not checked: this installation is missing its 1Password part. Update Cry Bot, then connect again.");
     this.name = "OnePasswordUnavailableError";
   }
 }

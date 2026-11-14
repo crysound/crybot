@@ -606,7 +606,7 @@ describe("containerComputerStatus", () => {
 
     expect(status.managed).toBe(false);
     expect(status.ready).toBe(false);
-    expect(status.problem).toContain("not created by CryBot");
+    expect(status.problem).toContain("not created by Cry Bot");
   });
 
   it("prefers a running runtime over an earlier installed but stopped one", async () => {
@@ -1072,7 +1072,7 @@ describe("containerComputerAction", () => {
     });
 
     await expect(containerComputerAction("remove", fake.run, "linux")).rejects.toThrow(
-      /not created by CryBot.*remove it manually/i,
+      /not created by Cry Bot.*remove it manually/i,
     );
     expect(fake.calls).not.toContain(`docker rm -f ${CONTAINER}`);
   });

@@ -37,9 +37,9 @@ async function doctorOnce(ctx: VerbContext): Promise<VerbOutcome> {
   const problems: string[] = [];
   const warnings: string[] = [];
   const isCry = health.app === "crybot";
-  if (!isCry) problems.push(`${client.baseUrl} answered, but it is not CryBot`);
+  if (!isCry) problems.push(`${client.baseUrl} answered, but it is not Cry Bot`);
   const tooOld = Boolean(server) && server!.capabilities?.jobs !== true;
-  if (tooOld) problems.push(`CryBot ${server!.version ?? "(unknown version)"} is too old for the headless commands: it cannot report a conversation's job`);
+  if (tooOld) problems.push(`Cry Bot ${server!.version ?? "(unknown version)"} is too old for the headless commands: it cannot report a conversation's job`);
   if (isCry && !availableCount) problems.push("no engine is available: set one up with `crybot engine set KIND --key-env VAR`");
   if (session?.kind === "session" && typeof session.expiresAt === "number" && session.expiresAt - Date.now() < 14 * DAY) {
     warnings.push(`this session expires in ${Math.max(0, Math.floor((session.expiresAt - Date.now()) / DAY))} days: get a new one with crybot connect`);
@@ -60,7 +60,7 @@ async function doctorOnce(ctx: VerbContext): Promise<VerbOutcome> {
     },
     exitCode: ok ? EXIT.done : isCry && !tooOld ? EXIT.failed : EXIT.unreachable,
     human: [
-      `${server ? `CryBot ${server.version} ("${server.label}")` : "Cry Bot"} at ${client.baseUrl}: ${ok ? "ready" : "not ready"}`,
+      `${server ? `Cry Bot ${server.version} ("${server.label}")` : "Cry Bot"} at ${client.baseUrl}: ${ok ? "ready" : "not ready"}`,
       `You are: ${who}`,
       `Engines available: ${availableEngines.length ? availableEngines.join(", ") : availableCount ? `${availableCount} (which ones needs a session)` : "none"}`,
       ...(browser ? [`Bots' browser: ${browser.kind === "engine" ? `installed${browser.version ? ` (${browser.version})` : ""}` : "not available"}`] : []),

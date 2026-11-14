@@ -1386,7 +1386,7 @@ describe("saving OpenCode provider keys", () => {
     expect(refused("OPENCODE_API_KEY")).toContain("OpenCode API key box");
     for (const name of ["OPENCODE_SERVER_KEY", "CRYBOT_CLOUD_BOAT_TOKEN", "CRYBOT_LICENSE_KEY", "BOX_TOKEN", "COMPOSIO_API_KEY",
       "OPENAI_COMPAT_API_KEY", "XAI_API_KEY", "MISTRAL_API_KEY", "CURSOR_API_KEY", "FACTORY_API_KEY"]) {
-      expect(refused(name)).toBe(`CryBot keeps ${name} for itself, so OpenCode can't be given it here. Put this key in opencode.json instead.`);
+      expect(refused(name)).toBe(`Cry Bot keeps ${name} for itself, so OpenCode can't be given it here. Put this key in opencode.json instead.`);
     }
   });
 

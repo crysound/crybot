@@ -199,7 +199,7 @@ describe("included Boat computers", () => {
     expect(lists()).toHaveLength(2);
     dropLists = 2;
     await expect(boat.findBoat({}, "unlisted-bot")).rejects.toMatchObject({
-      message: "Could not reach CryBot Cloud's computer service to list cloud computers — check your connection and refresh", status: 503, transient: true,
+      message: "Could not reach Cry Bot Cloud's computer service to list cloud computers — check your connection and refresh", status: 503, transient: true,
     });
     expect(lists()).toHaveLength(4);
     dropLists = 2;

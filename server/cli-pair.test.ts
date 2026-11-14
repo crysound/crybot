@@ -137,7 +137,7 @@ describe("crybot pair", () => {
     const failure = await runPair(options).then(() => null, (error: unknown) => error);
     expect(failure).toBeInstanceOf(Error);
     const message = (failure as Error).message;
-    expect(message).toContain("The CryBot desktop app runs this server");
+    expect(message).toContain("The Cry Bot desktop app runs this server");
     expect(message).toContain("Settings → Remote access");
     // A terminal `serve` would not get the keys the app keeps in its own credential store, so it is not offered.
     expect(message).not.toContain("crybot serve");
@@ -147,7 +147,7 @@ describe("crybot pair", () => {
   it("says how to start a server when none runs", async () => {
     fetchMock.mockImplementation(async () => { throw new Error("offline"); });
     expect(await runPair(options)).toBe(1);
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("No CryBot server is running here. Start it: crybot serve"));
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("No Cry Bot server is running here. Start it: crybot serve"));
   });
 });
 
@@ -170,7 +170,7 @@ describe("the phone-app link `crybot pair --phone android` scans", () => {
     expect(await runPair({ ...options, phone: "android", publicUrl: explicitOrigin })).toBe(0);
     expect(printed()).not.toContain("crybot://");
     expect(printed()).not.toContain(credential);
-    expect(printed()).toContain("scan this with the CryBot app");
+    expect(printed()).toContain("scan this with the Cry Bot app");
   });
 
   it("keeps a proxy path in the web link", async () => {

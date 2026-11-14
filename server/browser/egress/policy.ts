@@ -15,7 +15,7 @@ export type Refusal = "cry" | "this-computer" | "local-network" | "link-local" |
 
 /** How a refusal reads in the page-health line. */
 export const REFUSAL_TEXT: Record<Refusal, string> = {
-  cry: "CryBot's own service",
+  cry: "Cry Bot's own service",
   "this-computer": "a service on this computer that no bot started",
   "local-network": "the local network",
   "link-local": "a link-local address",

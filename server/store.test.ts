@@ -2638,7 +2638,7 @@ describe("soul", () => {
   it("on a Team Cloud, gives a member's Chief's apps only to the bot it makes for that member", () => {
     const store = new Store(selection);
     const ada = "ada@acme.test";
-    const chief = store.createBot({ name: "Ada's CryBot", section: "Sales", createdBy: ada, visibility: { people: [ada] } });
+    const chief = store.createBot({ name: "Ada's Cry Bot", section: "Sales", createdBy: ada, visibility: { people: [ada] } });
     store.patchBot(chief.id, { chiefOfStaff: true, connectorTools: { gmail: { tools: "*" }, slack: { tools: ["SLACK_SEND_MESSAGE"] } },
       connectorScopes: { apps: { gmail: "write", slack: "read" } } });
     const helper = createdBy(store, chief, "ada-helper");

@@ -103,7 +103,7 @@ describe("doctor --host", () => {
     const stock = { files: { "/proc/sys/kernel/apparmor_restrict_unprivileged_userns": "1\n" } };
     const passing = await checkHost(probe({ ...stock, run: connector(true) }), OPTIONS);
     expect(byId(passing, "userns")).toMatchObject({ status: "ok", message: expect.stringContaining("its own AppArmor profile") });
-    expect(byId(passing, "connector")).toEqual({ id: "connector", status: "ok", message: "CryBot connector: its 2 checks pass, the bots' box among them" });
+    expect(byId(passing, "connector")).toEqual({ id: "connector", status: "ok", message: "Cry Bot connector: its 2 checks pass, the bots' box among them" });
     expect(hostReport(passing).exitCode).toBe(0);
     const failing = await checkHost(probe({ ...stock, run: connector(false) }), OPTIONS);
     expect(byId(failing, "userns")).toMatchObject({ status: "FAIL", fix: expect.stringContaining("install command again") });
@@ -133,7 +133,7 @@ describe("doctor --host", () => {
     expect(byId(await checkHost(probe(taken), { ...OPTIONS, domain: "bot.example.com" }), "web-ports"))
       .toMatchObject({ status: "FAIL", message: "Ports 80 and 443 are taken, and --domain bot.example.com needs 80 and 443" });
     const ours = await checkHost(probe({ ...taken, serverAnswers: async () => true }), { ...OPTIONS, domain: "bot.example.com" });
-    expect(byId(ours, "port")).toMatchObject({ status: "ok", message: "CryBot already answers on port 8799" });
+    expect(byId(ours, "port")).toMatchObject({ status: "ok", message: "Cry Bot already answers on port 8799" });
     expect(byId(ours, "web-ports")!.status).toBe("warn");
   });
 

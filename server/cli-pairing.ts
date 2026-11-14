@@ -9,7 +9,7 @@ import type { PhoneRelayStatus } from "./phone-relay.ts";
 export function desktopOwnedRefusal(status: number, body: unknown): string | null {
   const error = (body as { error?: unknown } | null)?.error;
   if (status !== 403 || typeof error !== "string" || !error.includes("must come from the desktop app")) return null;
-  return "The CryBot desktop app runs this server, so it only pairs devices from the app itself: open CryBot on this computer and use Settings → Remote access.";
+  return "The Cry Bot desktop app runs this server, so it only pairs devices from the app itself: open Cry Bot on this computer and use Settings → Remote access.";
 }
 
 /** A clock time a code works until: "11:22", or "tomorrow 11:22" / a date when it runs past today. */
@@ -51,7 +51,7 @@ export function pairingBlock(input: {
   lines.push(`Link           ${input.link}`);
   lines.push("");
   lines.push("  Desktop app   ＋ → Connect to a server, paste the link");
-  lines.push(scanInvite ? "  Phone         scan this with the CryBot app" : "  Phone         scan with your camera or the CryBot app");
+  lines.push(scanInvite ? "  Phone         scan this with the Cry Bot app" : "  Phone         scan with your camera or the Cry Bot app");
   lines.push("");
   lines.push(qrToString(scanInvite ? input.inviteUrl! : input.link));
   if (!input.chatOnly) lines.push(`For a phone (chat and approvals only)   ${input.prefix} pair --phone`);
@@ -92,12 +92,12 @@ const isStatus = (value: unknown): value is PhoneRelayStatus =>
 
 /** Why phones cannot pair through the relay yet, in words for the person at the terminal; empty when they can. */
 export function relayProblemLines(status: PhoneRelayStatus | null, prefix: string): string[] {
-  if (!status) return [`CryBot Relay is off on this server. Start it with: ${prefix} serve --relay`];
+  if (!status) return [`Cry Bot Relay is off on this server. Start it with: ${prefix} serve --relay`];
   if (status.grant === "signed-out") return [`The configured phone relay rejected its credential. Check CRYBOT_PHONE_RELAY_TOKEN.`];
-  if (status.grant === "unavailable") return ["CryBot Relay is not available for this machine right now. The server keeps working here; it asks again every half hour."];
+  if (status.grant === "unavailable") return ["Cry Bot Relay is not available for this machine right now. The server keeps working here; it asks again every half hour."];
   if (status.grant === "failed") return ["The configured phone relay did not answer. The server keeps working here and keeps trying."];
   if (status.grant === "waiting") return ["Still asking the configured phone relay for a relay pass…"];
-  if (status.relay !== "connected") return ["Can't reach CryBot Relay yet. The server keeps working here and keeps trying; phones pair once it connects."];
+  if (status.relay !== "connected") return ["Can't reach Cry Bot Relay yet. The server keeps working here and keeps trying; phones pair once it connects."];
   return [];
 }
 
@@ -107,7 +107,7 @@ export function relayPairingBlock(body: Record<string, unknown>, chatOnly: boole
   if (!chatOnly || !isStatus(body.relay) || !invite || typeof body.expiresAt !== "number") return null;
   const lines = [
     `Phone pairing   works once, until ${untilText(body.expiresAt, now)} · chat and approvals`,
-    "  Scan with the CryBot app. It connects through CryBot Relay, end-to-end encrypted: no address, open port or VPN needed.",
+    "  Scan with the Cry Bot app. It connects through Cry Bot Relay, end-to-end encrypted: no address, open port or VPN needed.",
     "",
     qrToString(invite),
     ...relayProblemLines(body.relay, prefix),

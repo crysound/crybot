@@ -51,7 +51,7 @@ describe("updateClaudeCli", () => {
     };
 
     await expect(updateClaudeCli("claude", {}, execute, noAppCopy)).rejects.toThrow(
-      "Claude finished updating, but CryBot could not verify",
+      "Claude finished updating, but Cry Bot could not verify",
     );
   });
 

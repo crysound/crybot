@@ -130,7 +130,7 @@ function quoted(call: CountedCall): string {
 
 /** Opened as `[CryBot …]`, which model-written text cannot open, and never carrying what the command printed. */
 function loopNote(call: string, streak: number): string {
-  return `[CryBot: this exact call has failed the same way ${streak} times in a row: ${call}. Change approach, or stop and report what is blocking.]`;
+  return `[Cry Bot: this exact call has failed the same way ${streak} times in a row: ${call}. Change approach, or stop and report what is blocking.]`;
 }
 
 function loopCause(call: string, streak: number): string {

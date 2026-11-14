@@ -50,7 +50,7 @@ export function agentUnit(spec: { node: string; script: string; operator: string
   return [
     "# Written by `crybot fleet init`. The operator workspace creates and manages workspaces through this.",
     "[Unit]",
-    "Description=CryBot fleet agent",
+    "Description=Cry Bot fleet agent",
     "After=network-online.target",
     "Wants=network-online.target",
     "",
@@ -148,7 +148,7 @@ export function templateUnit(spec: { node: string; script: string; layout?: Flee
   return [
     "# Written by `crybot fleet init`. One unit for every workspace: %i is the slug.",
     "[Unit]",
-    "Description=CryBot workspace %i",
+    "Description=Cry Bot workspace %i",
     "After=network-online.target crybot-fence.service",
     "Wants=network-online.target",
     "Requires=crybot-fence.service",
@@ -183,7 +183,7 @@ export function fenceUnit(layout = fleetLayout()): string {
   return [
     "# Written by `crybot fleet init`: keeps each workspace's loopback ports to its own user.",
     "[Unit]",
-    "Description=CryBot per-workspace loopback fence",
+    "Description=Cry Bot per-workspace loopback fence",
     "",
     "[Service]",
     "Type=oneshot",

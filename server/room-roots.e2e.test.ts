@@ -15,14 +15,14 @@ import { ownTurnText } from "./testing/room-handoff-agent.ts";
 import { withAnswer } from "./testing/your-computer.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
-const RERUN_NOTE = "CryBot restarted while your previous turn here was running";
+const RERUN_NOTE = "Cry Bot restarted while your previous turn here was running";
 const RERUN_CHIP = "Resuming after a restart";
-const SECRET_PROVIDED = "CryBot credential update: the user securely provided";
+const SECRET_PROVIDED = "Cry Bot credential update: the user securely provided";
 const SEAT_FREE = "the computer this conversation waited for is free again";
-const INTERRUPTED_OUTWARD = "Interrupted by an CryBot restart after it already";
+const INTERRUPTED_OUTWARD = "Interrupted by a Cry Bot restart after it already";
 const SETTLED = "Your downstream room requests have settled.";
 const GOAL_RUN_ENDED = "The goal run this step belonged to ended with the restart.";
-const INTERRUPTED_LINE = "turn interrupted — CryBot restarted";
+const INTERRUPTED_LINE = "turn interrupted — Cry Bot restarted";
 
 const jsonl = (path: string): any[] => existsSync(path)
   ? readFileSync(path, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line)) : [];

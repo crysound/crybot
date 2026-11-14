@@ -207,11 +207,11 @@ describe("LentChromeDoors", () => {
   it("guidance names the computer and what to do", () => {
     const text = lentChromeGuidance("offline", { name: "User's MacBook", device: "Mac", online: false });
     expect(text).toContain("User's MacBook");
-    expect(text).toContain("open CryBot on that Mac");
+    expect(text).toContain("open Cry Bot on that Mac");
     expect(lentChromeGuidance("no-chrome", null)).toContain("chrome://inspect/#remote-debugging");
     const notLent = lentChromeGuidance("not-lent", null);
-    expect(notLent, "the app lends its Chrome by itself, and an older one needs updating").toContain("open CryBot on their Mac or PC, which lends its Chrome by itself (updating CryBot there if it is an older version)");
-    expect(notLent, "no switch to send the person to").not.toMatch(/turn on|Settings → CryBot Cloud/u);
+    expect(notLent, "the app lends its Chrome by itself, and an older one needs updating").toContain("open Cry Bot on their Mac or PC, which lends its Chrome by itself (updating Cry Bot there if it is an older version)");
+    expect(notLent, "no switch to send the person to").not.toMatch(/turn on|Settings → Cry Bot Cloud/u);
     expect(notLent, "or the way back to the built-in browser").toContain("switch this profile to Built-in under Settings → Browser profiles");
   });
 });

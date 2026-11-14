@@ -144,7 +144,7 @@ interface ConnectorRequest {
   authConfigId?: string;
 }
 
-const BAD_AUTH_CONFIG_ID = "CryBot showed no card: auth_config_id must be a Composio auth config id (ac_ and then letters "
+const BAD_AUTH_CONFIG_ID = "Cry Bot showed no card: auth_config_id must be a Composio auth config id (ac_ and then letters "
   + "or digits), copied from Auth Configs in the person's Composio project. Leave it out to use their newest enabled config.";
 
 /** Composio's own error names `auth_config_override`, so either spelling is read: on a toolkit entry, or at the top level
@@ -327,8 +327,8 @@ async function handle(received: Json): Promise<void> {
       send(textResult(
         id,
         nothingToSignIn
-          ? `CryBot showed the user a card that ${labels} is already connected; no sign-in started.${notes} Do not end this turn: carry on now.`
-          : `CryBot showed the user a secure connection card for ${labels}.${notes} End this turn now. The app will continue the task automatically after the connection finishes.`,
+          ? `Cry Bot showed the user a card that ${labels} is already connected; no sign-in started.${notes} Do not end this turn: carry on now.`
+          : `Cry Bot showed the user a secure connection card for ${labels}.${notes} End this turn now. The app will continue the task automatically after the connection finishes.`,
       ));
       return;
     }
@@ -338,7 +338,7 @@ async function handle(received: Json): Promise<void> {
       return;
     }
     if (/WAIT_FOR_CONNECTIONS$/i.test(name)) {
-      send(textResult(id, "CryBot is handling connection completion and will continue the task automatically."));
+      send(textResult(id, "Cry Bot is handling connection completion and will continue the task automatically."));
       return;
     }
     const app = appToolCall(name, params.arguments);
