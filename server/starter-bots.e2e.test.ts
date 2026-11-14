@@ -8,6 +8,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { cloudPairingSignature, cloudRequestSignature } from "./cloud-home.ts";
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
+import { fixtureInput, fixtureOutput } from "./testing/fixture-state.ts";
 import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
@@ -20,8 +22,7 @@ const manifest = (name: string) => ({ format: "crybot.team", version: 2, team: {
 class Cloud {
   home = mkdtempSync(join(tmpdir(), "cry-starter-bots-"));
   dataDir = join(this.home, ".crybot");
-  gate = join(this.home, "finish");
-  dump = join(this.home, "claude.json");
+  gate = fixtureInput(this.home, "finish");
   secret = randomBytes(32).toString("base64url");
   base = "";
   token = "";
@@ -39,19 +40,21 @@ class Cloud {
   }
   async start() {
     mkdirSync(this.dataDir, { recursive: true });
-    const claude = join(this.home, "held-claude.mjs");
+    const claude = fixtureEnginePath(this.dataDir, "held-claude.mjs");
     writeFileSync(claude, `#!/usr/bin/env node
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
 if (process.argv[2] !== "--version") {
   process.env.FAKE_CLAUDE_MODE = "slow";
   process.env.FAKE_CLAUDE_SLOW_FINISH_GATE = ${JSON.stringify(this.gate)};
-  process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(this.dump)};
+  const { engineOutput } = await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fixture-state.ts")).href)});
+  process.env.FAKE_CLAUDE_DUMP = engineOutput(${JSON.stringify(this.home)}, process.cwd(), "claude.json");
 }
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
     writeFileSync(join(this.dataDir, "config.json"), JSON.stringify({
       features: { smartSetupChoices: false },
+      defaultModelSelection: CLAUDE,
       instances: {
         ...Object.fromEntries(["codex", "cursor", "githubCopilot", "qwen", "hermes", "pi"].map((id) => [id, { driver: "not-a-real-driver" }])),
         claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: claude } },
@@ -108,8 +111,9 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     expect(chief, "a new Cloud's Cry Bot is its Chief").toBeTruthy();
     const sent = await this.api("POST", `/api/bots/${chief.id}/messages`, { text: "Add a specialist." });
     expect(sent.status, JSON.stringify(sent.body)).toBe(202);
-    await expect.poll(() => existsSync(this.dump), { timeout: 20_000 }).toBe(true);
-    const agents = JSON.parse(readFileSync(this.dump, "utf8")).mcpConfig.mcpServers.agents;
+    const dump = fixtureOutput(this.home, chief.id, "claude.json");
+    await expect.poll(() => existsSync(dump), { timeout: 20_000 }).toBe(true);
+    const agents = JSON.parse(readFileSync(dump, "utf8")).mcpConfig.mcpServers.agents;
     const env = agents.env.CRYBOT_GATE_UPSTREAM ? JSON.parse(agents.env.CRYBOT_GATE_UPSTREAM).env : agents.env;
     return { chief, token: env.CRYBOT_COMMS_TOKEN as string };
   }

@@ -12,7 +12,8 @@ import { parseRun, parseRunner } from "../../server/server-update.ts";
 const DEPLOY = join(import.meta.dirname, "..", "..", "deploy");
 const RUNNER = join(DEPLOY, "update-runner.sh");
 const FAKE = join(import.meta.dirname, "fake-compose-docker.mjs");
-const REPO = "ghcr.io/example/crybot";
+const REPO = "ghcr.io/crysound/crybot";
+const FEED_CURL = join(import.meta.dirname, "fake-update-curl.mjs");
 const posix = process.platform !== "win32";
 
 const id = (letter: string) => `sha256:${letter.repeat(64)}`;
@@ -60,13 +61,15 @@ function install(options: { stable?: Image; running?: Image; updater?: "real" | 
   writeFileSync(join(bin, "getent"), '#!/bin/sh\ncase "$1" in\n  group) [ -n "${FAKE_GETENT:-}" ] || exit 2; echo "$FAKE_GETENT" ;;\n  passwd) [ -n "${FAKE_PASSWD:-}" ] || exit 2; printf "%s\\n" "$FAKE_PASSWD" ;;\n  *) exit 2 ;;\nesac\n');
   writeFileSync(join(bin, "stat"), `#!/bin/sh
 case "$*" in
+  *" %u "*) for last; do :; done; case "$last" in "${root}" | "${root}/"*) echo 1000; exit 0 ;; esac ;;
   *" %g "*) echo "\${FAKE_GID:-1000}"; exit 0 ;;
   *"%U:%G"* | *"%Su:%Sg"*) for last; do :; done; echo "$(/usr/bin/stat -L -c %U "$last" 2>/dev/null || /usr/bin/stat -L -f %Su "$last"):\${FAKE_GROUP:-staff}"; exit 0 ;;
   *" %G "* | *" %Sg "*) echo "\${FAKE_GROUP:-staff}"; exit 0 ;;
 esac
 exec /usr/bin/stat "$@"
 `);
-  for (const name of ["docker", "id", "getent", "stat"]) chmodSync(join(bin, name), 0o755);
+  writeFileSync(join(bin, "curl"), `#!/bin/sh\nexec "${process.execPath}" "${FEED_CURL}" "$@"\n`);
+  for (const name of ["docker", "id", "getent", "stat", "curl"]) chmodSync(join(bin, name), 0o755);
   const images = [running, stable, NEW, NEXT, OLDER].filter((image, at, all) => all.findIndex((other) => other.id === image.id) === at).map((image) => ({ ...image, local: image === running || image.local }));
   const labels: Record<string, string[]> = {};
   if (options.earlierCopy) {
@@ -97,7 +100,7 @@ exec /usr/bin/stat "$@"
     env: {
       // The unit's own environment, as --install writes it, and nothing from the request.
       PATH: `${bin}:/usr/bin:/bin:/usr/sbin:/sbin`, HOME: root, FAKE_DOCKER_DIR: fake, CRYBOT_INSTALL_DIR: deploy, CRYBOT_UPDATE_STATE_DIR: state,
-      CRYBOT_UPDATE_POLICY: policy, CRYBOT_STABLE_URL: `file://${join(root, "stable.json")}`, CRYBOT_NEWEST_URL: `file://${join(root, "newest.json")}`,
+      CRYBOT_UPDATE_POLICY: policy, CRYBOT_UPDATE_URL: "https://feed.example.test/stable.json", FAKE_UPDATE_FEED_DIR: root,
       CRYBOT_UPDATE_POLL_S: "0", CRYBOT_UPDATE_WAIT_S: "120", CRYBOT_UPDATE_ENGINE_WAIT_S: "1", CRYBOT_RUNNER_QUIET_S: "0", CRYBOT_RUNNER_IDLE_S: "0", ...env,
     },
   });
@@ -119,7 +122,7 @@ exec /usr/bin/stat "$@"
     personRun: (env: Record<string, string> = {}) => spawnSync("bash", [join(deploy, "update.sh"), "--dir", deploy], {
       encoding: "utf8", input: "", timeout: 60_000,
       env: {
-        PATH: `${bin}:/usr/bin:/bin:/usr/sbin:/sbin`, HOME: root, FAKE_DOCKER_DIR: fake, CRYBOT_UPDATE_STATE_DIR: state, CRYBOT_STABLE_URL: `file://${join(root, "stable.json")}`,
+        PATH: `${bin}:/usr/bin:/bin:/usr/sbin:/sbin`, HOME: root, FAKE_DOCKER_DIR: fake, CRYBOT_UPDATE_STATE_DIR: state, CRYBOT_UPDATE_URL: "https://feed.example.test/stable.json", FAKE_UPDATE_FEED_DIR: root,
         CRYBOT_UPDATE_POLL_S: "0", CRYBOT_UPDATE_WAIT_S: "120", CRYBOT_UPDATE_ENGINE_WAIT_S: "1", ...env,
       },
     }),
@@ -174,6 +177,15 @@ describe.skipIf(!posix)("deploy/update-runner.sh", () => {
     expect(box.env()).toContain(`CRYBOT_IMAGE=${NEW.refs[0]}`);
     expect(box.calls().some((call) => call.includes("--entrypoint cp"))).toBe(true);
     expect(done.stdout).toContain("Updated from 0.1.150 to 0.1.151.");
+  });
+
+  it("refuses an update without a configured feed before making any feed request", () => {
+    const box = install();
+    box.ask({ CRYBOT_UPDATE_URL: "" });
+    expect(box.last()?.result).toBe("refused");
+    expect(box.fakeState().containers.cry.image).toBe(OLD.id);
+    expect(existsSync(join(box.root, "feed-requests.jsonl"))).toBe(false);
+    expect(box.calls().some((call) => call.startsWith("pull") || call.startsWith("compose stop"))).toBe(false);
   });
 
   it("runs the same update whatever the request says: no flag, image, version or path in it reaches update.sh", () => {
@@ -375,7 +387,7 @@ describe.skipIf(!posix)("deploy/update-runner.sh", () => {
   });
 
 
-  it("checks a remembered answer again when the server knows of a newer version, asking only GitHub", () => {
+  it("checks a remembered answer again when the server knows of a newer version, asking only the configured feed", () => {
     const box = install({ stable: OLD });
     box.ask({ CRYBOT_RUNNER_IDLE_S: "300" });
     const pulls = () => box.calls().filter((call) => call.startsWith("pull")).length;
@@ -479,8 +491,8 @@ describe.skipIf(!posix)("deploy/update-runner.sh", () => {
     symlinkSync(victim, join(box.deploy, "docker-compose.override.yml.tmp"));
     const env = {
       PATH: `${tools.fakes}:${join(box.root, "bin")}:/usr/bin:/bin:/usr/sbin:/sbin`, FAKE_DOCKER_DIR: box.fake, CRYBOT_SBIN_DIR: sbin, CRYBOT_SYSTEMD_DIR: systemd,
-      CRYBOT_UPDATE_STATE_DIR: box.state, CRYBOT_UPDATE_POLICY: box.policy, CRYBOT_STABLE_URL: "file:///srv/stable.json", CRYBOT_UPDATE_WAIT_S: "300; rm -rf /",
-      CRYBOT_NEWEST_URL: "https://example.test/%2e%2e",
+      CRYBOT_UPDATE_STATE_DIR: box.state, CRYBOT_UPDATE_POLICY: box.policy, CRYBOT_UPDATE_URL: "https://feed.example.test/stable.json", CRYBOT_UPDATE_WAIT_S: "300; rm -rf /",
+      CRYBOT_STABLE_URL: "https://retired.example.test/stable.json", CRYBOT_NEWEST_URL: "https://retired.example.test/newest.json",
     };
     // Its folder is the test's user's, who cannot run Docker: refused unless asked, said why.
     const refused = spawnSync("sh", [RUNNER, "--install", "--dir", box.deploy, "--no-restart"], { encoding: "utf8", env, timeout: 30_000 });
@@ -510,10 +522,17 @@ describe.skipIf(!posix)("deploy/update-runner.sh", () => {
     const service = readFileSync(join(systemd, "crybot-update.service"), "utf8");
     expect(service).toContain(`ExecStart=${sbin}/crybot-update-runner`);
     // Root's settings at the install, and only plain values: one that is not is left out, `%` included (systemd expands it).
-    expect(service).toContain(`Environment=HOME=/root CRYBOT_INSTALL_DIR=${box.deploy} CRYBOT_STABLE_URL=file:///srv/stable.json\n`);
+    expect(service).toContain(`Environment=HOME=/root CRYBOT_INSTALL_DIR=${box.deploy} CRYBOT_UPDATE_URL=https://feed.example.test/stable.json\n`);
     expect(readFileSync(join(sbin, "crybot-update-runner"), "utf8")).toBe(readFileSync(RUNNER, "utf8"));
     expect(tools.log()).toContain("systemctl enable --now crybot-update.path");
     expect(box.runnerInfo()).toEqual({ layout: "compose", dir: box.deploy, held: false, release: true });
+    const invalidFeed = spawnSync("sh", [RUNNER, "--install", "--dir", box.deploy, "--no-restart"], {
+      encoding: "utf8", timeout: 30_000,
+      env: { ...env, FAKE_GROUPS: "staff docker", CRYBOT_UPDATE_URL: "https://feed.example.test/%2e%2e" },
+    });
+    expect(invalidFeed.status, invalidFeed.stdout + invalidFeed.stderr).toBe(0);
+    expect(readFileSync(join(systemd, "crybot-update.service"), "utf8"))
+      .toContain(`Environment=HOME=/root CRYBOT_INSTALL_DIR=${box.deploy}\n`);
     // One install per server: another folder is refused while this one has the button.
     const other = join(box.root, "other");
     mkdirSync(other);

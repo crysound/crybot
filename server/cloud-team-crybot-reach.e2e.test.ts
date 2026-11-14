@@ -12,6 +12,7 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
 import { personKey } from "./person-key.ts";
+import { fixtureInput, fixtureLines, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const ADA = { email: "ada@acme.test", role: "admin" as const };
@@ -34,10 +35,9 @@ let ada = "", mira = "", ben = "";
 let sales: Bot, archive: Bot, payroll: Bot, counsel: Bot, crybot: Bot, mine = "";
 let room = "";
 
-const planPath = () => join(team.home, "plan.json");
+const planPath = () => fixtureInput(team.home, "plan.json");
 const dataDir = (...rest: string[]) => join(team.home, ".crybot", ...rest);
-const turns = (): Turn[] => existsSync(`${planPath()}.evidence.jsonl`)
-  ? readFileSync(`${planPath()}.evidence.jsonl`, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line) as Turn) : [];
+const turns = () => fixtureLines<Turn>(team.home);
 const turn = (key: string): Turn => { const found = turns().find((one) => one.planKey === key); if (!found) throw new Error(`no turn ${key}`); return found; };
 const sent = (one: Turn): string => { const content = (one.prompt as { message?: { content?: unknown } }).message?.content; return typeof content === "string" ? content : JSON.stringify(content); };
 const stepText = (entry: Step | undefined): string => JSON.stringify(entry?.response?.result?.content ?? entry?.response?.error ?? "");
@@ -75,7 +75,7 @@ async function listen(token: string) {
 }
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-7", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-7", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   ada = (await team.pair(ADA)).token!;
   mira = (await team.pair(MIRA)).token!;

@@ -77,7 +77,7 @@ it("carries a bot's recent 1:1 work into a room turn, tells the room, logs the t
     await runControlCry(["wait", "--bot", lead.id, "--timeout", "30"], { env });
     const room = given();
     expect(room).toContain("Your recent work");
-    expect(room).toMatch(/- today \d{2}:\d{2} · 1:1 with User · (?:"[^"]*" · )?you said: "/);
+    expect(room).toMatch(/- today \d{2}:\d{2} · 1:1 with the team · (?:"[^"]*" · )?you said: "/);
     const exported = await api("GET", `/api/threads/${group.threadId}/export?format=json`) as { messages?: Array<{ kind?: string; tool?: { name?: string } }> };
     const chips = (exported.messages ?? []).filter((message) => message.kind === "activity" && /recent-work brief/.test(message.tool?.name ?? ""));
     expect(chips).toHaveLength(1);

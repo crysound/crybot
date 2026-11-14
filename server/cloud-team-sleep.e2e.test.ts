@@ -1,6 +1,7 @@
 // A real Team Cloud home (CRYBOT_CLOUD_ROLE=team) whose idle windows are a quarter second (the power clock): it agrees to
 // the Admin's sleep request once nobody uses it, waits while a member does, and waits for work one bot handed another
 // until it is done. The engine is the synthetic Claude CLI with each bot's tool calls scripted; nothing leaves loopback.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -74,7 +75,7 @@ async function sleepsWithin(ms: number) {
 
 beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "cry-cloud-team-sleep-"));
-  const cli = join(home, "fixture-claude.mjs");
+  const cli = fixtureEnginePath(home, "fixture-claude.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
 import { readdirSync } from "node:fs";
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
@@ -84,7 +85,7 @@ const own = readdirSync(${JSON.stringify(home)}).map((name) => /^tools-(.+)\\.js
 if (own) process.env.FAKE_CLAUDE_TOOL_CALLS_FILE = ${JSON.stringify(home)} + "/tools-" + own + ".json";
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
-  writeFileSync(join(home, "config.json"), JSON.stringify({ instances: { claude: { driver: "claudeAgent", displayName: "Fixture", config: { cli } } } }));
+  writeFileSync(join(home, "config.json"), JSON.stringify({ instances: { claude: { driver: "claudeAgent", displayName: "Fixture", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(cli)}` } } } }));
   const port = await freePortBlock([0, 1]);
   base = `http://127.0.0.1:${port}`;
   const offline = `data:text/javascript,${encodeURIComponent('const real = globalThis.fetch; globalThis.fetch = async (url, init) => String(url).startsWith("http://127.0.0.1:") ? real(url, init) : new Response("offline fixture", { status: 503 });')}`;

@@ -1,5 +1,6 @@
 // The full server as a Cloud home over its real HTTP boundary, still sent the CRYBOT_HOSTED_* settings an Admin from before
 // Cloud Pro dropped included AI. Disposable home; no network; a synthetic Claude CLI.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -65,7 +66,7 @@ beforeAll(async () => {
   // A signed-in Claude Code whose turns record the environment they were given.
   // While the hang marker exists, a new turn records itself elsewhere and
   // stays running, so its tool token stays live.
-  const cli = join(home, "fixture-claude.mjs");
+  const cli = fixtureEnginePath(dataDir, "fixture-claude.mjs");
   // While the failure marker exists, a turn fails the way it says.
   writeFileSync(cli, `#!/usr/bin/env node
 import { existsSync, readFileSync } from "node:fs";
@@ -84,7 +85,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     instances: {
       // Pin the fleet's other defaults so this never probes an installed CLI.
       ...Object.fromEntries(["codex", "cursor", "githubCopilot", "openaiCompat", "qwen", "hermes", "pi"].map((id) => [id, { driver: "not-a-real-driver" }])),
-      claude: { driver: "claudeAgent", displayName: "Claude", config: { cli } },
+      claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(cli)}` } },
     },
   }));
   // Moved here from a Windows PC by a release that left the PC's data folder in memory.
@@ -277,12 +278,12 @@ it("serves its pages to no frame and with no Referer", async () => {
 it("never hands the included tokens or the signing secret to a CLI it probes", async () => {
   // POST /api/cli-test runs `<cli> --version` with a copy of the server's own env, less every shared-list credential.
   const dump = join(home, "cli-env.json");
-  const cli = join(home, "dump-env.mjs");
-  writeFileSync(cli, `#!/usr/bin/env node
-import { writeFileSync } from "node:fs";
+  const script = fixtureEnginePath(join(home, ".crybot"), "dump-env.mjs");
+  writeFileSync(script, `import { writeFileSync } from "node:fs";
 writeFileSync(${JSON.stringify(dump)}, JSON.stringify(process.env));
 console.log("dump-env 1.0.0");
-`, { mode: 0o755 });
+`);
+  const cli = `${JSON.stringify(process.execPath)} ${JSON.stringify(script)}`;
   const probe = await api("POST", "/api/cli-test", { body: { cli } });
   expect(probe.body, JSON.stringify(probe.body)).toMatchObject({ ok: true, version: "dump-env 1.0.0" });
   const env = JSON.parse(readFileSync(dump, "utf8"));
