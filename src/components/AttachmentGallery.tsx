@@ -7,7 +7,7 @@ import { attachmentBasename, PREVIEW_MAX_BYTES, type TranscriptFileAttachment, t
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { windowsPathDestinations } from "../../shared/markdown-windows-paths";
-import { localFilePath } from "./ChatMarkdown";
+import { localFilePath } from "./chat-markdown-links";
 import {
   AttachedFileChip,
   AttachmentPreviewDialog,

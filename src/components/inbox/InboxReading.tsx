@@ -2,7 +2,7 @@ import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ExternalLink,
 import type { InboxRow, InboxView } from "../../../shared/inbox";
 import { t } from "@/lib/i18n";
 import { readInboxLine } from "@/state/inbox";
-import { ChatMarkdown } from "../ChatMarkdown";
+import { LazyChatMarkdown as ChatMarkdown } from "../LazyChatMarkdown";
 import { InboxSender } from "../InboxLine";
 import { SidebarPopoverMenu, type SidebarMenuItem } from "../SidebarPopoverMenu";
 import { threadUpdatedLabel } from "../SidebarThreadRow";

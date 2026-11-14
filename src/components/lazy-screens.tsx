@@ -81,6 +81,27 @@ export const TriggersPage = lazyScreen("TriggersPage", async () => (await import
 export const SettingsModal = lazyScreen("SettingsModal", async () => (await import("./SettingsModal")).SettingsModal);
 export const TeamMapPage = lazyScreen("TeamMapPage", async () => (await import("./TeamMapPage")).TeamMapPage);
 export const PublishedAppsPage = lazyScreen("PublishedAppsPage", async () => (await import("./published-apps/PublishedAppsPage")).PublishedAppsPage);
+export const GroupView = lazyScreen("GroupView", async () => (await import("./GroupView")).GroupView);
+export const NotificationRail = lazyScreen("NotificationRail", async () => (await import("./NotificationsPanel")).NotificationRail);
+export const NotificationsPanel = lazyScreen("NotificationsPanel", async () => (await import("./NotificationsPanel")).NotificationsPanel);
+export const CloudSetup = lazyScreen("CloudSetup", async () => (await import("./CloudSetup")).CloudSetup);
+export const CloudWelcome = lazyScreen("CloudWelcome", async () => (await import("./cloud-welcome/CloudWelcome")).CloudWelcome);
+export const CloudIntent = lazyScreen("CloudIntent", async () => (await import("./CloudIntent")).CloudIntent);
+export const CloudEngineSignIn = lazyScreen("CloudEngineSignIn", async () => (await import("./CloudEngineSignIn")).CloudEngineSignIn);
+export const TeamWelcome = lazyScreen("TeamWelcome", async () => (await import("./TeamWelcome")).TeamWelcome);
+export const ConversationShareDialogs = lazyScreen("ConversationShareDialogs", async () => (await import("./conversation-share/ConversationShareDialogs")).ConversationShareDialogs);
+export const MemberApps = lazyScreen("MemberApps", async () => (await import("./MemberApps")).MemberApps);
+export const NewBotNameHost = lazyScreen("NewBotNameHost", async () => (await import("./NewBotName")).NewBotNameHost);
+export const LiveCallHost = lazyScreen("LiveCallHost", async () => (await import("./LiveCallHost")).LiveCallHost);
+export const GuidedTour = lazyScreen("GuidedTour", async () => (await import("./onboarding/GuidedTour")).GuidedTour);
+export const FirstConversationTour = lazyScreen("FirstConversationTour", async () => (await import("./onboarding/FirstConversationTour")).FirstConversationTour);
+export const InboxPanel = lazyScreen("InboxPanel", async () => (await import("./inbox/InboxPanel")).InboxPanel);
+export const HomeLine = lazyScreen("HomeLine", async () => (await import("./HomeLine")).HomeLine);
+export const NewLocalFromMenu = lazyScreen("NewLocalFromMenu", async () => (await import("./PlaceAddSheet")).NewLocalFromMenu);
+export const CommandPalette = lazyScreen("CommandPalette", async () => (await import("./CommandPalette")).CommandPalette);
+export const CryBotWelcome = lazyScreen("CryBotWelcome", async () => (await import("./CryBotWelcome")).CryBotWelcome);
+export const NoEngines = lazyScreen("NoEngines", async () => (await import("./NoEngines")).NoEngines);
+export const EngineSetup = lazyScreen("EngineSetup", async () => (await import("./EngineSetup")).EngineSetup);
 
 // Rarely opened, so never fetched ahead. The team library is what brings the YAML parser in.
 export const PhoneAppDialog = lazyScreen("PhoneAppDialog", async () => (await import("./PhoneAppDialog")).PhoneAppDialog);

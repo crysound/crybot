@@ -3,7 +3,7 @@ import { Check, LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { imeComposing } from "@/lib/send-key";
 import { widgetNumber, widgetString, type WidgetNode } from "../../../shared/widget";
-import { ChatMarkdown } from "../ChatMarkdown";
+import { LazyChatMarkdown as ChatMarkdown } from "../LazyChatMarkdown";
 import { WidgetChart } from "./WidgetChart";
 import { WidgetBadge, WidgetImage, WidgetProgress } from "./WidgetContent";
 import { useWidgetForm, widgetActionUrl, widgetCanPress, widgetFieldId, WidgetButton, WidgetGlyph, type WidgetForm } from "./WidgetControls";

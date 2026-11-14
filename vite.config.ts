@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { Connect, Plugin } from "vite";
 import { configDefaults, defineConfig } from "vitest/config";
@@ -17,6 +17,32 @@ const { version } = JSON.parse(
 const root = fileURLToPath(new URL(".", import.meta.url));
 const workers = Number(process.env.CRYBOT_VITEST_WORKERS) || 1;
 const page = (file: string) => fileURLToPath(new URL(file, import.meta.url));
+
+function frontendChunk(id: string): string | undefined {
+  if (id.includes("/src/locales/en.json")) return "locale-en";
+  if (!id.includes("/node_modules/")) return undefined;
+  if (id.includes("/react-dom/") || id.includes("/react@") || id.includes("/scheduler/")) return "vendor-react";
+  if (id.includes("/lucide-react/")) return "vendor-icons";
+  if (id.includes("/react-markdown/") || id.includes("/remark-") || id.includes("/mdast-") || id.includes("/micromark") || id.includes("/unified/") || id.includes("/hast-")) return "vendor-markdown";
+  if (id.includes("/zod@")) return "vendor-schema";
+  if (id.includes("/tldts@")) return "vendor-url";
+  return undefined;
+}
+
+function moduleStats(): Plugin {
+  return {
+    name: "module-stats",
+    generateBundle(_options, bundle) {
+      if (!process.env.CRYBOT_MODULE_STATS) return;
+      const stats = Object.values(bundle).filter((item) => item.type === "chunk").map((chunk) => ({
+        fileName: chunk.fileName,
+        size: Buffer.byteLength(chunk.code),
+        modules: Object.entries(chunk.modules).map(([id, info]) => ({ id, renderedLength: info.renderedLength })).sort((a, b) => b.renderedLength - a.renderedLength),
+      }));
+      writeFileSync("/tmp/crybot-module-stats.json", JSON.stringify(stats, null, 2));
+    },
+  };
+}
 
 /** The window's rail of places loads /rail: rail.html, its own small page, in development as from the server. */
 function railPage(): Plugin {
@@ -44,9 +70,9 @@ const include = [
 ];
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), railPage()],
+  plugins: [react(), tailwindcss(), railPage(), moduleStats()],
   build: {
-    rollupOptions: { input: { index: page("./index.html"), rail: page("./rail.html") } },
+    rollupOptions: { input: { index: page("./index.html"), rail: page("./rail.html") }, output: { manualChunks: frontendChunk } },
   },
   define: {
     __APP_VERSION__: JSON.stringify(version),
