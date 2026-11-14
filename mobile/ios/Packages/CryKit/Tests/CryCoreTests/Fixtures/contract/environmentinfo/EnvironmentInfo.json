@@ -1,0 +1,11 @@
+{
+  "capabilities": {
+    "jobs": true,
+    "remoteSessions": true,
+    "selfUpdate": "desktop-managed"
+  },
+  "environmentId": "sample",
+  "label": "sample",
+  "platform": "linux",
+  "version": "sample"
+}

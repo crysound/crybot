@@ -1,0 +1,27 @@
+{
+  "activity": "write",
+  "bytes": 1,
+  "createdAt": "2026-11-14T00:00:00Z",
+  "detail": "sample",
+  "eventId": "sample",
+  "file": "sample",
+  "itemId": "sample",
+  "provider": "sample",
+  "providerInstanceId": "sample",
+  "quiet": {
+    "at": 1,
+    "kind": "output"
+  },
+  "raw": {
+    "payload": {},
+    "source": "sample"
+  },
+  "requestId": "sample",
+  "synthetic": true,
+  "tail": [],
+  "target": "sample",
+  "threadId": "sample",
+  "tool": "sample",
+  "turnId": "sample",
+  "type": "turn.progress"
+}

@@ -1,0 +1,20 @@
+{
+  "createdAt": "2026-11-14T00:00:00Z",
+  "eventId": "sample",
+  "itemId": "sample",
+  "mcpFailed": [],
+  "model": null,
+  "provider": "sample",
+  "providerInstanceId": "sample",
+  "raw": {
+    "payload": {},
+    "source": "sample"
+  },
+  "rebuilt": true,
+  "requestId": "sample",
+  "sessionId": null,
+  "synthetic": true,
+  "threadId": "sample",
+  "turnId": "sample",
+  "type": "session.started"
+}

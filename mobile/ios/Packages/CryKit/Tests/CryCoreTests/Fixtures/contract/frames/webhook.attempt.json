@@ -1,0 +1,10 @@
+{
+  "attempt": {
+    "id": "sample-1",
+    "outcome": "accepted",
+    "receivedAt": 1,
+    "statusCode": 1,
+    "webhookId": "sample"
+  },
+  "kind": "webhook.attempt"
+}

@@ -1,0 +1,14 @@
+{
+  "message": {
+    "at": 1,
+    "id": "sample-1",
+    "kind": "text",
+    "role": "bot"
+  },
+  "messages": [],
+  "ok": true,
+  "queued": true,
+  "queueIds": [],
+  "steered": true,
+  "threadId": "sample"
+}

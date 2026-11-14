@@ -1,0 +1,490 @@
+[
+  {
+    "file": "apierror/APIError.json",
+    "swiftType": "APIError"
+  },
+  {
+    "file": "authsession/AuthSession.json",
+    "swiftType": "AuthSession"
+  },
+  {
+    "file": "botssnapshot/BotsSnapshot.json",
+    "swiftType": "BotsSnapshot"
+  },
+  {
+    "file": "configresponse/ConfigResponse.json",
+    "swiftType": "ConfigResponse"
+  },
+  {
+    "file": "crychartspec/CryChartSpec.json",
+    "swiftType": "CryChartSpec"
+  },
+  {
+    "file": "environmentinfo/EnvironmentInfo.json",
+    "swiftType": "EnvironmentInfo"
+  },
+  {
+    "file": "frames/app-trigger.attempt.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/app-trigger.deleted.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/app-trigger.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/app-trigger.service.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/bot.deleted.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/bot.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/bot.queued.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/bots.order.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/computer-control.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/computer.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/config.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/data.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/device.job.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/group.deleted.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/group.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/groups.order.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/hello.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/live.call.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/mcp.changed.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/message.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/message.patch.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/notifications.read.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/notify.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/ping.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/routine.deleted.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/routine.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/routine.run.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/runtime.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/screen.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/sections.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/snapshot.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/team.people.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/team.presence.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/thread.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/thread.presence.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/webhook.attempt.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/webhook.deleted.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "frames/webhook.json",
+    "swiftType": "ServerFrame"
+  },
+  {
+    "file": "inboxcount/InboxCount.json",
+    "swiftType": "InboxCount"
+  },
+  {
+    "file": "inboxpage/InboxPage.json",
+    "swiftType": "InboxPage"
+  },
+  {
+    "file": "messages/activity.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/app.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/burst.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/call.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/compaction.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/connector.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/digest.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/goal.run.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/options.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/routine.run.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/screen.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/secret.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/signin.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/text.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "messages/widget.json",
+    "swiftType": "WireMessage"
+  },
+  {
+    "file": "notificationspage/NotificationsPage.json",
+    "swiftType": "NotificationsPage"
+  },
+  {
+    "file": "optioncarddata/OptionCardData.json",
+    "swiftType": "OptionCardData"
+  },
+  {
+    "file": "runtimeevent/cap.exhausted.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/content.delta.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/context.compacted.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/item.completed-2.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/item.completed-3.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/item.completed.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/item.output.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/item.started.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/item.updated.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/request.opened.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/request.resolved.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/runtime.error.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/runtime.notice.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/session.exited.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/session.model-variants.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/session.started.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/thread.token-usage.updated.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/turn.completed.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/turn.progress.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/turn.retrying.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/turn.started.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/turn.wait_ended.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "runtimeevent/turn.wait_started.json",
+    "swiftType": "RuntimeEvent"
+  },
+  {
+    "file": "sendresponse/SendResponse.json",
+    "swiftType": "SendResponse"
+  },
+  {
+    "file": "threadpage/ThreadPage.json",
+    "swiftType": "ThreadPage"
+  },
+  {
+    "file": "widgetnode/Badge.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Box.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Button.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Caption.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Card.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Chart.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Checkbox.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Col.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/DatePicker.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/DayPicker.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Divider.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Form.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Icon.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Image.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Input.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Label.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/ListView.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/ListViewItem.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Markdown.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Progress.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/RadioGroup.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Row.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Select.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Spacer.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Table.Cell.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Table.Row.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Table.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Text.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Textarea.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/TimePicker.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Title.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "widgetnode/Transition.json",
+    "swiftType": "WidgetNode"
+  },
+  {
+    "file": "wirebot/WireBot.json",
+    "swiftType": "WireBot"
+  },
+  {
+    "file": "wiregroup/WireGroup.json",
+    "swiftType": "WireGroup"
+  }
+]

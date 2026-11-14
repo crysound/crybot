@@ -1,0 +1,24 @@
+{
+  "createdAt": "2026-11-14T00:00:00Z",
+  "eventId": "sample",
+  "input": "sample",
+  "itemId": "sample",
+  "itemType": "tool",
+  "provider": "sample",
+  "providerInstanceId": "sample",
+  "raw": {
+    "payload": {},
+    "source": "sample"
+  },
+  "requestId": "sample",
+  "step": {
+    "activity": "write",
+    "target": "sample"
+  },
+  "summary": "sample",
+  "synthetic": true,
+  "threadId": "sample",
+  "title": "sample",
+  "turnId": "sample",
+  "type": "item.started"
+}

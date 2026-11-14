@@ -1,0 +1,24 @@
+{
+  "cost": null,
+  "createdAt": "2026-11-14T00:00:00Z",
+  "denials": [],
+  "eventId": "sample",
+  "itemId": "sample",
+  "ok": true,
+  "provider": "sample",
+  "providerInstanceId": "sample",
+  "raw": {
+    "payload": {},
+    "source": "sample"
+  },
+  "requestId": "sample",
+  "stopReason": null,
+  "synthetic": true,
+  "threadId": "sample",
+  "turnId": "sample",
+  "type": "turn.completed",
+  "usage": {
+    "input": 1,
+    "output": 1
+  }
+}

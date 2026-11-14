@@ -1,0 +1,29 @@
+{
+  "claudeUpdate": true,
+  "createdAt": "2026-11-14T00:00:00Z",
+  "eventId": "sample",
+  "itemId": "sample",
+  "limit": "engine",
+  "limitModels": [],
+  "limitResetsAt": 1,
+  "message": "sample",
+  "partial": true,
+  "provider": "sample",
+  "providerInstanceId": "sample",
+  "raw": {
+    "payload": {},
+    "source": "sample"
+  },
+  "requestId": "sample",
+  "setup": true,
+  "stalled": true,
+  "synthetic": true,
+  "terminal": true,
+  "text": {
+    "key": "sample"
+  },
+  "threadId": "sample",
+  "trialCredit": "used_up",
+  "turnId": "sample",
+  "type": "runtime.error"
+}

@@ -1,0 +1,17 @@
+{
+  "group": {
+    "bulletin": "sample",
+    "createdAt": 1,
+    "defaultResponder": {
+      "botId": "sample",
+      "kind": "member"
+    },
+    "id": "sample-1",
+    "memberIds": [],
+    "name": "sample",
+    "threadId": "sample",
+    "unread": true,
+    "working": true
+  },
+  "kind": "group"
+}

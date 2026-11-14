@@ -1,0 +1,7 @@
+{
+  "botId": "sample",
+  "held": true,
+  "help": null,
+  "helpReason": null,
+  "kind": "computer-control"
+}

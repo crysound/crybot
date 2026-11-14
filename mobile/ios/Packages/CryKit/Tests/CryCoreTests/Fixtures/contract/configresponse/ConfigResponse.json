@@ -1,0 +1,160 @@
+{
+  "anthropic": {
+    "configured": true
+  },
+  "automaticRecovery": {
+    "enabled": true
+  },
+  "awakeLimit": 1,
+  "billing": {},
+  "botLimit": 1,
+  "box": {
+    "configured": true
+  },
+  "browserEngine": {
+    "kind": "engine"
+  },
+  "browserProfiles": [],
+  "budgets": {},
+  "cacheKeepWarm": {
+    "enabled": true,
+    "windowMinutes": 1
+  },
+  "cerebras": {
+    "configured": true
+  },
+  "cloudHome": true,
+  "cloudStarter": true,
+  "composio": {
+    "configured": true
+  },
+  "computerName": "sample",
+  "decider": {
+    "configured": true,
+    "enabled": true,
+    "jobs": {
+      "roomRouting": true
+    },
+    "provider": "jev"
+  },
+  "deepseek": {
+    "configured": true
+  },
+  "edition": {
+    "edition": "oss",
+    "features": []
+  },
+  "everyBotRules": "sample",
+  "features": {
+    "skillAuthoring": true
+  },
+  "fleet": {
+    "available": true
+  },
+  "greenference": {
+    "configured": true
+  },
+  "groq": {
+    "configured": true
+  },
+  "helpers": {
+    "extraction": {
+      "ready": true
+    },
+    "own": {
+      "jev": true,
+      "openrouter": true,
+      "workersAi": true
+    }
+  },
+  "imageGen": {
+    "configured": true
+  },
+  "language": "sample",
+  "live": {
+    "configured": true,
+    "idleMinutes": 1,
+    "readTypedReplies": true,
+    "voice": "sample"
+  },
+  "localVm": {
+    "maxInstances": 1,
+    "mode": "shared"
+  },
+  "managedPolicy": null,
+  "mcp": {
+    "callTimeoutMinutes": 1
+  },
+  "meta": {
+    "configured": true
+  },
+  "mistral": {
+    "configured": true
+  },
+  "modelgo": {
+    "configured": true
+  },
+  "newBots": {},
+  "onboarding": {
+    "completedAt": "sample",
+    "hintsSeen": [],
+    "reelSeen": true,
+    "version": 1
+  },
+  "openai": {
+    "configured": true
+  },
+  "openaiCompat": {
+    "configured": true
+  },
+  "opencodeGo": {
+    "configured": true
+  },
+  "openrouter": {
+    "configured": true
+  },
+  "pausedBots": [],
+  "planTurns": {
+    "running": 1,
+    "waiting": 1
+  },
+  "postiz": {
+    "configured": true
+  },
+  "profile": {
+    "email": "person@example.com",
+    "name": "sample"
+  },
+  "providerLock": true,
+  "rooms": {
+    "turnTimeoutMinutes": 1
+  },
+  "savedKeys": {},
+  "team": {
+    "id": "sample-1",
+    "name": "sample"
+  },
+  "threads": {
+    "maxConcurrentPerBot": 1
+  },
+  "treg": {
+    "configured": true
+  },
+  "tts": {
+    "configured": true,
+    "ready": true,
+    "voice": "sample"
+  },
+  "vps": {
+    "configured": true,
+    "sshAlias": "sample"
+  },
+  "waitingForRoom": true,
+  "workspaceBanner": null,
+  "xai": {
+    "configured": true
+  },
+  "xResearch": {
+    "included": true
+  }
+}

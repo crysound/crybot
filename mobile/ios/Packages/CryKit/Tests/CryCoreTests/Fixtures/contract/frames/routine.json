@@ -1,0 +1,21 @@
+{
+  "kind": "routine",
+  "routine": {
+    "botId": "sample",
+    "createdAt": 1,
+    "durationMinutes": 1,
+    "enabled": true,
+    "id": "sample-1",
+    "name": "sample",
+    "nextRunAt": null,
+    "prompt": "sample",
+    "runOn": "bot",
+    "schedule": {
+      "expression": "sample",
+      "timeZone": "sample",
+      "type": "cron"
+    },
+    "target": "bot",
+    "updatedAt": 1
+  }
+}

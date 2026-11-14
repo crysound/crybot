@@ -1,0 +1,10 @@
+{
+  "kind": "message",
+  "message": {
+    "at": 1,
+    "id": "sample-1",
+    "kind": "text",
+    "role": "bot"
+  },
+  "threadId": "sample"
+}

@@ -1,0 +1,13 @@
+{
+  "agg": "count",
+  "bins": 1,
+  "color": "sample",
+  "limit": 1,
+  "size": "sample",
+  "sort": "x",
+  "stack": true,
+  "timeUnit": "hour",
+  "type": "bar",
+  "x": "sample",
+  "y": "sample"
+}

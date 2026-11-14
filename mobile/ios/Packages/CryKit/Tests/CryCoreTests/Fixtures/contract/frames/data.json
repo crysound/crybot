@@ -1,0 +1,11 @@
+{
+  "botId": "sample",
+  "kind": "data",
+  "sheet": {
+    "botId": "sample",
+    "cards": [],
+    "sources": [],
+    "updatedAt": "sample",
+    "version": 1
+  }
+}
