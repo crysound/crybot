@@ -11,6 +11,7 @@ import { agentBrowser, ensureUiBrowser, sessionEnv } from "./testing/control-cry
 import { fixtureApi } from "./testing/preview-fixture.ts";
 import { fakeVnc } from "./testing/fake-vnc.ts";
 import { BASE_IMAGE_DIGEST, CUA_DRIVER_VERSION, IMAGE, IMAGE_LAYER_VERSION } from "../server/container-computer.ts";
+import { DESKTOP_VIEWER_TARGET, screenOfViewerTarget } from "../shared/desktop-viewer.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const scratch = mkdtempSync(join(tmpdir(), "cry-viewer-fixture-"));
@@ -21,6 +22,15 @@ const desktop = await fakeVnc();
 let fixture: VerificationServer | undefined;
 let browser: { binary: string; env: NodeJS.ProcessEnv } | undefined;
 try {
+  for (let screen = 1; screen <= 4; screen++) {
+    const target = `local/shared-s${screen}`;
+    assert.equal(DESKTOP_VIEWER_TARGET.test(target), true);
+    assert.equal(screenOfViewerTarget(target), screen);
+  }
+  for (const target of ["local/shared-s0", "local/shared-s5"]) {
+    assert.equal(DESKTOP_VIEWER_TARGET.test(target), false);
+    assert.equal(screenOfViewerTarget(target), null);
+  }
   // This executable answers only read-only inspection. No command can reach
   // the machine's real Docker installation, even during fixture startup.
   writeFileSync(join(bin, "docker"), `#!${process.execPath}
