@@ -3,23 +3,23 @@ import Foundation
 struct WatchCredentials: Codable, Equatable {
     let server: String
     let sessionToken: String
-    let cfAuthorization: String
+    let cfAuthorization: String?
     let cfExpires: TimeInterval?
 
     var isReady: Bool {
-        ServerAddress.url(server) != nil && sessionToken.hasPrefix("cry_sess_") && !cfAuthorization.isEmpty
+        ServerAddress.url(server) != nil && !sessionToken.isEmpty
     }
 
     var context: [String: Any] {
         var result: [String: Any] = [
-            "server": server, "sessionToken": sessionToken,
-            "cfAuthorization": cfAuthorization, "updatedAt": Date().timeIntervalSince1970
+            "server": server, "sessionToken": sessionToken, "updatedAt": Date().timeIntervalSince1970
         ]
+        if let cfAuthorization { result["cfAuthorization"] = cfAuthorization }
         if let cfExpires { result["cfExpires"] = cfExpires }
         return result
     }
 
-    init(server: String, sessionToken: String, cfAuthorization: String, cfExpires: TimeInterval?) {
+    init(server: String, sessionToken: String, cfAuthorization: String?, cfExpires: TimeInterval?) {
         self.server = server
         self.sessionToken = sessionToken
         self.cfAuthorization = cfAuthorization
@@ -29,9 +29,8 @@ struct WatchCredentials: Codable, Equatable {
     init?(context: [String: Any]) {
         guard let server = context["server"] as? String,
               ServerAddress.url(server) != nil,
-              let sessionToken = context["sessionToken"] as? String,
-              let cfAuthorization = context["cfAuthorization"] as? String else { return nil }
-        self.init(server: server, sessionToken: sessionToken, cfAuthorization: cfAuthorization,
+              let sessionToken = context["sessionToken"] as? String else { return nil }
+        self.init(server: server, sessionToken: sessionToken, cfAuthorization: context["cfAuthorization"] as? String,
                   cfExpires: context["cfExpires"] as? TimeInterval)
     }
 }
@@ -74,7 +73,7 @@ enum LoginCookies {
         }.first
         let access = matching.first { $0.name == "CF_Authorization" }
         return WatchCredentials(server: server.absoluteString, sessionToken: session?.value ?? "",
-                                cfAuthorization: access?.value ?? "", cfExpires: access?.expiresDate?.timeIntervalSince1970)
+                                cfAuthorization: access?.value, cfExpires: access?.expiresDate?.timeIntervalSince1970)
     }
 }
 
@@ -96,8 +95,11 @@ enum WatchAPIError: Error, Equatable {
 
 enum WatchRequest {
     static func headers(credentials: WatchCredentials) -> [String: String] {
-        ["Authorization": "Bearer \(credentials.sessionToken)",
-         "Cookie": "CF_Authorization=\(credentials.cfAuthorization)", "Accept": "application/json"]
+        var headers = ["Authorization": "Bearer \(credentials.sessionToken)", "Accept": "application/json"]
+        if let cfAuthorization = credentials.cfAuthorization {
+            headers["Cookie"] = "CF_Authorization=\(cfAuthorization)"
+        }
+        return headers
     }
 
     static func validate(status: Int, body: Data = Data()) throws {
