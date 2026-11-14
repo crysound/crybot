@@ -52,3 +52,11 @@ describe("a server notice in ToolActivity", () => {
     expect(html).not.toContain("<img");
   });
 });
+
+
+it.each([["en", "Waking the computer…"], ["zh", "正在唤醒电脑…"]])("shows the computer wake notice in %s", (locale, text) => {
+  setLocale(locale);
+  const html = render({ name: "Waking the computer…", nameCode: "chat.notice.wakingComputer", ok: true });
+  expect(html).toContain(text);
+  if (locale === "zh") expect(html).not.toContain("Waking the computer…");
+});

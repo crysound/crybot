@@ -137,9 +137,9 @@ import {
   containerComputerAction,
   containerComputerFrame,
   containerComputerStatus,
+  invalidateContainerComputerStatus,
   containerExec,
   containerRuntimeStatus,
-  localVmWakeAction,
   perBotLocalVmTarget,
   poolLocalVmTarget,
   SHARED_LOCAL_VM_TARGET,
@@ -149,6 +149,7 @@ import {
   type Runtime,
 } from "./container-computer.ts";
 import { containerComputerMcp } from "./local-vm-box.ts";
+import { readyLocalVm } from "./local-vm-ready.ts";
 import { attachForTurn, saveBotAttachment } from "./bot-attachment.ts";
 import {
   cacheUntilConfigChanges,
@@ -5660,7 +5661,7 @@ let localVmModeChangeBusy = false;
 const localVmUpdates = createLocalVmUpdater({
   status: (target) => containerComputerStatus(undefined, undefined, target),
   act: (action, target) => containerComputerAction(action, undefined, undefined, target, localVmResources(cfg)),
-  imageBusy: { get: () => localVmImageBusy, set: (busy) => { localVmImageBusy = busy; } },
+  imageBusy: { get: () => localVmImageBusy, set: (busy) => { localVmImageBusy = busy; invalidateContainerComputerStatus(); } },
   provisionBusy: { get: () => localVmProvisionBusy, set: (busy) => { localVmProvisionBusy = busy; } },
   lifecycleBusy: localVmLifecycleBusy,
   inUse: (target) => localVmModeChangeBusy || localVmActiveThreads.has(target.key) || Boolean(localVmLeaseFor(target).current(localVmOwnerBusy)) || sharedVm.heldOnTarget(target),
@@ -5738,6 +5739,8 @@ async function computerCallGate(internalCapability: InternalCapability, signal?:
       // A rejected lazy claim refuses every screen call for the rest of the generation: never forward onto a desktop this turn never claimed.
       return { held: true, helpOpen: false, blockedReason: lazyClaimFailedText(lazyClaim) };
     } else if (lazyClaim?.lazy && !lazyClaim.claimed) {
+      lazyClaim.onWaiting?.();
+      lazyClaim.onWaiting = undefined;
       startAutoVmClaim(autoVmClaims, threadId, generation, call);
       if (lazyClaim.begin && Date.now() < deadline && !signal?.aborted) {
         await settledWithin(lazyClaim.begin, deadline - Date.now(), signal);
@@ -8031,11 +8034,17 @@ async function beginTurn(
           store.patchTask(bot.id, threadId, { surface, surfaceSource: "auto" });
         }
       };
+      const ownsLiveTurn = (claimThreadId: string) =>
+        activeInternalGenerationByThread.get(claimThreadId) === resourceOwner.generation &&
+        turnResourceOwners.get(claimThreadId)?.generation === resourceOwner.generation && threadBusy(bot.id, claimThreadId);
       /** Idempotent per turn; a lazy attach leases the target it mounted against, not whatever resolves when the first screen call arrives. */
       const claimAutoLocalVm = async (claimThreadId: string, pinnedTarget?: LocalVmTarget): Promise<{ target: LocalVmTarget; runtime: Runtime }> => {
         const localVmTarget = pinnedTarget ?? localVmThreadTargets.get(claimThreadId) ?? { ...localVmTargetForThread(bot.id, claimThreadId) };
-        await waitForLocalVmUpdate(localVmTarget, claimThreadId, () => directTurnClaimIsCurrent(bot.id, dispatchClaimId, claimThreadId));
+        await waitForLocalVmUpdate(localVmTarget, claimThreadId, () => ownsLiveTurn(claimThreadId));
+        const isCurrent = () => ownsLiveTurn(claimThreadId);
+        if (!isCurrent()) throw new DirectTurnSetupCancelled("turn stopped before claiming its desktop");
         await bindTurnComputer(resourceOwner, `computer:vm:${localVmTarget.key}`, true);
+        if (!isCurrent()) throw new DirectTurnSetupCancelled("turn stopped while claiming its desktop");
         if (localVmImageBusy || localVmModeChangeBusy || localVmLifecycleBusy.has(localVmTarget.key)) {
           throw new Error("this Local VM is being started, stopped, or replaced — wait for setup to finish");
         }
@@ -8058,10 +8067,14 @@ async function beginTurn(
         };
         let localVm: Awaited<ReturnType<typeof readyLocalVmForTurn>>;
         try {
-          localVm = await readyLocalVmForTurn(bot.id, localVmTarget);
+          localVm = await readyLocalVmForTurn(bot.id, localVmTarget, isCurrent);
         } catch (error) {
           dropLease();
           throw error;
+        }
+        if (!isCurrent()) {
+          dropLease();
+          throw new DirectTurnSetupCancelled("turn stopped while preparing its desktop");
         }
         if (!localVm.ready || !localVm.runtime) {
           dropLease();
@@ -8078,30 +8091,38 @@ async function beginTurn(
         return { target: localVmTarget, runtime: localVm.runtime };
       };
 
-      // Fenced to this dispatch generation, so a rejection landing after settle never touches a newer turn.
-      const surfaceLazyClaimRejection = (label: string) => (failure: string, error?: unknown) => {
-        if (activeInternalGenerationByThread.get(threadId) !== resourceOwner.generation || !threadBusy(bot.id, threadId)) return;
-        if (resourceOwner.computerParkedOn) {
-          void interruptParkedTurn(bot.id, threadId).catch(() => {});
-          return;
-        }
-        const placeFailure = error instanceof PlaceUnavailableError ? error : undefined;
-        const slot = autoVmClaims.get(threadId);
-        if (placeFailure && clearFailedAutoPin(bot.id, threadId, placeFailure.place) && slot?.owner.generation === resourceOwner.generation) slot.backOnAuto = true;
-        const message = placeFailure?.message ?? `computer unavailable — ${label} could not be claimed for this turn (${failure})`;
-        store.appendMessage(threadId, {
-          role: "bot",
-          kind: "activity",
-          tool: failedTurnTool(message, placeFailure ? { place: placeFailure.row } : {}),
-        });
-        if (opts?.automationSource === undefined && !opts?.commsDepth && !opts?.cardContinuation) {
-          notify(buildNotification("turn-failed", bot, threadId, redactSecretsInText(message), { avatarUrl: bot.avatarUrl }));
-          reportIncident({ kind: "could-not-start", bot, threadId, detail: message });
-          // Claude settles the interrupt below as exit_before_result; the completion fold must not report it a second time.
-          resourceOwner.lazyClaimFailureReported = true;
-        }
-        opts?.onDispatchError?.(message);
-        void interruptDirectThread(bot.id, threadId).catch(() => {});
+      const surfaceLazyClaimRejection = (label: string, reportWakeAfterTurn = false) => {
+        const request = directRequestOwners.get(threadId);
+        return (failure: string, error?: unknown) => {
+          if (!ownsLiveTurn(threadId)) {
+            if (reportWakeAfterTurn && !(error instanceof DirectTurnSetupCancelled) && !(error instanceof ComputerWaitParked) && store.taskByThread(bot.id, threadId)) {
+              store.appendMessage(threadId, { role: "bot", kind: "activity", ...(request?.turnId ? { turnId: request.turnId } : {}),
+                tool: { name: `notice: The computer could not wake for the previous turn (${failure})`, ok: false } });
+            }
+            return;
+          }
+          if (resourceOwner.computerParkedOn) {
+            void interruptParkedTurn(bot.id, threadId).catch(() => {});
+            return;
+          }
+          const placeFailure = error instanceof PlaceUnavailableError ? error : undefined;
+          const slot = autoVmClaims.get(threadId);
+          if (placeFailure && clearFailedAutoPin(bot.id, threadId, placeFailure.place) && slot?.owner.generation === resourceOwner.generation) slot.backOnAuto = true;
+          const message = placeFailure?.message ?? `computer unavailable — ${label} could not be claimed for this turn (${failure})`;
+          store.appendMessage(threadId, {
+            role: "bot",
+            kind: "activity",
+            tool: failedTurnTool(message, placeFailure ? { place: placeFailure.row } : {}),
+          });
+          if (opts?.automationSource === undefined && !opts?.commsDepth && !opts?.cardContinuation) {
+            notify(buildNotification("turn-failed", bot, threadId, redactSecretsInText(message), { avatarUrl: bot.avatarUrl }));
+            reportIncident({ kind: "could-not-start", bot, threadId, detail: message });
+            // Claude settles the interrupt below as exit_before_result; the completion fold must not report it a second time.
+            resourceOwner.lazyClaimFailureReported = true;
+          }
+          opts?.onDispatchError?.(message);
+          void interruptDirectThread(bot.id, threadId).catch(() => {});
+        };
       };
 
       /** A poller started after its own turn.completed would never stop: same still-running guard as dispatch. */
@@ -8130,6 +8151,7 @@ async function beginTurn(
         }
         const localVmTarget = { ...localVmTargetForThread(bot.id, threadId) };
         let lazyReadyVm: { runtime: Runtime } | null = null;
+        let wakeInBackground = false;
         if (strict) {
           const seen = await containerComputerStatus(undefined, undefined, localVmTarget).catch(() => null);
           if (seen?.ready && seen.runtime && !localVmUpdates.observe(localVmTarget, seen) && !localVmImageBusy && !localVmModeChangeBusy && !localVmLifecycleBusy.has(localVmTarget.key)) lazyReadyVm = { runtime: seen.runtime };
@@ -8145,7 +8167,10 @@ async function beginTurn(
           }
           if (!seen || !autoLocalVmAttachable(seen)) return false;
           if (localVmImageBusy || localVmModeChangeBusy || localVmLifecycleBusy.has(localVmTarget.key)) return false;
-          if (seen.ready && seen.runtime) lazyReadyVm = { runtime: seen.runtime };
+          if (seen.runtime && (seen.ready || seen.container !== "missing")) {
+            lazyReadyVm = { runtime: seen.runtime };
+            wakeInBackground = !seen.ready;
+          }
         }
         try {
           if (lazyReadyVm) {
@@ -8153,17 +8178,26 @@ async function beginTurn(
               lazyReadyVm.runtime,
               controlIntegration(bot.id, threadId, dispatchClaimId),
               localVmTarget,
+              wakeInBackground ? { toolScope } : false,
             );
             autoVmClaims.set(threadId, {
               owner: resourceOwner,
               lazy: true,
               label: "the Local VM",
               localVm: true,
-              onRejected: surfaceLazyClaimRejection("the Local VM"),
+              ...(wakeInBackground ? {
+                startsComputer: true as const,
+                onWaiting: () => {
+                  store.appendMessage(threadId, { role: "bot", kind: "activity", tool: {
+                    name: "notice: Waking the computer…", nameCode: "chat.notice.wakingComputer", ok: true,
+                  } });
+                },
+              } : {}),
+              onRejected: surfaceLazyClaimRejection("the Local VM", wakeInBackground),
               claim: async () => {
                 await claimAutoLocalVm(threadId, localVmTarget);
                 // A poller started after its own turn.completed would never be torn down: restart it only while the turn runs.
-                if (previewCapture && threadBusy(bot.id, threadId)) {
+                if (previewCapture && ownsLiveTurn(threadId)) {
                   const touched = screenPollers.get(threadId)?.touched ?? false;
                   stopScreenPoller(bot.id, threadId);
                   startScreenPoller(
@@ -8175,6 +8209,7 @@ async function beginTurn(
                 }
               },
             });
+            if (wakeInBackground) startAutoVmClaim(autoVmClaims, threadId, resourceOwner.generation);
             return true;
           }
           const claimed = await claimAutoLocalVm(threadId);
@@ -11700,49 +11735,23 @@ async function localVmPayload(target: LocalVmTarget, auth: RequestAuth) {
   };
 }
 
-async function readyLocalVmForTurn(botId: string, target: LocalVmTarget, isCurrent = () => true) {
-  localVmLifecycleBusy.add(target.key);
-  // Fence before the first await, so two concurrent turns cannot both pass the per-bot limit between count and create.
-  const pooled = target.key.startsWith("pool:");
-  const ownsProvision = !pooled && !localVmProvisionBusy;
-  if (ownsProvision) localVmProvisionBusy = true;
-  let status: ContainerComputerStatus;
-  try {
-    status = await containerComputerStatus(undefined, undefined, target);
-    status = await startStoppedPodmanMachine(status, () => containerComputerStatus(undefined, undefined, target), () => broadcast({ kind: "computer", botId, state: "provisioning" }));
-    noteLocalVmSeen(target, status);
-    if (!isCurrent()) return status;
-    const action = localVmWakeAction(status);
-    if (status.ready || !action || !status.runtime) return status;
-    if (action === "run" && !pooled && !ownsProvision) return status;
-
-    if (action === "run" && target.key.startsWith("bot:")) {
-      const count = await existingPerBotLocalVmCount(status.runtime);
-      if (!isCurrent() || count >= localVmMaxInstances(cfg)) return status;
-    }
-
-    broadcast({ kind: "computer", botId, state: "provisioning" });
-    try {
-      status = await containerComputerAction(action, undefined, undefined, target, localVmResources(cfg));
-    } catch {
-      // `run` can throw after the container exists, so arm the idle backstop anyway.
-      localVmIdleFor(target).touch();
-      return status;
-    }
-  } finally {
-    if (ownsProvision) localVmProvisionBusy = false;
-    localVmLifecycleBusy.delete(target.key);
-  }
-  localVmIdleFor(target).touch();
-
-  // The container is up before Cua Driver is: wait rather than fail the turn.
-  const deadline = Date.now() + LOCAL_VM_DESKTOP_WAIT_MS;
-  while (isCurrent() && !status.ready && status.container === "running" && Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
-    if (!isCurrent()) break;
-    status = await containerComputerStatus(undefined, undefined, target);
-  }
-  return status;
+function readyLocalVmForTurn(botId: string, target: LocalVmTarget, isCurrent = () => true) {
+  return readyLocalVm(target, {
+    lifecycleBusy: localVmLifecycleBusy,
+    provisionBusy: { get: () => localVmProvisionBusy, set: busy => { localVmProvisionBusy = busy; } },
+    status: fresh => containerComputerStatus(undefined, undefined, target, { fresh }),
+    startMachine: status => startStoppedPodmanMachine(status,
+      () => containerComputerStatus(undefined, undefined, target, { fresh: true }),
+      () => { invalidateContainerComputerStatus(); broadcast({ kind: "computer", botId, state: "provisioning" }); }),
+    note: status => noteLocalVmSeen(target, status),
+    start: action => {
+      broadcast({ kind: "computer", botId, state: "provisioning" });
+      return containerComputerAction(action, undefined, undefined, target, localVmResources(cfg));
+    },
+    touchIdle: () => localVmIdleFor(target).touch(),
+    existingCount: runtime => existingPerBotLocalVmCount(runtime),
+    maxInstances: () => localVmMaxInstances(cfg), isCurrent, waitMs: LOCAL_VM_DESKTOP_WAIT_MS,
+  });
 }
 
 async function existingPerBotLocalVmCount(runtime: Runtime) {
@@ -12419,7 +12428,7 @@ const postiz = createPostiz({ cfg: () => cfg, mcpOAuth, persistMcpServers: persi
   cloudHome: Boolean(CLOUD_HOME), sharedMembership,
   lendingEnabled: () => lendingEnabled() || ownerLends(), providerConfigs, localVmIdleMs, localVmIdles, localVmActiveThreads, localVmLifecycleBusy,
   localVmImageBusy: { get: () => localVmImageBusy },
-  localVmModeChangeBusy: { set: (busy) => { localVmModeChangeBusy = busy; } },
+  localVmModeChangeBusy: { set: (busy) => { localVmModeChangeBusy = busy; invalidateContainerComputerStatus(); } },
   localVmModeChanging: sharedVm.modeChanging,
   providerConfigBusy: { get: () => providerConfigBusy, set: (busy) => { providerConfigBusy = busy; } },
   computerProviderConfigTransitions, managedBoatOwners, providerOperationConflict, perBotLocalVmCountForModeChange,
@@ -12447,7 +12456,7 @@ ROUTES.push(createComputerRoutes({
   routines: () => routines,
   controlLeaseIdSchema, boatLifecycleBusyBots, computerProviderConfigTransitions, localVmActiveThreads,
   localVmLifecycleBusy, localVmSeen,
-  localVmImageBusy: { get: () => localVmImageBusy, set: (busy) => { localVmImageBusy = busy; } },
+  localVmImageBusy: { get: () => localVmImageBusy, set: (busy) => { localVmImageBusy = busy; invalidateContainerComputerStatus(); } },
   localVmProvisionBusy: { get: () => localVmProvisionBusy, set: (busy) => { localVmProvisionBusy = busy; } },
   localVmModeChangeBusy: { get: () => localVmModeChangeBusy },
   localVmOwnerBusy, localVmIdleMs, localVmLeaseFor, localVmIdleFor, localVmTargetForBot, localVmTargetForStatus,

@@ -1,4 +1,5 @@
 {
+  "chat.notice.wakingComputer": "Waking the computer…",
   "connectedWorkspaces.localTitle": "Environments on this computer",
   "connectedWorkspaces.missing": "missing",
   "connectedWorkspaces.current": "Current",

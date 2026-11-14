@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 
+import type { ToolScope } from "../shared/tool-scope.ts";
 import { augmentedPath, resolveCliSpawn } from "./env-path.ts";
 import { workspacePreparationDockerfile } from "./container-workspace.ts";
 import { DATA_DIR } from "./config.ts";
@@ -36,7 +37,7 @@ import {
 import { SPAWNED_PROXIES } from "./proxy-paths.ts";
 
 const run = promisify(execFile);
-const SCREENSHOT_STATUS_TTL_MS = 10_000;
+const STATUS_TTL_MS = 5_000;
 
 export type CommandRunner = (
   command: string,
@@ -368,9 +369,12 @@ export function localVmWakeAction(status: ContainerComputerStatus): "run" | "sta
   return null;
 }
 
-/** Auto attaches without a person only when ready, startable or recreatable; anything else stays the person's call. */
 export function autoLocalVmAttachable(status: ContainerComputerStatus): boolean {
-  return status.ready === true || localVmWakeAction(status) !== null;
+  return status.ready === true || localVmWakeAction(status) !== null || (
+    Boolean(status.runtime) && status.daemonUp && status.image && status.container === "running" &&
+    existingContainerProblem(status) === null && status.network === "loopback" &&
+    status.security === "hardened" && status.persistence === "durable"
+  );
 }
 
 function statusProblem(status: ContainerComputerStatus): string | null {
@@ -491,11 +495,51 @@ export function cuaExecArgs(
   ];
 }
 
-export async function containerComputerStatus(
+type StatusOptions = { probeDesktop?: boolean; fresh?: boolean };
+type StatusEntry = { result: Promise<ContainerComputerStatus>; expiresAt: number; generation: number };
+const statusCaches = new WeakMap<CommandRunner, Map<string, StatusEntry>>();
+let statusGeneration = 0;
+let allStatusGeneration = 0;
+const targetStatusGenerations = new Map<string, number>();
+const changingTargets = new Map<string, number>();
+
+export function invalidateContainerComputerStatus(target?: LocalVmTarget): void {
+  if (target) targetStatusGenerations.set(target.key, ++statusGeneration);
+  else {
+    targetStatusGenerations.clear();
+    statusGeneration += 1;
+    allStatusGeneration = statusGeneration;
+  }
+}
+
+export function containerComputerStatus(
   runner: CommandRunner = sh,
   platform: NodeJS.Platform = process.platform,
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
-  options: { probeDesktop?: boolean } = {},
+  options: StatusOptions = {},
+): Promise<ContainerComputerStatus> {
+  let cache = statusCaches.get(runner);
+  if (!cache) { cache = new Map(); statusCaches.set(runner, cache); }
+  const key = JSON.stringify([platform, target.key, target.containerName, target.workspaceDir, target.viewerPort, target.label, options.probeDesktop !== false]);
+  const generation = Math.max(allStatusGeneration, targetStatusGenerations.get(target.key) ?? 0);
+  const cached = cache.get(key);
+  const cacheable = !changingTargets.has(target.key);
+  if (!options.fresh && cacheable && cached && cached.generation === generation && cached.expiresAt > Date.now()) {
+    return cached.result.then(status => ({ ...status }));
+  }
+  const entry: StatusEntry = { result: probeContainerComputerStatus(runner, platform, target, options), expiresAt: Infinity, generation };
+  if (cacheable) cache.set(key, entry);
+  void entry.result.then(() => { entry.expiresAt = Date.now() + STATUS_TTL_MS; }, () => {
+    if (cache.get(key) === entry) cache.delete(key);
+  });
+  return entry.result.then(status => ({ ...status }));
+}
+
+async function probeContainerComputerStatus(
+  runner: CommandRunner = sh,
+  platform: NodeJS.Platform = process.platform,
+  target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
+  options: StatusOptions = {},
 ): Promise<ContainerComputerStatus> {
   const status = emptyStatus(platform, target);
   const host = currentHostUser(platform);
@@ -628,28 +672,6 @@ export async function containerComputerStatus(
         (report.overall !== "ok" && report.overall !== "degraded")
       ) {
         throw new Error(`Cua health report is ${report.overall ?? "invalid"}`);
-      }
-      const readinessShot = "/tmp/crybot-readiness.png";
-      await runner(
-        status.runtime,
-        cuaExecArgs([
-          "call",
-          "get_desktop_state",
-          "{}",
-          "--socket",
-          CUA_SOCKET,
-          "--screenshot-out-file",
-          readinessShot,
-        ], { container: target.containerName }),
-        20_000,
-      );
-      const captured = await runner(
-        status.runtime,
-        ["exec", target.containerName, "base64", "-w0", readinessShot],
-        20_000,
-      );
-      if (!wholeScreenshot(Buffer.from(captured.stdout.trim(), "base64")).ok) {
-        throw new Error("Cua Driver returned an incomplete readiness screenshot");
       }
       status.desktopReady = true;
     } catch (error) {
@@ -874,7 +896,25 @@ export async function containerComputerAction(
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
   resources: DesktopResources = DEFAULT_DESKTOP_RESOURCES,
 ): Promise<ContainerComputerStatus> {
-  if (runner === sh && platform === process.platform) screenshotStatusCache.delete(target.key);
+  invalidateContainerComputerStatus(action === "pull" ? undefined : target);
+  changingTargets.set(target.key, (changingTargets.get(target.key) ?? 0) + 1);
+  try {
+    return await performContainerComputerAction(action, runner, platform, target, resources);
+  } finally {
+    const remaining = (changingTargets.get(target.key) ?? 1) - 1;
+    if (remaining) changingTargets.set(target.key, remaining);
+    else changingTargets.delete(target.key);
+    invalidateContainerComputerStatus(action === "pull" ? undefined : target);
+  }
+}
+
+async function performContainerComputerAction(
+  action: LifecycleAction,
+  runner: CommandRunner,
+  platform: NodeJS.Platform,
+  target: LocalVmTarget,
+  resources: DesktopResources,
+): Promise<ContainerComputerStatus> {
   const before = await containerComputerStatus(runner, platform, target);
   const runtime = before.runtime;
   if (!runtime) throw Object.assign(new Error(before.problem ?? "No container runtime is installed"), { status: 409 });
@@ -964,18 +1004,11 @@ export async function containerComputerFrame(
   platform: NodeJS.Platform = process.platform,
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
 ): Promise<{ png: string; format: "png" | "jpeg" }> {
-  const cacheable = runner === sh && platform === process.platform;
-  const now = Date.now();
-  const cached = screenshotStatusCache.get(target.key);
-  const status =
-    cacheable && cached && cached.expiresAt > now
-      ? cached.status
-      : await containerComputerStatus(runner, platform, target);
+  const status = await containerComputerStatus(runner, platform, target);
   if (!status.ready || !status.runtime) {
-    if (cacheable) screenshotStatusCache.delete(target.key);
+    invalidateContainerComputerStatus(target);
     throw Object.assign(new Error(status.problem ?? "The Local VM is not ready"), { status: 409 });
   }
-  if (cacheable) screenshotStatusCache.set(target.key, { status, expiresAt: now + SCREENSHOT_STATUS_TTL_MS });
   try {
     const screenshot = "/tmp/crybot-preview.png";
     await runner(
@@ -1003,7 +1036,7 @@ export async function containerComputerFrame(
     }
     return { png: data, format: checked.mime === "image/jpeg" ? "jpeg" : "png" };
   } catch (error) {
-    if (cacheable) screenshotStatusCache.delete(target.key);
+    invalidateContainerComputerStatus(target);
     throw error;
   }
 }
@@ -1016,11 +1049,6 @@ export async function containerComputerScreenshot(
   const { png, format } = await containerComputerFrame(runner, platform, target);
   return `data:image/${format};base64,${png}`;
 }
-
-const screenshotStatusCache = new Map<
-  string,
-  { status: ContainerComputerStatus; expiresAt: number }
->();
 
 const containerMcpPath = SPAWNED_PROXIES.containerMcp;
 
@@ -1108,6 +1136,7 @@ export function containerComputerMcp(
   runtime: Runtime,
   control?: { url: string; token: string },
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
+  lazy: false | { toolScope?: ToolScope } = false,
 ): ContainerMcpLaunch {
   return {
     command: process.execPath,
@@ -1115,6 +1144,7 @@ export function containerComputerMcp(
     // The control pair rides in env, not argv, which `ps` shows for the bridge's whole life.
     env: {
       ELECTRON_RUN_AS_NODE: "1",
+      ...(lazy ? { CRYBOT_CONTAINER_LAZY: "1", CRYBOT_CONTAINER_TOOL_SCOPE: JSON.stringify(lazy.toolScope ?? {}) } : {}),
       ...(control ? { CRYBOT_CONTROL_URL: control.url, CRYBOT_CONTROL_TOKEN: control.token } : {}),
     },
   };

@@ -1,5 +1,3 @@
-// A stdio bridge into Cua Driver's MCP server in the Local VM. It defines no tools; the shared bridge only answers ping,
-// makes tool schemas provider-safe and keeps error results text-only.
 import { cuaExecArgs } from "./container-computer.ts";
 import { runMcpBridge } from "./mcp-bridge.ts";
 
@@ -17,10 +15,15 @@ if (!container || !/^[a-zA-Z0-9_.-]+$/.test(container) || !socket?.startsWith("/
 const controlUrl = process.env.CRYBOT_CONTROL_URL ?? "";
 const controlToken = process.env.CRYBOT_CONTROL_TOKEN ?? "";
 
-runMcpBridge({
-  command: runtime,
-  args: cuaExecArgs(["mcp", "--socket", socket], { container, interactive: true }),
-  label: "Cua Driver",
-  // No liveness watchdog: the runtime CLI talks to a local daemon and fails fast on its own.
-  ...(controlUrl && controlToken ? { gate: { url: controlUrl, token: controlToken } } : {}),
-});
+if (process.env.CRYBOT_CONTAINER_LAZY === "1" && controlUrl && controlToken) {
+  const { runLazyContainerMcp } = await import("./lazy-container-mcp.ts");
+  runLazyContainerMcp(runtime, cuaExecArgs(["mcp", "--socket", socket], { container, interactive: true }), { url: controlUrl, token: controlToken });
+} else {
+  runMcpBridge({
+    command: runtime,
+    args: cuaExecArgs(["mcp", "--socket", socket], { container, interactive: true }),
+    label: "Cua Driver",
+    // No liveness watchdog: the runtime CLI talks to a local daemon and fails fast on its own.
+    ...(controlUrl && controlToken ? { gate: { url: controlUrl, token: controlToken } } : {}),
+  });
+}
