@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
+import type { SessionRegistry } from "./sessions.ts";
 
 export const FEISHU_AUTHORIZE_ENDPOINT = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
 export const FEISHU_USER_INFO_ENDPOINT = "https://open.feishu.cn/open-apis/authen/v1/user_info";
@@ -33,6 +34,10 @@ export type FeishuAdmission =
 
 const warnings = new Set<string>();
 
+export function resetFeishuLoginWarningsForTests(): void {
+  warnings.clear();
+}
+
 function list(value: string | undefined): string[] {
   return [...new Set((value ?? "").split(",").map((item) => item.trim()).filter(Boolean))];
 }
@@ -63,9 +68,25 @@ export function feishuLoginConfig(env: NodeJS.ProcessEnv = process.env): FeishuL
   let appSecret = env.CRYBOT_FEISHU_APP_SECRET?.trim() ?? "";
   const secretFile = env.CRYBOT_FEISHU_APP_SECRET_FILE?.trim();
   if (secretFile) {
-    try { appSecret = readFileSync(secretFile, "utf8").trim(); } catch { appSecret = ""; }
+    try {
+      appSecret = readFileSync(secretFile, "utf8").trim();
+    } catch {
+      appSecret = "";
+      const key = `secret-file:${secretFile}`;
+      if (!warnings.has(key)) {
+        warnings.add(key);
+        console.warn(`CRYBOT_FEISHU_APP_SECRET_FILE could not be read: ${secretFile}`);
+      }
+    }
   }
-  if (!appSecret) return null;
+  if (!appSecret) {
+    const warningKey = secretFile ? `secret-empty-file:${secretFile}` : "secret-value";
+    if (!warnings.has(warningKey)) {
+      warnings.add(warningKey);
+      console.warn(secretFile ? `CRYBOT_FEISHU_APP_SECRET_FILE is empty: ${secretFile}` : "CRYBOT_FEISHU_APP_SECRET is empty; Feishu sign-in is disabled.");
+    }
+    return null;
+  }
   const allow = identityList(env.CRYBOT_FEISHU_ALLOW, "CRYBOT_FEISHU_ALLOW");
   const admins = identityList(env.CRYBOT_FEISHU_ADMINS, "CRYBOT_FEISHU_ADMINS");
   if (!env.CRYBOT_FEISHU_ADMINS?.trim() && allow.includes("*") && !warnings.has("wildcard")) { console.warn("CRYBOT_FEISHU_ALLOW=* grants admin scope to every allowed tenant user when CRYBOT_FEISHU_ADMINS is unset."); warnings.add("wildcard"); }
@@ -98,37 +119,57 @@ export function authorizeUrl(input: { config: FeishuLoginConfig; redirectUri: st
   return url.toString();
 }
 
-async function request(fetcher: typeof fetch, input: string | URL | Request, init: RequestInit): Promise<Response> {
+type FeishuRequestFailure = "unavailable" | "invalid";
+
+class FeishuRequestError extends Error {
+  readonly failure: FeishuRequestFailure;
+
+  constructor(failure: FeishuRequestFailure) {
+    super(failure === "unavailable" ? "feishu_unavailable" : "feishu_code_invalid");
+    this.failure = failure;
+  }
+}
+
+async function requestJson(fetcher: typeof fetch, input: string | URL | Request, init: RequestInit): Promise<{ response: Response; body: unknown }> {
   const controller = new AbortController();
   let timeout: ReturnType<typeof setTimeout> | undefined;
   const deadline = new Promise<never>((_, reject) => { timeout = setTimeout(() => { controller.abort(); reject(new Error("timeout")); }, 10_000); });
-  try { return await Promise.race([fetcher(input, { ...init, signal: controller.signal }), deadline]); }
-  catch { throw new Error("Feishu request failed"); }
-  finally { if (timeout) clearTimeout(timeout); }
+  try {
+    const response = await Promise.race([fetcher(input, { ...init, signal: controller.signal }), deadline]);
+    if (response.status >= 500) return { response, body: undefined };
+    let body: unknown;
+    try {
+      body = await Promise.race([response.json(), deadline]);
+    } catch (error) {
+      throw new FeishuRequestError(error instanceof SyntaxError ? "invalid" : "unavailable");
+    }
+    return { response, body };
+  } catch (error) {
+    if (error instanceof FeishuRequestError) throw error;
+    throw new FeishuRequestError("unavailable");
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 export async function exchangeCode(input: { config: FeishuLoginConfig; code: string; codeVerifier: string; redirectUri: string; fetch?: typeof fetch }): Promise<{ userAccessToken: string }> {
   const form = new URLSearchParams({ grant_type: "authorization_code", client_id: input.config.appId, client_secret: input.config.appSecret, code: input.code, code_verifier: input.codeVerifier, redirect_uri: input.redirectUri });
-  let response: Response;
-  try { response = await request(input.fetch ?? fetch, input.config.tokenEndpoint, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form.toString() }); }
-  catch { throw new Error("feishu_token_failed"); }
-  if (!response.ok) throw new Error("feishu_token_failed");
-  let body: any;
-  try { body = await response.json(); } catch { throw new Error("feishu_token_failed"); }
+  const result = await requestJson(input.fetch ?? fetch, input.config.tokenEndpoint, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form.toString() });
+  if (result.response.status >= 500) throw new FeishuRequestError("unavailable");
+  if (!result.response.ok) throw new FeishuRequestError("invalid");
+  const body: any = result.body;
   const token = typeof body?.access_token === "string" ? body.access_token : typeof body?.data?.access_token === "string" ? body.data.access_token : "";
-  if (!token) throw new Error("feishu_token_failed");
+  if (!token) throw new FeishuRequestError("invalid");
   return { userAccessToken: token };
 }
 
 export async function fetchUserInfo(input: { userAccessToken: string; endpoint?: string; fetch?: typeof fetch }): Promise<FeishuUserInfo> {
-  let response: Response;
-  try { response = await request(input.fetch ?? fetch, input.endpoint ?? FEISHU_USER_INFO_ENDPOINT, { headers: { authorization: `Bearer ${input.userAccessToken}` } }); }
-  catch { throw new Error("feishu_user_info_failed"); }
-  if (!response.ok) throw new Error("feishu_user_info_failed");
-  let body: any;
-  try { body = await response.json(); } catch { throw new Error("feishu_user_info_failed"); }
+  const result = await requestJson(input.fetch ?? fetch, input.endpoint ?? FEISHU_USER_INFO_ENDPOINT, { headers: { authorization: `Bearer ${input.userAccessToken}` } });
+  if (result.response.status >= 500) throw new FeishuRequestError("unavailable");
+  if (!result.response.ok) throw new FeishuRequestError("invalid");
+  const body: any = result.body;
   const data = body?.data ?? body;
-  if (typeof data?.union_id !== "string" || typeof data?.tenant_key !== "string") throw new Error("feishu_user_info_failed");
+  if (typeof data?.union_id !== "string" || typeof data?.tenant_key !== "string") throw new FeishuRequestError("invalid");
   return { unionId: data.union_id, tenantKey: data.tenant_key, ...(typeof data.name === "string" ? { displayName: data.name } : {}), ...(typeof data.avatar_url === "string" ? { avatarUrl: data.avatar_url } : {}), ...(typeof data.email === "string" ? { accessEmail: data.email } : {}) };
 }
 
@@ -138,6 +179,16 @@ export function feishuScopes(unionId: string, config: FeishuLoginConfig): Feishu
     return inAllow ? ["admin", "client"] : ["client"];
   }
   return config.admins.includes("*") || config.admins.includes(unionId) ? ["admin", "client"] : ["client"];
+}
+
+export function revalidateFeishuDeviceSessions(sessions: SessionRegistry, config: FeishuLoginConfig | null): void {
+  const revoked = sessions.revalidateFeishuSessions((unionId, tenantKey) => {
+    if (!config) return null;
+    const allowedTenant = tenantKey !== undefined && config.tenants.includes(tenantKey);
+    const allowedUser = config.allow.includes("*") || config.allow.includes(unionId);
+    return allowedTenant && allowedUser ? feishuScopes(unionId, config) : null;
+  });
+  console.log(`Feishu device session revalidation: revoked ${revoked}.`);
 }
 
 export function admitFeishuUser(info: FeishuUserInfo, config: FeishuLoginConfig): FeishuAdmission {

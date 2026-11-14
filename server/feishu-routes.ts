@@ -14,10 +14,16 @@ export interface FeishuExchangeRouteOptions {
 }
 
 export async function feishuExchangeRoute(options: FeishuExchangeRouteOptions, req: IncomingMessage, res: ServerResponse, path: string, method: string): Promise<boolean> {
+  if (!options.config) {
+    if (path.startsWith("/api/auth/feishu") || path.startsWith("/auth/feishu")) {
+      options.json(res, 404, { error: "not_found" });
+      return true;
+    }
+    return false;
+  }
   if (method !== "POST" || path !== "/api/auth/feishu/exchange") return false;
   if (req.headers.origin !== undefined) { options.json(res, 403, { error: "feishu_origin_forbidden" }); return true; }
-  if (!options.config) { options.json(res, 404, { error: "not_found" }); return true; }
-  if (!/^application\/json\b/i.test(String(req.headers["content-type"] ?? ""))) { options.json(res, 415, { error: "feishu_json_required" }); return true; }
+  if (!/^application\/json\b/i.test(String(req.headers["content-type"] ?? ""))) { options.json(res, 400, { error: "feishu_code_invalid" }); return true; }
   let body: any;
   try { body = await options.readBody(req, 16 * 1024); } catch { options.json(res, 400, { error: "feishu_code_invalid" }); return true; }
   const platform = body?.platform;
@@ -30,10 +36,47 @@ export async function feishuExchangeRoute(options: FeishuExchangeRouteOptions, r
     const info = await fetchUserInfo({ ...token, endpoint: options.config.userInfoEndpoint, fetch: options.fetch });
     const admission = admitFeishuUser(info, options.config);
     if ("denied" in admission) { options.json(res, 403, { error: "feishu_not_allowed" }); return true; }
-    const issued = options.sessions.issueDevice(admission.identity, body.label || `${platform} Feishu device`, { displayName: admission.displayName, accessEmail: admission.accessEmail, scopes: [...admission.scopes], maxAgeDays: options.config.sessionMaxDays, platform, tenantKey: admission.tenantKey });
-    options.json(res, 200, { token: issued.token, session: issued.session, cookieName: options.cookieName });
+    if (req.socket.destroyed || req.aborted || res.destroyed || res.writableEnded) return true;
+    let issued;
+    try {
+      issued = options.sessions.issueDevice(admission.identity, body.label || `${platform} Feishu device`, { displayName: admission.displayName, accessEmail: admission.accessEmail, scopes: [...admission.scopes], maxAgeDays: options.config.sessionMaxDays, platform, tenantKey: admission.tenantKey });
+    } catch (error) {
+      if (error && typeof error === "object" && "status" in error && error.status === 403) {
+        options.json(res, 403, { error: "feishu_forbidden" });
+        return true;
+      }
+      console.error("Feishu device session issuance failed.");
+      options.json(res, 502, { error: "feishu_unavailable" });
+      return true;
+    }
+    const cleanup = () => {
+      res.off("error", revoke);
+      res.off("close", onClose);
+      res.off("finish", cleanup);
+    };
+    const revoke = () => {
+      cleanup();
+      try {
+        options.sessions.revoke(issued.session.id);
+      } catch {
+        console.error("Could not persist undelivered Feishu session revocation.");
+      }
+    };
+    const onClose = () => {
+      if (!res.writableFinished) revoke();
+      else cleanup();
+    };
+    res.once("error", revoke);
+    res.once("close", onClose);
+    res.once("finish", cleanup);
+    try {
+      options.json(res, 200, { token: issued.token, session: issued.session, cookieName: options.cookieName });
+    } catch {
+      revoke();
+      res.destroy();
+    }
   } catch (error) {
-    const code = error instanceof Error && error.message === "feishu_token_failed" ? "feishu_code_invalid" : "feishu_unavailable";
+    const code = error instanceof Error && error.message === "feishu_code_invalid" ? "feishu_code_invalid" : "feishu_unavailable";
     options.json(res, code === "feishu_code_invalid" ? 400 : 502, { error: code });
   }
   return true;

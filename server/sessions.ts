@@ -750,7 +750,7 @@ export class SessionRegistry {
     }
   }
 
-  revalidateFeishuSessions(check: (unionId: string, tenantKey: string | undefined) => readonly Scope[] | null): void {
+  revalidateFeishuSessions(check: (unionId: string, tenantKey: string | undefined) => readonly Scope[] | null): number {
     if (this.closed) throw new Error("Session registry is closed.");
     let changed = false;
     const revoked: SessionRecord[] = [];
@@ -763,7 +763,14 @@ export class SessionRegistry {
       else if (session.scopes.some((scope) => !scopes.includes(scope)) || scopes.length !== session.scopes.length) { session.scopes = [...scopes]; changed = true; }
     }
     if (revoked.length) { const ids = new Set(revoked.map((session) => session.id)); this.sessions = this.sessions.filter((session) => !ids.has(session.id)); for (const session of revoked) this.forget(session.id); changed = true; }
-    if (changed) this.persist();
+    if (changed) {
+      try {
+        this.persist();
+      } catch {
+        console.error("Could not persist Feishu session revalidation.");
+      }
+    }
+    return revoked.length;
   }
 
   authenticate(token: string | undefined): SessionRecord | null {

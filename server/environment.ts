@@ -16,7 +16,7 @@ import { dirname, join } from "node:path";
 
 import { cliPrefix } from "./cli-invocation.ts";
 import { SERVER_ROOT } from "./proxy-paths.ts";
-import type { FeishuLoginConfig } from "./feishu-login.ts";
+import { allowedRedirectUris, type FeishuLoginConfig } from "./feishu-login.ts";
 
 export interface EnvironmentDescriptor {
   environmentId: string;
@@ -197,10 +197,15 @@ export function environmentDescriptor(input: { environmentId: string; desktopMan
       jobs: true,
     },
   };
-  if (input.feishu) { const origin = input.feishu.appHost ? `https://${input.feishu.appHost}` : (input.publicOrigin ?? "https://example.com").replace(/\/$/, ""); descriptor.feishu = { appId: input.feishu.appId, authorizeEndpoint: "https://accounts.feishu.cn/open-apis/authen/v1/authorize", appReturnUrl: `${origin}/auth/feishu/app-return`, webStartPath: "/auth/feishu/start" }; }
+  if (input.feishu) {
+    const [, appReturnUrl] = allowedRedirectUris(input.feishu, input.publicOrigin ?? "http://localhost");
+    descriptor.feishu = { appId: input.feishu.appId, authorizeEndpoint: "https://accounts.feishu.cn/open-apis/authen/v1/authorize", appReturnUrl, webStartPath: "/auth/feishu/start" };
+  }
   return descriptor;
 }
 
-export function unifiedEnvironmentDescriptor(input: Parameters<typeof environmentDescriptor>[0]): EnvironmentDescriptor {
-  return environmentDescriptor(input);
+export type UnifiedEnvironmentDetails = Omit<Parameters<typeof environmentDescriptor>[0], "environmentId" | "desktopManaged" | "feishu" | "publicOrigin">;
+
+export function unifiedEnvironmentDescriptor(common: { environmentId: string; desktopManaged: boolean; label?: string; feishu?: FeishuLoginConfig | null; publicOrigin?: string }, details: UnifiedEnvironmentDetails): EnvironmentDescriptor {
+  return environmentDescriptor({ ...common, ...details });
 }

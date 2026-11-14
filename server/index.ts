@@ -528,7 +528,10 @@ import { createGracefulShutdown } from "./graceful-shutdown.ts";
 import { acquireDataDirLeaseForProcess } from "./data-dir-lease.ts";
 import { editionForSettings, entitled } from "./edition.ts";
 import { hostedWorkspaceConfiguration, hostedWorkspaceConfigured, sharedWorkspaceFullAccessConfigured, workspaceMembership, type WorkspaceAccess } from "./workspace-access.ts";
-import { unifiedEnvironmentDescriptor, loadEnvironmentId, OWNER_LENDING, serverVersion } from "./environment.ts"; import { dataFormatAtStart } from "./data-format.ts"; import { feishuLoginConfig, feishuScopes } from "./feishu-login.ts"; import { feishuExchangeRoute } from "./feishu-routes.ts";
+import { unifiedEnvironmentDescriptor, loadEnvironmentId, OWNER_LENDING, serverVersion, type UnifiedEnvironmentDetails } from "./environment.ts";
+import { dataFormatAtStart } from "./data-format.ts";
+import { feishuLoginConfig, revalidateFeishuDeviceSessions } from "./feishu-login.ts";
+import { feishuExchangeRoute } from "./feishu-routes.ts";
 import { WorkspaceBackupMaintenance } from "./workspace-backup-maintenance.ts";
 import { createWorkspaceBackupRoutes, isWorkspaceBackupSessionControl } from "./workspace-backup-http.ts";
 import { applyPendingWorkspaceRestore, readLastWorkspaceRestore, type WorkspaceRestoreResult } from "./workspace-backup.ts";
@@ -703,8 +706,14 @@ const deviceLinks = new DeviceLinks(); const sharedComputers = new SharedCompute
 const CLOUD_SECRETS = BOOT_CLOUD_SECRETS;
 const CLOUD_ENV: NodeJS.ProcessEnv = { ...process.env, ...CLOUD_SECRETS };
 const CLOUD_HOME = cloudHomeConfiguration(CLOUD_ENV);
-const CLOUD_TEAM = CLOUD_HOME?.team ?? null, CLOUD_PERSONAL = CLOUD_HOME !== null && CLOUD_TEAM === null, TEAM_LABEL = CLOUD_TEAM ? { label: CLOUD_TEAM.name } : {}; const HOSTED_WORKSPACE = hostedWorkspaceConfigured();
-const FEISHU_CONFIG = feishuLoginConfig({ ...process.env, HOSTED_WORKSPACE: HOSTED_WORKSPACE ? "1" : "0", CLOUD_TEAM: CLOUD_TEAM ? "1" : "0" }); if (FEISHU_CONFIG) sessions.revalidateFeishuSessions((unionId, tenantKey) => tenantKey && FEISHU_CONFIG.tenants.includes(tenantKey) && (FEISHU_CONFIG.allow.includes("*") || FEISHU_CONFIG.allow.includes(unionId)) ? feishuScopes(unionId, FEISHU_CONFIG) : null);
+const CLOUD_TEAM = CLOUD_HOME?.team ?? null, CLOUD_PERSONAL = CLOUD_HOME !== null && CLOUD_TEAM === null, TEAM_LABEL = CLOUD_TEAM ? { label: CLOUD_TEAM.name } : {};
+const HOSTED_WORKSPACE = hostedWorkspaceConfigured();
+const FEISHU_CONFIG = feishuLoginConfig({
+  ...process.env,
+  HOSTED_WORKSPACE: HOSTED_WORKSPACE ? "1" : "0",
+  CLOUD_TEAM: CLOUD_TEAM ? "1" : "0",
+});
+revalidateFeishuDeviceSessions(sessions, FEISHU_CONFIG);
 /** The language set on this server, else (on a Team Cloud) the team's default from the Admin. threadLanguage: the one a line in a conversation is written in, its one person's, else the place's (server/server-lines.ts). */
 const appLanguage = (): string | undefined => cfg.language ?? CLOUD_TEAM?.language; const personLanguages = createPersonLanguages({ dataDir: DATA_DIR, configured: appLanguage, privateTo: (threadId) => teamHost.privateTo(threadId) }); const threadLanguage = personLanguages.forThread; setConversationLanguage(threadLanguage);
 if (CLOUD_HOME) { repairMovedWorkspacePaths(DATA_DIR); acceptLegacyOrigins(CLOUD_HOME.legacyOrigins); }
@@ -812,7 +821,9 @@ function savedCustomDomain(): string | null {
   try { return normalizeCustomDomain(cfg.customDomain); }
   catch { return null; }
 }
-function publicUrl(): string | null { return savedCustomDomain() ?? FALLBACK_PUBLIC_URL ?? tailnetShare.origin() ?? lanUrl(PORT); } const describeEnvironment = (input: Parameters<typeof unifiedEnvironmentDescriptor>[0]) => unifiedEnvironmentDescriptor({ ...input, feishu: FEISHU_CONFIG, publicOrigin: publicUrl() ?? undefined });
+function publicUrl(): string | null { return savedCustomDomain() ?? FALLBACK_PUBLIC_URL ?? tailnetShare.origin() ?? lanUrl(PORT); }
+function effectivePublicOrigin(): string { return publicUrl() ?? `http://localhost:${PORT}`; }
+const describeEnvironment = (input: UnifiedEnvironmentDetails) => unifiedEnvironmentDescriptor({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED, feishu: FEISHU_CONFIG, publicOrigin: effectivePublicOrigin() }, input);
 function customDomainStatus() {
   return {
     customDomain: savedCustomDomain(), publicUrl: publicUrl(), fallbackUrl: FALLBACK_PUBLIC_URL,
@@ -12613,7 +12624,15 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (cfAccess && !publicProbe) {
       const refusal = await cfAccess(req, res, url, sessions, SESSION_COOKIE);
       if (refusal) return json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
-    } if (await feishuExchangeRoute({ config: FEISHU_CONFIG, publicOrigin: publicUrl() ?? `http://localhost:${PORT}`, sessions, cookieName: SESSION_COOKIE, readBody, json }, req, res, path, method)) return;
+    }
+    if (await feishuExchangeRoute({
+      config: FEISHU_CONFIG,
+      publicOrigin: effectivePublicOrigin(),
+      sessions,
+      cookieName: SESSION_COOKIE,
+      readBody,
+      json,
+    }, req, res, path, method)) return;
     if (method === "GET" && path === "/auth/app-handoff") return appHandoff(req, res, url);
     if (method === "GET" && path === "/api/health/hosted") {
       res.setHeader("cache-control", "no-store");
@@ -12652,7 +12671,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     // Two public routes come first; everything else needs the loopback owner or a paired session with the right scope.
     if (method === "GET" && !path.startsWith("/api/") && !path.startsWith("/.well-known/") && (moveFreeze.screen(path) ? (res.writeHead(302, { location: moveFreeze.screen(path)!, "cache-control": "no-store" }).end(), true) : serveStatic(res, path, STATIC_DIR))) return;
     if (method === "GET" && path === "/.well-known/crybot/environment") {
-      return json(res, 200, describeEnvironment({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED, emailSignIn: !HOSTED_WORKSPACE && !CLOUD_HOME && emailSignIn.enabled(), sharedComputers: lendingEnabled(), cloudHome: Boolean(CLOUD_HOME), cloudTeam: CLOUD_TEAM !== null, ownHome: ownHome.takesMove() }));
+      return json(res, 200, describeEnvironment({ emailSignIn: !HOSTED_WORKSPACE && !CLOUD_HOME && emailSignIn.enabled(), sharedComputers: lendingEnabled(), cloudHome: Boolean(CLOUD_HOME), cloudTeam: CLOUD_TEAM !== null, ownHome: ownHome.takesMove() }));
     }
     const domainCheck = /^\/\.well-known\/crybot\/domain-check\/([a-f0-9]{64})$/.exec(path);
     if (method === "GET" && domainCheck) {
@@ -12661,7 +12680,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       return json(res, challenge ? 200 : 404, challenge ?? { error: "No active domain check." });
     }
     if (await emailSignInRoute({ cloudHome: Boolean(CLOUD_HOME), emailSignIn, sessions, cookieName: SESSION_COOKIE, target: (r) => signInMailTarget(publicUrl(), requestOrigin(r)),
-      environment: () => describeEnvironment({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED, emailSignIn: true, sharedComputers: lendingEnabled() }) }, req, res, path, method)) return;
+      environment: () => describeEnvironment({ emailSignIn: true, sharedComputers: lendingEnabled() }) }, req, res, path, method)) return;
     if ((cloudSigned && await cloudSigned({ req, res, url, path, method })) || chatApps.serveFile(req, res, path, method)) return;
     if (method === "POST" && path === "/api/auth/pair") {
       // JSON only: a cross-site HTML form cannot send this content type without a preflight, so no unused code is planted as a session.
@@ -12687,7 +12706,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         return json(res, result.status, refusalBody(result));
       }
       if (CLOUD_TEAM) teamHost.met(result.session);
-      const environment = describeEnvironment({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED, emailSignIn: !CLOUD_HOME && emailSignIn.enabled(), sharedComputers: lendingEnabled(), cloudHome: Boolean(CLOUD_HOME), cloudTeam: CLOUD_TEAM !== null, ownHome: ownHome.takesMove() });
+      const environment = describeEnvironment({ emailSignIn: !CLOUD_HOME && emailSignIn.enabled(), sharedComputers: lendingEnabled(), cloudHome: Boolean(CLOUD_HOME), cloudTeam: CLOUD_TEAM !== null, ownHome: ownHome.takesMove() });
       if (wantsCookie) {
         const previous = browser ? sessions.authenticate(parseCookies(req.headers.cookie).get(SESSION_COOKIE)) : null;
         if (previous && previous.id !== result.session.id) sessions.revoke(previous.id);
@@ -12721,7 +12740,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
           createdAt: paired.session.createdAt,
           lastSeenAt: paired.session.lastSeenAt,
         },
-        serverName: cfg.computerName || describeEnvironment({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED }).label,
+        serverName: cfg.computerName || describeEnvironment({}).label,
         ...phoneRelay?.pairedOver(req),
       });
     }
@@ -12834,7 +12853,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const base = pairingLinkBase(publicUrl(), auth.kind === "session" ? requestOrigin(req) : null);
       const code = formatPairingCode(opened.code);
       // `inviteUrl` is the custom scheme the native companion scanners accept; they cannot take a typed code.
-      const serverName = cfg.computerName || describeEnvironment({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED }).label;
+      const serverName = cfg.computerName || describeEnvironment({}).label;
       const invite = phoneRelay?.invite(opened.credential, serverName, base) ?? (base ? phonePairingLink({ address: base, token: opened.credential, name: serverName }) : null);
       return json(res, 200, {
         id: opened.id,
@@ -15356,7 +15375,7 @@ if (TUNNEL_SOCKET) {
 }
 // `serve --relay`: phones through CryBot Relay, each encrypted stream answered here as a remote request.
 const phoneRelay = startPhoneRelay({ env: process.env, dataDir: DATA_DIR, sessions, handle: handleRequest, version: serverVersion(), publicOrigin: publicUrl,
-  serverName: () => cfg.computerName || describeEnvironment({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED }).label,
+  serverName: () => cfg.computerName || describeEnvironment({}).label,
   refusal: CLOUD_HOME ? "a Cry Bot Cloud home" : HOSTED_WORKSPACE ? "a hosted workspace" : DESKTOP_MANAGED ? "the desktop app, whose companion carries phones" : null });
 
 /** A root the runtime holds is the runtime's to account for at the next start: a line here, with Retry, would start the job a second time. */
