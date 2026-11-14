@@ -15,11 +15,17 @@ import { ChatView } from "@/components/ChatView";
 import { SIDEBAR_AND_PANEL_FIT, SIDEBAR_INLINE, TWO_SIDE_PANELS_FIT, useMediaQuery } from "@/lib/use-media-query";
 import { preloadConnectedApps } from "@/lib/connected-apps";
 import {
-  ActivityPanel, BotSettingsDialog, CloudEngineSignIn, CloudIntent, CloudSetup, CloudWelcome, CommandPalette, ComputerPanel, ConversationShareDialogs,
-  CryBotWelcome, FirstConversationTour, FilesView, GuidedTour, GroupView, InboxPanel, InspectorPanel, KeyboardShortcutsModal, LiveCallHost, LocalVmWorkspace,
-  MemberApps, NewBotNameHost, NewLocalFromMenu, NoEngines, NotificationRail, NotificationsPanel, PluginsPanel, preloadScreens, PublishedAppsPage, RemoteAgentSettingsPanel,
+  ActivityPanel, BotSettingsDialog, CloudEngineSignIn, CloudIntent, CloudSetup, CloudWelcome, ComputerPanel, ConversationShareDialogs,
+  FirstConversationTour, FilesView, GuidedTour, GroupView, InboxPanel, InspectorPanel, KeyboardShortcutsModal, LiveCallHost, LocalVmWorkspace,
+  MemberApps, NewBotNameHost, PluginsPanel, preloadScreens, PublishedAppsPage, RemoteAgentSettingsPanel,
   RemoteDesktopPanel, RoomPanel, SettingsModal, TeamMapPage, TeamWelcome, TriggersPage,
 } from "@/components/lazy-screens";
+import { HomeLine } from "@/components/HomeLine";
+import { NoEngines } from "@/components/NoEngines";
+import { NotificationRail, NotificationsPanel } from "@/components/NotificationsPanel";
+import { NewLocalFromMenu } from "@/components/PlaceAddSheet";
+import { CommandPalette } from "@/components/CommandPalette";
+import { CryBotWelcome } from "@/components/CryBotWelcome";
 import { useAdvancedMode } from "@/lib/interface-mode";
 import { useRoomPanelShown } from "@/lib/room-panel";
 import { WorkspaceBackupRecovery } from "@/components/WorkspaceBackupSettings";

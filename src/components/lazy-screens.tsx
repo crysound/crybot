@@ -1,4 +1,5 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
+import { Loader2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { t } from "@/lib/i18n";
 
@@ -13,6 +14,7 @@ export type LazyScreen<P> = ((props: P) => ReactNode) & {
 export function lazyScreen<Props>(
   name: string,
   load: () => Promise<(props: Props) => ReactNode>,
+  fallback: ReactNode = null,
 ): LazyScreen<NonNullable<Props>> {
   type P = NonNullable<Props>;
   let ready: ComponentType<P> | undefined;
@@ -40,7 +42,7 @@ export function lazyScreen<Props>(
       };
     }, [Loaded]);
     if (Loaded) return <Loaded {...props} />;
-    return failed ? <ScreenUnavailable /> : null;
+    return failed ? <ScreenUnavailable /> : fallback;
   }
   return Object.assign(Screen, { preload });
 }
@@ -81,9 +83,9 @@ export const TriggersPage = lazyScreen("TriggersPage", async () => (await import
 export const SettingsModal = lazyScreen("SettingsModal", async () => (await import("./SettingsModal")).SettingsModal);
 export const TeamMapPage = lazyScreen("TeamMapPage", async () => (await import("./TeamMapPage")).TeamMapPage);
 export const PublishedAppsPage = lazyScreen("PublishedAppsPage", async () => (await import("./published-apps/PublishedAppsPage")).PublishedAppsPage);
-export const GroupView = lazyScreen("GroupView", async () => (await import("./GroupView")).GroupView);
-export const NotificationRail = lazyScreen("NotificationRail", async () => (await import("./NotificationsPanel")).NotificationRail);
-export const NotificationsPanel = lazyScreen("NotificationsPanel", async () => (await import("./NotificationsPanel")).NotificationsPanel);
+export const GroupView = lazyScreen("GroupView", async () => (await import("./GroupView")).GroupView,
+  <div role="status" className="flex flex-1 items-center justify-center text-ink-tertiary"><Loader2 size={20} className="animate-spin" /></div>,
+);
 export const CloudSetup = lazyScreen("CloudSetup", async () => (await import("./CloudSetup")).CloudSetup);
 export const CloudWelcome = lazyScreen("CloudWelcome", async () => (await import("./cloud-welcome/CloudWelcome")).CloudWelcome);
 export const CloudIntent = lazyScreen("CloudIntent", async () => (await import("./CloudIntent")).CloudIntent);
@@ -96,12 +98,6 @@ export const LiveCallHost = lazyScreen("LiveCallHost", async () => (await import
 export const GuidedTour = lazyScreen("GuidedTour", async () => (await import("./onboarding/GuidedTour")).GuidedTour);
 export const FirstConversationTour = lazyScreen("FirstConversationTour", async () => (await import("./onboarding/FirstConversationTour")).FirstConversationTour);
 export const InboxPanel = lazyScreen("InboxPanel", async () => (await import("./inbox/InboxPanel")).InboxPanel);
-export const HomeLine = lazyScreen("HomeLine", async () => (await import("./HomeLine")).HomeLine);
-export const NewLocalFromMenu = lazyScreen("NewLocalFromMenu", async () => (await import("./PlaceAddSheet")).NewLocalFromMenu);
-export const CommandPalette = lazyScreen("CommandPalette", async () => (await import("./CommandPalette")).CommandPalette);
-export const CryBotWelcome = lazyScreen("CryBotWelcome", async () => (await import("./CryBotWelcome")).CryBotWelcome);
-export const NoEngines = lazyScreen("NoEngines", async () => (await import("./NoEngines")).NoEngines);
-export const EngineSetup = lazyScreen("EngineSetup", async () => (await import("./EngineSetup")).EngineSetup);
 
 // Rarely opened, so never fetched ahead. The team library is what brings the YAML parser in.
 export const PhoneAppDialog = lazyScreen("PhoneAppDialog", async () => (await import("./PhoneAppDialog")).PhoneAppDialog);
@@ -110,7 +106,7 @@ export const GrokMoveDialog = lazyScreen("GrokMoveDialog", async () => (await im
 export const TeamLibraryPanel = lazyScreen("TeamLibraryPanel", async () => (await import("./TeamLibraryPanel")).TeamLibraryPanel);
 
 // Most opened first: a Cloud page fetches these in this order.
-const SCREENS = [
+export const SCREENS = [
   SettingsModal, BotSettingsDialog, PluginsPanel, ComputerPanel, TriggersPage, ActivityPanel, FilesView, InspectorPanel, KeyboardShortcutsModal,
   LocalVmWorkspace, NewBotDialog, RemoteAgentSettingsPanel, RemoteDesktopPanel, RoomPanel, TeamMapPage, PublishedAppsPage,
 ];

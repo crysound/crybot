@@ -1,74 +1,67 @@
 # T-1224 首屏瘦身报告
 
-## 产物对比
+## 第 1 轮数字有误，以下为准
 
-基线构建使用 `vite v7.3.6`，构建命令为：
+第 1 轮报告把入口、App 静态依赖和语言包的口径混在了一起，不能用其中的 356,837 B、628.80 KB 等数字判断本轮结果。本报告统一使用构建产物的原始字节数和 `gzip -9` 字节数；合计按去重后的入口资源、App 的静态 import 闭包和一个语言包计算。
+
+## 第 2 轮
+
+- 恢复 `src/App.tsx` 对 `HomeLine`、`NoEngines` 的静态 import，修复登录后 `HomeLine is not defined` 导致的整页错误；`ChatView` 对 `EngineSetup` 也恢复静态 import，首帧仍显示登录按钮。
+- 删除 `LazyChatMarkdown`，`ChatView`、`CallSheet`、`DataCard`、`InboxReading`、`WidgetNodes`、`GroupView` 等全部改回静态 `ChatMarkdown`。ChatMarkdown 本身继续静态进入 App；KaTeX 保持动态 import，构建中 `katex-HP8lGamR.js`（261,313 B，77,166 B gzip）和 KaTeX CSS 是独立块。
+- 从 `vite.config.ts` 移除 `vendor-markdown` manual chunk，并删除写 `/tmp` 的 moduleStats 插件。`AttachmentGallery` 改为本地链接提取器，避免为少量附件路径判断静态引入 `mdast-util-from-markdown`；Markdown 渲染主路径仍由 ChatMarkdown 负责。
+- 撤回 `NotificationRail`、`NotificationsPanel`、`NewLocalFromMenu`、`CommandPalette`、`CryBotWelcome`、`EngineSetup` 的 lazy wrapper；保留确有独立产物的 `GroupView`，并给它保留 Loader2 占位。`src/components/lazy-screens.test.ts` 的预加载数量和 `SCREENS` 断言已与最终实现一致。
+- 新增 `scripts/locale-bundles.ts` Vite 插件：每种语言构建为“本语言翻译 + 缺失 key 的英文值”，运行时按当前语言只动态加载一个包。`main.tsx` 等待 `loadPageLanguage()` 后首次渲染；切换语言按需加载，失败回退英文。`src/locales/index.ts` 不再静态引入英文 JSON。
+- `scripts/check-frontend-budget.mjs` 现在解析 `.vite/manifest.json`，统计入口、App 静态闭包和中文语言包，去重后按 gzip -9 计算；没有匹配资源或 manifest 节点时退出报错。阈值仍是 `500 * 1024`，逻辑可被 import，`package.json` 增加 `check:bundle`。
+
+构建命令：
 
 ```text
 PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec vite build
 ```
 
-| 产物 | 改前未压缩 | 改前 gzip | 改后未压缩 | 改后 gzip |
-| --- | ---: | ---: | ---: | ---: |
-| `index` 入口 JS | 39.51 KB | 11.88 KB | 39.74 KB | 11.91 KB |
-| `styles` 共享 JS | 958.88 KB | 274.81 KB | 63.20 KB | 21.77 KB |
-| `styles` CSS | 333.89 KB | 52.47 KB | 333.89 KB | 51.53 KB |
-| `App` 业务块 | 2,647.56 KB | 817.38 KB | 2,044.41 KB | 628.80 KB |
-| `GroupView` | 合入 App | 合入 App | 47.40 KB | 14.08 KB |
-| 英文语言包 | 合入 styles | 合入 styles | 700.80 KB | 191.32 KB |
+本轮构建成功。产物块如下（字节）：
 
-入口 HTML 直接引用的 JS/CSS（入口脚本、modulepreload 和 stylesheet）改后 gzip 合计 **356,837 B**，由 `scripts/check-frontend-budget.mjs` 检查，阈值常量为 `ENTRY_GZIP_BUDGET_BYTES = 500 * 1024`。
+| 块 | 未压缩 | gzip -9 |
+| --- | ---: | ---: |
+| 入口 `index-*.js` | 39,632 | 11,869 |
+| `styles-*.js` | 82,164 | 26,747 |
+| `styles-*.css` | 333,893 | 51,704 |
+| `vendor-react` | 192,646 | 60,314 |
+| `vendor-icons` | 65,472 | 19,982 |
+| `vendor-schema` | 95,766 | 26,977 |
+| `vendor-url` | 95,913 | 40,320 |
+| `PlacesRail` | 41,586 | 12,862 |
+| `MenuMotion` | 697 | 445 |
+| `App`（含静态 ChatMarkdown 首条消息路径） | 2,256,385 | 692,268 |
+| 英文合并语言包 | 700,828 | 191,246 |
+| 中文合并语言包 | 790,119 | 232,999 |
+| KaTeX 动态块 | 261,313 | 77,166 |
+| KaTeX CSS 动态块 | 29,288 | 7,935 |
 
-登录后打开机器人列表和普通聊天还会加载动态 `App` 业务块，当前约 **628.80 KB gzip**，因此“普通聊天实际下载 JS+CSS gzip ≤500 KB”尚未达到。主要卡点是 `state/store.tsx`、`Sidebar.tsx`、`ChatView.tsx`、`ModelPicker.tsx`、`shared/carved-bodies.ts` 及其业务依赖；这些模块同时承担机器人列表和普通聊天的首屏功能，继续拆分需要协调者确认交互上的加载占位策略。
+入口、登录后普通聊天的合计按以下口径计算：入口包含 HTML 直接引用的 JS/CSS 及其 manifest 静态依赖；登录后再加 App 及静态依赖；语言包按当前语言追加一次。
 
-## 基线最大的 20 个模块
+| 场景 | 未压缩合计 | gzip -9 合计 | 距 500 KiB 阈值 |
+| --- | ---: | ---: | ---: |
+| 入口 | 713,807 | 170,616 | 还剩 341,384 B |
+| 登录后机器人列表 + 普通聊天（英文） | 3,904,982 | 1,134,734 | 超出 622,734 B |
+| 登录后机器人列表 + 普通聊天（中文） | 3,994,273 | 1,176,487 | 超出 664,487 B |
 
-这是第一次构建中 `styles` 和 `App` 主块的 Rollup `renderedLength` 排名：
+严格口径仍超过 500 KiB，因此当前使用 `node scripts/check-frontend-budget.mjs dist --report-only` 输出报告而不失败；脚本默认模式仍会在超预算时退出非零。最值得继续拆的是 `shared/carved-bodies.ts`、`ProviderIcons.tsx`、`AttachmentPreview.tsx` 和 `tailwind-merge`，并确认首屏是否真的需要 `vendor-url`（tldts）及 `vendor-schema`（zod）。本轮没有继续拆 tldts 或 zod；它们仍分别约 40 KiB 和 27 KiB gzip。
 
-| 模块 | 未压缩 |
-| --- | ---: |
-| `src/locales/en.json` | 741.2 KB |
-| `react-dom/cjs/react-dom-client.production.js` | 552.9 KB |
-| `tailwind-merge` | 102.2 KB |
-| `src/state/store.tsx` | 119.2 KB |
-| `src/components/Sidebar.tsx` | 106.2 KB |
-| `shared/carved-bodies.ts` | 86.9 KB |
-| `src/components/ChatView.tsx` | 69.5 KB |
-| `src/components/GroupView.tsx` | 64.0 KB |
-| `src/components/ModelPicker.tsx` | 54.2 KB |
-| `src/components/ProviderIcons.tsx` | 44.0 KB |
-| `src/components/Composer.tsx` | 43.3 KB |
-| `src/components/AttachmentPreview.tsx` | 40.2 KB |
-| `src/components/ChatMarkdown.tsx` | 34.7 KB |
-| `src/components/EngineSetup.tsx` | 34.2 KB |
-| `src/components/CallView.tsx` | 29.1 KB |
-| `src/components/SidebarThreadRow.tsx` | 29.0 KB |
-| `src/components/VoiceSettings.tsx` | 28.1 KB |
-| `src/components/AnimatedMascot.tsx` | 26.6 KB |
-| `src/components/ApprovalCard.tsx` | 25.3 KB |
-| `src/components/SidebarProfileMenu.tsx` | 25.0 KB |
+验证结果：
 
-## 已完成的拆分
-
-- `manualChunks` 将 React/React DOM、Lucide、Markdown/remark、Zod、tldts 分到稳定的第三方块；日常发版时业务块变化不会重新生成这些稳定块。
-- Markdown 渲染器改为 `LazyChatMarkdown`，react-markdown、remark、KaTeX 及其解析依赖只在消息需要渲染时加载。Mermaid、Shiki 语言包、数据面板、AG Grid、Vega、远程桌面和设置页沿用或加强已有动态加载。
-- GroupView、通知、收件箱、云端引导、插件页、命令面板、新建机器人、实时语音宿主等从 App 静态图中移到 `lazy-screens`；加载失败沿用现有可重试提示。
-- `AttachmentGallery` 使用独立的 `chat-markdown-links`，避免仅为路径判断而静态拉入完整 Markdown 渲染器。
-- `styles` 959KB 的内容是多入口共享的 JS 公共块，主要含英文语言包、React DOM 和 `tailwind-merge`；CSS 本身仍是独立的 334KB 文件。拆分后公共 JS 约 63KB，英文语言包单独缓存。
-
-## 验证
-
-通过：
-
-- `src/components/ChatMarkdown.test.ts`（140 tests）
-- `src/components/ChatMarkdown.katex-load.test.ts`（3 tests）
-- `src/components/ChatMarkdown.renderers.test.ts`（7 tests）
-- `src/components/MarkdownFilePreview.dom.test.ts`（6 tests）
-- 指定构建命令，构建成功。
-- `node scripts/check-frontend-budget.mjs dist`，入口直接引用资源 gzip 356,837 B，预算通过。
-
-`src/components/ChatView.controls.test.ts` 有 1 个已有行为断言失败：测试期待 `Sign in to Claude` 按钮，但当前渲染只有错误说明和 Details；失败发生在改动前后均涉及的 `FailedTurnRow` 路径，未据此修改产品逻辑。
-
-## 需要协调者做的事
-
-CI 接入 `node scripts/check-frontend-budget.mjs dist`。若验收口径要求把登录后 `App` 及其静态依赖也计入 500KB，而非只检查入口 HTML 直接引用资源，需要继续拆分 store、侧栏和聊天主视图，并先确定普通聊天加载时允许显示的骨架范围。
+- `src/App.engine-status.test.ts`：2 passed
+- `src/components/ChatView.controls.test.ts`：58 passed
+- `src/components/CallSheet.test.ts`：5 passed
+- `src/components/ChatView.data-result.test.ts`：2 passed
+- `src/components/inbox/InboxReading.dom.test.ts`：8 passed
+- `src/components/ChatView.rows.test.ts`：7 passed
+- `src/components/lazy-screens.test.ts`：18 passed
+- `src/components/ChatMarkdown.test.ts`：140 passed
+- `src/components/ChatMarkdown.katex-load.test.ts`：3 passed
+- `src/components/ChatMarkdown.renderers.test.ts`：7 passed
+- `src/components/ChatMarkdown.streaming.test.ts`：5 passed
+- `src/components/ChatMarkdown.block-actions.test.ts`：3 passed
+- `src/components/AttachmentGallery.test.ts`：25 passed；`src/components/AttachmentGallery.reply-group.test.ts`：9 passed
+- `scripts/check-frontend-budget.test.mjs`：3 passed
+- `src/lib/i18n.test.ts`：37 passed，保留主分支已有的 pt-br 缺 3 个 key 那 1 项失败

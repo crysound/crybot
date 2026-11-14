@@ -198,14 +198,16 @@ describe("loading a language", () => {
     vi.resetModules();
   });
 
-  it("starts with English alone and shows another language only once its pack is here", async () => {
+  it("downloads only the chosen merged pack and shows it once it is here", async () => {
     vi.resetModules();
     const page = await import("./i18n");
     const packs = await import("@/locales");
     expect(Object.keys(packs.locales)).toEqual(["en"]);
+    expect(Object.keys(packs.en)).toEqual([]);
     expect(page.setLocale("de")).toBe("en");
     expect(await page.loadLocale("de-AT")).toBe("de");
     expect(page.t("engines.local")).toBe("Lokal");
+    expect(Object.keys(packs.en)).toEqual([]);
     expect(Object.keys(packs.locales)).toEqual(["en", "de"]);
     expect(await page.loadLocale("pt")).toBe("pt");
     expect(packs.locales["pt-br"]).toBe(packs.locales.pt);
@@ -223,12 +225,38 @@ describe("loading a language", () => {
     expect(page.activeLocale()).toBe("en");
   });
 
+  it("fills every missing translation without downloading the English pack", async () => {
+    for (const { code } of localeChoices) {
+      vi.resetModules();
+      const page = await import("./i18n");
+      const packs = await import("@/locales");
+      await page.loadLocale(code);
+      const merged = packs.locales[code]!;
+      for (const key of Object.keys(en) as Array<keyof typeof en>) {
+        expect(merged[key], `${code}: ${key}`).toBe(locales[code]![key] ?? en[key]);
+      }
+      expect(Object.keys(packs.en).length).toBe(code === "en" ? Object.keys(en).length : 0);
+      expect(page.activePackComplete()).toBe(code !== "en" && Object.keys(en).every((key) => Object.hasOwn(locales[code]!, key)));
+    }
+  });
+
+  it("preserves translation provenance for English-filled keys", async () => {
+    vi.resetModules();
+    const page = await import("./i18n");
+    const packs = await import("@/locales");
+    await page.loadLocale("zh");
+    const missing = (Object.keys(en) as Array<keyof typeof en>).find((key) => !Object.hasOwn(locales.zh!, key))!;
+    expect(page.t(missing)).toBe(t(missing));
+    expect(packs.hasTranslation("zh", missing)).toBe(false);
+    expect(page.activePackComplete()).toBe(false);
+  });
+
   it("falls back to English when a pack can't be loaded, and tries again next time", async () => {
     vi.resetModules();
     let offline = true;
     vi.doMock("@/locales", async (original) => {
       const real = await original<typeof import("@/locales")>();
-      return { ...real, loadLocalePack: (tag: string) => offline ? Promise.reject(new Error("offline")) : real.loadLocalePack(tag) };
+      return { ...real, loadLocalePack: (tag: string) => offline && tag !== "en" ? Promise.reject(new Error("offline")) : real.loadLocalePack(tag) };
     });
     const page = await import("./i18n");
     expect(await page.loadLocale("fr")).toBe("en");

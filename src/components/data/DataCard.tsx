@@ -7,7 +7,7 @@ import type { LocaleKey } from "@/locales";
 import { cn } from "@/lib/cn";
 import { copyText } from "@/lib/copy-text";
 import type { ColorScheme } from "@/lib/color-scheme";
-import { LazyChatMarkdown as ChatMarkdown } from "../LazyChatMarkdown";
+import { ChatMarkdown } from "../ChatMarkdown";
 import { DataGrid, DataResultFooter, type DataGridHandle } from "./DataGrid";
 import { DataChart } from "./DataChart";
 import { formatCount, markdownTable } from "./data-format";

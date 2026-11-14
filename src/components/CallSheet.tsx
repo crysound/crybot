@@ -10,7 +10,7 @@ import { intlLocale, t } from "@/lib/i18n";
 import { activityStepLabel } from "@/lib/live-activity";
 import type { Message } from "@/state/store";
 import { approvalCardOutcome, toolLabel } from "./ApprovalCard";
-import { LazyChatMarkdown as ChatMarkdown } from "./LazyChatMarkdown";
+import { ChatMarkdown } from "./ChatMarkdown";
 import { WorkingDots } from "./WorkingIndicator";
 
 type LineState = "done" | "stopped" | "open" | "neutral";

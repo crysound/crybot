@@ -1,10 +1,10 @@
-// The app loads a language's pack before it shows it (loadLocale); tests switch languages synchronously, so every
-// pack is here, read the first time a test asks for it.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { localePacks, locales, type LocalePack } from "../locales/index.ts";
+import { loadLocalePack, localePacks, locales, type LocalePack } from "../locales/index.ts";
+
+await loadLocalePack("en");
 
 const folder = join(dirname(fileURLToPath(import.meta.url)), "..", "locales");
 const read = new Map<string, LocalePack>();

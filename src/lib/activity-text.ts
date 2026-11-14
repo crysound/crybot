@@ -1,5 +1,6 @@
-import { en, type LocaleKey } from "@/locales";
-import { activeLocale, intlLocale, t, tFromServer } from "@/lib/i18n";
+import { englishContracts } from "virtual:english-contracts";
+import type { LocaleKey } from "@/locales";
+import { hasLocaleKey, activeLocale, intlLocale, t, tFromServer } from "@/lib/i18n";
 import type { Message } from "@/state/store";
 import { formatServerText, isReferenceParam, type ServerTextParams } from "../../shared/server-text";
 
@@ -15,7 +16,7 @@ function wordedParams(params: ServerTextParams | undefined): ServerTextParams | 
   const worded: ServerTextParams = {};
   for (const [name, value] of Object.entries(params)) {
     if (!isReferenceParam(name, value)) worded[name] = value;
-    else if (Object.hasOwn(en, value)) worded[name] = t(value as LocaleKey);
+    else if (hasLocaleKey(value)) worded[name] = t(value as LocaleKey);
     else throw new Error(`unknown notice part ${value}`);
   }
   if (typeof params.resetsAt === "number" && typeof params.timeZone === "string") {
@@ -37,7 +38,7 @@ export function noticeText(code: string | undefined, english: string, params?: S
 
 /** Throws when this build lacks the key, a part or a param, so the caller keeps its English. */
 export function noticeWords(code: string, params?: ServerTextParams): string {
-  if (!isNoticeCode(code) || !Object.hasOwn(en, code)) throw new Error(`unknown notice ${code}`);
+  if (!isNoticeCode(code) || !hasLocaleKey(code)) throw new Error(`unknown notice ${code}`);
   const worded = wordedParams(params) ?? {};
   if ([...t(code as LocaleKey).matchAll(/\{(\w+)\}/g)].some(([, name]) => !Object.hasOwn(worded, name!))) throw new Error(`notice ${code} lacks a param`);
   return t(code as LocaleKey, worded);
@@ -52,15 +53,15 @@ const LINE_PREFIXES = ["routines.server.", "chat.notice."];
 
 function englishParams(params: ServerTextParams | undefined): ServerTextParams {
   return Object.fromEntries(Object.entries(params ?? {}).map(([name, value]) =>
-    [name, isReferenceParam(name, value) && Object.hasOwn(en, value) ? en[value as LocaleKey] : value]));
+    [name, isReferenceParam(name, value) && hasLocaleKey(value) ? englishContracts[value as LocaleKey] ?? value : value]));
 }
 
 /** A routine's stored line (`checkTroubleCode`, a run's `outputCode`, `errorCode`, `attentionCode`) in the reader's
  * language. Only `routines.server.*` and `chat.notice.*` keys are taken, and only while the field still reads as that
  * line's English: a later line the server wrote without a code is shown as written. */
 export function routineLineText(code: string | undefined, english: string, params?: ServerTextParams): string {
-  if (!code || !LINE_PREFIXES.some((prefix) => code.startsWith(prefix)) || !Object.hasOwn(en, code) || activeLocale() === "en") return english;
-  if (formatServerText(en[code as LocaleKey], englishParams(params)) !== english) return english;
+  if (!code || !LINE_PREFIXES.some((prefix) => code.startsWith(prefix)) || !hasLocaleKey(code) || activeLocale() === "en") return english;
+  if (formatServerText(englishContracts[code as LocaleKey] ?? "", englishParams(params)) !== english) return english;
   try {
     return tFromServer(code, english, wordedParams(params));
   } catch {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { activeLocale, t } from "@/lib/i18n";
-import { en, type LocaleKey } from "@/locales";
+import { hasLocaleKey, activeLocale, t } from "@/lib/i18n";
+import type { LocaleKey } from "@/locales";
 import type { UpdaterState } from "@/types/cry";
 
 export type { UpdaterState };
@@ -27,7 +27,7 @@ const UPDATE_TEXT: Record<NonNullable<UpdaterState["messageCode"]>, LocaleKey> =
 export function updaterMessage(state: UpdaterState | null | undefined, { restart = true } = {}): string | undefined {
   if (!state) return undefined;
   const code = state.messageCode && Object.hasOwn(UPDATE_TEXT, state.messageCode) ? UPDATE_TEXT[state.messageCode] : undefined;
-  const key = state.messageKey?.startsWith("native.update.") && Object.hasOwn(en, state.messageKey) ? state.messageKey : undefined;
+  const key = state.messageKey?.startsWith("native.update.") && hasLocaleKey(state.messageKey) ? state.messageKey : undefined;
   if (key && activeLocale() === "en") return state.message;
   const params = { ...state.messageParams };
   if (key === "native.update.checkFailed" && code) params.error = t(code);
