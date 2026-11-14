@@ -1,3 +1,5 @@
+import { KEY_CATALOG, keyHidden } from "../keys/key-catalog";
+import { configStatusFromFrame } from "@/state/store";
 import { beforeEach, describe, expect, it } from "vitest";
 import { setLocale, t } from "@/lib/i18n";
 import { en } from "@/locales";
@@ -221,4 +223,26 @@ describe("search", () => {
       expect(SETTINGS_PAGES.some((page) => page.id === entry.page), entry.id).toBe(true);
     }
   });
+});
+
+it("removes AI key search entries while providers and other services remain reachable", () => {
+  expect(find("anthropic", fullContext()).some((hit) => hit.entry.id === "keys")).toBe(true);
+  expect(find("anthropic", fullContext({ providerLock: true })).some((hit) => hit.entry.id === "keys")).toBe(false);
+  expect(find("model providers", fullContext({ providerLock: true })).some((hit) => hit.entry.id === "providers")).toBe(true);
+});
+
+
+it("keeps the provider lock through configuration frames and removes AI key hits only", () => {
+  const config = configStatusFromFrame({ providerLock: true, composio: { configured: false }, box: { configured: false }, vps: { configured: false, sshAlias: "" }, rooms: { turnTimeoutMinutes: 10 }, localVm: { mode: "shared", maxInstances: 1 } });
+  expect(config.providerLock).toBe(true);
+  expect(KEY_CATALOG.filter((entry) => entry.section === "ai" && !keyHidden(entry.id, config))).toEqual([]);
+  expect(keyHidden("anthropic", { ...config, providerLock: false })).toBe(false);
+  expect(keyHidden("composio", config)).toBe(false);
+});
+
+it("removes Boat desktop search words without removing VPS or private desktop settings", () => {
+  expect(find("cloud desktops", fullContext()).length).toBeGreaterThan(0);
+  expect(find("cloud desktops", fullContext({ providerLock: true }))).toEqual([]);
+  expect(find("vps", fullContext({ providerLock: true })).some((hit) => hit.entry.id === "desktop-kinds")).toBe(true);
+  expect(find("private desktop", fullContext({ providerLock: true })).length).toBeGreaterThan(0);
 });

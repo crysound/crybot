@@ -611,6 +611,8 @@ const bridge = {
   },
 };
 
+if (process.argv.includes("--cry-remote-only")) delete bridge.workspaces;
+
 contextBridge.exposeInMainWorld(
   "cry",
   isLocalPage ? bridge : Object.fromEntries(Object.entries(bridge).filter(([key]) => remoteKeys.has(key))),

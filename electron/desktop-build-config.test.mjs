@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 import builderConfig from "../electron-builder.config.cjs";
 import build from "../scripts/desktop-build-config.cjs";
-import { defaultServerEnvironment, loginNavigationAllowed, readDesktopBuildConfig } from "./desktop-build-config.mjs";
+import { defaultServerEnvironment, localServerEnvironment, loginNavigationAllowed, readDesktopBuildConfig } from "./desktop-build-config.mjs";
 import environments from "./environments.cjs";
 import { createEnvironmentsFile } from "./environments-file.mjs";
 import * as fs from "node:fs";
@@ -76,5 +76,69 @@ it.each(["CRYBOT_DEFAULT_SERVER_URL", "CRYBOT_UPDATE_FEED_URL"])("requires HTTPS
     expect(readDesktopBuildConfig(dir)[key]).toBeNull();
     vi.stubEnv(name, url);
     expect(() => builderConfig()).toThrow();
+  }
+});
+
+it("writes and reads the provider lock only for explicit true values", () => {
+  const dir = temporary();
+  expect(readDesktopBuildConfig(dir).providerLock).toBe(false);
+  for (const [value, expected] of [[undefined, false], ["", false], ["0", false], ["true", false], ["1", true]]) {
+    const config = build.desktopBuildConfig({ CRYBOT_PROVIDER_LOCK: value });
+    build.writeDesktopBuildConfig(join(dir, "desktop-config.json"), config);
+    expect(JSON.parse(readFileSync(join(dir, "desktop-config.json"), "utf8")).providerLock).toBe(expected);
+    expect(readDesktopBuildConfig(dir).providerLock).toBe(expected);
+  }
+  for (const value of [undefined, "true", "1", 1, false]) {
+    build.writeDesktopBuildConfig(join(dir, "desktop-config.json"), { providerLock: value });
+    expect(readDesktopBuildConfig(dir).providerLock).toBe(false);
+  }
+});
+
+
+it("enables the packaged lock in the local server without losing inherited environment", () => {
+  const inherited = { FIXTURE: "kept", CRYBOT_PROVIDER_LOCK: "0" };
+  expect(localServerEnvironment({ providerLock: true }, inherited)).toEqual({ FIXTURE: "kept", CRYBOT_PROVIDER_LOCK: "1" });
+  expect(localServerEnvironment({ providerLock: false }, inherited)).toEqual(inherited);
+  expect(localServerEnvironment({}, { CRYBOT_PROVIDER_LOCK: "1" })).toEqual({ CRYBOT_PROVIDER_LOCK: "1" });
+  expect(inherited).toEqual({ FIXTURE: "kept", CRYBOT_PROVIDER_LOCK: "0" });
+});
+
+it("enables remote-only builds only with the explicit flag and a valid default server", () => {
+  const dir = temporary();
+  expect(readDesktopBuildConfig(dir).remoteOnly).toBe(false);
+  for (const flag of [undefined, "", "0", "true", "1"]) {
+    for (const server of [undefined, "https://gateway.example"]) {
+      const config = build.desktopBuildConfig({ CRYBOT_DESKTOP_REMOTE_ONLY: flag, CRYBOT_DEFAULT_SERVER_URL: server });
+      build.writeDesktopBuildConfig(join(dir, "desktop-config.json"), config);
+      expect(config.remoteOnly).toBe(flag === "1" && Boolean(server));
+      expect(readDesktopBuildConfig(dir)).toEqual(config);
+    }
+  }
+  for (const remoteOnly of [undefined, false, "1", "true", 1, true]) {
+    for (const defaultServerUrl of [null, "invalid", "http://gateway.example", "https://gateway.example"]) {
+      build.writeDesktopBuildConfig(join(dir, "desktop-config.json"), { remoteOnly, defaultServerUrl });
+      expect(readDesktopBuildConfig(dir).remoteOnly).toBe(remoteOnly === true && defaultServerUrl === "https://gateway.example");
+    }
+  }
+});
+
+it.each(["local", "saved-local", "other", "gateway"])("selects the deployment server on every launch with a saved %s environment", activeId => {
+  const dir = temporary();
+  const store = createEnvironmentsFile({ file: () => join(dir, "environments.json"), fs, path });
+  const saved = [
+    { id: "saved-local", kind: "local", name: "Fixture", dataDir: dir },
+    { id: "other", kind: "remote", name: "Other", origin: "https://other.example" },
+    ...(activeId === "gateway" ? [{ id: "gateway", kind: "remote", name: "Deployment", origin: "https://gateway.example", color: "blue" }] : []),
+  ];
+  store.write({ environments: saved, activeId });
+  const config = build.desktopBuildConfig({ CRYBOT_DESKTOP_REMOTE_ONLY: "1", CRYBOT_DEFAULT_SERVER_URL: "https://gateway.example" });
+  for (let launch = 0; launch < 2; launch++) {
+    store.write(defaultServerEnvironment(store.read(), config, true, () => "gateway"));
+    const result = store.read();
+    expect(environments.activeRemote(result)).toMatchObject({ id: "gateway", origin: "https://gateway.example" });
+    expect(result.environments).toHaveLength(3);
+    expect(result.environments.map(({ id }) => id)).toEqual(["saved-local", "other", "gateway"]);
+    if (activeId === "gateway") expect(environments.activeRemote(result)).toMatchObject({ name: "Deployment", color: "blue" });
+    store.write(environments.withActive(result, "local"));
   }
 });

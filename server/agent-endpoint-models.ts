@@ -55,7 +55,7 @@ export async function discoverAgentEndpointModels(entry: InstanceConfig, fetchIm
   if (!isGatewayEndpoint(entry)) return setModels(officialModels(codex));
   const env = entry.environment ?? {};
   const token = codex ? env.CRYBOT_CODEX_API_KEY : env.ANTHROPIC_API_KEY;
-  const headers = codex ? { authorization: `Bearer ${token}` } : { authorization: `Bearer ${token}`, "x-api-key": token!, "anthropic-version": "2023-06-01" };
+  const headers: Record<string, string> = codex ? { authorization: `Bearer ${token}` } : { authorization: `Bearer ${token}`, "x-api-key": token!, "anthropic-version": "2023-06-01" };
   const modelsUrl = providerModelsUrl(codex ? "openai" : "anthropic", agentEndpointAddress(entry));
   const failure = (detail: string) => Object.assign(new Error(`Could not discover gateway models: ${detail}`), { status: 400 });
   // Same rule as checkProviderKey: the key goes out only over HTTPS, or over plain HTTP to this computer.

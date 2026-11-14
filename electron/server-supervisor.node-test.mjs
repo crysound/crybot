@@ -8,6 +8,7 @@ import { createRequire } from "node:module";
 import test from "node:test";
 import vm from "node:vm";
 import { reviveAfterFailedSwitch, switchLocalEnvironment } from "./environment-switch.mjs";
+import { loadDesktopWindow } from "./remote-only.mjs";
 import { createServerSupervisor } from "./server-supervisor.mjs";
 
 const require = createRequire(import.meta.url);
@@ -17,10 +18,23 @@ const MAIN_SOURCE = readFileSync(new URL("./main.mjs", import.meta.url), "utf8")
 // vm realms have their own Object/Array prototypes: bring results home before strict-comparing.
 const plain = (value) => (value === undefined || value === null ? value : Array.isArray(value) ? value.map(plain) : typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, plain(v)])) : value);
 
-test("main retires an unavailable window only after recovery navigation succeeds", () => {
-  const source = readFileSync(new URL("./main.mjs", import.meta.url), "utf8");
-  assert.match(source, /void win\.loadURL\(`http:\/\/127\.0\.0\.1:\$\{SERVER_PORT\}`\)\.then\(\(\) => \{\s*serverUnavailableWindows\.delete\(win\);/);
-  assert.doesNotMatch(source, /serverUnavailableWindows\.delete\(win\);\s*void win\.loadURL/);
+test("main retires an unavailable window only after recovery navigation succeeds", async () => {
+  const start = MAIN_SOURCE.indexOf("    for (const win of appWindows()) {");
+  const end = MAIN_SOURCE.indexOf("\n  },\n  onUnavailable()", start);
+  assert.ok(start > 0 && end > start);
+  for (const success of [false, true]) {
+    let resolve, reject;
+    const loading = new Promise((done, fail) => { resolve = done; reject = fail; });
+    const win = { loadURL: () => loading };
+    const pending = new Set([win]);
+    const context = vm.createContext({ appWindows: () => [win], serverUnavailableWindows: pending,
+      activeRemote: () => null, environmentsState: {}, loadDesktopWindow, desktopBuild: {}, SERVER_PORT: 8799, slog() {} });
+    vm.runInContext(MAIN_SOURCE.slice(start, end), context);
+    assert.equal(pending.has(win), true);
+    if (success) resolve(); else reject(new Error("offline"));
+    await new Promise(done => setImmediate(done));
+    assert.equal(pending.has(win), !success);
+  }
 });
 
 function fixture(t, options = {}) {

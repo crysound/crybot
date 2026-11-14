@@ -55,7 +55,9 @@ function managedTeams(english: string, managedSections: readonly string[] | unde
   return managedSections.map((name) => name || t("botAccess.teams.general")).join(", ");
 }
 
-const preference = (words: string): string => (Object.hasOwn(PREFERENCE, words) ? t(PREFERENCE[words]!) : words);
+const preference = (words: string, providerLock = false): string => words === "cloud computer" && providerLock
+  ? t("botOverview.preference.cloud.locked")
+  : Object.hasOwn(PREFERENCE, words) ? t(PREFERENCE[words]!) : words;
 
 type Coordination = {
   line: RegExp;
@@ -87,16 +89,16 @@ function coordinationText(line: string, managedSections: readonly string[] | und
   return null;
 }
 
-export function overviewLineText(line: string, managedSections?: readonly string[]): string {
+export function overviewLineText(line: string, managedSections?: readonly string[], providerLock = false): string {
   if (Object.hasOwn(EXACT, line)) return t(EXACT[line]!);
   const coordination = coordinationText(line, managedSections);
   if (coordination !== null) return coordination;
   const apps = /^Can use (\d+) connected apps?: (.+)\.$/.exec(line);
   if (apps) return t(apps[1] === "1" ? "botOverview.line.appsOne" : "botOverview.line.appsMany", { count: Number(apps[1]), apps: apps[2]! });
-  const away = activeLocale() === "en" ? null : /^Computer preference: (.+), which isn't available on My Cloud\.$/.exec(line);
-  if (away) return t("botOverview.line.computerNotOnCloud", { preference: preference(away[1]!) });
+  const away = activeLocale() === "en" && !providerLock ? null : /^Computer preference: (.+), which isn't available on My Cloud\.$/.exec(line);
+  if (away) return t("botOverview.line.computerNotOnCloud", { preference: preference(away[1]!, providerLock) });
   const computer = /^Computer preference: (.+)\.$/.exec(line);
-  if (computer) return t("botOverview.line.computer", { preference: preference(computer[1]!) });
+  if (computer) return t("botOverview.line.computer", { preference: preference(computer[1]!, providerLock) });
   const folder = /^Works in (.+)\.$/.exec(line);
   if (folder) return t("botOverview.line.folder", { folder: folder[1]! });
   const skill = /^Knows how to (.+)\.$/.exec(line);
