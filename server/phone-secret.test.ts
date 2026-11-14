@@ -69,6 +69,7 @@ async function seal(
   };
 }
 
+// The fixed envelope above comes from scripts/generate-phone-secret-vector.ts (deterministic Node HPKE with the current labels).
 describe("PhoneSecretBridge", () => {
   it("opens the deterministic Node HPKE envelope", async () => {
     let bridge!: PhoneSecretBridge;
