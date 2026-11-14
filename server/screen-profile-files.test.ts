@@ -1,5 +1,7 @@
 import { chmod, mkdir, open, readFile, readdir, readlink, stat, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { create as createTar } from "tar";
 import { afterEach, expect, it } from "vitest";
 import { extractScreenProfile, migrateLegacyBrowserProfilesToScreen, rescueScreenProfile } from "./screen-profile-files.ts";
 import { screenFilesFixture } from "./testing/screen-files-fixture.ts";
@@ -134,6 +136,45 @@ it("streams a 400 MiB sparse profile through one exec", async () => {
   expect((await f.calls()).filter((call) => call.at(-2) === "writeStream")).toHaveLength(1);
   expect(await f.access.stat(".browser-profiles-migration-pending")).toBeNull();
 }, 60_000);
+
+it("kills an unlimited pack stream and removes its temporary archive", async () => {
+  const f = await fixture(1);
+  const pidFile = join(f.root, "pack-pid");
+  await writeFile(f.runtime, `#!/usr/bin/env python3
+import os, sys
+a = sys.argv[1:]
+if 'sh' in a and 'tar -C' in ' '.join(a):
+    with open(${JSON.stringify(pidFile)}, 'w') as saved:
+        saved.write(str(os.getpid()))
+    while True:
+        os.write(1, b'x' * 65536)
+else:
+    os.execvp('python3', a[a.index('python3'):])
+`);
+  await chmod(f.runtime, 0o755);
+  const before = (await readdir(tmpdir())).filter((name) => name.startsWith("crybot-screen-profile-"));
+  await expect(rescueScreenProfile(f.runtime, f.target, ".config/chromium", ".browser-profiles/chromium", f.access,
+    { maxBytes: 1024, archiveBytesMax: 8192 })).rejects.toThrow("Could not preserve");
+  const pid = Number(await readFile(pidFile, "utf8"));
+  expect(() => process.kill(pid, 0)).toThrow();
+  expect((await readdir(tmpdir())).filter((name) => name.startsWith("crybot-screen-profile-"))).toEqual(before);
+});
+
+it("rejects archives whose file entries exceed the configured limit", async () => {
+  const f = await fixture(1);
+  const source = join(f.root, "archive-source");
+  await mkdir(source);
+  await writeFile(join(source, "first"), Buffer.alloc(600));
+  await writeFile(join(source, "second"), Buffer.alloc(600));
+  const archive = join(f.root, "oversize.tar");
+  await createTar({ cwd: source, file: archive }, ["."]);
+  const destination = join(f.root, "extracted");
+  await expect(extractScreenProfile(archive, destination, { maxBytes: 1024, archiveBytesMax: 8192 }))
+    .rejects.toThrow("configured preservation limit");
+  expect(await stat(destination)).toBeDefined();
+  expect((await stat(join(destination, "first"))).size).toBe(600);
+  await expect(stat(join(destination, "second"))).rejects.toMatchObject({ code: "ENOENT" });
+});
 
 it.each([1024 * 1024 * 1024, 1024 * 1024 * 1024 + 1])("checks the 1 GiB profile limit at %i bytes without writing the payload", async (size) => {
   const f = await fixture(1);

@@ -1,23 +1,59 @@
 import { spawn } from "node:child_process";
 import { createReadStream, createWriteStream } from "node:fs";
-import { lstat, mkdir, mkdtemp, open, readdir, readlink, rm } from "node:fs/promises";
+import { chmod, lstat, mkdir, mkdtemp, open, readdir, readlink, rm, stat as statFile } from "node:fs/promises";
 import { constants, type Stats } from "node:fs";
 import { once } from "node:events";
 import { tmpdir } from "node:os";
 import { join, posix } from "node:path";
+import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { extract, type ReadEntry } from "tar";
+import type { ReadEntry } from "tar";
 import { screenUser, screenWorkdir, type LocalVmTarget } from "./container-targets.ts";
 import { augmentedPath, resolveCliSpawn } from "./env-path.ts";
 import { screenIdentityArgs } from "./container-computer-screens.ts";
 import { screenFileAccess, removeScreenFile, type ScreenStreamEntry, type ScreenFileAccess } from "./screen-files.ts";
 
 const PROFILE_BYTES_MAX = 1024 * 1024 * 1024;
+// Tar writes 512-byte headers and block padding for every entry; this bounds that metadata overhead.
+const PROFILE_ARCHIVE_OVERHEAD_MAX = 16 * 1024 * 1024;
 const BROWSER_CACHE_DIRS = new Set(["Cache", "Code Cache", "GPUCache", "ShaderCache", "GrShaderCache", "DawnCache", "component_crx_cache", "cache2", "startupCache"]);
 const BROWSER_LOCKS = new Set(["SingletonLock", "SingletonSocket", "SingletonCookie", ".parentlock", "lock"]);
 
+export interface ScreenProfileLimits {
+  maxBytes?: number;
+  archiveBytesMax?: number;
+}
+
+function profileLimits(limits?: ScreenProfileLimits) {
+  const maxBytes = limits?.maxBytes ?? PROFILE_BYTES_MAX;
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) throw new Error("Invalid screen profile preservation limit.");
+  const archiveBytesMax = limits?.archiveBytesMax ?? maxBytes + PROFILE_ARCHIVE_OVERHEAD_MAX;
+  if (!Number.isSafeInteger(archiveBytesMax) || archiveBytesMax < maxBytes) throw new Error("Invalid screen profile archive limit.");
+  return { maxBytes, archiveBytesMax };
+}
+
+function profileLimitError(maxBytes: number): Error {
+  return new Error(maxBytes === PROFILE_BYTES_MAX
+    ? "Screen profile exceeds the 1 GiB preservation limit."
+    : "Screen profile exceeds the configured preservation limit.");
+}
+
+async function makeProfileStagingRemovable(path: string): Promise<void> {
+  const info = await lstat(path).catch(() => undefined);
+  if (!info?.isDirectory()) return;
+  await chmod(path, 0o700).catch(() => undefined);
+  for (const entry of await readdir(path, { withFileTypes: true })) {
+    if (entry.isDirectory() && !entry.isSymbolicLink()) await makeProfileStagingRemovable(join(path, entry.name));
+  }
+}
+
+async function removeProfileStaging(path: string): Promise<void> {
+  await makeProfileStagingRemovable(path).catch(() => undefined);
+  await rm(path, { recursive: true, force: true });
+}
+
 export async function rescueScreenProfile(runtime: string, target: LocalVmTarget & { screen: number }, source: string, durable: string,
-  access: ScreenFileAccess = screenFileAccess(runtime, target)): Promise<"rescued" | "kept" | "none"> {
+  access: ScreenFileAccess = screenFileAccess(runtime, target), limits?: ScreenProfileLimits): Promise<"rescued" | "kept" | "none"> {
   const destination = `${screenWorkdir(target.screen)}/${durable}`;
   const pending = `${destination}.rescue-pending`;
   if (!await access.stat(pending) && await access.stat(destination) && (await access.list(destination)).length) return "kept";
@@ -25,14 +61,14 @@ export async function rescueScreenProfile(runtime: string, target: LocalVmTarget
   const archive = join(staging, "profile.tar");
   const copy = join(staging, "profile");
   try {
-    const packaged = await packageScreenProfile(runtime, target, source, archive);
+    const packaged = await packageScreenProfile(runtime, target, source, archive, limits);
     if (packaged !== "ok") return "none";
     await access.writeFile(pending, Buffer.alloc(0), 0o600);
-    await extractScreenProfile(archive, copy);
+    await extractScreenProfile(archive, copy, limits);
     await transferProfile(copy, destination, access, durable.startsWith(".browser-profiles/"));
     await removeScreenFile(access, pending);
     return "rescued";
-  } finally { await rm(staging, { recursive: true, force: true }); }
+  } finally { await removeProfileStaging(staging); }
 }
 
 const PROFILE_PACK_SCRIPT = `
@@ -59,7 +95,9 @@ case "$resolved" in "$home"/*) ;; *) exit 42;; esac
 exec tar -C "$resolved" --hard-dereference -cf - -- .
 `;
 
-async function packageScreenProfile(runtime: string, target: LocalVmTarget & { screen: number }, source: string, archive: string): Promise<"ok" | "missing" | "unsafe"> {
+async function packageScreenProfile(runtime: string, target: LocalVmTarget & { screen: number }, source: string, archive: string,
+  limits?: ScreenProfileLimits): Promise<"ok" | "missing" | "unsafe"> {
+  const { maxBytes, archiveBytesMax } = profileLimits(limits);
   const home = `/home/${screenUser(target.screen)}`;
   const args = screenIdentityArgs(target, ["sh", "-c", PROFILE_PACK_SCRIPT, "crybot-screen-profile", home, source], { interactive: true });
   const resolved = resolveCliSpawn(runtime, args);
@@ -68,10 +106,18 @@ async function packageScreenProfile(runtime: string, target: LocalVmTarget & { s
   child.stderr?.on("data", (chunk: Buffer) => { if (stderr.length < 4096) stderr += chunk.toString(); });
   const output = child.stdout;
   if (!output) throw new Error("Could not preserve the screen's browser or application files.");
+  let bytes = 0;
+  const countBytes = new Transform({
+    transform(chunk: Buffer, _encoding, callback) {
+      bytes += chunk.length;
+      if (bytes > archiveBytesMax) callback(profileLimitError(maxBytes));
+      else callback(null, chunk);
+    },
+  });
   const close = once(child, "close").then(([code, signal]) => ({ code: typeof code === "number" ? code : -1, signal }));
   const timeout = setTimeout(() => child.kill("SIGKILL"), 5 * 60_000);
   try {
-    const [result] = await Promise.all([close, pipeline(output, createWriteStream(archive, { mode: 0o600 }))]);
+    const [result] = await Promise.all([close, pipeline(output, countBytes, createWriteStream(archive, { mode: 0o600 }))]);
     if (result.code === 0) return "ok";
     if (result.code === 44) return "missing";
     if (result.code === 42) return "unsafe";
@@ -79,13 +125,19 @@ async function packageScreenProfile(runtime: string, target: LocalVmTarget & { s
   } catch (error) {
     if (!child.killed) child.kill("SIGKILL");
     await close.catch(() => undefined);
+    await rm(archive, { force: true }).catch(() => undefined);
     if (error instanceof Error && error.message.startsWith("Could not preserve")) throw error;
     throw new Error("Could not preserve the screen's browser or application files.");
   } finally { clearTimeout(timeout); }
 }
 
-export async function extractScreenProfile(archive: string, destination: string): Promise<void> {
+export async function extractScreenProfile(archive: string, destination: string, limits?: ScreenProfileLimits): Promise<void> {
+  const { maxBytes, archiveBytesMax } = profileLimits(limits);
+  const archiveInfo = await statFile(archive);
+  if (!archiveInfo.isFile() || archiveInfo.size > archiveBytesMax) throw profileLimitError(maxBytes);
+  const { extract } = await import("tar");
   const links = new Set<string>();
+  let fileBytes = 0;
   let firstError: Error | undefined;
   const reject = (message: string) => { firstError ??= new Error(message); return false; };
   const extractor = extract({
@@ -109,6 +161,13 @@ export async function extractScreenProfile(archive: string, destination: string)
         : entry.isDirectory() ? "Directory" : entry.isFile() ? "File" : undefined;
       if (type !== "File" && type !== "Directory" && type !== "SymbolicLink") {
         return reject("Screen profile archive contains an unsupported entry type.");
+      }
+      if (type === "File") {
+        const size = "size" in entry ? entry.size : undefined;
+        if (typeof size !== "number" || !Number.isSafeInteger(size) || size < 0 || size > maxBytes - fileBytes) {
+          return reject(profileLimitError(maxBytes).message);
+        }
+        fileBytes += size;
       }
       if ((!normalized || normalized === ".") && type !== "Directory") {
         return reject("Screen profile archive contains an unsafe path.");

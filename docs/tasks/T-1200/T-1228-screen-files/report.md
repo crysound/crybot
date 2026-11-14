@@ -405,3 +405,104 @@ git diff --check
 `docs/verification/README.md` 在此 worktree 中不存在。沙箱没有 systemd、Docker，禁止监听 TCP 端口，因此端口型 E2E 未运行，以 Actions 为准；本地 fixture 不能替代 macOS/Windows 原生文件系统验证。
 
 未改 `server/index.ts`、`server/vps-computer.ts`、`IMAGE_LAYER_VERSION` 或打包端脚本。未提交 git。
+
+
+## 第 9 轮：tar 首次使用时加载（2026-11-14）
+
+`server/screen-profile-files.ts` 顶部改为 `import type { ReadEntry } from "tar"`，在 `extractScreenProfile` 内通过 `const { extract } = await import("tar")` 加载解包函数，沿用仓库既有动态导入写法。解包逻辑和过滤规则均未改动。
+
+开工在 worktree 根目录执行 依赖准备脚本，输出：
+
+```text
+依赖准备脚本: linked 73 entries into <worktree>/node_modules
+```
+
+以下验收逐项串行运行；输出中的 worktree 路径统一替换为 `<worktree>`。
+
+```text
+$ pnpm exec vitest run scripts/testing/lazy-server-modules.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ scripts/testing/lazy-server-modules.test.ts (1 test | 1 failed) 13ms
+   × the server loads tar, undici and the phone-secret cipher at first use 11ms
+
+ FAIL  scripts/testing/lazy-server-modules.test.ts > the server loads tar, undici and the phone-secret cipher at first use
+Error: spawnSync git EPERM
+ ❯ scripts/testing/lazy-server-modules.test.ts:10:17
+      8|
+      9| it("the server loads tar, undici and the phone-secret cipher at first …
+     10|   const files = execFileSync("git", ["ls-files", "server", "shared"], …
+       |                 ^
+     11|     .filter((file) => file.endsWith(".ts") && !file.includes(".test.")…
+     12|   expect(files.filter((file) => FIRST_USE_ONLY.test(readFileSync(new U…
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  22:50:12
+   Duration  1.75s (transform 1.16s, setup 1.50s, import 10ms, tests 13ms, environment 0ms)
+Exit: 1
+
+$ pnpm exec vitest run server/screen-profile-files.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+ Test Files  1 passed (1)
+      Tests  35 passed (35)
+   Start at  22:50:22
+   Duration  11.19s (transform 1.37s, setup 1.44s, import 220ms, tests 9.32s, environment 0ms)
+Exit: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+Exit: 0（无输出）
+
+$ pnpm exec oxlint --deny-warnings server/screen-profile-files.ts
+Exit: 0（无输出）
+
+$ git diff --check
+Exit: 0（无输出）
+```
+
+懒加载 Vitest 用例在 `execFileSync("git", ...)` 阶段受到沙箱限制，未执行到断言；不能将本次运行记为通过。补充使用 shell 执行 `git ls-files server shared`，将列表通过 stdin 交给 Node，从原测试读取 `FIRST_USE_ONLY` 正则，使用相同文件过滤条件和空数组断言，结果如下（退出码 0）：
+
+```text
+Supplemental static scan: 1541 files checked; violations: []
+```
+
+`docs/verification/README.md` 在此 worktree 中不存在。资料测试使用现有独立临时目录及假 runtime fixture，未操作用户 live app 或数据。沙箱没有 systemd、Docker，禁止监听 TCP 端口，端口型 E2E 未运行，以 Actions 为准；懒加载 Vitest 用例也需以 Actions 的运行结果确认。未提交 git。
+
+## 第 10 轮：归档与解包字节上限（2026-11-14）
+
+打包 stdout 与归档文件之间新增计数 Transform。默认归档上限为 `PROFILE_BYTES_MAX + 16 MiB`；tar 每个条目使用 512 字节头和块填充，16 MiB 用于限制这些格式开销。超过上限立即让 pipeline 失败、SIGKILL 打包子进程并删除半截归档，rescue 继续保留既有 `rescue-pending` 语义和错误文案。解包前检查归档实际大小，filter 对 File 条目的 `entry.size` 累加并拒绝超过配置上限的归档。新增 `ScreenProfileLimits` 可选参数供测试注入小上限。解包仍保留归档中的文件权限；清理暂存目录前只把目录权限放开到 0700，因此 mode 000 目录可以删除，登录相关文件权限不会被改写。
+
+新增测试覆盖无限 stdout 时子进程被杀、归档临时目录无残留，以及归档文件条目总大小超过注入上限时拒绝。所有资料测试均使用独立临时 fixture 和假 runtime。
+
+```text
+$ pnpm exec vitest run server/screen-profile-files.test.ts --maxWorkers=1
+  Test Files  1 passed (1)
+       Tests  37 passed (37)
+  Exit: 0
+
+$ pnpm exec vitest run scripts/testing/lazy-server-modules.test.ts --maxWorkers=1
+  Test Files  1 failed (1)
+       Tests  0 passed (1 failed)
+  Error: spawnSync git EPERM (sandbox restriction before assertion)
+  Exit: 1
+
+$ git ls-files server shared > /tmp/crybot-server-shared-files.txt; supplemental static scan
+  1541 files checked; violations: []
+  Exit: 0
+
+$ pnpm exec vitest run server/screen-files.test.ts --maxWorkers=1
+  Test Files  1 passed (1)
+       Tests  13 passed | 1 skipped (14)
+  Exit: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+  Exit: 0（无输出）
+
+$ pnpm exec oxlint --deny-warnings server/screen-profile-files.ts server/screen-profile-files.test.ts
+  Exit: 0（无输出）
+```
+
+`docs/verification/README.md` 在此 worktree 中不存在。沙箱没有 systemd、Docker，禁止监听 TCP 端口，端口型 E2E 未运行，以 Actions 为准。未改 `server/index.ts`，未提交 git。
