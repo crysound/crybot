@@ -1,8 +1,8 @@
 import { createCipheriv, createECDH, ECDH, hkdfSync, randomBytes } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { JWTVerifyGetKey } from "jose";
-import { cfAccessRefusal, createCfAccess, createCfAccessTokenVerifier } from "./cf-access.ts";
-import { appLinkOrigin, prefersChinese } from "./app-links.ts";
+import { accessVerified, cfAccessRefusal, createCfAccess, createCfAccessTokenVerifier } from "./cf-access.ts";
+import { appGate, appLinkOrigin, prefersChinese } from "./app-links.ts";
 import { parseCookies } from "./request-auth.ts";
 
 type JsonResponder = (res: ServerResponse, status: number, body: unknown) => void;
@@ -104,6 +104,7 @@ export function createAppHandoffGate(
       json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
       return true;
     }
+    if (appGate(req, res, path, accessVerified(req))) return true;
     return await handoff(req, res, url);
   };
 }

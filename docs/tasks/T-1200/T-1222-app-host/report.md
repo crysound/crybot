@@ -361,3 +361,72 @@ PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 timeout 600 pn
 ```
 
 保留第 6 轮现有代码改动并追加本报告；未新增依赖，未修改其他业务文件，未执行 git 暂存或提交。
+
+## 第 8 轮：合入飞书核心后的请求入口冲突
+
+### 1. 冲突与重复实现检查
+
+接手时 `server/index.ts` 索引为 `UU`，工作区已没有冲突标记，但上次遗留的组合是 `appHandoffGate → appGate`。这会让接力页提前响应，绕过本分支对 App 通道接力路由的限制。本轮修正了这一顺序。
+
+核对 HEAD、MERGE_HEAD 的 `server/app-handoff.ts` 及两边历史：`createAppHandoffGate` 是 `cfAccessRefusal` 与 `createAppHandoff` 的组合包装，不是另一种接力协议。提取记录见 `8515b76e`；本分支的 `c75b17e8` 将 GET/path 判断移入 `createAppHandoff`，并由组合门直接使用其 boolean 返回值。因此保留一个组合门，在它内部加入完整 App 门，不在入口再创建、调用第二个 handoff。
+
+- `server/index.ts`：保留本分支的前置 App 主机检查、应用链接、登录/吊销审计，使用单个 `createAppHandoffGate()`，随后调用 main 的 `feishuExchangeRoute`；移除入口原来的独立 Access/handoff 初始化和完整 App 门调用，以及不再使用的 Access import。
+- `server/app-handoff.ts`：组合门内部按 `cfAccessRefusal → appGate(accessVerified(req)) → handoff` 执行。保留原有 401/403 响应、公开探针豁免、接力页自己的 JWT 复验及 GET/path 判断。
+- 新增 `server/app-handoff-gate.test.ts`：通过真实组合门、内存 HTTP、临时会话文件和本地生成的测试签名密钥，覆盖 App 主机拒绝 assertion、cookie-only 接力拒绝、Access 拒绝优先级、有效 JWT 加已有会话、公开路由、飞书交换放行/限流以及非 GET 接力请求。
+- 自动合并的 `environment`、`sessions`、飞书模块及对应测试、`fake-feishu` 与 MERGE_HEAD 完全一致；检查入口初始化和导入，未发现重复定义。类型检查也没有重复符号错误。
+- `app-handoff.test.ts` 与 HEAD 完全一致；相较 main，仅多出本分支已有的三组回跳 origin 配置断言，没有两套互相矛盾的接力测试。`app-links`、`cf-access` 的实现和已有测试也完整保留。
+
+### 2. 最终路由顺序与安全理由
+
+| 顺序 | 处理 | 理由 |
+|---|---|---|
+| 1 | `desktopUpdateFiles` | 保持双方原有桌面更新入口位置。 |
+| 2 | `appGate(req, res, path, false, true)` | 在 Access 验签/签发会话前，拒绝 App 主机携带的 assertion。 |
+| 3 | `appLinks` | 保持关联文件、App 回跳页的公开位置，同时保留其 Host 和配置限制。 |
+| 4 | 组合门内 `cfAccessRefusal` | 保持 main 的 GET 公开探针豁免与 401/403 判定；后续 App 通道判断使用实际验签标记。 |
+| 5 | 组合门内 `appGate(..., accessVerified(req))` | 在接力页响应前执行主机限制、路由拒绝和认证限流；有效 JWT 加已有 cookie 会话仍能正确识别。 |
+| 6 | 组合门内 `createAppHandoff` 返回的处理器 | 只处理 GET `/auth/app-handoff`，保留接力 token 独立复验和加密回跳。这里的复验是原有安全要求，并非第二条接力路由。 |
+| 7 | `feishuExchangeRoute` | 紧跟组合门，保持 main 的位置和条件，不要求预先持有本地会话。未配置时的飞书路径 404、POST exchange 判断、Origin/JSON/体积/redirect/PKCE/租户和用户准入校验均由原模块执行。App 通道限流先于交换执行。 |
+| 8 | 其余既有公开入口、常规会话认证和认证后的路由表 | 没有把受保护路由移到校验之前。 |
+
+### 3. 串行验证结果
+
+全部使用预装依赖，未联网、未加依赖。每次 Vitest 只指定一个文件，命令为：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run <文件> --maxWorkers=1 --configLoader runner
+```
+
+| 文件 | 结果 |
+|---|---|
+| `server/app-handoff-gate.test.ts` | 9 passed |
+| `server/app-handoff.test.ts` | 68 passed |
+| `server/feishu-login.test.ts` | 13 passed |
+| `server/feishu-routes.unit.test.ts` | 8 passed |
+| `server/cf-access.test.ts` | 20 passed |
+| `server/app-links.test.ts` | 42 passed |
+| `scripts/testing/index-route-ratchet.test.ts` | 1 passed |
+| `server/app-host.test.ts` | 8 passed |
+| `server/sessions.test.ts` | 75 passed |
+| `server/environment.test.ts`（额外检查自动合并文件） | 13 passed / 1 failed；单独复跑结果相同，详见下节。 |
+| `server/feishu-routes.test.ts`（HTTP 集成） | 加 `timeout 90` 尝试，只有启动输出，超时退出 124，未取得断言结果。 |
+| `server/app-links.e2e.test.ts` | 1 failed，夹具监听端口时报 `listen EPERM`。 |
+| `server/app-host.e2e.test.ts` | 3 failed：两项找不到可监听端口块，一项 `listen EPERM`，均未完成业务断言。此命令设 60 秒总超时，实际约 2.5 秒退出 1。 |
+
+前九个文件共 **244 passed**。Vitest 结束后单独执行：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc --noEmit -p tsconfig.server.json
+```
+
+**tsc 退出 0**，未与 Vitest 并行。`oxlint --deny-warnings server/index.ts server/app-handoff.ts server/app-handoff-gate.test.ts` 退出 0；`git diff --check`、`git diff --cached --check` 均退出 0。入口最终为 15390 行，未调整任何棘轮阈值。
+
+### 4. 隔离验证、未确定项与交付状态
+
+`AGENTS.md` 引用的 `docs/verification/README.md` 仍不存在。单测使用测试套件提供的临时 HOME、内存 HTTP 和临时 SessionRegistry；E2E 使用已有 `verificationServerEnvironment` / `verificationServerArgs` 隔离配置和数据，并实际尝试启动夹具。独立的本地端口监听探针同样返回 `EPERM`，未接触用户 live app 或数据。
+
+`environment.test.ts` 的 `publishes one complete id when independent processes start together` 两次均在第 83 行收到空字符串而非 UUID。该文件及实现与 main 相同；另用 Node 在新建临时目录直接调用 `loadEnvironmentId` 可以得到有效 ID，但尚未定位测试中子进程空输出的原因，不能断言是产品缺陷或沙箱问题。本轮没有修改这部分业务代码。
+
+以下检查仍需 Actions 的隔离环境给出最终结果：`server/feishu-routes.test.ts`、`server/app-host.e2e.test.ts`、`server/app-links.e2e.test.ts`，以及上述 `server/environment.test.ts` 子进程用例。`server/index.test.ts` 的完整入口集成本轮未运行，也应由 Actions 覆盖。飞书 HTTP 超时本身没有业务失败堆栈，不能把它算作通过；当前也不宣称完整服务端或端到端验证通过。
+
+本轮实际编辑 `server/index.ts`、`server/app-handoff.ts`，新增组合门回归测试，并追加本报告；已有 `r8.md` 和自动合并内容保留。新增内容仅使用合成测试身份和示例域名。文本冲突已解决；未执行 git 暂存或提交，`server/index.ts` 的索引仍是 `UU`，由协调者暂存解决结果并完成合并提交。

@@ -26,6 +26,7 @@ import {
 } from "./sessions.ts";
 import { lendingPersonKey, OWN_SERVER_LENDER, personKey } from "./person-key.ts";
 import { userError } from "./user-errors.ts";
+import { feishuLoginConfig, revalidateFeishuDeviceSessions } from "./feishu-login.ts";
 
 let dir: string;
 let clock: number;
@@ -831,6 +832,146 @@ describe("a member's own phone on a Team Cloud", () => {
 });
 
 describe("Access session reuse", () => {
+  it("issues device sessions with independent limits, source fields, and a bounded maximum age", () => {
+    const device = registry.issueDevice("feishu:union_example", "Phone", { scopes: ["admin", "client"], maxAgeDays: 90, platform: "ios", tenantKey: "tenant_example", accessEmail: "person@example.com" });
+    expect(device.session).toMatchObject({ source: "device", platform: "ios" });
+    expect(registry.authenticate(device.token)?.accessEmail).toBe("person@example.com");
+    expect(registry.authenticate(device.token)?.email).toBeUndefined();
+
+    const accessTokens: string[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      const access = registry.issueAccess("feishu:union_example", `Access ${index}`);
+      accessTokens.push(access.token);
+      registry.close();
+      clock += 1;
+      registry = new SessionRegistry({ file: file(), now: () => clock });
+    }
+    expect(new Set(accessTokens).size).toBe(accessTokens.length);
+    expect(registry.authenticate(device.token)).not.toBeNull();
+
+    clock += 1;
+    const sixthAccess = registry.issueAccess("feishu:union_example", "Access 5");
+    expect(sixthAccess.token).not.toBe(accessTokens.at(-1));
+    expect(registry.authenticate(accessTokens[0])).toBeNull();
+    expect(registry.authenticate(sixthAccess.token)).not.toBeNull();
+
+    const deviceTokens = [device.token];
+    for (let index = 0; index < 11; index += 1) {
+      clock += 1;
+      deviceTokens.push(registry.issueDevice("feishu:union_example", `Device ${index}`, { scopes: ["client"], maxAgeDays: 90, platform: "android", tenantKey: "tenant_example" }).token);
+    }
+    expect(new Set(deviceTokens).size).toBe(deviceTokens.length);
+    expect(registry.authenticate(device.token)).toBeNull();
+    expect(registry.authenticate(sixthAccess.token)).not.toBeNull();
+    expect(registry.list().filter((session) => session.source === "device")).toHaveLength(10);
+  });
+
+  it("caps renewal at maxAgeAt and expires after the cap", () => {
+    const device = registry.issueDevice("feishu:union_example", "Phone", { scopes: ["client"], maxAgeDays: 20, tenantKey: "tenant_example" });
+    const maxAgeAt = device.session.createdAt + 20 * 24 * 60 * 60_000;
+    clock += 10 * 24 * 60 * 60_000;
+    registry.renew(device.session.id);
+    expect(registry.list().find((session) => session.id === device.session.id)?.expiresAt).toBe(maxAgeAt);
+    clock = maxAgeAt + 1;
+    expect(registry.authenticate(device.token)).toBeNull();
+  });
+
+  it("revalidates Feishu devices, downgrades scopes, and leaves Access sessions alone", () => {
+    const device = registry.issueDevice("feishu:union_example", "Phone", { scopes: ["admin", "client"], maxAgeDays: 90, tenantKey: "tenant_example" });
+    const access = registry.issueAccess("feishu:union_example", "Browser");
+    registry.revalidateFeishuSessions((unionId, tenantKey) => unionId === "union_example" && tenantKey === "tenant_example" ? ["client"] : null);
+    expect(registry.authenticate(device.token)?.scopes).toEqual(["client"]);
+    expect(registry.authenticate(access.token)?.scopes).toEqual(["admin", "client"]);
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock });
+    expect(registry.authenticate(device.token)?.scopes).toEqual(["client"]);
+    expect(registry.authenticate(access.token)?.scopes).toEqual(["admin", "client"]);
+    registry.revalidateFeishuSessions(() => null);
+    expect(registry.authenticate(device.token)).toBeNull();
+    expect(registry.authenticate(access.token)).not.toBeNull();
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock });
+    expect(registry.authenticate(device.token)).toBeNull();
+    expect(registry.authenticate(access.token)).not.toBeNull();
+  });
+
+  it("revokes only Feishu device sessions on startup without config", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const devices = [
+      registry.issueDevice("feishu:union_example", "Phone", { scopes: ["admin", "client"], maxAgeDays: 90, tenantKey: "tenant_example" }),
+      registry.issueDevice("feishu:other_union", "Tablet", { scopes: ["client"], maxAgeDays: 90 }),
+    ];
+    const retained = [
+      registry.issueAccess("feishu:union_example", "Browser"),
+      registry.issueAccess("other_identity", "Other browser"),
+      registry.issueDevice("other_identity", "Other device", { scopes: ["client"], maxAgeDays: 90 }),
+      registry.issue({ label: "Paired phone", scopes: ["admin", "client"] }),
+    ];
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock });
+    revalidateFeishuDeviceSessions(registry, null);
+    for (const device of devices) expect(registry.authenticate(device.token)).toBeNull();
+    for (const session of retained) expect(registry.authenticate(session.token)?.id).toBe(session.session.id);
+    expect(log.mock.calls).toEqual([["Feishu device session revalidation: revoked 2."]]);
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock });
+    for (const device of devices) expect(registry.authenticate(device.token)).toBeNull();
+    for (const session of retained) expect(registry.authenticate(session.token)?.id).toBe(session.session.id);
+    revalidateFeishuDeviceSessions(registry, null);
+    expect(log).toHaveBeenLastCalledWith("Feishu device session revalidation: revoked 0.");
+  });
+
+  it("revalidates tenants, users and scopes on startup with config", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const config = feishuLoginConfig({ CRYBOT_FEISHU_APP_ID: "cli_example", CRYBOT_FEISHU_APP_SECRET: "secret_example", CRYBOT_FEISHU_TENANTS: "tenant_example", CRYBOT_FEISHU_ALLOW: "union_example", CRYBOT_FEISHU_ADMINS: "other_admin" });
+    expect(config).not.toBeNull();
+    const device = registry.issueDevice("feishu:union_example", "Phone", { scopes: ["admin", "client"], maxAgeDays: 90, tenantKey: "tenant_example" });
+    const wrongTenant = registry.issueDevice("feishu:union_example", "Other tenant", { scopes: ["admin", "client"], maxAgeDays: 90, tenantKey: "other_tenant" });
+    const wrongUser = registry.issueDevice("feishu:other_union", "Other user", { scopes: ["admin", "client"], maxAgeDays: 90, tenantKey: "tenant_example" });
+    const access = registry.issueAccess("feishu:other_union", "Browser");
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock });
+    revalidateFeishuDeviceSessions(registry, config);
+    expect(registry.authenticate(device.token)?.scopes).toEqual(["client"]);
+    expect(registry.authenticate(wrongTenant.token)).toBeNull();
+    expect(registry.authenticate(wrongUser.token)).toBeNull();
+    expect(registry.authenticate(access.token)?.scopes).toEqual(["admin", "client"]);
+    expect(log.mock.calls).toEqual([["Feishu device session revalidation: revoked 2."]]);
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock });
+    expect(registry.authenticate(device.token)?.scopes).toEqual(["client"]);
+    expect(registry.authenticate(wrongTenant.token)).toBeNull();
+    expect(registry.authenticate(wrongUser.token)).toBeNull();
+    expect(registry.authenticate(access.token)?.scopes).toEqual(["admin", "client"]);
+  });
+
+  it("keeps Feishu revocation in memory when persistence fails", () => {
+    const device = registry.issueDevice("feishu:union_example", "Phone", { scopes: ["client"], maxAgeDays: 90, tenantKey: "tenant_example" });
+    const logger = vi.spyOn(console, "error").mockImplementation(() => {});
+    const writes = vi.spyOn(atomic, "writeFileAtomic").mockImplementation(() => { throw new Error("EIO"); });
+    expect(() => registry.revalidateFeishuSessions(() => null)).not.toThrow();
+    expect(registry.authenticate(device.token)).toBeNull();
+    expect(logger).toHaveBeenCalledTimes(1);
+    writes.mockRestore();
+  });
+
+  it("counts a legacy Access record without source toward the Access limit", () => {
+    const first = registry.issueAccess("owner", "Access");
+    registry.close();
+    const saved = JSON.parse(readFileSync(file(), "utf8"));
+    delete saved.sessions[0].source;
+    writeFileSync(file(), JSON.stringify(saved));
+    registry = new SessionRegistry({ file: file(), now: () => clock });
+    for (let index = 0; index < 5; index += 1) {
+      registry.issueAccess("owner", `Access ${index}`);
+      registry.close();
+      clock += 1;
+      registry = new SessionRegistry({ file: file(), now: () => clock });
+    }
+    expect(registry.authenticate(first.token)).toBeNull();
+    expect(registry.list().filter((session) => session.source === "access")).toHaveLength(5);
+  });
+
   it("keeps the session person key and own-server lender through Access profile changes and an unclean restart", () => {
     const issued = registry.issueAccess("owner", "Browser", { accessEmail: "alex@example.test", displayName: "Alex" });
     const paired = registry.issue({ label: "Phone", scopes: ["admin", "client"] });
