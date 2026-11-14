@@ -322,3 +322,42 @@ timeout 600 pnpm exec vitest run server/index.test.ts --maxWorkers=2 --configLoa
 - `wc -l server/index.ts`：本轮起点（含冲突标记和双方片段）**15436 → 15416**，低于 **15515**，文件大小棘轮通过；没有通过挤语句或删除无关空行凑数。
 - 只修改 `server/cf-access.ts`、`server/cf-access.test.ts`、`server/index.ts` 和本报告；未新增依赖、未修改 mobile 或 Electron 文件。
 - 未执行 `git add`、`git commit` 或 `git merge --abort`。三个文件的文本冲突已解决，索引按要求仍保留 unmerged 状态（`UU`），由协调者检查、暂存并完成合并提交。
+
+## 第 6/7 轮：入口路由棘轮与类型错误收尾
+
+### 1. 改动与行为
+
+已阅读 `r6.md` 和 `server/routes/README.md`，复用 `T-1222-app-host` worktree，未切换分支。
+
+第 6 轮将 `GET /auth/app-handoff` 的 method/path 判断放入 `createAppHandoff` 返回的处理函数：不属于该处理函数的请求返回 `false`，已响应的请求返回 `true`。`server/index.ts` 改为 `if (await appHandoff(req, res, url)) return;`，位置仍在 `cfAccessRefusal` 和 App 门之后、常规认证闸门之前；没有移入认证之后才执行的 ROUTES 表。`createAppHandoffGate` 也直接使用处理函数的布尔返回值。
+
+第 7 轮只将 `createAppHandoffGate` 的 `_method` / `_path` 参数名恢复为 `method` / `path`，修复其仍传给 `cfAccessRefusal` 时出现的 TS2304。没有改变验证参数、响应内容或执行顺序。
+
+`server/index.ts` 中 `path === "/` 出现次数为 **84**，满足上限；行数仍为 **15416**。未修改棘轮测试或阈值。
+
+### 2. 本轮验证结果
+
+使用预装 Node **v24.22.3**（`PATH=/opt/node24/bin:$PATH`），未安装依赖。先单独运行 tsc，再运行 oxlint，最后以单 worker 串行运行指定测试，避免检查并发造成内存峰值。tsc 设置 `NODE_OPTIONS=--max-old-space-size=4096`，oxlint/Vitest 设置 2048；命令均加 `timeout 600`。
+
+| 命令 | 结果 |
+|---|---|
+| `pnpm exec tsc -p tsconfig.server.json --noEmit` | 退出 0 |
+| `pnpm exec oxlint --deny-warnings server/app-handoff.ts server/index.ts` | 退出 0 |
+| `pnpm exec vitest run scripts/testing/index-route-ratchet.test.ts server/app-handoff.test.ts server/cf-access.test.ts server/app-host.e2e.test.ts server/app-links.e2e.test.ts --maxWorkers=1 --configLoader runner` | 3 文件通过，共 89 passed；2 个 E2E 文件的 4 项测试因端口限制失败，整体退出 1 |
+| `git diff --check` | 退出 0 |
+
+通过的三个文件为入口路由棘轮、app-handoff、cf-access。App Host E2E 的前两项在 `freePortBlock` 阶段报 `no free port block for offsets 0,1 in 19600..22600`；第三项及 App Links E2E 明确报 `listen EPERM: operation not permitted 127.0.0.1`。这些失败发生在监听端口/启动夹具阶段，未完成业务断言，本轮不宣称 E2E 通过。
+
+根据本轮任务交接，协调者在第 6 轮后已补跑上述五组测试并通过；这是交接信息，不能替代本轮类型修复后的 E2E 验证。
+
+### 3. 隔离验证与待补跑
+
+`AGENTS.md` 引用的 `docs/verification/README.md` 在当前仓库仍不存在。单测使用现有内存 HTTP 和临时 SessionRegistry 夹具；两份 E2E 使用 `verificationServerEnvironment` / `verificationServerArgs`，将 HOME、配置和数据隔离到临时目录。本轮实际尝试了 E2E，但沙箱禁止监听端口，无法启动隔离服务。未访问用户 live app 或数据。
+
+请在允许监听端口的环境中，以现有隔离 fixture 补跑：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 timeout 600 pnpm exec vitest run server/app-host.e2e.test.ts server/app-links.e2e.test.ts --maxWorkers=1 --configLoader runner
+```
+
+保留第 6 轮现有代码改动并追加本报告；未新增依赖，未修改其他业务文件，未执行 git 暂存或提交。

@@ -47,20 +47,21 @@ export function createAppHandoff(enabled: boolean, env: NodeJS.ProcessEnv = proc
   const origin = appLinkOrigin(env);
   const callbackBase = origin ? `${origin}/auth/app-return` : `${scheme}://auth`;
   return async (req: IncomingMessage, res: ServerResponse, url: URL) => {
+    if (req.method !== "GET" || url.pathname !== "/auth/app-handoff") return false;
     res.setHeader("cache-control", "no-store");
     res.setHeader("referrer-policy", "no-referrer");
     res.setHeader("x-frame-options", "DENY");
-    if (!verify) { res.writeHead(404).end(); return; }
+    if (!verify) { res.writeHead(404).end(); return true; }
     const states = url.searchParams.getAll("state");
     const state = states[0] ?? "";
-    if (states.length !== 1 || state.match(/^[A-Za-z0-9_-]{32,128}$/)?.[0] !== state) { res.writeHead(400).end(); return; }
+    if (states.length !== 1 || state.match(/^[A-Za-z0-9_-]{32,128}$/)?.[0] !== state) { res.writeHead(400).end(); return true; }
     const publicKeys = url.searchParams.getAll("pk");
     const publicKey = publicKeys.length === 1 ? parsePublicKey(publicKeys[0]) : null;
-    if (!publicKey) { res.writeHead(400).end(); return; }
+    if (!publicKey) { res.writeHead(400).end(); return true; }
     const token = req.headers["cf-access-jwt-assertion"] ?? parseCookies(req.headers.cookie).get("CF_Authorization");
-    if (typeof token !== "string" || !token) { res.writeHead(401).end(); return; }
+    if (typeof token !== "string" || !token) { res.writeHead(401).end(); return true; }
     const payload = await verify(token);
-    if (!payload?.exp || payload.exp - Date.now() / 1000 < 60) { res.writeHead(401).end(); return; }
+    if (!payload?.exp || payload.exp - Date.now() / 1000 < 60) { res.writeHead(401).end(); return true; }
     const ephemeral = createECDH("prime256v1");
     ephemeral.generateKeys();
     const encrypted = encryptAppHandoff(token, state, publicKey, { privateKey: ephemeral.getPrivateKey(), nonce: randomBytes(12) });
@@ -78,6 +79,7 @@ export function createAppHandoff(enabled: boolean, env: NodeJS.ProcessEnv = proc
       "content-security-policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
     });
     res.end(`<!doctype html><html lang="${chinese ? "zh-Hans" : "en"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title></head><body><h1>${title}</h1><p>${accountLabel}${email}</p><p><strong>${warning}</strong></p><a role="button" href="${callback}">${label}</a></body></html>`);
+    return true;
   };
 }
 
@@ -102,10 +104,6 @@ export function createAppHandoffGate(
       json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
       return true;
     }
-    if (method === "GET" && path === "/auth/app-handoff") {
-      await handoff(req, res, url);
-      return true;
-    }
-    return false;
+    return await handoff(req, res, url);
   };
 }

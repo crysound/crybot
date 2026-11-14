@@ -12570,7 +12570,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     const refusal = await cfAccessRefusal(cfAccess, method, path, req, res, url, sessions, SESSION_COOKIE);
     if (refusal) return json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
     if (appGate(req, res, path, accessVerified(req))) return;
-    if (method === "GET" && path === "/auth/app-handoff") return appHandoff(req, res, url);
+    if (await appHandoff(req, res, url)) return;
     if (method === "GET" && path === "/api/health/hosted") {
       res.setHeader("cache-control", "no-store");
       const hosted = hostedWorkspaceConfiguration();
