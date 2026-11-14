@@ -1,0 +1,201 @@
+{
+  "signedIn": true,
+  "snapshot": {
+    "bots": [
+      {
+        "id": "bot-1",
+        "threadId": "thread-1",
+        "name": "Maple",
+        "title": "Maple",
+        "description": "Fixture assistant",
+        "notifications": true,
+        "color": "purple",
+        "avatarUrl": null,
+        "unread": false,
+        "modelSelection": {
+          "instanceId": "fixture",
+          "model": "fixture"
+        },
+        "createdAt": 0,
+        "messages": [
+          {
+            "kind": "text",
+            "id": "message-1",
+            "role": "bot",
+            "at": 1,
+            "parentId": null,
+            "text": "Hello from Maple."
+          },
+          {
+            "kind": "text",
+            "id": "message-2",
+            "role": "bot",
+            "at": 2,
+            "parentId": null,
+            "text": "A fixture conversation."
+          },
+          {
+            "kind": "widget",
+            "id": "message-3",
+            "role": "bot",
+            "at": 3,
+            "parentId": null
+          },
+          {
+            "kind": "app",
+            "id": "message-4",
+            "role": "bot",
+            "at": 4,
+            "parentId": null
+          }
+        ],
+        "hasMore": false,
+        "activeLeafId": "message-4"
+      },
+      {
+        "id": "bot-2",
+        "threadId": "thread-2",
+        "name": "Cedar",
+        "title": "Cedar",
+        "description": "Fixture assistant",
+        "notifications": true,
+        "color": "purple",
+        "avatarUrl": null,
+        "unread": false,
+        "modelSelection": {
+          "instanceId": "fixture",
+          "model": "fixture"
+        },
+        "createdAt": 0,
+        "messages": [
+          {
+            "kind": "text",
+            "id": "message-5",
+            "role": "bot",
+            "at": 5,
+            "parentId": null,
+            "text": "Hello from Cedar."
+          }
+        ],
+        "hasMore": false,
+        "activeLeafId": "message-5"
+      }
+    ],
+    "groups": [
+      {
+        "id": "group-1",
+        "threadId": "thread-group-1",
+        "name": "Example team",
+        "memberIds": [
+          "bot-1",
+          "bot-2"
+        ],
+        "defaultResponder": {
+          "kind": "everyone"
+        },
+        "bulletin": "Fixture group",
+        "unread": false,
+        "createdAt": 0,
+        "working": false,
+        "messages": [
+          {
+            "kind": "text",
+            "id": "message-6",
+            "role": "bot",
+            "at": 6,
+            "parentId": null,
+            "text": "Welcome to the group."
+          }
+        ],
+        "hasMore": false,
+        "activeLeafId": "message-6"
+      }
+    ],
+    "sections": []
+  },
+  "threads": {
+    "thread-1": {
+      "messages": [
+        {
+          "kind": "text",
+          "id": "message-1",
+          "role": "bot",
+          "at": 1,
+          "parentId": null,
+          "text": "Hello from Maple."
+        },
+        {
+          "kind": "text",
+          "id": "message-2",
+          "role": "bot",
+          "at": 2,
+          "parentId": null,
+          "text": "A fixture conversation."
+        },
+        {
+          "kind": "widget",
+          "id": "message-3",
+          "role": "bot",
+          "at": 3,
+          "parentId": null
+        },
+        {
+          "kind": "app",
+          "id": "message-4",
+          "role": "bot",
+          "at": 4,
+          "parentId": null
+        }
+      ],
+      "activeLeafId": "message-4",
+      "hasMore": false
+    }
+  },
+  "responses": {
+    "GET /api/inbox/count": {
+      "count": 2
+    },
+    "GET /api/notifications": {
+      "notifications": []
+    }
+  },
+  "frames": [
+    {
+      "afterMs": 1000,
+      "frame": {
+        "kind": "message",
+        "cursor": "fixture-1",
+        "threadId": "thread-1",
+        "message": {
+          "kind": "text",
+          "id": "message-7",
+          "role": "bot",
+          "at": 7,
+          "parentId": null,
+          "text": "A replayed message."
+        }
+      }
+    },
+    {
+      "afterMs": 2000,
+      "frame": {
+        "kind": "mcp.changed",
+        "cursor": "fixture-2"
+      }
+    }
+  ],
+  "sockets": {
+    "/fixture/socket": [
+      {
+        "afterMs": 10,
+        "data": "hello"
+      },
+      {
+        "afterMs": 20,
+        "data": {
+          "base64": "AQID"
+        }
+      }
+    ]
+  }
+}
