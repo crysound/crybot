@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { afterAll, beforeAll, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, expect, it } from "vitest";
 import { createComputerSharing } from "../electron/computer-sharing.mjs";
 import { cloudPairingSignature } from "./cloud-home.ts";
 import { WATCHER_OPTIONS_CARD_BOT_ID } from "../shared/options-card.ts";
@@ -67,7 +67,8 @@ async function leftBehind(of: { threadIds?: string[]; routineIds?: string[] }) {
 type Turn = { argv: string[]; cwd: string; systemPrompt?: string; mcpConfig: { mcpServers: { agents: { command: string; args: string[]; env: Record<string, string> } } } };
 /** The latest turn `agentsFor` found. */
 let turn: Turn;
-const readTurns = () => new Map(fixtureOutputs(home, "turns").flatMap((directory) => readdirSync(directory)
+const customWorkspace = () => join(home, "hook-project");
+const readTurns = () => new Map([...fixtureOutputs(home, "turns"), join(customWorkspace(), ".fixture-output", "turns")].filter(existsSync).flatMap((directory) => readdirSync(directory)
   .filter((name) => name.endsWith(".json")).flatMap((name) => {
     const file = join(directory, name);
     try { return [[file, readFileSync(file, "utf8")] as const]; } catch { return []; }
@@ -128,11 +129,13 @@ process.env.FAKE_CLAUDE_VERSION = "2.1.284";
 // One-shot runs (a new chat's title) dump elsewhere, so they never take the place of the turn a test is waiting for.
 if (process.argv[2] !== "--version") {
   const { engineOutput } = await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fixture-state.ts")).href)});
-  const { mkdirSync } = await import("node:fs");
-  const turns = engineOutput(${JSON.stringify(home)}, process.cwd(), "turns");
+  const { existsSync, mkdirSync, realpathSync } = await import("node:fs");
+  const customWorkspace = ${JSON.stringify(customWorkspace())};
+  const inCustomWorkspace = existsSync(customWorkspace) && realpathSync(process.cwd()) === realpathSync(customWorkspace);
+  const turns = inCustomWorkspace ? customWorkspace + "/.fixture-output/turns" : engineOutput(${JSON.stringify(home)}, process.cwd(), "turns");
   mkdirSync(turns, { recursive: true });
   process.env.FAKE_CLAUDE_DUMP = turns + "/" + crypto.randomUUID() + ".json";
-  process.env.FAKE_CLAUDE_TEXT_DUMP = engineOutput(${JSON.stringify(home)}, process.cwd(), "one-shot.json");
+  process.env.FAKE_CLAUDE_TEXT_DUMP = inCustomWorkspace ? customWorkspace + "/.fixture-output/one-shot.json" : engineOutput(${JSON.stringify(home)}, process.cwd(), "one-shot.json");
   process.env.FAKE_CLAUDE_MODE = "hang";
 }
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
@@ -160,9 +163,17 @@ let port = 0;
 async function boot() {
   const dataDir = join(home, ".crybot");
   const offlinePrelude = `data:text/javascript,${encodeURIComponent('const real = globalThis.fetch; globalThis.fetch = async (url, init) => String(url).startsWith("http://127.0.0.1:") ? real(url, init) : new Response("offline fixture", { status: 503 });')}`;
+  const acpDiagnostics = `data:text/javascript,${encodeURIComponent(`
+import { StderrTail } from ${JSON.stringify(pathToFileURL(join(SERVER_DIR, "drivers", "acp", "exit-report.ts")).href)};
+const write = StderrTail.prototype.write;
+StderrTail.prototype.write = function(chunk) {
+  write.call(this, chunk);
+  if (this.text) console.error("Fixture ACP stderr:", this.text);
+};
+`)}`;
   // The memory gate's seam (testing/memory-gate-hooks.mjs): this machine's memory is host-memory.json's, on every OS.
   const memoryGate = pathToFileURL(join(SERVER_DIR, "testing", "memory-gate-hooks.mjs")).href;
-  child = spawn(process.execPath, ["--import", offlinePrelude, "--import", memoryGate, join(SERVER_DIR, "index.ts")], {
+  child = spawn(process.execPath, ["--import", offlinePrelude, "--import", memoryGate, "--import", acpDiagnostics, join(SERVER_DIR, "index.ts")], {
     cwd: join(SERVER_DIR, ".."),
     env: {
       PATH: process.env.PATH, ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
@@ -189,6 +200,17 @@ afterAll(async () => {
   for (const proxy of proxies) proxy.kill();
   if (child) await waitForExit(child, { signal: "SIGTERM" });
   if (home) await removeTempDir(home);
+});
+
+afterEach(({ task }) => {
+  if (task.result?.state !== "fail") return;
+  console.error(`Cloud fixture server log:\n${log}`);
+  const native = join(home, ".crybot", "native");
+  if (!existsSync(native)) return;
+  for (const name of readdirSync(native).filter((name) => name.endsWith(".ndjson"))) {
+    const lines = readFileSync(join(native, name), "utf8").split("\n").filter((line) => line.includes('"source":"grok.acp"'));
+    if (lines.length) console.error(`Cloud fixture ACP trace (${name}):\n${lines.join("\n")}`);
+  }
 });
 
 it("offers lending on a Cloud home with the maintainer flag still off", async () => {
@@ -317,7 +339,7 @@ it("the person's Mac, lent by itself through the real connector, is usable by th
   const hookBot = await newBot("Hook bot");
   // Under the test's home, removed once the server has stopped: the held
   // engine keeps working in it, and Windows will not delete a process's cwd.
-  const project = join(home, "hook-project");
+  const project = customWorkspace();
   mkdirSync(project, { recursive: true });
   expect((await api("PATCH", `/api/bots/${hookBot.id}`, { token: owner, body: { cwd: project, approvalMode: "auto" } })).status).toBe(200);
   const hook = await newHook(hookBot.id);
@@ -340,9 +362,9 @@ it("the person's Mac, lent by itself through the real connector, is usable by th
   expect(apiAnswered.status).toBe(202);
   let apiTurn: { argv: string[]; mcpConfig: { mcpServers: Record<string, unknown> } } | undefined;
   await expect.poll(() => {
-    for (const name of readdirSync(join(home, "turns"))) {
+    for (const text of readTurns().values()) {
       try {
-        const found = JSON.parse(readFileSync(join(home, "turns", name), "utf8"));
+        const found = JSON.parse(text);
         if (JSON.stringify(found.prompt).includes(apiMessage)) { apiTurn = found; return true; }
       } catch { /* still being written */ }
     }

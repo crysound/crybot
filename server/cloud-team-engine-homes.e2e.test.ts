@@ -67,7 +67,7 @@ const transcriptsUnder = (dir: string): string[] => (existsSync(dir) ? readdirSy
 
 beforeAll(async () => {
   if (!posix) return;
-  fx = await launchCloudSendFixture({ onePasswordToken: TOKEN, team: { id: "team-acme-homes", name: "Acme", engine: withFixtureState(HOME_FILES) }, cloudEngine: HOME_FILES });
+  fx = await launchCloudSendFixture({ onePasswordToken: TOKEN, env: { CRYBOT_BOT_BOX: "0" }, team: { id: "team-acme-homes", name: "Acme", engine: withFixtureState(HOME_FILES) }, cloudEngine: HOME_FILES });
   team = fx.team!;
   dataDir = join(team.home, ".crybot");
   bobHome = audienceHome(dataDir, `member:${personKey({ id: "", email: BOB.email })}`);
