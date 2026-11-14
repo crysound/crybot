@@ -78,7 +78,7 @@ import { avatarImageStatus } from "./avatar-image.ts";
 import { imageGenerationReady } from "./image-generation.ts";
 import { createImageToolRoutes } from "./routes/image-tools.ts"; import { createMeetingsHost } from "./host/meetings-host.ts"; import { meetingsUnavailablePrompt } from "./meetings/prompt.ts";
 import { createImageSettingsRoutes } from "./routes/image-settings.ts";
-import { fitsOnOneLine, parseBotProfilePatch } from "./bot-profile.ts"; import { createBotFields } from "./create-bot-fields.ts";
+import { fitsOnOneLine } from "./bot-profile.ts"; import { createBotFields } from "./create-bot-fields.ts";
 import { routeDirectTurn } from "./turn-route.ts"; import { QuickModelFallback } from "./quick-model-fallback.ts"; import { COMPUTER_JOURNAL_PATH, createSavedSteps, personRequest, savedStepsEnabled } from "./saved-steps/saved-steps.ts";
 import { groupTurnCwd } from "./room-cwd.ts";
 import { RoomTurnDeadline, RoomTurnStallRegistry, effectiveRoomTurnTimeoutMinutes, parseConversationTurnTimeout, roomTurnTimeoutMessage } from "./room-turn-timeout.ts";
@@ -400,7 +400,7 @@ import { botSkillTemplateSchema, newBotDefaultsSchema } from "./new-bot-defaults
 import { expandLearnTurnText, learnSource } from "./skill-learn.ts";
 import { connectedAppsForSetup, expandSetupTurnText, setupModeActive, setupSystemPrompt, type SetupConnectedApps } from "./setup-mode.ts"; import { forgetSetupPresser, setupPresser, setupTurnText, takeSetupRequest } from "./setup-request.ts"; import { setupSuggestionsFor } from "./setup-suggestions.ts"; import { createSetupRequestRoutes } from "./routes/setup-request.ts";
 import { isSkillSwitchAction, type SkillRequestCardData } from "../shared/skill-request.ts"; import { createSkillSwitchHost } from "./host/skill-switch-host.ts";
-import { checkSoulDrift, readSoulDrift, soulFile, writeSoulMirror } from "./bot-folder.ts";
+import { checkSoulDrift } from "./bot-folder.ts";
 import {
   botPersona,
   buildSystemPrompt,
@@ -475,8 +475,7 @@ import { ProfileRequestService } from "./profile-requests.ts";
 import { ModelRequestService } from "./model-requests.ts";
 import { TeamSetupError, TeamSetupRequestService } from "./team-setup-requests.ts";
 import { startsWithoutCloudComputer, teamSetupDecisionText as decisionText, type TeamSetupRequest } from "../shared/team-setup.ts";
-import { profileRevision, profileSnapshot } from "./profile-revision.ts";
-import { flushAllProfileHistory, flushProfileHistory, readHistory, recordProfileChange, soulChanges } from "./profile-versions.ts";
+import { flushAllProfileHistory, flushProfileHistory, readHistory } from "./profile-versions.ts";
 import { TeamMemory, TEAM_MEMORY_KINDS, type TeamMemoryKind } from "./team-memory.ts";
 import { describeTool } from "./activity.ts";
 import { OutboundRequestService } from "./outbound-requests.ts";
@@ -593,6 +592,7 @@ import { holdBodyDeadline } from "./body-deadline.ts";
 import { createNoAiNotice } from "./host/no-ai-notice.ts"; import { PASS, ROUTES, dispatchRoutes } from "./routes/table.ts"; import { createSecretCards } from "./host/secret-cards.ts"; import { createInternalCredentialRequestRoutes, createSecretCardRoutes } from "./routes/secret-cards.ts"; import { applyIncludedPagesMessage } from "./pages/access.ts"; import { createPublishedPages } from "./pages/service.ts"; import { createInternalToolRoutes } from "./routes/internal-tools.ts"; import { createHelperSuggestionRoutes } from "./routes/helper-suggestion.ts"; import { createXConnectorRoutes } from "./routes/x-connector.ts"; import { createMoveFreeze, switchAutomationsOff } from "./move-freeze.ts"; import { createMoveFreezeRoutes } from "./routes/move-freeze.ts"; import { createMoveWaits } from "./move-waits.ts"; import { assertBotHere, createBotMoves } from "./bot-moves.ts"; import { createBotMoveRoutes } from "./routes/bot-moves.ts"; import { createTeamMoveIn, moveInRefusal } from "./team-move-in.ts";
 import { createHostedSlackRoutes } from "./routes/hosted-slack.ts";
 import { createBotPresetRoutes } from "./routes/bot-presets.ts"; import { createWorkspaceBannerRoutes, workspaceBannerStore, workspaceBannerSummary } from "./routes/workspace-banner.ts";
+import { createBotProfileFilesRoutes } from "./routes/bot-profile-files.ts";
 import { createBotMemoryRoutes } from "./routes/bot-memory.ts";
 import { createBotCreateRoutes } from "./routes/bots-create.ts"; import { privateUntilShared } from "./new-bot-sharing.ts"; import { createShareNotice } from "./host/share-notice.ts"; import { memberDeleteRefusal } from "./host/member-bots.ts";
 import { createTeamOwnerRoutes } from "./routes/team-owners.ts";
@@ -12175,6 +12175,7 @@ ROUTES.push(phones.routes);
 ROUTES.push(createSkillShareRoutes({ enabled: () => skillsHost.mode() !== "off", botExists: (id) => Boolean(store.bot(id)),
   cardRefusal: (auth, threadId, requestId) => cardAnswerRefusal(auth, threadId, requestId, "allow"), shareFromReceipt: skillsHost.shareFromReceipt, shareFromBot: skillsHost.shareFromBot }));
 ROUTES.push(createTeamContextRoutes({ store, teamMemory }));
+ROUTES.push(createBotProfileFilesRoutes({ store, wireBot, broadcast }));
 ROUTES.push(createBotMemoryRoutes({
   bot: (id) => store.bot(id),
   ...(CLOUD_TEAM ? { ownLayer: (auth: RequestAuth, botId: string) => auth.kind === "session" && visibleTo(viewerFor(auth)).bot(botId)
@@ -14805,64 +14806,6 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       return json(res, 200, { skills });
     }
 
-    m = path.match(/^\/api\/bots\/([\w-]+)\/soul$/);
-    if (m && method === "GET") {
-      const bot = store.bot(m[1]);
-      if (!bot) return json(res, 404, { error: "no such bot" });
-      const soul = bot.soul ?? "";
-      const drift = readSoulDrift(bot.id, soul, bot.soulHash ?? "");
-      return json(res, 200, {
-        soul,
-        revision: profileRevision(bot),
-        bytes: Buffer.byteLength(soul, "utf8"),
-        limit: BOT_PROFILE_LIMITS.soul,
-        file: soulFile(bot.id),
-        drift: drift.drift,
-        ...(drift.drift ? { fileText: drift.fileText } : {}),
-      });
-    }
-    m = path.match(/^\/api\/bots\/([\w-]+)\/soul\/apply-file$/);
-    if (m && method === "POST") {
-      const body = await readBody(req);
-      const bot = store.bot(m[1]);
-      if (!bot) return json(res, 404, { error: "no such bot" });
-      if (body?.expectedRevision !== profileRevision(bot)) {
-        return json(res, 409, { error: "This bot's profile changed; reload and look again" });
-      }
-      const drift = readSoulDrift(bot.id, bot.soul ?? "", bot.soulHash ?? "");
-      if (!drift.drift) return json(res, 409, { error: "SOUL.md matches the record; nothing to apply" });
-      if (typeof body?.fileText !== "string" || body.fileText !== drift.fileText) {
-        return json(res, 409, { error: "SOUL.md changed since you read it; reload and look again" });
-      }
-      const parsed = parseBotProfilePatch({ soul: drift.fileText });
-      if (!parsed.ok) return json(res, 400, { error: parsed.error });
-      // store.bot() returns the live record and setSoul mutates it in place: snapshot before the call.
-      const beforeProfile = profileSnapshot(bot);
-      const updated = store.setSoul(bot.id, parsed.patch.soul ?? "");
-      if (!updated) return json(res, 404, { error: "no such bot" });
-      recordProfileChange(bot.id, "file", "ui", beforeProfile, profileSnapshot(updated));
-      const visible = wireBot(updated);
-      broadcast({ kind: "bot", bot: visible });
-      return json(res, 200, { bot: visible });
-    }
-    m = path.match(/^\/api\/bots\/([\w-]+)\/soul\/discard-file$/);
-    if (m && method === "POST") {
-      const body = await readBody(req);
-      const bot = store.bot(m[1]);
-      if (!bot) return json(res, 404, { error: "no such bot" });
-      if (body?.expectedRevision !== profileRevision(bot)) {
-        return json(res, 409, { error: "This bot's profile changed; reload and look again" });
-      }
-      const drift = readSoulDrift(bot.id, bot.soul ?? "", bot.soulHash ?? "");
-      if (!drift.drift || typeof body?.fileText !== "string" || body.fileText !== drift.fileText) {
-        return json(res, 409, { error: "SOUL.md changed since you read it; reload and look again" });
-      }
-      writeSoulMirror(bot.id, bot.soul ?? "");
-      const updated = store.patchBot(bot.id, { soulDrift: false }) ?? bot;
-      const visible = wireBot(updated);
-      broadcast({ kind: "bot", bot: visible });
-      return json(res, 200, { bot: visible });
-    }
     m = path.match(/^\/api\/bots\/([\w-]+)\/system-prompt$/);
     if (m && method === "GET") {
       const bot = store.bot(m[1]);
@@ -14874,53 +14817,6 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const bot = store.bot(m[1]);
       if (!bot) return json(res, 404, { error: "no such bot" });
       return json(res, 200, await botOverview(bot, { routine: (routine) => routineVisible(routine, visible), run: (run) => routineRunVisible(run, visible) }));
-    }
-
-    m = path.match(/^\/api\/bots\/([\w-]+)\/history$/);
-    if (m && method === "GET") {
-      if (!store.bot(m[1])) return json(res, 404, { error: "no such bot" });
-      // Profile rows land asynchronously; flush so a client sees its own change.
-      await flushProfileHistory(m[1]);
-      const limit = Math.min(500, Math.max(1, Number(url.searchParams.get("limit")) || 100));
-      const full = url.searchParams.get("full") === "1";
-      const rows = url.searchParams.get("view") === "changes" ? soulChanges(m[1], readHistory(m[1], limit)) : readHistory(m[1], limit).map((row) => {
-        if (full || row.field !== "soul") return row;
-        const rest: typeof row = { ...row };
-        delete rest.before;
-        delete rest.after;
-        return rest;
-      });
-      const bot = store.bot(m[1]);
-      if (!bot) return json(res, 404, { error: "no such bot" });
-      return json(res, 200, { rows, revision: profileRevision(bot) });
-    }
-    m = path.match(/^\/api\/bots\/([\w-]+)\/history\/rollback$/);
-    if (m && method === "POST") {
-      const body = await readBody(req);
-      await flushProfileHistory(m[1]);
-      const bot = store.bot(m[1]);
-      if (!bot) return json(res, 404, { error: "no such bot" });
-      if (body?.expectedRevision !== profileRevision(bot)) {
-        return json(res, 409, { error: "This bot's profile changed; reload history before undoing" });
-      }
-      const row = typeof body?.id === "string"
-        ? readHistory(bot.id, Number.MAX_SAFE_INTEGER).find((r) => r.id === body.id && r.field === "soul")
-        : undefined;
-      if (!row || row.field !== "soul" || typeof row.before !== "string") {
-        return json(res, 400, { error: "rollback is available for SOUL.md entries only" });
-      }
-      if (!row.canRestore) {
-        return json(res, 400, { error: row.restoreUnavailableReason });
-      }
-      const parsed = parseBotProfilePatch({ soul: row.before });
-      if (!parsed.ok) return json(res, 400, { error: parsed.error });
-      const before = profileSnapshot(bot);
-      const updated = store.setSoul(bot.id, parsed.patch.soul ?? "");
-      if (!updated) return json(res, 404, { error: "no such bot" });
-      recordProfileChange(bot.id, "user", "rollback", before, profileSnapshot(updated));
-      const visible = wireBot(updated);
-      broadcast({ kind: "bot", bot: visible });
-      return json(res, 200, { bot: visible });
     }
 
     m = path.match(/^\/api\/bots\/([\w-]+)\/cards\/([\w-]+)$/);
