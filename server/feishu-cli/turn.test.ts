@@ -30,7 +30,6 @@ beforeEach(async () => {
   vi.mocked(brokerToken).mockResolvedValue({ user_access_token: short, app_id: "fixture-app", expires_at: 9_000_000_000 });
   resetFeishuLoginWarningsForTests();
   vi.spyOn(botBox, "enabled").mockReturnValue(true);
-  vi.spyOn(botBox, "report").mockReturnValue({ ...botBox.report(), box: "bwrap" });
 });
 afterEach(async () => { sessions.close(); vi.restoreAllMocks(); vi.mocked(brokerToken).mockReset(); await rm(directory, { recursive: true, force: true }); });
 
@@ -55,8 +54,7 @@ it("does not enable another user, anonymous or ordinary non-Feishu sessions", ()
   expect(brokerToken).not.toHaveBeenCalled();
 });
 
-it.each(["off", "gvisor", "user"] as const)("fails closed at boot and launch when sandbox detection is %s", async box => {
-  vi.mocked(botBox.report).mockReturnValue({ ...botBox.report(), box });
+it("fails closed at boot and launch when botBox.enabled() is false", async () => {
   vi.mocked(botBox.enabled).mockReturnValue(false);
   env.CRYBOT_BOT_BOX = "on";
   const warn = vi.fn();

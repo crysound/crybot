@@ -468,7 +468,7 @@ exit 1
 
 本轮未提交 git，也没有安装服务、读取真实凭证或接触用户 live app/data。`server/feishu-cli/server.e2e.test.ts` 的 `sandbox=true` 场景现在把 bwrap 所在目录加入传给服务子进程的 PATH，并用同一份环境调用 `detectBox`；只有检测结果为 `bwrap` 才执行，其他情况打印固定的跳过原因。假 CLI 放在代码根下的测试临时目录，转储仍写入轮次工作目录。授权轮次的假 CLI 实际连接传入的 Unix socket，名单外轮次没有 socket 路径且探测结果为 `missing`。
 
-`server/feishu-cli/config.ts` 启动校验使用默认盒子的挂载计划：`/run/crybot-feishu-broker/token.sock` 对非授权盒子不可见，可以通过；`/opt/x/token.sock` 落在只读挂载中，输出「飞书代领套接字路径对非授权盒子可见，已停用」并关闭。每次组装轮次仍调用 `botBox.report()`，同步刷新 `/proc/mounts`，运行时能力由 `botBox.enabled()` 判定。第 5 轮文档的重复运行环境段已删除，背景流程改为中性描述。
+`server/feishu-cli/config.ts` 启动校验使用默认盒子的挂载计划：`/run/crybot-feishu-broker/token.sock` 对非授权盒子不可见，可以通过；`/opt/x/token.sock` 落在只读挂载中，输出「飞书代领套接字路径对非授权盒子可见，已停用」并关闭。运行时能力只由 `botBox.enabled()` 判定，组装轮次不再调用 `botBox.report()` 同步读取 `/proc/mounts`。第 5 轮文档的重复运行环境段已删除，背景流程改为中性描述。
 
 ### 本轮验收
 
@@ -515,3 +515,93 @@ $ pnpm exec oxlint --deny-warnings server/feishu-cli/config.ts server/feishu-cli
 ```
 
 所有新临时文件在测试结束清理，令牌和 socket 路径不进入事件流、会话记录或日志断言。完整端到端结果需在允许 Unix socket、具备 bwrap 的 Actions 主机复核。
+
+## 第 7 轮：开盒端到端场景修正
+
+本轮只调整 `server/feishu-cli/server.e2e.test.ts` 的测试夹具，并补充本轮验收记录。服务进程的 `PATH` 现在按 Node 所在目录、bwrap 所在目录、继承的 PATH 排列，避免假 CLI 的 env shebang 使用旧 Node。代码根由 `fileURLToPath(new URL("../..", import.meta.url))` 求得；假 CLI 仍放在代码根下的临时目录。broker socket 改放 `mkdtemp(join(tmpdir(), "feishu-broker-"))` 创建的独立目录，开盒场景的 `TMPDIR`、`TMP`、`TEMP` 指向该目录下的 `tmp` 子目录，测试结束删除整个目录。令牌泄漏扫描同时覆盖 fixture 数据目录和该 socket/TMP 目录。
+
+本沙箱不允许监听 Unix socket，且 bwrap 检测结果为 `userns-refused`，因此两个参数化场景均按设计跳过；检测结果为 bwrap 的 Linux 主机才会实际执行开盒场景。未访问用户 live app 或数据。
+
+### 本轮验收
+
+```text
+$ pnpm exec vitest run server/feishu-cli/server.e2e.test.ts --reporter=verbose
+ Test Files  1 passed (1)
+ Tests  2 skipped (2)
+ sandbox=false：跳过 server.e2e：当前沙箱禁止监听 Unix socket
+ sandbox=true：跳过 sandbox=true：服务进程检测结果为 userns-refused
+
+$ pnpm exec tsc -p tsconfig.server.json --pretty false
+（无输出，exit 0）
+
+$ pnpm exec oxlint --deny-warnings server/feishu-cli/server.e2e.test.ts
+（无输出，exit 0）
+```
+
+
+## 第 8 轮：复审收尾与套接字路径加固
+
+本轮未提交 git，未改动 `server/drivers/claude.ts`（仍为 2087 行），未接触用户 live app 或数据。
+
+- `server/feishu-cli/config.ts` 删除无人使用返回值的 `botBox.report()` 调用，能力判断只看 `botBox.enabled()`；`turn.test.ts` 删除对应 mock，把原来三个检测结果的重复参数化用例合并为一个明确验证 `enabled() = false` 的用例，因此该文件由 28 项变为 26 项。
+- 套接字父目录先做 realpath；父目录不存在时回退到原字面路径，其他解析错误失败关闭。真实路径位于服务数据目录或 HOME 内时直接拒绝，两个根目录也解析真实路径。其余路径按默认盒子的挂载计划判断可见性，计划请求携带服务进程 `process.env` 中全部 `PATH_ENV_NAMES` 变量（包括 TMPDIR）。拒绝只输出固定文字，不包含路径。
+- 新增 `server/feishu-cli/config.test.ts`：覆盖指向 `/opt` 的父目录符号链接、数据目录 `workspaces/fixture/`、HOME、指向数据目录/HOME 的符号链接、父目录不存在时的拒绝/放行、`/tmp` 独立目录放行，以及每个路径环境变量引入的共享挂载。修复前 18 项中 14 项失败、4 项通过，修复后 18 项全部通过。
+- `server.e2e.test.ts` 的开盒假 CLI 直接写入套接字真实路径，不依赖是否注入路径环境变量；授权轮次仍断言 `connected`，名单外、群聊及降级轮次实际尝试连接并断言 `ENOENT`、`EACCES` 或 `EPERM`。测试进程临时目录的真实路径不在 `/tmp` 下时，开盒场景打印原因并跳过。
+- `.gitignore` 增加 `.tmp-feishu-host-*/`。`r6.md`、`r7.md` 的运行环境产品名和依赖命令改为中性表述；更正第 6 轮的 report 调用说明及第 7 轮的执行主机条件。
+
+### 验收输出
+
+Node `v24.22.3`；已先运行依赖准备脚本，不使用 systemd-run，Vitest 逐文件串行执行。以下摘录省略工作目录和计时。
+
+```text
+$ pnpm exec vitest run server/feishu-cli/config.test.ts
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+exit 0
+
+$ pnpm exec vitest run server/feishu-cli/turn.test.ts
+ Test Files  1 passed (1)
+      Tests  26 passed (26)
+exit 0
+
+$ pnpm exec vitest run server/feishu-cli/server.e2e.test.ts --reporter=verbose
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+跳过 server.e2e：当前沙箱禁止监听 Unix socket
+跳过 sandbox=true：测试进程的 tmpdir() 不在 /tmp 下，套接字路径校验会停用代领
+ Test Files  1 passed (1)
+      Tests  2 skipped (2)
+exit 0
+
+$ pnpm exec vitest run server/bot-box/env.test.ts
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+exit 0
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+exit 0
+
+$ pnpm exec tsc -p tsconfig.server.json --pretty false
+（无输出）
+exit 0
+
+$ pnpm exec oxlint --deny-warnings server/feishu-cli/config.ts server/feishu-cli/config.test.ts server/feishu-cli/turn.test.ts server/feishu-cli/server.e2e.test.ts
+（无输出）
+exit 0
+
+$ wc -l server/drivers/claude.ts
+2087 server/drivers/claude.ts
+
+$ git diff --check
+（无输出）
+exit 0
+
+任务目录按第 8 轮指定表达式递归 grep 扫描（排除 r8.md）：
+（无输出，无匹配）
+exit 1
+```
+
+单测共 55 项通过。端到端两个场景均未实跑完成：关盒场景尝试在隔离临时目录启动假 broker 时监听被拒，开盒场景触发新增的临时目录检查；不能把 Vitest 文件级 exit 0 当作端到端通过。最终端到端结果以 Actions 为准，开盒复核需要检测结果为 bwrap 的 Linux 主机、允许 fixture 监听，并使用 `/tmp` 下的测试临时目录。本轮没有运行 Actions。
+
+AGENTS.md 引用的 `docs/verification/README.md` 在仓库中仍不存在；沿用现有隔离 fixture，未对 live app/data 做任何验证或修改。
