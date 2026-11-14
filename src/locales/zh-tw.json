@@ -1,4 +1,10 @@
 {
+  "chat.notice.computerWakeFailed": "電腦喚醒失敗（{reason}）",
+  "chat.notice.previousComputerWakeFailed": "上一輪的電腦喚醒失敗（{reason}）",
+  "chat.notice.wakingComputer": "正在喚醒電腦…",
+  "server.computer.wakeFailed": "電腦喚醒失敗（{reason}）",
+  "server.computer.previousWakeFailed": "上一輪的電腦喚醒失敗（{reason}）",
+  "server.computer.waking": "正在喚醒電腦…",
   "connectedWorkspaces.localTitle": "這台電腦上的環境",
   "connectedWorkspaces.missing": "遺失",
   "connectedWorkspaces.current": "目前",

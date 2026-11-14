@@ -19,6 +19,35 @@ afterEach(async () => {
 const posixOnly = describe.skipIf(process.platform === "win32");
 
 posixOnly("Local VM Cua MCP bridge", () => {
+  it("lists lazy computer tools without starting a runtime or waiting for the desktop", async () => {
+    const bin = await mkdtemp(join(tmpdir(), "crybot-container-lazy-"));
+    temporary.push(bin);
+    await writeFile(join(bin, "podman"), "#!/bin/sh\necho UNEXPECTED-RUNTIME-START >&2\nexit 1\n", { mode: 0o700 });
+    const input = [
+      { jsonrpc: "2.0", id: 1, method: "initialize" },
+      { jsonrpc: "2.0", id: 2, method: "tools/list" },
+    ].map(frame => JSON.stringify(frame)).join("\n") + "\n";
+    const result = await new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve, reject) => {
+      const child = spawn(process.execPath,
+        [fileURLToPath(new URL("./container-mcp.ts", import.meta.url)), "podman", CONTAINER, CUA_SOCKET], {
+          env: { ...process.env, CRYBOT_EXTRA_PATH: bin, CRYBOT_CONTAINER_LAZY: "1",
+            CRYBOT_CONTROL_URL: "http://localhost:1/api/internal/computer-control", CRYBOT_CONTROL_TOKEN: "fixture-capability" },
+          stdio: ["pipe", "pipe", "pipe"],
+        });
+      let stdout = "", stderr = "";
+      child.stdout.on("data", chunk => { stdout += chunk; });
+      child.stderr.on("data", chunk => { stderr += chunk; });
+      child.on("error", reject);
+      child.on("close", code => resolve({ code, stdout, stderr }));
+      child.stdin.end(input);
+    });
+    expect(result.code, result.stderr).toBe(0);
+    expect(result.stderr).not.toContain("UNEXPECTED-RUNTIME-START");
+    const frames = result.stdout.trim().split("\n").map(line => JSON.parse(line));
+    expect(frames[0].result.capabilities).toEqual({ tools: {} });
+    expect(frames[1].result.tools.map((tool: { name: string }) => tool.name)).toEqual(["search_tools", "describe_tool", "call_tool"]);
+  });
+
   it("passes MCP bytes unchanged to cua-driver mcp over the container runtime", async () => {
     const bin = await mkdtemp(join(tmpdir(), "crybot-container-mcp-"));
     temporary.push(bin);

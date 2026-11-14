@@ -71,3 +71,5 @@ export function askInputSummary(input: unknown): string | undefined {
   const text = JSON.stringify(fields);
   return text === "{}" ? undefined : cut(text, LIMIT);
 }
+
+export { computerToolTitle } from "./computer-tool-title.ts";

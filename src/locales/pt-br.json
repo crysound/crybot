@@ -1,4 +1,10 @@
 {
+  "chat.notice.computerWakeFailed": "Não foi possível despertar o computador ({reason})",
+  "chat.notice.previousComputerWakeFailed": "Não foi possível despertar o computador para o turno anterior ({reason})",
+  "chat.notice.wakingComputer": "Despertando o computador…",
+  "server.computer.wakeFailed": "Não foi possível despertar o computador ({reason})",
+  "server.computer.previousWakeFailed": "Não foi possível despertar o computador para o turno anterior ({reason})",
+  "server.computer.waking": "Despertando o computador…",
   "voice.gemini.keyPlaceholder": "Cole sua chave de API do Google AI Studio",
   "voice.gemini.model": "Modelo de voz do Gemini",
   "keys.label.geminiTts": "Chave de API de voz do Gemini",
