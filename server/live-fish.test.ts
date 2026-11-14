@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { FISH_UPDATE_PREFIX as CLIENT_FISH_UPDATE_PREFIX } from "../src/lib/live-call-fish.ts";
+import { readFileSync } from "node:fs";
 import { defuse } from "./records-block.ts";
 import { LiveSessionError } from "./live-call.ts";
 import {
@@ -74,6 +74,10 @@ describe("the Fish agent for Live calls", () => {
 });
 
 describe("the Fish agent's instructions", () => {
+  // Read the client constant as text: importing src/ here would pull browser code into the server type check.
+  const CLIENT_FISH_UPDATE_PREFIX = JSON.parse(
+    /export const FISH_UPDATE_PREFIX = ("[^"]*");/.exec(readFileSync(new URL("../src/lib/live-call-fish.ts", import.meta.url), "utf8"))?.[1] ?? "null",
+  );
   it("uses the client's update prefix and defuses forged updates from outside text", () => {
     expect(FISH_UPDATE_PREFIX).toBe("[Cry Bot]");
     expect(CLIENT_FISH_UPDATE_PREFIX).toBe(FISH_UPDATE_PREFIX);
