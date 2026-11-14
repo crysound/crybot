@@ -331,7 +331,7 @@ const Bubble = memo(function Bubble({
   onReply: (message: Message) => void;
 }) {
   const { botId, threadId, botName, voiceId, tts, localVoice, bots, mentionPeers, mentionPerson, focus, dispatch, onBranch, bubbleStyle, conversational, simple, canReact, openedAt, speakerViewer } = useChatRows(), busy = onRegenerate || versions ? use(ChatBusyContext) : false;
-  const remoteClient = window.ogb?.remoteClient?.active === true;
+  const remoteClient = window.cry?.remoteClient?.active === true;
   const peer = peerLine(message) ?? peerRequest(message, botId);
   const user = message.role === "user" && !peer;
   const speaker = user ? otherSpeaker(message, speakerViewer ?? null) : null;
@@ -802,7 +802,7 @@ export const ChatView = memo(function ChatView({ bot: profile }: { bot: Bot }) {
   const bot = useMemo(() => currentTaskBot(profile), [profile]);
   const state = useStoreSelector((s) => ({ computerStart: s.computerStarts[profile.id], mascotMotion: s.mascotMotion?.botId === profile.id ? s.mascotMotion : null, instances: s.instances, config: s.config, focusMessage: s.focusMessage, settingsOpen: s.settingsOpen, computerOpen: s.computerOpen, error: s.error, notice: s.notice }), sameFields), dispatch = useStoreDispatch(), store = useStoreRef();
   const showThreads = useShowThreads();
-  const remoteClient = window.ogb?.remoteClient?.active === true;
+  const remoteClient = window.cry?.remoteClient?.active === true;
   const { dragProps: headerDragProps, noDragStyle: headerNoDragStyle } = useCaptionChrome();
   const composerDockRef = useRef<HTMLDivElement>(null);
   const composerDock = useComposerDockPad(composerDockRef);
@@ -1035,7 +1035,7 @@ export const ChatView = memo(function ChatView({ bot: profile }: { bot: Bot }) {
               <RenameTitle
                 value={bot.name}
                 onCommit={(name) => {
-                  if (window.ogb?.remoteClient?.active) {
+                  if (window.cry?.remoteClient?.active) {
                     void api(`/api/bots/${bot.id}/profile`, { method: "PATCH", body: JSON.stringify({ name }) })
                       .then(({ bot: updated }) => dispatch({ type: "botPatched", bot: updated }))
                       .catch((cause) => dispatch({ type: "error", message: cause instanceof Error ? cause.message : String(cause) }));

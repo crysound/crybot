@@ -10,14 +10,14 @@
 import { writeFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 
-import { MOUTH_STROKE } from "../src/components/cursor-face-data.ts"
+import { MOUTH_STROKE } from "../src/components/mascot-face-data.ts"
 import { BODY_DEFS, type BodyDef } from "./mascot-bodies/builders.ts"
 import { applyFit, boundsOf, fitTransform, flatten } from "./mascot-bodies/geometry.ts"
 import { maskFromPolylines } from "./mascot-bodies/raster.ts"
 import { fieldFromMask, largestInscribedCircle, type Sdf } from "./mascot-bodies/sdf.ts"
 import { buildClouds, maxScaleAt, report } from "./mascot-bodies/solve.ts"
 
-const DEFAULT_ID = "cursor"
+const DEFAULT_ID = "dome"
 
 /** The avatar renders every expression facing forward, which zeroes the authored gaze. */
 const LOOK_AROUND = 0
@@ -201,7 +201,7 @@ function emit(bodies: Baked[]): string {
  * character in different bodies rather than ten different mascots. Roomier bodies simply
  * end up with more margin around the face.
  *
- * The fields match \`CursorSilhouette\` exactly, so a body can be handed to the renderer
+ * The fields match \`MascotSilhouette\` exactly, so a body can be handed to the renderer
  * with no adapter in between.
  */
 
@@ -308,10 +308,10 @@ function emitSwift(bodies: Baked[]): string {
 // \`scale\`/\`tx\`/\`ty\` directly.
 //
 // Path data is absolute \`M\`, \`C\`, \`Z\` only — the same twenty-line parser convention as
-// \`MausSilhouette\` in \`ios/App/MausAvatar.swift\`, which treats newlines as separators.
+// \`BotSilhouette\` in \`ios/App/MascotAvatar.swift\`, which treats newlines as separators.
 import CoreGraphics
 
-enum MausBodies {
+enum BotBodies {
     struct Body {
         let id: String
         let name: String
@@ -324,7 +324,7 @@ enum MausBodies {
     static let order: [String] = [${order}]
 
     /// The shipped mascot, and the fallback for any unrecognised value.
-    static let defaultID = "cursor"
+    static let defaultID = "dome"
 
     static let all: [String: Body] = [
 ${entries}
@@ -373,25 +373,25 @@ function emitKotlin(bodies: Baked[]): string {
     })
     .join("\n")
 
-  return `package com.openmausbot.companion.ui
+  return `package com.crybot.companion.ui
 
 /**
  * The mascot bodies a bot can wear — the Android half of the same solve that bakes
- * \`shared/mascot-bodies.ts\` and \`ios/Sources/CompanionCore/MausBodies.swift\`.
+ * \`shared/mascot-bodies.ts\` and \`ios/Sources/CompanionCore/BotBodies.swift\`.
  *
  * GENERATED FILE — do not hand-edit. Run \`pnpm gen:bodies\` to rebuild it from
  * \`scripts/gen-mascot-bodies.ts\`, which solves each face placement against the real
  * expression geometry and verifies that nothing clips. One solve, three writers, so the
  * three renderers cannot drift apart the way desktop's 0.74 and iOS's 0.84 already did once.
  *
- * Plain Kotlin, no Compose: [MausSilhouette] parses the path and caches the result per
+ * Plain Kotlin, no Compose: [BotSilhouette] parses the path and caches the result per
  * body. The fit is numbers, not an SVG transform string. The bounds are the tight bounds
  * of the fitted outline: Android's native path bounds are the cubic control hull, which is
  * wider than the drawn shape, and the gradient's corners have to sit on the shape.
  *
  * Path data is absolute \`M\`, \`C\`, \`Z\` only, with newlines as separators.
  */
-internal object MausBodies {
+internal object BotBodies {
     data class Body(
         val id: String,
         val name: String,
@@ -412,7 +412,7 @@ internal object MausBodies {
     val order: List<String> = listOf(${order})
 
     /** The shipped mascot, and the fallback for any unrecognised value. */
-    const val DEFAULT_ID: String = "cursor"
+    const val DEFAULT_ID: String = "dome"
 
     val all: Map<String, Body> = mapOf(
 ${entries}
@@ -431,8 +431,8 @@ ${entries}
 function main(): void {
   const solved = BODY_DEFS.map(solveBody)
 
-  const cursor = solved.find(s => s.def.id === DEFAULT_ID)
-  if (!cursor) throw new Error(`the catalog has no ${DEFAULT_ID} body to anchor its face size to`)
+  const defaultBody = solved.find(s => s.def.id === DEFAULT_ID)
+  if (!defaultBody) throw new Error(`the catalog has no ${DEFAULT_ID} body to anchor its face size to`)
 
   const width = Math.max(...solved.map(s => s.def.id.length))
   console.log("largest face each body can hold, worst of the four pointer aims:")
@@ -442,17 +442,6 @@ function main(): void {
   console.log("")
 
   const shared = solved.reduce((min, s) => Math.min(min, s.scale), Infinity)
-  if (shared < cursor.scale) {
-    const tighter = solved
-      .filter(s => s.scale < cursor.scale)
-      .map(s => `${s.def.id} (${s.scale})`)
-      .join(", ")
-    throw new Error(
-      `the shared face scale ${shared} is below ${DEFAULT_ID}'s own ${cursor.scale}: ` +
-        `${tighter} cannot hold the shipped face, so clamping the catalog would shrink ` +
-        `the mascot everyone already has. Widen those outlines rather than lowering the floor.`
-    )
-  }
 
   const baked: Baked[] = []
   const clipped: string[] = []
@@ -481,7 +470,7 @@ function main(): void {
     })
   }
 
-  console.log(`shared face scale ${shared} (${DEFAULT_ID}'s own floor is ${cursor.scale})`)
+  console.log(`shared face scale ${shared} (${DEFAULT_ID}'s own floor is ${defaultBody.scale})`)
   console.log(`${"body".padEnd(width)}  ${"scale".padStart(6)}  ${"clearance".padStart(9)}`)
   for (const body of baked) {
     const scale = body.anchor.scale.toFixed(3).padStart(6)

@@ -37,12 +37,12 @@ beforeEach(() => {
       return current;
     }),
   };
-  (window as unknown as { ogb: unknown }).ogb = { updatesConsent: bridge };
+  (window as unknown as { cry: unknown }).cry = { updatesConsent: bridge };
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
 });
 afterEach(async () => {
   await act(async () => root.unmount()); host.remove();
-  delete (window as unknown as { ogb?: unknown }).ogb;
+  delete (window as unknown as { cry?: unknown }).cry;
   vi.unstubAllGlobals();
 });
 
@@ -51,11 +51,11 @@ describe("Settings → General: Product updates by email", () => {
     current = { ...base, available: false };
     await show();
     expect(toggle()).toBeNull();
-    (window as unknown as { ogb: unknown }).ogb = { updatesConsent: bridge, remoteClient: { active: true } };
+    (window as unknown as { cry: unknown }).cry = { updatesConsent: bridge, remoteClient: { active: true } };
     current = { ...base };
     await show();
     expect(toggle()).toBeNull();
-    (window as unknown as { ogb: unknown }).ogb = {};
+    (window as unknown as { cry: unknown }).cry = {};
     await show();
     expect(toggle()).toBeNull();
   });
@@ -63,7 +63,7 @@ describe("Settings → General: Product updates by email", () => {
   it("reflects the account's answer, and turning it off withdraws; on again is one tap when signed in", async () => {
     current = { ...base, signedIn: true, status: "opted_in", email: "person@example.test" };
     await show();
-    expect(host.textContent).toContain("Get MausBot updates");
+    expect(host.textContent).toContain("Get Cry Bot updates");
     expect(host.textContent).toContain("Sent to person@example.test.");
     expect(toggle()!.getAttribute("aria-checked")).toBe("true");
     await click(toggle()!);
@@ -82,7 +82,7 @@ describe("Settings → General: Product updates by email", () => {
     expect(toggle()!.getAttribute("aria-checked")).toBe("false");
     await click(toggle()!);
     expect(dialog()).not.toBeNull();
-    expect(dialog()!.textContent).toContain("Get MausBot updates?");
+    expect(dialog()!.textContent).toContain("Get Cry Bot updates?");
     expect(document.querySelector<HTMLInputElement>('input[type="email"]')!.value).toBe("");
     expect(document.querySelector('input[type="checkbox"]')).toBeNull();
     await click(button("No thanks"));

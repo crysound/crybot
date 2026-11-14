@@ -19,7 +19,7 @@ type Request = (action: "take" | "release", controlLeaseId?: string) => Promise<
 
 /** Kept in sessionStorage, which a reload of the page keeps, so a viewer still gives back its own hold when a reload came
  * after its open or cut that open off. */
-const viewerLeaseKey = (botId: string) => `openmausbot.viewer-lease.${botId}`;
+const viewerLeaseKey = (botId: string) => `crybot.viewer-lease.${botId}`;
 function recordViewerLease(botId: string, lease: string): void {
   try { sessionStorage.setItem(viewerLeaseKey(botId), lease); } catch { /* no storage: no record */ }
 }
@@ -62,7 +62,7 @@ export async function openProviderDesktop({ botId, title, request, join, current
   const lease = newLeaseId();
   // Plain web opens its blank tab synchronously, inside the user gesture; the packaged app uses the Electron viewer window.
   let fallbackTab: Window | null = null;
-  if (!window.ogb?.desktopViewer && !window.ogb?.openExternal) {
+  if (!window.cry?.desktopViewer && !window.cry?.openExternal) {
     fallbackTab = window.open("", "_blank");
     if (fallbackTab) fallbackTab.opener = null;
   }
@@ -71,19 +71,19 @@ export async function openProviderDesktop({ botId, title, request, join, current
     const take = await request("take", lease);
     if (!take.held) throw new LocalizedPanelError("computer.err.confirmControl");
     const mine = take.owned ? lease : null;
-    if (mine && window.ogb?.desktopViewer) recordViewerLease(botId, mine);
+    if (mine && window.cry?.desktopViewer) recordViewerLease(botId, mine);
     if (!current()) throw changed();
     const { joinUrl } = await join(AbortSignal.timeout(JOIN_TIMEOUT_MS), mine);
     const viewerUrl = typeof joinUrl === "string" && joinUrl ? joinUrl : null;
     if (!current()) throw changed();
     if (!viewerUrl) throw new LocalizedPanelError("computer.err.noDesktopLink");
-    if (window.ogb?.desktopViewer) {
-      if (!(await window.ogb.desktopViewer.open(viewerUrl, title, botId))) throw new LocalizedPanelError("computer.err.openDesktop");
+    if (window.cry?.desktopViewer) {
+      if (!(await window.cry.desktopViewer.open(viewerUrl, title, botId))) throw new LocalizedPanelError("computer.err.openDesktop");
     } else if (fallbackTab) {
       fallbackTab.location.replace(viewerUrl);
       if (mine) releaseWhenClosed(fallbackTab, () => void request("release", mine).catch(() => {}));
-    } else if (window.ogb?.openExternal) {
-      if (!(await window.ogb.openExternal(viewerUrl))) throw new LocalizedPanelError("computer.err.openDesktopLink");
+    } else if (window.cry?.openExternal) {
+      if (!(await window.cry.openExternal(viewerUrl))) throw new LocalizedPanelError("computer.err.openDesktopLink");
     } else if (!window.open(viewerUrl, "_blank", "noopener")) {
       throw new LocalizedPanelError("computer.err.popupBlocked");
     }

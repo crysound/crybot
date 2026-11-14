@@ -58,7 +58,7 @@ describe("a Fish Audio call's session", () => {
 
   it("never replaces an agent the operator chose", async () => {
     const fetchImpl = fakeFish({ goneAgents: ["agent_op"] });
-    const w = wiring(fetchImpl, { OMB_FISH_LIVE_AGENT_ID: "agent_op" });
+    const w = wiring(fetchImpl, { CRYBOT_FISH_LIVE_AGENT_ID: "agent_op" });
     await expect(w.calls.createSession({ ...start, endpoint: fishLiveEndpoint("agent_op", {}) })).rejects.toMatchObject({ status: 502 });
     expect(routes(fetchImpl)).toEqual(["POST /sessions"]);
     expect(w.saveFishAgent).not.toHaveBeenCalled();

@@ -125,7 +125,7 @@ beforeEach(() => {
     sections: ["Work"],
   };
   vi.stubGlobal("window", Object.assign(new EventTarget(), {
-    innerWidth: 1280, innerHeight: 800, ogb: undefined, setTimeout, clearTimeout,
+    innerWidth: 1280, innerHeight: 800, cry: undefined, setTimeout, clearTimeout,
     matchMedia: (query: string) => ({ matches: fixture.phone && query === PHONE_LAYOUT, addEventListener() {}, removeEventListener() {} }),
   }));
   vi.stubGlobal("document", { body: {}, querySelector: () => null });

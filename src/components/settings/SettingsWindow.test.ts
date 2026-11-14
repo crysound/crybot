@@ -32,7 +32,7 @@ import { SettingsModal } from "../SettingsModal";
 import { profileMenuItems } from "../SidebarProfileMenu";
 
 const COMPANION = { state: () => new Promise(() => {}) };
-const desktopHere = (extra: Record<string, unknown> = {}) => ({ ogb: { platform: "darwin", companion: COMPANION, environments: { state: () => new Promise(() => {}) }, ...extra } });
+const desktopHere = (extra: Record<string, unknown> = {}) => ({ cry: { platform: "darwin", companion: COMPANION, environments: { state: () => new Promise(() => {}) }, ...extra } });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -72,17 +72,17 @@ describe("the Settings window", () => {
   it("says which place a place page changes, and that account and app pages stay the same, without “place” for a person with one place", () => {
     expect(render("phone")).toContain("This computer");
     const account = render("account");
-    expect(account).toContain("Your MausBot account");
+    expect(account).toContain("Your Cry Bot account");
     expect(account).not.toContain("Same on every place");
-    expect(render("appearance")).toContain("MausBot on this device");
+    expect(render("appearance")).toContain("Cry Bot on this device");
   });
 
   // Owner decisions (Nov 11, Nov 12): Simple's nav is shorter. Nine entries, the same for every person and every rail.
-  const SIMPLE_NAV = ["overview", "phone", "ai", "vault", "transfer", "account", "plan", "app", "appearance"];
+  const SIMPLE_NAV = ["overview", "phone", "ai", "vault", "transfer", "account", "app", "appearance"];
   const SIMPLE_PEOPLE: Array<[string, () => void]> = [
     ["a person with only this computer", () => vi.stubGlobal("window", desktopHere({ cloudAccount: { state: () => new Promise(() => {}), onState: () => () => {} } }))],
     ["This computer's rail, with My Cloud", () => vi.stubGlobal("window", desktopHere({ cloudAccount: { state: () => new Promise(() => {}), onState: () => () => {} }, workspaces: { state: () => new Promise(() => {}), places: () => new Promise(() => {}) } }))],
-    ["My Cloud's rail in the desktop window", () => { vi.stubGlobal("window", { ogb: { platform: "darwin", cloudPlan: { state: () => new Promise(() => {}) }, workspaces: { state: () => new Promise(() => {}), places: () => new Promise(() => {}) } } }); fixture.config = { cloudHome: true }; }],
+    ["My Cloud's rail in the desktop window", () => { vi.stubGlobal("window", { cry: { platform: "darwin", cloudPlan: { state: () => new Promise(() => {}) }, workspaces: { state: () => new Promise(() => {}), places: () => new Promise(() => {}) } } }); fixture.config = { cloudHome: true }; }],
     ["My Cloud in a browser", () => { vi.stubGlobal("window", {}); fixture.config = { cloudHome: true }; }],
   ];
   it.each(SIMPLE_PEOPLE)("shows Simple's nine entries for %s", (_who, set) => {
@@ -179,14 +179,14 @@ describe("the Settings window", () => {
   });
 
   it("shows This computer's phone page with its pairing loading under the same title", () => {
-    vi.stubGlobal("ogb", desktopHere().ogb);
+    vi.stubGlobal("cry", desktopHere().cry);
     const html = render("phone");
     expect(html).toContain('data-phone-pairing="computer"');
     expect(html).toMatch(/<h2[^>]*>Phone &amp; devices<\/h2>/);
   });
 
   it("on My Cloud's page in the window: Phone & devices keeps its name and pairs with the Cloud, and This app rows it can't reach say so", () => {
-    vi.stubGlobal("window", { ogb: { platform: "darwin", workspaces: { state: () => new Promise(() => {}), places: () => new Promise(() => {}) } } });
+    vi.stubGlobal("window", { cry: { platform: "darwin", workspaces: { state: () => new Promise(() => {}), places: () => new Promise(() => {}) } } });
     fixture.config = { cloudHome: true };
     const phone = render("phone");
     expect(phone).toMatch(/<h2[^>]*>Phone &amp; devices<\/h2>/);
@@ -202,7 +202,7 @@ describe("the Settings window", () => {
   it("decides This app's rows and the account's place from one home: a Cloud page that is the app's home has them live", () => {
     fixture.advanced = true;
     fixture.config = { cloudHome: true };
-    const cloudPage = (home: boolean) => vi.stubGlobal("window", { ogb: { platform: "darwin", workspaces: { state: () => new Promise(() => {}), places: () => new Promise(() => {}) },
+    const cloudPage = (home: boolean) => vi.stubGlobal("window", { cry: { platform: "darwin", workspaces: { state: () => new Promise(() => {}), places: () => new Promise(() => {}) },
       rail: { openComputer: () => Promise.resolve() },
       ...(home ? { home: {}, openAtLogin: { state: () => new Promise(() => {}), set: () => new Promise(() => {}) }, exportDiagnostics: () => Promise.resolve() } : {}) } });
     cloudPage(false);

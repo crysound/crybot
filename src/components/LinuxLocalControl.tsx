@@ -13,10 +13,6 @@ import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { useDesktopCapabilities } from "./DesktopCapabilities";
 
-const LINUX_GUIDE_URL =
-  "https://github.com/milind-soni/OpenMausBot/blob/main/docs/linux-desktop.md#enable-local-control";
-const OMARCHY_DOCS_URL =
-  "https://github.com/milind-soni/OpenMausBot/blob/main/docs/linux-desktop.md#omarchy-hyprland-experimental";
 const CUA_OMARCHY_GUIDE_URL = "https://cua.ai/docs/cua-sdk/guides/omarchy";
 
 export function LinuxLocalControl() {
@@ -35,7 +31,7 @@ export function LinuxLocalControl() {
   const bundledDriver = local.driverSource === "bundled";
 
   const run = async (action: "enable" | "disable" | "retry") => {
-    if (!window.ogb?.localControl) return;
+    if (!window.cry?.localControl) return;
     setPending(action);
     setError(null);
     try {
@@ -46,7 +42,7 @@ export function LinuxLocalControl() {
           return;
         }
       }
-      await window.ogb.localControl[action]();
+      await window.cry.localControl[action]();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
@@ -205,14 +201,6 @@ export function LinuxLocalControl() {
         )}
       </div>}
 
-      <button
-        type="button"
-        onClick={() => window.open(hyprland ? OMARCHY_DOCS_URL : LINUX_GUIDE_URL, "_blank", "noopener,noreferrer")}
-        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[11px] text-ink-secondary hover:bg-raised hover:text-ink"
-      >
-        {capabilities.host.packaged ? t("computer.linux.guide") : t("computer.linux.driverSetup")}{" "}
-        <ExternalLink size={11} />
-      </button>
     </section>
   );
 }

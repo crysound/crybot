@@ -18,7 +18,9 @@ function parse(input: unknown): WidgetRoot {
   if (!parsed.ok) throw new Error(parsed.error);
   return parsed.value;
 }
-const sample = (name: string) => parse(WIDGET_SAMPLES[name]);
+const sample = (name: string) => parse(name === "kitchenSink"
+  ? JSON.parse(JSON.stringify(WIDGET_SAMPLES[name]).replaceAll('"/app-icon-512.png"', '"https://example.test/app-icon-512.png"'))
+  : WIDGET_SAMPLES[name]);
 const row = (root: WidgetRoot): Message => ({ id: "w1", role: "bot", kind: "widget", at: 1, text: "fallback", widget: { v: 1, root } });
 
 const fetchMock = vi.fn<(path: string, init?: RequestInit) => Promise<Response>>();

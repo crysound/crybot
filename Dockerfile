@@ -1,5 +1,5 @@
-# OpenMausBot harness server — hosted/self-hosted tenant image, and the
-# OMB Cloud Pro home machine (docs/cloud-pro.md).
+# CryBot harness server — hosted/self-hosted tenant image, and the
+# CRY Cloud Pro home machine (docs/cloud-pro.md).
 #
 # Build the renderer + the self-contained server bundle, then ship only those
 # artifacts on a slim Node runtime. The runtime stage holds what changes
@@ -11,13 +11,12 @@
 # Caddy in the same network namespace to terminate TLS and authentication at
 # the edge.
 #
-#   docker build -t openmausbot .
-#   docker build --build-arg ENGINES="@anthropic-ai/claude-code @openai/codex" -t openmausbot .
-#   docker build --target cloud-home -t omb-cloud-home .
-#   docker buildx build --platform linux/arm64 -t openmausbot .   # Raspberry Pi 4/5, ARM servers
+#   docker build -t crybot .
+#   docker build --build-arg ENGINES="@anthropic-ai/claude-code @openai/codex" -t crybot .
+#   docker buildx build --platform linux/arm64 -t crybot .   # Raspberry Pi 4/5, ARM servers
 #
 # HOME is the /data volume, so engine CLI logins (~/.claude, ~/.codex, ~/.grok,
-# ...) and OpenMausBot's own state (~/.openmausbot) persist across container
+# ...) and CryBot's own state (~/.crybot) persist across container
 # restarts.
 #
 # A plain `docker run` of either image wants `--init --shm-size=512m`, as the
@@ -49,8 +48,6 @@ RUN npm install -g pnpm@10.33.0
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # every workspace member's manifest must exist before install resolves the lockfile
-COPY apps/docs/package.json ./apps/docs/package.json
-COPY cloudflare/control-plane/package.json ./cloudflare/control-plane/package.json
 # package.json's `prepare` runs during install. The script itself is written to
 # no-op without a .git (it exits 0 here), but node still has to be able to LOAD
 # it, and .dockerignore keeps .git out — so copy it in before install or the
@@ -68,7 +65,7 @@ RUN pnpm build:server && NODE_OPTIONS=--max-old-space-size=6144 pnpm exec vite b
 # (pnpm-workspace.yaml supportedArchitectures).
 ARG TARGETARCH
 RUN arch=x64 && if [ "$TARGETARCH" = arm64 ]; then arch=arm64; fi \
-  && OMB_DUCKDB_ARCH=$arch node scripts/prepare-duckdb.mjs \
+  && CRYBOT_DUCKDB_ARCH=$arch node scripts/prepare-duckdb.mjs \
   && mv "dist-native/duckdb/linux-$arch" dist-native/duckdb/target && chmod -R go-w dist-native/duckdb
 
 FROM node:24-bookworm-slim AS runtime
@@ -85,7 +82,7 @@ RUN apt-get update \
     libatk-bridge2.0-0 libdrm2 libxkbcommon0 libatspi2.0-0 libcups2 \
     libxshmfence1 libgbm1 fonts-noto-color-emoji fonts-noto-cjk fonts-freefont-ttf \
   && rm -rf /var/lib/apt/lists/* \
-  && useradd --create-home --home-dir /data --shell /bin/bash maus
+  && useradd --create-home --home-dir /data --shell /bin/bash bot
 # The bots' browser (docs/plans/browser-engine.md): the pinned agent-browser
 # and a Chrome for Testing with its libraries, so a server bot can browse.
 # Pin here and in server/browser-engine-release.ts together.
@@ -104,9 +101,9 @@ RUN echo "agent-browser ${AGENT_BROWSER_VERSION}, Chrome for Testing ${CHROME_CA
   && npm install -g --cache /tmp/npm-cache agent-browser@${AGENT_BROWSER_VERSION} \
   && if [ "$TARGETARCH" = arm64 ]; then \
        apt-get update && apt-get install -y --no-install-recommends chromium && rm -rf /var/lib/apt/lists/* \
-       && mkdir -p /opt/openmausbot-browser && ln -s /usr/lib/chromium/chromium /opt/openmausbot-browser/chrome; \
-     else HOME=/opt/openmausbot-browser agent-browser install \
-       && ln -s /opt/openmausbot-browser/.agent-browser/browsers/chrome-*/chrome /opt/openmausbot-browser/chrome; \
+       && mkdir -p /opt/crybot-browser && ln -s /usr/lib/chromium/chromium /opt/crybot-browser/chrome; \
+     else HOME=/opt/crybot-browser agent-browser install \
+       && ln -s /opt/crybot-browser/.agent-browser/browsers/chrome-*/chrome /opt/crybot-browser/chrome; \
      fi \
   && native="$(readlink -f "$(command -v agent-browser)")" \
   && case "$native" in */agent-browser/bin/agent-browser-linux-*) ;; *) echo "agent-browser is not a native binary: $native" >&2; exit 1;; esac \
@@ -118,123 +115,32 @@ RUN echo "agent-browser ${AGENT_BROWSER_VERSION}, Chrome for Testing ${CHROME_CA
 # which may be an existing mounted volume. Session state still lives in HOME,
 # which each image sets after its last build step, so no build step writes
 # into what a fresh volume starts with.
-#  OMB_DUCKDB_DIR: the DuckDB binding tree the server requires (no node_modules here).
-ENV AGENT_BROWSER_EXECUTABLE_PATH=/opt/openmausbot-browser/chrome \
-    OMB_DUCKDB_DIR=/app/duckdb \
-    OMB_DATA_DIR=/data/.openmausbot \
-    OMB_STATIC_DIR=/app/dist \
-    OMB_PORT=8799 \
-    OMB_WEBHOOK_PORT=8800 \
+#  CRYBOT_DUCKDB_DIR: the DuckDB binding tree the server requires (no node_modules here).
+ENV AGENT_BROWSER_EXECUTABLE_PATH=/opt/crybot-browser/chrome \
+    CRYBOT_DUCKDB_DIR=/app/duckdb \
+    CRYBOT_DATA_DIR=/data/.crybot \
+    CRYBOT_STATIC_DIR=/app/dist \
+    CRYBOT_PORT=8799 \
+    CRYBOT_WEBHOOK_PORT=8800 \
     NODE_ENV=production
 WORKDIR /app
 
-FROM runtime AS cloud-home
-# Tools bots reach for in their shell on a My Cloud: Python, pdftotext and
-# unzip (about 28 MB unpacked), and the bot box (server/bot-box): bubblewrap
-# runs every bot turn in its own namespaces, socat bridges a box's loopback
-# ports to the server's gates. Their own layer, so the Chrome layers beneath
-# stay cached. pnpm, so a bot's shell can install what its project asks for.
-# uv and uvx, so a connector someone runs with uvx comes along when they move here
-# (server/cloud-connections.ts) as an npx one does: about 32 MB, on every user's
-# PATH and out of the volume. What it downloads lives in the volume's cache.
-ARG UV_VERSION=0.13.4
-ARG TARGETARCH
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 poppler-utils unzip bubblewrap socat \
-  && rm -rf /var/lib/apt/lists/* \
-  && HOME=/tmp/omb-build-home npm install -g pnpm@10.33.0 \
-  && uv_arch=x86_64 && if [ "$TARGETARCH" = arm64 ]; then uv_arch=aarch64; fi \
-  && mkdir -p /tmp/uv-install \
-  && curl -fsSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${uv_arch}-unknown-linux-gnu.tar.gz" | tar -xz -C /tmp/uv-install --strip-components=1 \
-  && install -m 0755 /tmp/uv-install/uv /tmp/uv-install/uvx /usr/local/bin/ \
-  && bwrap --version && socat -V | head -1 && HOME=/tmp/omb-build-home pnpm --version && uv --version | grep -qF "uv ${UV_VERSION}" \
-  && rm -rf /tmp/omb-build-home /tmp/uv-install /tmp/node-compile-cache
-# Caddy and Grok are pinned, so they sit beneath the engines, which change
-# more often.
-COPY --from=edge /caddy /usr/local/bin/caddy
-COPY --from=tunnel /cloudflared /usr/local/bin/cloudflared
-# cloudflared's own user: its token rides its environment, which maus can't read.
-RUN useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin omb-tunnel
-# Grok Build, the grok.com subscription engine: xAI's own installer, pinned to
-# the version the Grok driver is verified against (server/drivers/acp/grok.ts).
-# People sign it in from the app with a device code; its login lands in
-# ~/.grok on the volume. Only the binary goes to /usr/local/bin, on every
-# user's PATH and out of the volume; the installer's PATH links and shell
-# setup stay in a throwaway home that the same step removes. If xAI's
-# installer cannot be reached, the build fails: an image without Grok would
-# offer a sign-in that cannot run. GROK_VERSION= (empty) leaves Grok out on
-# purpose.
-ARG GROK_VERSION=1.0.41
-RUN if [ -n "$GROK_VERSION" ]; then \
-      mkdir -p /tmp/grok-install \
-      && curl -fsSL https://x.ai/cli/install.sh -o /tmp/grok-install/install.sh \
-      && HOME=/tmp/grok-install PATH="/tmp/grok-install/.grok/bin:$PATH" bash /tmp/grok-install/install.sh "$GROK_VERSION" \
-      && install -m 0755 "$(readlink -f /tmp/grok-install/.grok/bin/grok)" /usr/local/bin/grok \
-      && HOME=/tmp/grok-install grok --version | grep -qF "grok $GROK_VERSION " \
-      && rm -rf /tmp/grok-install; \
-    fi
-# Engine CLIs baked into the image (space-separated npm packages). The publish
-# job passes each one's current version, or names only and today's date as
-# ENGINES_CACHE_TAG when it cannot look them up. Build-time CLI caches must
-# not end up in the image or a customer's volume.
-ARG CLOUD_HOME_ENGINES="@anthropic-ai/claude-code @openai/codex"
-ARG ENGINES_CACHE_TAG=""
-RUN echo "engines: ${CLOUD_HOME_ENGINES:-none} ${ENGINES_CACHE_TAG}" \
-  && if [ -n "$CLOUD_HOME_ENGINES" ]; then HOME=/tmp/omb-build-home npm install -g $CLOUD_HOME_ENGINES; fi \
-  && rm -rf /tmp/omb-build-home /tmp/node-compile-cache
-COPY deploy/fly/Caddyfile deploy/fly/Caddyfile.tls deploy/fly/Caddyfile.tunnel deploy/fly/edge-routes.caddy /app/cloud/
-# The root supervisor runs /app's code and hands the server its secrets, so
-# no file there may be one `maus` can change: unlike the server image's, these
-# copies stay root's. Only the /data volume is maus's; the launcher refuses to
-# start otherwise (codeTrustProblem), and this check refuses to build.
-# DuckDB and resvg change on a version bump, not per commit: beneath the app files.
-COPY --from=build /src/dist-native/duckdb/target ./duckdb
-COPY --from=build /src/dist-server ./dist-server
-COPY --from=build /src/dist ./dist
-# The bundled skills (server/skill-library.ts reads ./skills from /app).
-COPY --from=build /src/skills ./skills
-RUN export HOME=/tmp/omb-build-home \
- && chmod go-w /app/cloud /app/cloud/Caddyfile /app/cloud/Caddyfile.tls /app/cloud/Caddyfile.tunnel /app/cloud/edge-routes.caddy \
- && caddy version \
- && cloudflared version \
- && OMB_CLOUD_PUBLIC_HOST=validate.fly.dev caddy validate --config /app/cloud/Caddyfile --adapter caddyfile \
- && OMB_CLOUD_PUBLIC_HOST=validate.example.com OMB_CLOUD_EDGE_STORAGE=/tmp/omb-build-home/edge caddy validate --config /app/cloud/Caddyfile.tls --adapter caddyfile \
- && OMB_CLOUD_PUBLIC_HOST=validate.example.com OMB_CLOUD_EDGE_STORAGE=/tmp/omb-build-home/edge OMB_CLOUD_EDGE_CERT_ISSUERS="$(OMB_CLOUD_EDGE_ACME_EMAIL=validate@example.com node --input-type=module -e 'import { edgeCertIssuers } from "/app/dist-server/cloud-home-start.js"; process.stdout.write(edgeCertIssuers(process.env));')" caddy validate --config /app/cloud/Caddyfile.tls --adapter caddyfile \
- && OMB_CLOUD_PUBLIC_HOST=validate.example.com caddy validate --config /app/cloud/Caddyfile.tunnel --adapter caddyfile \
- && test -f /app/dist-server/cloud-home-start.js \
- && untrusted="$(find /app /usr/local/bin/caddy /usr/local/bin/cloudflared \( ! -user root -o ! -type l -perm /022 \) -print)" \
- && if [ -n "$untrusted" ]; then echo "not root's, or writable by others:" >&2; echo "$untrusted" >&2; exit 1; fi \
- && rm -rf /tmp/omb-build-home
-ENV HOME=/data
-VOLUME ["/data"]
-EXPOSE 8080
-# Fly uses the checks in fly.toml; this one serves a plain `docker run`.
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-  CMD curl -sf http://127.0.0.1:8080/api/health | grep -q openmausbot || exit 1
-# Starts as root: hands a fresh volume to `maus`, runs the server and the edge
-# as `maus`, and hands the server its secrets over a pipe, never an
-# environment `maus` could read (server/cloud-home-start.ts). It runs only
-# root's code from the image, never anything on the volume.
-USER root
-CMD ["node", "/app/dist-server/cloud-home-start.js"]
-
-# The self-hosted server, last so a plain `docker build .` builds it.
 FROM runtime AS server
 # Optional engine CLIs baked into the image (space-separated npm packages).
 ARG ENGINES=""
-RUN if [ -n "$ENGINES" ]; then HOME=/tmp/omb-build-home npm install -g $ENGINES && rm -rf /tmp/omb-build-home /tmp/node-compile-cache; fi
-COPY --from=build --chown=maus:maus /src/dist-native/duckdb/target ./duckdb
-COPY --from=build --chown=maus:maus /src/dist-server ./dist-server
-COPY --from=build --chown=maus:maus /src/dist ./dist
-COPY --from=build --chown=maus:maus /src/skills ./skills
-# `docker compose exec omb openmausbot pair`: the commands the CLI prints start the same way.
-RUN printf '#!/bin/sh\nexec node /app/dist-server/openmausbot.js "$@"\n' > /usr/local/bin/openmausbot && chmod 0755 /usr/local/bin/openmausbot
+RUN if [ -n "$ENGINES" ]; then HOME=/tmp/cry-build-home npm install -g $ENGINES && rm -rf /tmp/cry-build-home /tmp/node-compile-cache; fi
+COPY --from=build --chown=bot:bot /src/dist-native/duckdb/target ./duckdb
+COPY --from=build --chown=bot:bot /src/dist-server ./dist-server
+COPY --from=build --chown=bot:bot /src/dist ./dist
+COPY --from=build --chown=bot:bot /src/skills ./skills
+# `docker compose exec cry crybot pair`: the commands the CLI prints start the same way.
+RUN printf '#!/bin/sh\nexec node /app/dist-server/crybot.js "$@"\n' > /usr/local/bin/crybot && chmod 0755 /usr/local/bin/crybot
 ENV HOME=/data \
-    OMB_CLI_PREFIX="docker compose exec omb openmausbot"
+    CRYBOT_CLI_PREFIX="docker compose exec cry crybot"
 VOLUME ["/data"]
-USER maus
+USER bot
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -sf http://127.0.0.1:8799/api/health | grep -q openmausbot || exit 1
+  CMD curl -sf http://127.0.0.1:8799/api/health | grep -q crybot || exit 1
 # The launcher runs dist-server/index.js and starts it again when it asks to
 # (a copied workspace committing, server/restart.ts), so the container, and a
 # Caddy sharing its network, stays up through that restart.

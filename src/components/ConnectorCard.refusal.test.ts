@@ -16,7 +16,7 @@ vi.mock("@/state/store", () => ({
 import { ConnectorCard } from "./ConnectorCard";
 
 const SENTENCE = "Finish this sign-in in Apps → MCP servers.";
-const AUTH_URL = "https://mcp.linear.app/authorize?client_id=maus&state=s3cr3t";
+const AUTH_URL = "https://mcp.linear.app/authorize?client_id=bot&state=s3cr3t";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -40,7 +40,7 @@ const links = () => [...host.querySelectorAll("a")].map((link) => link.getAttrib
 
 beforeEach(() => {
   setLocale("en");
-  (window as { ogb?: unknown }).ogb = { openExternal: fixture.openExternal };
+  (window as { cry?: unknown }).cry = { openExternal: fixture.openExternal };
   fixture.api.mockRejectedValue(new ApiError(SENTENCE, 409, { error: SENTENCE, url: AUTH_URL }));
   host = document.createElement("div");
   document.body.append(host);
@@ -49,7 +49,7 @@ beforeEach(() => {
 afterEach(() => {
   flushSync(() => root.unmount());
   host.remove();
-  delete (window as { ogb?: unknown }).ogb;
+  delete (window as { cry?: unknown }).cry;
   vi.clearAllMocks();
 });
 

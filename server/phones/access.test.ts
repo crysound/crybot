@@ -7,7 +7,7 @@ const scout: PhoneBot = { id: "s", name: "Scout" };
 const none: PhoneBot = { id: "n", name: "Nobody", phoneApps: {} };
 const reader: PhoneBot = { id: "r", name: "Reader", phoneApps: { calendar: "read" } };
 const onPhone = { calendar: "full", contacts: "limited" };
-const iphone = [{ name: "Omkar's iPhone", platform: "ios" as const, capabilities: onPhone }];
+const iphone = [{ name: "User's iPhone", platform: "ios" as const, capabilities: onPhone }];
 
 describe("phoneAccess", () => {
   it("every bot gets every app the phone allows by default; an explicit grant wins", () => {
@@ -27,7 +27,7 @@ describe("phoneAccess", () => {
     expect(phoneAccess(reader, onPhone, "PHONE_LIST_EVENTS").ok).toBe(true);
   });
   it("the prompt names the phone and its apps, the same for the Chief and any other bot", () => {
-    expect(phoneSystemPrompt(chief, iphone)).toContain("Omkar's iPhone is an iPhone; this bot may use: Calendar, Contacts.");
+    expect(phoneSystemPrompt(chief, iphone)).toContain("User's iPhone is an iPhone; this bot may use: Calendar, Contacts.");
     expect(phoneSystemPrompt(scout, iphone)).toBe(phoneSystemPrompt(chief, iphone));
     expect(phoneSystemPrompt(none, iphone)).toBe("");
   });
@@ -43,11 +43,11 @@ describe("phoneAccess", () => {
   });
 
   it("when this conversation may not use the phone, the bot hears that it exists and how to reach it, not nothing", () => {
-    const text = phoneWithheldPrompt(chief, [{ name: "Omkar's iPhone", platform: "ios" }]);
-    expect(text).toContain("Omkar's iPhone");
+    const text = phoneWithheldPrompt(chief, [{ name: "User's iPhone", platform: "ios" }]);
+    expect(text).toContain("User's iPhone");
     expect(text).toMatch(/new conversation/);
     expect(text).toMatch(/USB/);
-    expect(phoneWithheldPrompt(none, [{ name: "Omkar's iPhone", platform: "ios" }])).toBe("");
+    expect(phoneWithheldPrompt(none, [{ name: "User's iPhone", platform: "ios" }])).toBe("");
     expect(phoneWithheldPrompt(chief, [])).toBe("");
   });
 });

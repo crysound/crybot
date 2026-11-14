@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from "react";
 import type { OnboardingStatus, WelcomeViewer } from "@/lib/onboarding";
 
-const KEY = "omb.cloudIntent.pending";
-const SENT_KEY = "omb.cloudIntent.sent";
+const KEY = "cry.cloudIntent.pending";
+const SENT_KEY = "cry.cloudIntent.sent";
 
 export interface SentIntent { botId: string; at: number }
 

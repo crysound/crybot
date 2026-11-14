@@ -6,7 +6,7 @@ import { dirname, isAbsolute, join, relative, resolve as resolvePath, sep } from
 import { ATTACHMENTS_DIR } from "../../attachments.ts";
 import { cloudHomeConfigured } from "../../cloud-home.ts";
 import { DATA_DIR, OPENCODE_PROVIDER_ENV } from "../../config.ts";
-import { hostedWorkspaceConfigured } from "../../enterprise.ts";
+import { hostedWorkspaceConfigured } from "../../workspace-access.ts";
 import { decodeInjectId, hostApiKey, localHost, mergeLocalInject } from "../local-inject.ts";
 import { applyStandaloneSpawnEnv } from "../../engine-install.ts";
 import { OPENCODE_STANDALONE } from "./opencode-release.ts";
@@ -480,12 +480,12 @@ function withinFolder(path: string, folder: string): boolean {
 }
 
 /** A bot's shared or private folder: bots wrote everything there, so none of it may become OpenCode configuration. */
-export function openMausOwnsWorkingFolder(cwd: string): boolean {
+export function openBotOwnsWorkingFolder(cwd: string): boolean {
   return [join(DATA_DIR, "workspaces"), join(DATA_DIR, "task-workspaces")].some((root) =>
     withinFolder(cwd, root) && resolvePath(cwd) !== resolvePath(root));
 }
 
-/** OpenMaus folders an OpenCode bot may use without an approval card: attachments and its own shared folder.
+/** CryBot folders an OpenCode bot may use without an approval card: attachments and its own shared folder.
  * Never one at or above the working folder: OpenCode reads opencode.json, .opencode/ and AGENTS.md from
  * every folder above it, so a planted file would configure later conversations. Known risk: the folder
  * rule covers writes too, so a bot can change or delete files in the attachments folder. */
@@ -700,7 +700,7 @@ const support = (
   },
   spawnFingerprint: (env, config) => openCodeSpawnFingerprint(env, config.cli),
   applyTurnEnv: (env, { fullAuto, botId, cwd }) => {
-    if (openMausOwnsWorkingFolder(cwd)) env.OPENCODE_DISABLE_PROJECT_CONFIG = "1";
+    if (openBotOwnsWorkingFolder(cwd)) env.OPENCODE_DISABLE_PROJECT_CONFIG = "1";
     if (!fullAuto) {
       allowOwnedDirectories(env, botId, cwd);
       return;

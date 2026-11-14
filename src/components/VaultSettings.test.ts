@@ -137,7 +137,7 @@ describe("Settings → Vault: logins", () => {
   });
 
   it("connects 1Password with a masked token it then forgets, lists its logins read-only, and disconnects", async () => {
-    const on = { connected: true, vaults: [{ id: "v1", title: "Shared with OMB", items: 1, bots: "all" }], items: 1 };
+    const on = { connected: true, vaults: [{ id: "v1", title: "Shared with CRY", items: 1, bots: "all" }], items: 1 };
     fixture.api
       .mockResolvedValueOnce({ logins: [], onePassword: OFF })
       .mockResolvedValueOnce({ onePassword: on })
@@ -154,7 +154,7 @@ describe("Settings → Vault: logins", () => {
     await act(async () => inDialog("Connect 1Password").click());
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
     expect(fixture.api).toHaveBeenNthCalledWith(2, "/api/logins/1password", { method: "POST", body: JSON.stringify({ token: "ops_fake-typed-token" }) });
-    expect(host.querySelector("[data-onepassword]")!.textContent).toContain("Connected to Shared with OMB · 1 logins, keys and secrets");
+    expect(host.querySelector("[data-onepassword]")!.textContent).toContain("Connected to Shared with CRY · 1 logins, keys and secrets");
     expect(host.innerHTML).not.toContain("ops_fake-typed-token");
     const row = host.querySelector('[data-login-row="example.com"]')!;
     expect(row.textContent).toContain("From 1Password · All bots");
@@ -167,7 +167,7 @@ describe("Settings → Vault: logins", () => {
   });
 
   it("keeps a 1Password vault to the bots chosen for it, on the same screen", async () => {
-    const vault = { id: "v1", title: "Shared with OMB", items: 2, bots: "all" };
+    const vault = { id: "v1", title: "Shared with CRY", items: 2, bots: "all" };
     const on = { connected: true, vaults: [vault], items: 2 };
     const narrowed = { ...on, vaults: [{ ...vault, bots: ["quill"] }] };
     fixture.api
@@ -175,9 +175,9 @@ describe("Settings → Vault: logins", () => {
       .mockResolvedValueOnce({ onePassword: narrowed })
       .mockResolvedValueOnce({ logins: [{ ...VAULT_LOGIN, bots: ["quill"] }], onePassword: narrowed });
     await render();
-    const row = () => host.querySelector('[data-vault="Shared with OMB"]')!;
+    const row = () => host.querySelector('[data-vault="Shared with CRY"]')!;
     expect(row().textContent).toContain("2 website logins · All bots");
-    await click("Change who can use Shared with OMB");
+    await click("Change who can use Shared with CRY");
     await act(async () => { [...row().querySelectorAll<HTMLInputElement>('input[type="radio"]')][1]!.click(); });
     await act(async () => { [...row().querySelectorAll<HTMLInputElement>('input[type="checkbox"]')][1]!.click(); });
     await click("Save changes");
@@ -188,7 +188,7 @@ describe("Settings → Vault: logins", () => {
   });
 
   it("keeps one 1Password item to its own bots ahead of its vault's, and hands it back to the vault's choice", async () => {
-    const on = { connected: true, vaults: [{ id: "v1", title: "Shared with OMB", items: 1, bots: "all" }], items: 1 };
+    const on = { connected: true, vaults: [{ id: "v1", title: "Shared with CRY", items: 1, bots: "all" }], items: 1 };
     const follows = { ...VAULT_LOGIN, onePassword: { item: "v1:i1", ownBots: false } };
     const own = { ...VAULT_LOGIN, bots: ["quill"], onePassword: { item: "v1:i1", ownBots: true } };
     fixture.api
@@ -354,11 +354,11 @@ describe("Settings → Vault: keys and secrets", () => {
 });
 
 describe("Settings → Vault with My Cloud", () => {
-  afterEach(() => { delete (window as { ogb?: unknown }).ogb; });
+  afterEach(() => { delete (window as { cry?: unknown }).cry; });
   const where = (site: string) => host.querySelector(`[data-login-row="${site}"] [data-login-where]`)?.textContent;
 
   it("without My Cloud says nothing of sides; on My Cloud itself says its logins are its own and sends nothing", async () => {
-    (window as { ogb?: unknown }).ogb = { cloudLogins: { state: vi.fn().mockResolvedValue({ cloud: null }), send: vi.fn() } };
+    (window as { cry?: unknown }).cry = { cloudLogins: { state: vi.fn().mockResolvedValue({ cloud: null }), send: vi.fn() } };
     fixture.api.mockResolvedValueOnce({ logins: [SHARED_LOGIN], onePassword: OFF });
     await render();
     expect(host.querySelector("[data-logins-sides]")).toBeNull();
@@ -366,7 +366,7 @@ describe("Settings → Vault with My Cloud", () => {
     expect(where("example.org")).toBeUndefined();
     act(() => root.unmount());
     root = createRoot(host);
-    delete (window as { ogb?: unknown }).ogb;
+    delete (window as { cry?: unknown }).cry;
     fixture.config = { cloudHome: true };
     fixture.api.mockResolvedValueOnce({ logins: [SHARED_LOGIN], onePassword: OFF });
     await render();

@@ -21,7 +21,7 @@ const createRoutineOperation = {
     name: "Backlog review",
     instructions: "Review every item in the backlog.",
     schedule: { type: "daily" as const, time: "09:00", weekdays: [1, 2, 3, 4, 5] },
-    runOn: "maus" as const,
+    runOn: "bot" as const,
     durationMinutes: 30,
   },
 };
@@ -470,7 +470,7 @@ describe("ApprovalCard tool-call kinds", () => {
       ["think", "think"],
       ["other", "take an action"],
       ["tool", "use a tool"],
-      ["mcp__ogb__computer_batch", "computer batch"],
+      ["mcp__cry__computer_batch", "computer batch"],
     ];
     for (const [tool, phrase] of cases) {
       const html = renderToStaticMarkup(createElement(ApprovalCard, { bot, message: kindMessage(tool) }));
@@ -481,9 +481,9 @@ describe("ApprovalCard tool-call kinds", () => {
   it("names the custom MCP server a tool comes from, and stays quiet about the app's own servers", () => {
     const html = renderToStaticMarkup(createElement(ApprovalCard, { bot, message: kindMessage("mcp__github__create_issue") }));
     expect(html).toContain("Scout wants to github · create issue");
-    const own = renderToStaticMarkup(createElement(ApprovalCard, { bot, message: kindMessage("mcp__ogb__computer_batch") }));
+    const own = renderToStaticMarkup(createElement(ApprovalCard, { bot, message: kindMessage("mcp__cry__computer_batch") }));
     expect(own).toContain("Scout wants to computer batch");
-    expect(own).not.toContain("ogb");
+    expect(own).not.toContain("cry");
     const underscored = renderToStaticMarkup(createElement(ApprovalCard, { bot, message: kindMessage("mcp__my_server__create_issue") }));
     expect(underscored).toContain("Scout wants to my_server · create issue");
     const email = renderToStaticMarkup(createElement(ApprovalCard, { bot, message: kindMessage("mcp__email__EMAIL_SEND_MESSAGE") }));

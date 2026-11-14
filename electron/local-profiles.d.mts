@@ -22,7 +22,7 @@ export interface ProfileRegistry {
 }
 export function createProfileRegistry(deps: { dataDir(): string; fs?: typeof import("node:fs"); now?(): number; random?(): string }): ProfileRegistry;
 
-/** A workspace as the rail lists it (cloud-rail.mjs railPlaces `profiles`). */
+/** A workspace as the rail lists it (rail.mjs railPlaces `profiles`). */
 export interface ProfileRow { id: string; name: string | null; color: string | null; swatch: CloudSwatch | null; active?: true; settling?: string }
 
 export interface LocalProfiles {

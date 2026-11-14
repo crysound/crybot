@@ -16,7 +16,6 @@ import {
   MET_CHIEF_HINT,
   onboardingCloudOffered,
   ONBOARDING_CLOUD_HINT,
-  organisationSignIn,
   resumeBeat,
   showWelcome,
   welcomeOnScreen,
@@ -101,7 +100,7 @@ describe("welcomeViewer", () => {
   });
 });
 
-describe("first run on an OMB Cloud home", () => {
+describe("first run on an CRY Cloud home", () => {
   const connected = welcomeViewer({ kind: "session", scopes: ["admin", "client"], via: "cookie", cloudHome: true });
   const engine = (id: string, authenticated: boolean | undefined, state = "available") => ({ id, state, authenticated });
   const ready = (instance: ReturnType<typeof engine>) => instance.state === "available" && instance.authenticated !== false;
@@ -131,17 +130,6 @@ describe("first run on an OMB Cloud home", () => {
 });
 
 describe("organisation sign-in in the engines beat", () => {
-  const bridge = { begin: () => {} };
-
-  it("is offered only by the packaged local desktop", () => {
-    expect(organisationSignIn({ organization: bridge }, { hosted: false })).toBe(bridge);
-    expect(organisationSignIn(undefined, { hosted: false })).toBeUndefined();
-    expect(organisationSignIn({}, { hosted: false })).toBeUndefined();
-    expect(organisationSignIn({ organization: bridge, remoteClient: { active: true } }, { hosted: false })).toBeUndefined();
-    expect(organisationSignIn({ organization: bridge }, { hosted: true })).toBeUndefined();
-    expect(organisationSignIn({ organization: bridge, remoteClient: { active: false } }, { hosted: false })).toBe(bridge);
-  });
-
   it("counts the models the organisation approved", () => {
     expect(companyModelCount(null)).toBe(0);
     expect(companyModelCount({})).toBe(0);

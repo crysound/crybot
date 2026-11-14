@@ -46,9 +46,9 @@ const { desktopCapabilities } = createRequire(import.meta.url)("../../electron/c
 };
 const PRELOAD = readFileSync(join(process.cwd(), "electron", "preload.cjs"), "utf8");
 const LOCAL_ORIGIN = "http://127.0.0.1:8799";
-const CLOUD_ORIGIN = "https://omb-t-0123456789ab.fly.dev";
+const CLOUD_ORIGIN = "https://cry-t-0123456789ab.example.test";
 
-type Bridge = NonNullable<Window["ogb"]>;
+type Bridge = NonNullable<Window["cry"]>;
 type Platform = "darwin" | "win32" | "linux";
 let invoked: Array<{ channel: string; args: unknown[] }>;
 let pageMic: "allowed" | "refused" | undefined;
@@ -58,7 +58,7 @@ let microphone: "allowed" | "refused";
 function desktopApp(platform: Platform, page: "this-computer" | "my-cloud"): { bridge: Bridge; desktop: Desktop } {
   let bridge: Bridge | undefined;
   runInNewContext(PRELOAD, {
-    process: { platform, argv: [`--omb-local-origin=${LOCAL_ORIGIN}`] },
+    process: { platform, argv: [`--cry-local-origin=${LOCAL_ORIGIN}`] },
     location: { origin: page === "this-computer" ? LOCAL_ORIGIN : CLOUD_ORIGIN },
     TextEncoder,
     localStorage: { getItem: () => null },
@@ -82,7 +82,7 @@ async function answer(channel: string, args: unknown[]): Promise<unknown> {
   return undefined;
 }
 function open(app: { bridge: Bridge; desktop: Desktop }) {
-  (window as { ogb?: Bridge }).ogb = app.bridge;
+  (window as { cry?: Bridge }).cry = app.bridge;
   fixture.desktop = app.desktop;
   cacheDesktopCapabilities(app.desktop.capabilities);
 }
@@ -200,7 +200,7 @@ beforeEach(() => {
   setCallMode("turns");
   stored.clear();
   fixture.desktop = null;
-  delete (window as { ogb?: Bridge }).ogb;
+  delete (window as { cry?: Bridge }).cry;
   cacheDesktopCapabilities(initialDesktopCapabilities());
   requests = [];
   invoked = [];
@@ -233,7 +233,7 @@ afterEach(() => {
   endCall();
   setCallMode("turns");
   fixture.desktop = null;
-  delete (window as { ogb?: Bridge }).ogb;
+  delete (window as { cry?: Bridge }).cry;
   vi.unstubAllGlobals();
 });
 
@@ -301,7 +301,7 @@ describe("calling a bot off the Mac", () => {
     expect(globalThis.navigator.mediaDevices).toBeUndefined();
     chat(SERVER);
     press(callButton());
-    await vi.waitFor(() => expect(text()).toContain("Live calls need a microphone, and this window can't use one. Open MausBot at a secure https address to make the call."));
+    await vi.waitFor(() => expect(text()).toContain("Live calls need a microphone, and this window can't use one. Open Cry Bot at a secure https address to make the call."));
     expect(text()).not.toContain("WebRTC");
     expect(text()).not.toContain(KEY_NEEDED);
     expect(requests.filter((request) => request.method !== "GET")).toEqual([]);

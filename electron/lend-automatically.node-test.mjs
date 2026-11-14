@@ -16,7 +16,7 @@ import { actingBot, createLendingIndicator, indicatorText } from "./lending-indi
 import { createLendingTarget } from "./lending-target.mjs";
 import { WORDS } from "./lending-words.mjs";
 
-const HOME = "https://omb-u-fixture.fly.dev", OTHER = "https://omb-c-client-a.fly.dev", TEAM = "https://omb-t-acme.fly.dev";
+const HOME = "https://cry-u-fixture.example.test", OTHER = "https://cry-c-client-a.example.test", TEAM = "https://cry-t-acme.example.test";
 const myCloud = { id: "my-cloud", name: "My Cloud", origin: HOME, home: true };
 const clientA = { id: "client-a", name: "Client A", origin: OTHER, cloud: { id: "c-a", role: "owner" } };
 const acme = { id: "acme", name: "Acme team", origin: TEAM, team: { id: "t-acme", role: "owner" } };
@@ -28,7 +28,7 @@ const until = async (check, what, ms = 5000) => {
 };
 
 async function scratch(t) {
-  const dir = await realpath(await mkdtemp(path.join(tmpdir(), "omb-lend-automatically-")));
+  const dir = await realpath(await mkdtemp(path.join(tmpdir(), "cry-lend-automatically-")));
   t.after(() => rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }));
   return dir;
 }
@@ -42,7 +42,7 @@ function cloudHome({ link = true, chrome = true } = {}) {
     state.calls++;
     const route = new URL(url).pathname;
     if (route === "/api/auth/session") return json({ kind: "session", id: state.sessionId, scopes: ["admin", "client"], cloudHome: true });
-    if (route === "/.well-known/openmausbot/environment") return json({ environmentId: state.environmentId, capabilities: { sharedComputers: true, lendingDetails: true, ...(link ? { deviceLink: true } : {}), ...(chrome ? { myChromeLink: true } : {}) } });
+    if (route === "/.well-known/crybot/environment") return json({ environmentId: state.environmentId, capabilities: { sharedComputers: true, lendingDetails: true, ...(link ? { deviceLink: true } : {}), ...(chrome ? { myChromeLink: true } : {}) } });
     const body = init?.body ? JSON.parse(init.body) : {};
     if (route === "/api/shared-computers/connect") { state.connects.push(body); return json({ ok: true }); }
     if (route.endsWith("/poll")) {
@@ -59,7 +59,7 @@ function cloudHome({ link = true, chrome = true } = {}) {
   return state;
 }
 
-/** The verified session as cloud-account.mjs answers it: My Cloud, Client A of the person's own, and a Team Cloud. */
+/** The verified session as account.mjs answers it: My Cloud, Client A of the person's own, and a Team Cloud. */
 function session() {
   let state = { status: "connected", account: { id: "acct_1" }, machine: { status: "ready", origin: HOME }, clouds: [
     { id: "c-home", origin: HOME, teamId: null, role: "owner", primary: true },
@@ -480,7 +480,7 @@ test("through the home folder, keys, passwords, sign-ins and git secrets stay pr
 test("a Cloud's bot needing apps and screen on a Mac that lacks only macOS's permissions asks macOS for them, and says how to allow them", async t => {
   const homes = { [HOME]: cloudHome() };
   const asked = [];
-  const missing = { mode: "unavailable", reason: "Error: Accessibility and Screen Recording required; grant access in System Settings and restart OpenMausBot" };
+  const missing = { mode: "unavailable", reason: "Error: Accessibility and Screen Recording required; grant access in System Settings and restart Cry Bot" };
   const mac = await computer(t, { homes, places: [myCloud], screen: () => true, cuaConnection: async () => missing, askForScreen: connection => asked.push(connection) });
   mac.sharing.start();
   await until(() => homes[HOME].connects.length === 1, "lending to start");
@@ -488,7 +488,7 @@ test("a Cloud's bot needing apps and screen on a Mac that lacks only macOS's per
   homes[HOME].push({ action: "computer_tools" });
   await until(() => homes[HOME].results.length === 1, "the answer");
   assert.deepEqual(asked, [missing]);
-  assert.match(homes[HOME].results[0].content[0].text, /allow Accessibility and Screen Recording for OpenMausBot in System Settings/);
+  assert.match(homes[HOME].results[0].content[0].text, /allow Accessibility and Screen Recording for Cry Bot in System Settings/);
 });
 
 test("the move's project folders are lent to My Cloud with editing on top; while paused the move is told to try later", async t => {
@@ -560,7 +560,7 @@ test("the menu names each bot using this Mac with its colour dot; See activity i
   bot.click();
   assert.deepEqual(clicked, ["activity"]);
   assert.equal(trays[0].title, "IT Support and Client A are using this Mac");
-  assert.equal(trays[0].tip, "OpenMausBot: IT Support on My Cloud is using this Mac. Client A is using this Mac");
+  assert.equal(trays[0].tip, "Cry Bot: IT Support on My Cloud is using this Mac. Client A is using this Mac");
   indicator.update({ clouds: ["My Cloud"], using: ["My Cloud"], bots: [{ name: "Helper", color: null, cloud: "My Cloud" }] });
   assert.deepEqual([labels()[0], trays[0].menu[0].icon], ["Helper on My Cloud is using this Mac", undefined], "no dot for a colour this app doesn't know");
   indicator.update({ clouds: ["My Cloud"], using: ["My Cloud"], bots: [{ name: "Helper", color: "red", cloud: "My Cloud" }], paused: true });
@@ -588,7 +588,7 @@ test("the menu-bar item: which Clouds are using this Mac, Pause or Resume, the t
   assert.equal(trays.length, 1);
   assert.deepEqual(labels(), ["Client A is using this Mac", "-", "Pause", "Let Clouds run commands on this Mac", "See activity"]);
   assert.equal(trays[0].title, "Client A is using this Mac");
-  assert.equal(trays[0].tip, "OpenMausBot: Client A is using this Mac");
+  assert.equal(trays[0].tip, "Cry Bot: Client A is using this Mac");
   trays[0].menu.find(item => item.label === "Pause").click();
   trays[0].menu.find(item => item.label === "See activity").click();
   indicator.update({ clouds: ["My Cloud"], using: [], paused: true });

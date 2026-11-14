@@ -121,7 +121,7 @@ beforeEach(() => {
   fixture.startCall.mockClear();
   fixture.endCall.mockClear();
   fixture.track.mockClear();
-  vi.stubGlobal("window", { ogb: { speechStart: () => {} } });
+  vi.stubGlobal("window", { cry: { speechStart: () => {} } });
 });
 afterEach(() => {
   resetLiveMedia();
@@ -172,7 +172,6 @@ describe("setting up a voice from the call button", () => {
     expect(fixture.dialog!.ready).toBe(true);
 
     (fixture.dialog!.onStartCall as () => void)();
-    expect(fixture.track).toHaveBeenCalledWith("call_started", { driver: "codex", mode: "turns" });
     expect(fixture.startCall).toHaveBeenCalledWith("pepper");
     expect(render().html).not.toContain("data-voice-setup-stub");
   });
@@ -184,7 +183,7 @@ describe("setting up a voice from the call button", () => {
       voices: [undefined, undefined],
       setupBotId: "pepper",
       requireExplicitVoices: true,
-      onStart: () => fixture.track("group_call_started", { memberCount: 2 }),
+      onStart: vi.fn(),
     };
     fixture.config = { tts: { configured: true, ready: true } };
     const opened = openVoiceSetup(room);
@@ -201,12 +200,11 @@ describe("setting up a voice from the call button", () => {
     render(room);
     expect(fixture.dialog).toMatchObject({ bot: basil, ready: true });
     (fixture.dialog!.onStartCall as () => void)();
-    expect(fixture.track).toHaveBeenCalledWith("group_call_started", { memberCount: 2 });
     expect(fixture.startCall).toHaveBeenCalledWith("room-1");
   });
 
   it("opens the remote agent settings instead on a desktop paired to another computer", () => {
-    vi.stubGlobal("window", { ogb: { speechStart: () => {}, remoteClient: { active: true } } });
+    vi.stubGlobal("window", { cry: { speechStart: () => {}, remoteClient: { active: true } } });
     fixture.config = { tts: { configured: true, ready: false } };
     click(find(render(), "data-call-button"));
     const help = render();
@@ -223,7 +221,7 @@ describe("setting up a voice from the call button", () => {
   });
 
   it("opens the member's chat first from a room on a paired desktop", () => {
-    vi.stubGlobal("window", { ogb: { speechStart: () => {}, remoteClient: { active: true } } });
+    vi.stubGlobal("window", { cry: { speechStart: () => {}, remoteClient: { active: true } } });
     fixture.config = { tts: { configured: true, ready: true } };
     const room: Props = {
       targetId: "room-1",
@@ -243,7 +241,7 @@ describe("setting up a voice from the call button", () => {
   });
 
   it("opens the member's chat as its row does with threads hidden: at its main thread", () => {
-    vi.stubGlobal("window", { ogb: { speechStart: () => {}, remoteClient: { active: true } } });
+    vi.stubGlobal("window", { cry: { speechStart: () => {}, remoteClient: { active: true } } });
     fixture.config = { tts: { configured: true, ready: true } };
     fixture.showThreads = false;
     fixture.bots = [{ ...pepper, mainThreadId: "main", tasks: [{ threadId: "t", title: "Report", createdAt: 1 }, { threadId: "main", title: "Chat", createdAt: 2 }] }, basil];
@@ -270,7 +268,6 @@ describe("setting up a voice from the call button", () => {
     click(find(render(), "data-call-button"));
     expect(getUserMedia).toHaveBeenCalledTimes(1);
     expect(liveMedia()).toMatchObject({ phase: "starting", botId: "pepper", threadId: "t" });
-    expect(fixture.track).toHaveBeenCalledWith("call_started", { driver: "codex", mode: "live" });
     const after = render();
     expect(after.html).not.toContain("Set up voice");
     expect(after.html).not.toContain("Call unavailable");

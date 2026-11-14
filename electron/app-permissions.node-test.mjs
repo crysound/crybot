@@ -3,8 +3,6 @@ import test from "node:test";
 
 import { readFileSync } from "node:fs";
 import { appPermissionAllowed, appPermissionHandlers, emailDraftUrl, externalLinkUrl, externalWebUrl, remoteClipboardWriteAllowed } from "./app-permissions.mjs";
-import { boatClaimMailto } from "../src/lib/boat-offer.ts";
-import { cloudPlanSnapshot, createCloudAccountClient } from "./cloud-account.mjs";
 import { myCloudOrigin, rememberedCloudHome } from "./cloud-home.mjs";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:5199";
@@ -96,9 +94,6 @@ test("an email link opens only as a draft to one address with a subject and a bo
     assert.throws(() => externalLinkUrl(url), /web address/);
 });
 
-test("the app's claim to Boat opens exactly as the app drafts it", () => {
-  assert.equal(externalLinkUrl(boatClaimMailto()), boatClaimMailto());
-});
 
 test("both external-link entry points use the policy and IPC retains the local-origin gate", () => {
   const main = readFileSync(new URL("./main.mjs", import.meta.url), "utf8");
@@ -120,7 +115,7 @@ test("fails closed on unparsable or opaque origins", () => {
   assert.equal(appPermissionAllowed("notifications", "javascript:alert(1)", LOCAL_ORIGIN), false);
 });
 
-const CLOUD = "https://omb-u-0123456789ab.fly.dev";
+const CLOUD = "https://cry-u-0123456789ab.example.test";
 function cloudFixture({ home = CLOUD } = {}) {
   const main = { getURL: () => `${CLOUD}/chat?botId=bot-1` };
   const state = { home, main, remote: false };
@@ -176,7 +171,7 @@ test("the Cloud's microphone is decided by this computer's media rule, never a c
 test("a server that is not the verified Cloud never hears the microphone", () => {
   const { state, ask, check } = cloudFixture();
   const mic = { isMainFrame: true, mediaTypes: ["audio"] };
-  for (const other of ["https://my-vps.example.com", "http://omb-u-0123456789ab.fly.dev", "https://omb-u-0123456789ab.fly.dev:8443", "https://evil.fly.dev"]) {
+  for (const other of ["https://my-vps.example.com", "http://cry-u-0123456789ab.example.test", "https://cry-u-0123456789ab.example.test:8443", "https://evil.example.test"]) {
     assert.equal(ask("media", { ...mic, requestingUrl: `${other}/chat` }), false, other);
     assert.equal(check("media", other, { isMainFrame: true, mediaType: "audio" }), false, other);
   }
@@ -206,7 +201,7 @@ test("the verified Cloud open in this window may write the clipboard, by the rem
   assert.equal(ask(write, onCloud({ isMainFrame: false })), false, "a subframe");
   assert.equal(check(write, CLOUD, { isMainFrame: false }), false, "a subframe");
   assert.equal(check(write, CLOUD, {}), false, "no frame information");
-  for (const other of ["https://my-vps.example.com", "http://omb-u-0123456789ab.fly.dev", "https://omb-u-0123456789ab.fly.dev:8443", "https://evil.fly.dev"]) {
+  for (const other of ["https://my-vps.example.com", "http://cry-u-0123456789ab.example.test", "https://cry-u-0123456789ab.example.test:8443", "https://evil.example.test"]) {
     assert.equal(ask(write, { requestingUrl: `${other}/chat`, isMainFrame: true }), false, other);
     assert.equal(check(write, other, { isMainFrame: true }), false, other);
   }
@@ -258,7 +253,7 @@ test("this computer's own page keeps its permissions through the same handlers",
   assert.equal(check("clipboard-read", "https://other.example", { isMainFrame: true }, local), false);
 });
 
-test("the app installs these handlers, with its one rule for My Cloud and a wait for the saved sign-in", () => {
+test("the app installs these handlers with its one origin rule and hosted sign-in disabled", () => {
   const main = readFileSync(new URL("./main.mjs", import.meta.url), "utf8").replace(/\r\n/g, "\n");
   assert.match(main, /setPermissionRequestHandler\(appPermissions\.request\)/);
   assert.match(main, /setPermissionCheckHandler\(appPermissions\.check\)/);
@@ -273,32 +268,32 @@ test("the app installs these handlers, with its one rule for My Cloud and a wait
   assert.match(main, /cloudPageSenderAllowed\(event, \{ contents, homeOrigin: myCloud\(\),/);
   assert.doesNotMatch(main, /rememberedHome\??\.accountId/);
   assert.doesNotMatch(main, /remembered: true/);
-  assert.match(main, /cloudAccountRestoring = true;\n\s+cloudAccountStarted = ensureCloudAccount\(\)\.start\(\)\.catch\(\(\) => \{\}\)\.then\(\(\) => accountRing\(\)\?\.start\(\)\)\.finally\(\(\) => \{ cloudAccountRestoring = false; \}\);/);
+  assert.match(main, /const cloudAccountStarted = Promise.resolve\(\);/);
 });
 
-const ADMIN = "http://127.0.0.1:9";
 const ACCOUNT = { id: "account-1", email: "person@example.test" };
 function myCloudFixture() {
   const f = { now: 1_800_000_000_000, remembered: null, remoteAccess: null, restoring: null, admin: "ready", answers: [] };
-  const identity = () => ({ cloudContractVersion: 1, expiresAt: f.now + 86_400_000, device: { id: "device-1" }, account: ACCOUNT });
-  f.saved = { origin: ADMIN, token: `omc_${"T".repeat(43)}`, ...identity() };
-  delete f.saved.cloudContractVersion;
-  // `f.cloud`: the machine OpenMausBot Cloud names for this account (null: none).
+  f.saved = { account: ACCOUNT, expiresAt: f.now + 86_400_000 };
   f.cloud = { state: "ready", origin: CLOUD };
-  const session = () => ({ ...identity(), cloud: f.cloud,
-    entitlement: { plan: "pro", tier: "pro", status: "active", expiresAt: f.now + 30 * 86_400_000, version: 1 } });
-  // OpenMausBot Cloud answers now ("ready"), later (a promise the test releases), never ("down"), or with the sign-in ended ("ended").
-  const fetch = async (url, { method = "GET" } = {}) => {
-    if (!url.endsWith("/api/cloud/desktop/session")) return new Response(JSON.stringify({ error: "not_found" }), { status: 404 });
-    if (method === "DELETE") return Response.json({ revoked: true });
-    if (f.admin === "down") throw new TypeError("fetch failed");
-    if (f.admin === "ended") return new Response(JSON.stringify({ error: "invalid_token" }), { status: 401 });
-    if (f.admin !== "ready") await f.admin;
-    return Response.json(session());
+  let state = { status: "signed-out" }, verified = null;
+  const publish = next => { state = next; f.remembered = rememberedCloudHome(f.remembered, state); };
+  const refresh = async () => {
+    verified = null;
+    if (!f.saved) { publish({ status: "signed-out" }); return; }
+    const identity = { account: f.saved.account, expiresAt: f.saved.expiresAt };
+    if (f.admin === "down") { publish({ ...identity, status: "unavailable", message: "verification-expired" }); return; }
+    if (f.admin === "ended" || f.now > identity.expiresAt) {
+      publish({ ...identity, status: "reauth-required", message: f.admin === "ended" ? "access-ended" : "expired" }); return;
+    }
+    await f.admin;
+    verified = f.cloud?.state === "ready" ? { origin: f.cloud.origin } : null;
+    publish({ ...identity, status: "connected", machine: f.cloud ? { status: f.cloud.state, origin: f.cloud.origin } : null });
   };
-  f.client = createCloudAccountClient({ origin: ADMIN, fixture: true, deviceName: "Fixture computer", platform: "darwin", now: () => f.now, fetch,
-    store: { read: async () => f.saved, write: async (value) => { f.saved = value; } }, openBrowser: async () => {},
-    onState: (state) => { f.remembered = rememberedCloudHome(f.remembered, state); }, setTimer: () => 1, clearTimer: () => {} });
+  f.client = {
+    state: () => state, homeTarget: () => verified, start: refresh, refresh,
+    async signOut() { f.saved = null; await refresh(); },
+  };
   const main = { getURL: () => `${CLOUD}/chat?botId=bot-1` };
   const handlers = appPermissionHandlers({
     rendererOrigin: () => LOCAL_ORIGIN,
@@ -349,7 +344,7 @@ test("a restore that ends without this Cloud, or outlasts the wait, refuses rath
   assert.equal(await f.ask("media", MIC).done, false);
 });
 
-test("with OpenMausBot Cloud unreachable past the verified window, the same account's Cloud keeps the microphone", async () => {
+test("with CryBot Cloud unreachable past the verified window, the same account's Cloud keeps the microphone", async () => {
   const f = myCloudFixture();
   await f.restore();
   assert.equal(f.client.homeTarget()?.origin, CLOUD);
@@ -431,7 +426,6 @@ test("after the sign-in has ended or expired, the same account's Cloud keeps the
   ended.admin = "ended";
   await ended.client.refresh();
   assert.deepEqual([ended.client.state().status, ended.client.state().message], ["reauth-required", "access-ended"]);
-  assert.equal(cloudPlanSnapshot(ended.client.state()).status, "signin");
   assert.equal(ended.ask("media", MIC).value, true);
   await ended.client.signOut();
   assert.equal(ended.ask("media", MIC).value, false);
@@ -483,10 +477,10 @@ test("the page's answer is the request handler's answer for its microphone", asy
   const { state, handlers } = pageMicFixture();
   const local = { getURL: () => LOCAL_PAGE };
   const other = { getURL: () => `${CLOUD}/` };
-  for (const home of [CLOUD, null, "https://evil.fly.dev"]) {
+  for (const home of [CLOUD, null, "https://evil.example.test"]) {
     state.home = home;
     for (const contents of [state.main, local, other]) {
-      for (const url of [`${CLOUD}/chat`, LOCAL_PAGE, "https://my-vps.example.com/", "http://omb-u-0123456789ab.fly.dev/"]) {
+      for (const url of [`${CLOUD}/chat`, LOCAL_PAGE, "https://my-vps.example.com/", "http://cry-u-0123456789ab.example.test/"]) {
         for (const mainFrame of [true, false]) {
           const granted = await new Promise((resolve) => {
             handlers.request(contents, "media", resolve, { requestingUrl: url, isMainFrame: mainFrame, mediaTypes: ["audio"] });

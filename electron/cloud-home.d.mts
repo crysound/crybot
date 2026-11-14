@@ -99,7 +99,7 @@ export interface CloudPlanAllowances {
   /** A team plan's most people, its owner included. */
   seats?: number;
 }
-/** One plan OpenMausBot Cloud sells: its monthly price before tax in US cents,
+/** One plan CryBot Cloud sells: its monthly price before tax in US cents,
  * and its free trial's days when it comes with one. */
 export interface CloudOfferPlan { tier: string; label?: string; amount: number; allowances?: CloudPlanAllowances; trialDays?: number }
 /** What someone may buy now: the session's `offer` (signed in), or the public
@@ -169,3 +169,5 @@ export declare function parsePairingGrant(input: unknown, origin: string, now: n
 export declare function withCloudHome<T extends { environments: Array<{ id: string; name: string; origin: string; color?: string; home?: true }>; activeId: string }>(state: T, machine: CloudMachine | null | undefined, makeId: () => string, look?: { name?: string | null; color?: string | null } | null): T;
 export declare function cloudHomeConnectUrl(target: CloudHomeTarget, now: number, open?: "phone" | null, route?: string | null): string;
 export declare function cloudPageSenderAllowed(event: unknown, context: { contents: unknown; homeOrigin: string | null; activeOrigin: string | null | undefined }): boolean;
+
+export declare function teamPlan(state: unknown): boolean;

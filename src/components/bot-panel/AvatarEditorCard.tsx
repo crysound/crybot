@@ -5,13 +5,13 @@ import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { bodyName, colorName, festivalName } from "@/lib/mascot-names";
 import type { LocaleKey } from "@/locales";
-import { colorSwatch, MAUS_COLOR_LABEL, MAUS_COLOR_NAMES, PICKABLE_STATES, type MausState } from "@/lib/mascot";
+import { colorSwatch, BOT_COLOR_LABEL, BOT_COLOR_NAMES, PICKABLE_STATES, type BotState } from "@/lib/mascot";
 import { useStore, type Bot } from "@/state/store";
 import { mayRename, useTeamPeople } from "@/state/team-people";
 import { MASCOT_BODY_IDS } from "../../../shared/mascot-bodies";
 import { FESTIVAL_IDS, FESTIVALS, isCarvedBody, type BotBodyId } from "../../../shared/bot-body";
 import { useFestivalDress, wornBody } from "@/lib/festival-dress";
-import { MausAvatar } from "../Avatar";
+import { MascotAvatar } from "../Avatar";
 import { AvatarImageGenerator } from "../AvatarImageGenerator";
 import { AvatarFraming, OrganizationAvatarIcons, RESET_MASCOT_PATCH, useAvatarImage, type AvatarPatch } from "../avatar-editing";
 import { Segmented } from "./rows";
@@ -32,7 +32,7 @@ const CROP_KEY: Record<(typeof IMAGE_CROPS)[number], LocaleKey> = {
   square: "botPanel.avatar.square",
 };
 
-const FACE_KEY: Partial<Record<MausState, LocaleKey>> = {
+const FACE_KEY: Partial<Record<BotState, LocaleKey>> = {
   idle: "botPanel.face.idle",
   happy: "botPanel.face.happy",
   curious: "botPanel.face.curious",
@@ -45,14 +45,14 @@ const FACE_KEY: Partial<Record<MausState, LocaleKey>> = {
   proud: "botPanel.face.proud",
 };
 
-const faceLabel = (state: MausState) => {
+const faceLabel = (state: BotState) => {
   const key = FACE_KEY[state];
   return key ? t(key) : state;
 };
 
 export function AvatarEditorCard({ bot, activeState, onPatch, onClose }: {
   bot: Bot;
-  activeState: MausState;
+  activeState: BotState;
   onPatch: (patch: AvatarPatch) => void;
   onClose: () => void;
 }) {
@@ -66,10 +66,10 @@ export function AvatarEditorCard({ bot, activeState, onPatch, onClose }: {
     tabsRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus();
   }, []);
   const pickMascot = (patch: AvatarPatch) => onPatch(crop === "mascot" ? patch : { ...patch, avatarCrop: "mascot" });
-  const body = bot.mascotBody ?? "cursor";
+  const body = bot.mascotBody ?? "dome";
   const { state, dispatch } = useStore();
   const team = useTeamPeople();
-  const othersToMatch = state.bots.filter((other) => other.id !== bot.id && (other.mascotBody ?? "cursor") !== body
+  const othersToMatch = state.bots.filter((other) => other.id !== bot.id && (other.mascotBody ?? "dome") !== body
     && (team ? mayRename(other, team) : !state.config?.team));
   const festival = useFestivalDress();
   const costume = wornBody(bot.mascotBody, bot.color, festival);
@@ -89,7 +89,7 @@ export function AvatarEditorCard({ bot, activeState, onPatch, onClose }: {
         !showsImage && body === id ? "bg-ink/[0.08] ring-[1.5px] ring-inset ring-ink/25" : "hover:bg-ink/[0.05]",
       )}
     >
-      <MausAvatar color={bot.color} faceColor={bot.mascotFaceColor} bodyId={id} size={40} animated={false} trackPointer={false} />
+      <MascotAvatar color={bot.color} faceColor={bot.mascotFaceColor} bodyId={id} size={40} animated={false} trackPointer={false} />
     </button>
   );
 
@@ -156,14 +156,14 @@ export function AvatarEditorCard({ bot, activeState, onPatch, onClose }: {
               </button>
             )}
             <div className="flex flex-wrap justify-center gap-2 px-1 pb-1 pt-3.5">
-              {MAUS_COLOR_NAMES.map((color) => (
+              {BOT_COLOR_NAMES.map((color) => (
                 <button
                   key={color}
                   type="button"
                   disabled={busy}
                   aria-pressed={bot.color === color}
                   aria-label={t("mascot.useColor", { color: colorName(color) })}
-                  title={t(MAUS_COLOR_LABEL[color])}
+                  title={t(BOT_COLOR_LABEL[color])}
                   onClick={() => pickMascot({ color })}
                   className={cn(
                     "size-6 rounded-full disabled:opacity-50",

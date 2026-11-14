@@ -2,7 +2,6 @@ import { z } from "zod";
 import { MAX_TEAM_BACKUP_BYTES } from "../../shared/team-backup.ts";
 import type { BotVisibility, WireBot, WireGroup } from "../../shared/wire.ts";
 import { validateBotCwd } from "../bot-cwd.ts";
-import { fetchBotDirectory, matchDirectoryBots, type MatchedDirectoryBot } from "../bot-directory.ts";
 import { isBotPackage, packageSummary, parsePackageDocument, renderBotPackageMarkdown, type PackageDocument } from "../bot-package.ts";
 import { parseVisibility } from "../bot-visibility.ts";
 import { teamCreator } from "../new-bot-sharing.ts";
@@ -31,7 +30,7 @@ import type { Routine, RoutineManager } from "../routines.ts";
 import { readSectionContext } from "../section-context.ts";
 import { sectionKey, type BotRecord, type GroupRecord, type Store } from "../store.ts";
 import { createTeamBackup, importTeamBackup } from "../team-backup.ts";
-import { fetchGithubTeam, fetchLibraryTeam, fetchTeamCatalog } from "../team-library.ts";
+import { fetchGithubTeam } from "../github-team-import.ts";
 import { createTeamManifest, parseTeamManifest } from "../team-manifest.ts";
 import type { RequestAuth } from "../request-auth.ts";
 import { userErrorFields } from "../user-errors.ts";
@@ -59,7 +58,7 @@ export interface TeamRouteDeps {
     | { ok: false; error: string; available: string[] };
   /** On a Team Cloud: false for someone else's private chat, which a team backup never carries. */
   threadShown?(auth: RequestAuth): (threadId: string) => boolean;
-  /** On a Team Cloud: false for someone else's own MausBot, which no export carries. */
+  /** On a Team Cloud: false for someone else's own Cry Bot, which no export carries. */
   botShown?(auth: RequestAuth): (botId: string) => boolean;
   /** On a Team Cloud: false for a routine that lives in someone else's private chat, which no export carries. */
   routineShown?(auth: RequestAuth): (routine: Routine) => boolean;
@@ -166,7 +165,7 @@ export function createTeamRoutes(deps: TeamRouteDeps): RouteHandler {
           ? body.name.trim()
           : profileName
             ? `${profileName}'s Team`
-            : "My OpenMaus Team";
+            : "My Cry Bot Team";
       const memberIds = exportable.filter((bot) => !bot.hidden).map((bot) => bot.id);
       if ((body.format === "backup" ? exportable.length : memberIds.length) === 0) return json(res, 400, { error: "Create a bot before exporting your team" });
       try {
@@ -206,22 +205,6 @@ export function createTeamRoutes(deps: TeamRouteDeps): RouteHandler {
         return json(res, 400, { error: error instanceof Error ? error.message : "Team could not be exported" });
       }
     }
-    if (method === "GET" && path === "/api/team-library/catalog") {
-      try {
-        return json(res, 200, await fetchTeamCatalog());
-      } catch (error) {
-        return json(res, 502, { error: error instanceof Error ? error.message : "The team library is unavailable" });
-      }
-    }
-    m = path.match(/^\/api\/team-library\/teams\/([a-z0-9][a-z0-9-]*)$/);
-    if (m && method === "GET") {
-      try {
-        return json(res, 200, await fetchLibraryTeam(m[1]));
-      } catch (error) {
-        const status = (error as { status?: number }).status === 404 ? 404 : 502;
-        return json(res, status, { error: error instanceof Error ? error.message : "The team could not be loaded" });
-      }
-    }
     if (method === "POST" && path === "/api/team-library/github") {
       const body = await readBody(req);
       if (typeof body.url !== "string" || !body.url.trim()) {
@@ -241,18 +224,6 @@ export function createTeamRoutes(deps: TeamRouteDeps): RouteHandler {
       if (!validated.cwd) return json(res, 400, { error: "scout needs a folder to read" });
       const profile = scoutProject(validated.cwd);
       return json(res, 200, { profile, suggestion: suggestTeam(profile) });
-    }
-    if (method === "GET" && path === "/api/teams/scout/directory") {
-      const validated = validateBotCwd(url.searchParams.get("cwd"));
-      if (!validated.ok) return json(res, 400, { error: validated.error });
-      if (!validated.cwd) return json(res, 400, { error: "scout needs a folder to read" });
-      let directory: MatchedDirectoryBot[] = [];
-      try {
-        directory = matchDirectoryBots(scoutProject(validated.cwd), await fetchBotDirectory());
-      } catch (error) {
-        console.warn("bot directory lookup failed:", error instanceof Error ? error.message : String(error));
-      }
-      return json(res, 200, { directory });
     }
     if (method === "GET" && path === "/api/org-library") {
       return json(res, 200, orgLibrary?.list() ?? { organization: null, packages: [] });
@@ -336,7 +307,7 @@ export function createTeamRoutes(deps: TeamRouteDeps): RouteHandler {
         importVisibility = parsed.visibility;
       }
       const body = await readBody(req, MAX_TEAM_BACKUP_BYTES);
-      if (body?.format === "openmaus.backup") {
+      if (body?.format === "crybot.backup") {
         if (importMode !== "add") return json(res, 400, { error: "Import backups alongside your existing bots; project mode is only for templates" });
         try {
           const imported = importTeamBackup(store, routines!, body, await defaultSelection(), { visibility: importVisibility, ...teamCreator(auth) });

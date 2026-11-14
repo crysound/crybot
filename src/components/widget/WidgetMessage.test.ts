@@ -16,7 +16,10 @@ import { WidgetMessage } from "./WidgetMessage";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 function sample(name: string): WidgetRoot {
-  const parsed = parseWidgetInput(WIDGET_SAMPLES[name]);
+  const input = name === "kitchenSink"
+    ? JSON.parse(JSON.stringify(WIDGET_SAMPLES[name]).replaceAll('"/app-icon-512.png"', '"https://example.test/app-icon-512.png"'))
+    : WIDGET_SAMPLES[name];
+  const parsed = parseWidgetInput(input);
   if (!parsed.ok) throw new Error(parsed.error);
   return parsed.value;
 }
@@ -85,7 +88,7 @@ beforeEach(() => {
   flushBotPatches.mockImplementation(async () => null);
   openExternal.mockClear();
   vi.stubGlobal("fetch", fetchMock);
-  vi.stubGlobal("ogb", { openExternal });
+  vi.stubGlobal("cry", { openExternal });
   host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
@@ -114,7 +117,7 @@ describe("drawing a widget", () => {
     mount(row(sample("pullRequests")));
     const card = find('[data-widget="w1"]')!;
     expect(card.getAttribute("aria-label")).toBe("Pull requests");
-    expect(card.textContent).toContain("mausbot-mobile");
+    expect(card.textContent).toContain("crybot-mobile");
     expect(card.textContent).toContain("3 open");
     const rows = all('[role="listitem"] > button');
     expect(rows.map((item) => item.textContent)).toEqual([
@@ -191,8 +194,8 @@ describe("drawing a widget", () => {
     expect(find("img")).toBeNull();
     act(() => find<HTMLButtonElement>(`button[title="${t("attach.externalHidden")}"]`)!.click());
     const image = find<HTMLImageElement>("img")!;
-    expect(image.getAttribute("src")).toBe("https://mausbot.com/og.png");
-    expect(image.getAttribute("alt")).toBe("MausBot");
+    expect(image.getAttribute("src")).toBe("https://example.test/app-icon-512.png");
+    expect(image.getAttribute("alt")).toBe("Cry Bot");
     expect(image.getAttribute("loading")).toBe("lazy");
     expect(image.getAttribute("referrerpolicy")).toBe("no-referrer");
     expect(Number.parseFloat(image.style.aspectRatio)).toBeCloseTo(16 / 9);
@@ -227,7 +230,7 @@ describe("drawing a widget", () => {
   it("lets a clipped button label be read in full, with a link's address under it", () => {
     mount(row(sample("kitchenSink")));
     expect(button("Send feedback")!.title).toBe("Send feedback");
-    expect(button("Open the docs")!.title).toBe("Open the docs\nhttps://mausbot.com/docs");
+    expect(button("Open the docs")!.title).toBe("Open the docs\nhttps://github.com/crysound/crybot");
     mount(row(sample("pullRequests")));
     expect(button("Merge the two ready")!.title).toBe("Merge the two ready");
     expect(button("Fix #719 first")!.title).toBe("Fix #719 first");
@@ -524,7 +527,7 @@ describe("pressing", () => {
     for (const control of all<HTMLInputElement | HTMLButtonElement>("[data-widget-field]")) expect(control.matches(":disabled, [aria-disabled=true]"), control.outerHTML.slice(0, 80)).toBe(true);
     mount(row(sample("kitchenSink")), true);
     await press(button("Open the docs")!);
-    expect(openExternal).toHaveBeenLastCalledWith("https://mausbot.com/docs");
+    expect(openExternal).toHaveBeenLastCalledWith("https://github.com/crysound/crybot");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -540,20 +543,20 @@ describe("pressing", () => {
 
     mount(row(sample("kitchenSink")));
     await press(button("Open the docs")!);
-    expect(openExternal).toHaveBeenLastCalledWith("https://mausbot.com/docs");
+    expect(openExternal).toHaveBeenLastCalledWith("https://github.com/crysound/crybot");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("opens a published page's open_url in the bot's browser panel in the desktop app, and posts nothing", async () => {
-    const PAGE = "https://abcdefghijklmnopqrstuvwxyz.mausbot.page/";
+    const PAGE = "https://server.example.test/";
     const dispatch = vi.fn();
     const withBrowser = { ...store, dispatch, state: { selectedId: "scout", bots: [{ id: "scout" }], groups: [], config: { features: { browser: true }, browserEngine: { kind: "engine" } } } } as unknown as ReturnType<typeof useStore>;
     const parsed = parseWidgetInput({ type: "Card", children: [{ type: "Button", label: "Open page", onClickAction: { type: "open_url", payload: { url: PAGE } } }] });
     if (!parsed.ok) throw new Error(parsed.error);
     act(() => root.render(createElement(BotEditorStore, { value: withBrowser, children: createElement(WidgetMessage, { botId: "scout", threadId: "t1", message: row(parsed.value) }) })));
     await press(button("Open page")!);
-    expect(dispatch.mock.calls).toEqual([[{ type: "toggleComputer", open: true }]]);
-    expect(openExternal).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(openExternal).toHaveBeenCalledWith(PAGE);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

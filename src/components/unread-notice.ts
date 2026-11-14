@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { botShowsUnread } from "@/lib/bot-unread";
 
-import { EFFECTS } from "./CursorAvatar";
+import { EFFECTS } from "./AnimatedMascot";
 
 export const UNREAD_NOTICE_MS = 2 * EFFECTS.notifying!.glyph!.period;
 

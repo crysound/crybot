@@ -1,14 +1,15 @@
-export const APP_NAME = "OpenMausBot";
-export const APP_REPOSITORY = "https://github.com/milind-soni/OpenMausBot";
-export const DOCS_URL = `${APP_REPOSITORY}/tree/main/docs`;
+export const APP_NAME = "Cry Bot";
+export const APP_REPOSITORY = "https://github.com/crysound/crybot";
+export const DOCS_URL = `${APP_REPOSITORY}#readme`;
 export const HELP_CENTER_URL = DOCS_URL;
-export const APPROVAL_LEVELS_URL = `${APP_REPOSITORY}/blob/main/docs/approval-levels.md`;
-export const PASSKEY_HELP_URL = "https://docs.openmausbot.com/docs/troubleshooting/google-sign-in-cloud-browser";
-export const FEEDBACK_URL = "https://discord.gg/9Wb8MEpXRs";
+export const APPROVAL_LEVELS_URL = `${APP_REPOSITORY}#readme`;
+export const PASSKEY_HELP_URL = HELP_CENTER_URL;
+export const FEEDBACK_URL = `${APP_REPOSITORY}/issues`;
 export const RELEASES_URL = `${APP_REPOSITORY}/releases`;
-export const PRICING_URL = "https://www.openmausbot.com/pricing";
-export const CLOUD_PLAN_URL = "https://cloud.openmausbot.com/cloud";
+export const PRICING_URL = "";
+export const CLOUD_PLAN_URL = "";
 export function withSource(url: string, source: string): string {
+  if (!url) return "";
   const target = new URL(url);
   target.searchParams.set("src", source);
   return target.href;
@@ -20,7 +21,7 @@ export function appVersion(): string {
 }
 
 export function desktopAppVersion(): string {
-  return (typeof window !== "undefined" && window.ogb?.app?.version) || appVersion();
+  return (typeof window !== "undefined" && window.cry?.app?.version) || appVersion();
 }
 
 const PLATFORM_NAMES: Record<string, string> = {
@@ -34,8 +35,11 @@ export function platformLabel(platform?: string): string | null {
 }
 
 export async function openExternalLink(url: string): Promise<void> {
-  if (window.ogb?.openExternal) {
-    await window.ogb.openExternal(url);
+  try {
+    if (!["http:", "https:", "mailto:"].includes(new URL(url).protocol)) return;
+  } catch { return; }
+  if (window.cry?.openExternal) {
+    await window.cry.openExternal(url);
     return;
   }
   window.open(url, "_blank", "noopener,noreferrer");
@@ -43,6 +47,6 @@ export async function openExternalLink(url: string): Promise<void> {
 
 /** A browser hands a mailto: link to its own mail app; the desktop app's window may not navigate to one, so main opens it. */
 export async function openEmailDraft(url: string): Promise<void> {
-  if (window.ogb) return openExternalLink(url);
+  if (window.cry) return openExternalLink(url);
   window.location.href = url;
 }

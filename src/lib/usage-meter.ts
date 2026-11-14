@@ -1,6 +1,6 @@
 // Display only: the usage meter never grants or limits anything; the Cloud's own relays do.
 import type { CloudUsage, CloudUsageKind, CloudUsageMeter } from "../../electron/cloud-home.mjs";
-import { cloudPlanLabel, usd } from "@/lib/cloud-plan";
+import { cloudPlanLabel, usd } from "@/lib/cloud-status";
 import { activeLocale, t } from "@/lib/i18n";
 import type { LocaleKey } from "@/locales";
 
@@ -54,7 +54,7 @@ export function usageCardView(input: { usage: CloudUsage | null | undefined; tea
   return input.dismissed === dismissKey ? null : { meters, band, dismissKey };
 }
 
-const DISMISS_KEY = "openmausbot.usageCard.dismissed.v1";
+const DISMISS_KEY = "crybot.usageCard.dismissed.v1";
 export function readUsageCardDismissed(): string | null {
   try { return globalThis.localStorage?.getItem(DISMISS_KEY) ?? null; } catch { return null; }
 }

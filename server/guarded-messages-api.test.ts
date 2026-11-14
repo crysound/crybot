@@ -4,7 +4,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb, type VerificationServer } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry, type VerificationServer } from "../scripts/control-cry.ts";
 import { readHandoffs } from "./testing/handoff-rows.ts";
 
 type Bot = { id: string; activeTaskId: string };
@@ -25,8 +25,8 @@ describe("guarded external messages through an isolated runtime", () => {
     return result;
   };
   const control = async (args: string[]) => {
-    const result = await runControlOmb([...args, "--url", fixture.info.url]);
-    evidence.push({ command: ["control:omb", ...args, "--url", fixture.info.url], result });
+    const result = await runControlCry([...args, "--url", fixture.info.url]);
+    evidence.push({ command: ["control:cry", ...args, "--url", fixture.info.url], result });
     return result as any;
   };
   const newBot = async (): Promise<Bot> => {
@@ -236,7 +236,7 @@ describe("guarded external messages through an isolated runtime", () => {
 });
 
 it("refuses a parked conversation after its own provider settles while its teammate is still working", async () => {
-  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined, { scripted: true });
+  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, { scripted: true });
   const evidence: unknown[] = [];
   const api = async (method: string, path: string, body?: unknown) => {
     const response = await fetch(`${fixture.info.url}${path}`, {
@@ -247,8 +247,8 @@ it("refuses a parked conversation after its own provider settles while its teamm
     evidence.push({ method, path, body, result }); return result;
   };
   const control = async (args: string[]) => {
-    const result = await runControlOmb([...args, "--url", fixture.info.url]) as any;
-    evidence.push({ command: ["control:omb", ...args, "--url", fixture.info.url], result }); return result;
+    const result = await runControlCry([...args, "--url", fixture.info.url]) as any;
+    evidence.push({ command: ["control:cry", ...args, "--url", fixture.info.url], result }); return result;
   };
   try {
     const chief = (await control(["new-bot", "--name", "Guarded coordinator", "--section", "Leadership"])).bot;

@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { StringDecoder } from "node:string_decoder";
 
-import { CONTROL_ACT_WITHIN_MS, CONTROL_UNCONFIRMED, CONTROL_WAITED, controlRefusal, createControlClient, type ControlState } from "./control-client.ts";
+import { CONTROL_ACT_WITHIN_MS, CONTROL_UNCONFIRMED, CONTROL_WAITED, controlRefusal, createControlClient, type ControlState } from "./computer-control-client.ts";
 import { augmentedPath, resolveCliSpawn } from "./env-path.ts";
 import { textOnlyErrorResultLine } from "./mcp-error-result.ts";
 import { createToolListNormalizer } from "./mcp-tool-schema.ts";
@@ -235,7 +235,7 @@ export function createReplyQueue(
   };
 }
 
-const OWN_ID = "omb-bridge-";
+const OWN_ID = "cry-bridge-";
 const SERVER_INFO_META = "io.modelcontextprotocol/serverInfo";
 
 function isObject(value: unknown): value is Record<string, unknown> {

@@ -1,5 +1,5 @@
-// The one-time "Get MausBot updates?" question: this computer's answer, kept in desktop-prefs.json before anything is
-// sent, and the MausBot Cloud Admin's consent record (account or email-only), kept in step with it.
+// The one-time "Get CryBot updates?" question: this computer's answer, kept in desktop-prefs.json before anything is
+// sent, and the CryBot Cloud Admin's consent record (account or email-only), kept in step with it.
 import { cleanEmail } from "./cloud-signin.mjs";
 
 /** The consent wording shown, by version: the Admin keeps the version with each answer as proof of what was asked. */
@@ -12,7 +12,7 @@ const text = (value, max) => typeof value === "string" && value.length > 0 && va
 const STATE_WAIT_MS = 8_000;
 
 /**
- * The record kept on this computer. `account`: the MausBot Cloud account the answer belongs to (given while signed in,
+ * The record kept on this computer. `account`: the CryBot Cloud account the answer belongs to (given while signed in,
  * or carried over to it). `email`: typed while signed out. `receipt`: the Admin's handle for that email-only answer,
  * the only way this computer can withdraw it. `replacedReceipts`: receipts of email-only opt-ins that a later answer
  * replaced (another email, or an account), each kept until its withdrawal succeeds. `receiptEmails`: the addresses
@@ -58,7 +58,7 @@ export function parseAccountConsent(result) {
 }
 
 /**
- * `account()`: the Cloud account client (cloud-account.mjs), or null where there is none. `available()`: this app may
+ * `account()`: the Cloud account client (account.mjs), or null where there is none. `available()`: this app may
  * ask at all (the installed app, not a branded build). A failure to reach the Admin never loses an answer: it stays
  * `pending` and is sent again on the next launch, sign-in or look at Settings.
  */

@@ -6,7 +6,6 @@ import { setLocale } from "@/lib/i18n";
 import { suggestedLocalName } from "@/lib/places";
 
 vi.mock("@/lib/analytics", () => ({ track: vi.fn() }));
-vi.mock("./cloud-buy/CloudMascotScene", () => ({ CloudMascotScene: () => null }));
 const { NewLocalFromMenu, RailSheet } = await import("./PlaceAddSheet");
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -15,7 +14,7 @@ const create = vi.fn(async (_name: string, _color: unknown) => ({ outcome: "made
 beforeEach(() => {
   setLocale("en");
   vi.clearAllMocks();
-  Object.assign(window, { ogb: { workspaces: { places: vi.fn(async () => ({ places: [], add: { cloud: false, link: false, address: false } })), onChanged: () => () => {},
+  Object.assign(window, { cry: { workspaces: { places: vi.fn(async () => ({ places: [], add: { cloud: false, link: false, address: false } })), onChanged: () => () => {},
     local: { create, edit: vi.fn(), remove: vi.fn() }, onNewLocal: (callback: () => void) => { ask = callback; return () => { ask = null; }; } } } });
   host = document.createElement("div"); document.body.append(host);
 });

@@ -5,7 +5,7 @@ import { browserEngineStatus, ensureChrome, installAgentBrowserBinary, resolveAg
 import { DATA_DIR, EVENTS_DIR, NATIVE_DIR, instanceConfigs, type AppConfig } from "../config.ts";
 import { boundRetentionDays, decisionsCsv, readDecisionRange, readDecisions, type DecisionRow } from "../decision-log.ts";
 import { flushNativeLog } from "../drivers/native.ts";
-import { editionForMembers, editionStatus, entitled } from "../enterprise.ts";
+import { editionStatus, entitled } from "../edition.ts";
 import { fleetAvailable, fleetRequest, fleetSocketPath } from "../fleet-client.ts";
 import { noteKeyAccepted, noteKeyRejected } from "../key-rejections.ts";
 import { loadPlanUsage, planAccountsFromInstances } from "../plan-usage.ts";
@@ -34,7 +34,7 @@ export interface StatusRouteDeps {
   threadShown?(auth: RequestAuth): (threadId: string) => boolean;
   /** On a Team Cloud: the decision and admin rows as this reader may see them (host/private-records.ts). */
   records?: Pick<PrivateRecords, "decisionRow" | "adminActionShown">;
-  /** Whether bots run in the bot box: the MausBot connector reads it on a server its owner runs, on or off and nothing more. */
+  /** Whether bots run in the bot box: the CryBot connector reads it on a server its owner runs, on or off and nothing more. */
   boxOn?(): boolean;
 }
 
@@ -50,7 +50,7 @@ export function createStatusRoutes(deps: StatusRouteDeps): RouteHandler {
     const decision = deps.records?.decisionRow(auth) ?? ((row: DecisionRow) => row);
     // The packaged app's port fallback: the forked child proves it is ours by echoing its pid.
     if (method === "GET" && path === "/api/health") {
-      return json(res, 200, { app: "openmausbot", pid: process.pid, static: Boolean(STATIC_DIR), capabilities: {
+      return json(res, 200, { app: "crybot", pid: process.pid, static: Boolean(STATIC_DIR), capabilities: {
         guardedMessages: 1, guardedRequests: 1, guardedFullAccess: 1, guardedOnBehalfOf: 1,
         ...(sharedWorkspaceFullAccessEnabled() ? { sharedWorkspaceFullAccess: 1 } : {}),
       }, ...(deps.boxOn ? { box: deps.boxOn() ? "on" : "off" } : {}) });
@@ -82,9 +82,9 @@ export function createStatusRoutes(deps: StatusRouteDeps): RouteHandler {
     // Admin scope plus the `admin` entitlement; the socket's own permissions decide whether this workspace may drive the agent.
     const fleetRoute = /^\/api\/fleet(?:\/(workspaces(?:\/([a-z0-9-]+)(?:\/(users|suspend|resume))?)?|upgrade))?$/.exec(path);
     if (fleetRoute) {
-      if (!entitled("admin")) return json(res, 403, { error: "Workspaces need an enterprise licence with the admin feature." });
+      if (!entitled("admin")) return json(res, 403, { error: "Workspace administration is unavailable." });
       const socket = fleetSocketPath();
-      if (!fleetAvailable(socket)) return json(res, 404, { error: "No fleet agent on this server. Run `openmausbot fleet init --domain … --operator <this user>` as root." });
+      if (!fleetAvailable(socket)) return json(res, 404, { error: "No fleet agent on this server. Run `crybot fleet init --domain … --operator <this user>` as root." });
       const [, resource, slug, sub] = fleetRoute;
       let forward: { method: string; path: string; body?: unknown } | null = null;
       if (method === "GET" && !resource) forward = { method: "GET", path: "/workspaces" };
@@ -105,7 +105,7 @@ export function createStatusRoutes(deps: StatusRouteDeps): RouteHandler {
     if (method === "GET" && path === "/api/edition") {
       // A member learns what is entitled; when the key lapses is for admins.
       const status = editionStatus();
-      return json(res, 200, auth.scopes.includes("admin") ? status : editionForMembers(status));
+      return json(res, 200, status);
     }
     if (method === "GET" && path === "/api/brand") {
       return json(res, 200, loadBrand());

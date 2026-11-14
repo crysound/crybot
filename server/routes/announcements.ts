@@ -10,5 +10,5 @@ export const announcementRoutes: RouteHandler = async ({ res, path, method, json
   if (path !== ANNOUNCEMENTS_PATH) return PASS;
   if (method !== "GET") return json(res, 405, { error: "Use GET." });
   const store = announcementStore();
-  return json(res, 200, { cards: await store.cardsForPage(), ...(store.disabled ? { disabled: true } : {}) });
+  return json(res, 200, { cards: await store.cardsForPage(), feedOrigin: store.feedOrigin, ...(store.disabled ? { disabled: true } : {}) });
 };

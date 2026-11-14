@@ -20,12 +20,13 @@ const {
 
 // The desktop credential list is a hand copy of server/credential-env.ts WORKSPACE_CREDENTIAL_ENV; this test is the drift alarm.
 describe("credential env parity with server/credential-env.ts", () => {
-  it("matches WORKSPACE_CREDENTIAL_ENV exactly", () => {
+  it("redacts workspace credentials and process-only operator secrets", () => {
     const config = readFileSync(new URL("../server/credential-env.ts", import.meta.url), "utf8");
     const match = config.match(/WORKSPACE_CREDENTIAL_ENV = \[([\s\S]*?)\] as const/);
     expect(match).not.toBeNull();
     const names = [...match[1].matchAll(/"([A-Z0-9_]+)"/g)].map((m) => m[1]);
-    expect(CREDENTIAL_ENV_NAMES).toEqual(names);
+    const operatorNames = config.match(/CONTROL_PLANE_ENV = \[([^\]]+)\]/)[1].match(/"([^"]+)"/g).map(name => JSON.parse(name));
+    expect([...CREDENTIAL_ENV_NAMES].sort()).toEqual([...new Set([...names, ...operatorNames])].sort());
   });
 });
 
@@ -99,7 +100,7 @@ describe("buildDiagnosticsReport", () => {
 
   it("masks JSON credential fields and cookies in updater HTTP dumps", () => {
     const redacted = redactSecretsInLine([
-      '{"OMB_COMPOSIO_BROKER_TOKEN":"opaque-broker-value","password":"opaque-password-value"}',
+      '{"CRYBOT_COMPOSIO_BROKER_TOKEN":"opaque-broker-value","password":"opaque-password-value"}',
       '{"Cookie":"session=private-cookie; tracking=private-tracker"}',
       "Cookie: session=private-session; tracking=private-tracking",
     ].join("\n"));
@@ -115,7 +116,7 @@ describe("buildDiagnosticsReport", () => {
     const report = buildDiagnosticsReport({
       appInfo,
       configSummary: { groq: { configured: true } },
-      logTail: `Groq HTTP 401: invalid key ${key}\nspawn env OMB_GROQ_API_KEY=${workspaceKey}`,
+      logTail: `Groq HTTP 401: invalid key ${key}\nspawn env CRYBOT_GROQ_API_KEY=${workspaceKey}`,
       updaterLogTail: `upstream rejected ${otherKey}`,
     });
     for (const secret of [key, otherKey, workspaceKey]) expect(report).not.toContain(secret);
@@ -184,7 +185,7 @@ describe("buildDiagnosticsReport", () => {
       appInfo,
       configSummary: {},
       logTail: "server ready",
-      logPath: "/Users/ada/Library/Logs/OpenMausBot/server.log",
+      logPath: "/Users/ada/Library/Logs/CryBot/server.log",
     });
     expect(report).toContain("## Server log tail");
     expect(report).not.toContain("/Users/ada");
@@ -297,7 +298,7 @@ describe("formatDesktopCrashRecord", () => {
     error.stack = [
       "TypeError: secret user text from C:\\Users\\Ada\\private.txt",
       "secret-client.ts:1:1",
-      "    at boot (file:///C:/Users/Ada/OpenMausBot/electron/main.mjs:412:7)",
+      "    at boot (file:///C:/Users/Ada/CryBot/electron/main.mjs:412:7)",
     ].join("\n");
     const record = formatDesktopCrashRecord({ kind: "main", origin: "unhandledRejection", error });
     expect(record).toBe("event=main-process-failure origin=unhandledRejection error=TypeError");
@@ -389,7 +390,7 @@ describe("decodeLogTail", () => {
 
 describe("readSafeLogTail", () => {
   it("exports only a bounded complete-line updater tail from an isolated log fixture", () => {
-    const directory = mkdtempSync(join(tmpdir(), "openmausbot-updater-diagnostics-"));
+    const directory = mkdtempSync(join(tmpdir(), "crybot-updater-diagnostics-"));
     try {
       const log = join(directory, "updater.log");
       const tail = "[info] update staged\n[error] https://updates.example.test/app.zip?jwt=private-query-token\n";
@@ -408,7 +409,7 @@ describe("readSafeLogTail", () => {
   });
 
   it("reads a bounded tail from a regular app-owned log", () => {
-    const directory = mkdtempSync(join(tmpdir(), "openmausbot-log-tail-"));
+    const directory = mkdtempSync(join(tmpdir(), "crybot-log-tail-"));
     try {
       const log = join(directory, "server.log");
       writeFileSync(log, "partial-secret\nfirst\nsecond\n", { mode: 0o600 });
@@ -419,7 +420,7 @@ describe("readSafeLogTail", () => {
   });
 
   it.skipIf(process.platform === "win32")("rejects a log-path symlink", () => {
-    const directory = mkdtempSync(join(tmpdir(), "openmausbot-log-symlink-"));
+    const directory = mkdtempSync(join(tmpdir(), "crybot-log-symlink-"));
     try {
       const privateFile = join(directory, "private.txt");
       const log = join(directory, "desktop-crashes.log");
@@ -433,15 +434,15 @@ describe("readSafeLogTail", () => {
 });
 
 describe("diagnosticsFileName", () => {
-  it("uses openmausbot-diagnostics-YYYYMMDD-HHmmss.txt", () => {
+  it("uses crybot-diagnostics-YYYYMMDD-HHmmss.txt", () => {
     expect(diagnosticsFileName(new Date(2026, 7, 22, 16, 5, 9))).toBe(
-      "openmausbot-diagnostics-20260822-160509.txt",
+      "crybot-diagnostics-20260822-160509.txt",
     );
   });
 });
 
 it("appends a crash line, truncates a full log, and refuses a hard-linked one", () => {
-  const dir = mkdtempSync(join(tmpdir(), "omb-crash-"));
+  const dir = mkdtempSync(join(tmpdir(), "cry-crash-"));
   const file = join(dir, "logs", "desktop-crashes.log");
   appendDesktopCrashRecord(file, 64, "first crash");
   expect(readFileSync(file, "utf8")).toMatch(/^\[.+\] first crash\n$/);

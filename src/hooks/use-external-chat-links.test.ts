@@ -33,12 +33,12 @@ describe("useExternalChatLinks", () => {
   it("holds a link that arrives at launch until the bots have loaded, then opens it once", () => {
     let deliver: ((link: string) => void) | undefined;
     const unsubscribe = vi.fn();
-    vi.stubGlobal("window", { ogb: { onChatLink: (cb: (link: string) => void) => { deliver = cb; return unsubscribe; } } });
+    vi.stubGlobal("window", { cry: { onChatLink: (cb: (link: string) => void) => { deliver = cb; return unsubscribe; } } });
     const dispatch = vi.fn();
 
     const [cleanup] = render(loading, dispatch);
     expect(cleanup).toBe(unsubscribe);
-    deliver!("openmausbot://bot/scout");
+    deliver!("crybot://bot/scout");
     render(loading, dispatch);
     expect(dispatch).not.toHaveBeenCalled();
 
@@ -56,7 +56,7 @@ describe("useExternalChatLinks", () => {
 
   it("closes Settings and the shortcuts list so the linked chat is not left behind them", () => {
     vi.stubGlobal("window", {});
-    fixture.link = "openmausbot://bot/scout";
+    fixture.link = "crybot://bot/scout";
     const dispatch = vi.fn();
     render({ ...loaded, appSettingsOpen: true, shortcutsOpen: true }, dispatch);
     expect(dispatch.mock.calls.map(([action]) => action)).toEqual([
@@ -69,7 +69,7 @@ describe("useExternalChatLinks", () => {
 
   it("opens a bot's link as its row would: at its main thread while threads are hidden", () => {
     vi.stubGlobal("window", {});
-    fixture.link = "openmausbot://bot/scout";
+    fixture.link = "crybot://bot/scout";
     fixture.showThreads = false;
     const dispatch = vi.fn();
     const left = { ...scout, threadId: "scout-report", mainThreadId: "scout-main",
@@ -86,7 +86,7 @@ describe("useExternalChatLinks", () => {
     vi.stubGlobal("window", { location: { pathname: "/", search: "?thread=scout-main&bot=scout", hash: "" }, history: { replaceState } });
     const dispatch = vi.fn();
     render(loading, dispatch);
-    expect(fixture.link).toBe("openmausbot://thread/scout-main?bot=scout");
+    expect(fixture.link).toBe("crybot://thread/scout-main?bot=scout");
     expect(replaceState).toHaveBeenCalledWith(null, "", "/");
     expect(dispatch).not.toHaveBeenCalled();
 
@@ -127,7 +127,7 @@ describe("useDesktopNotificationOpens", () => {
   it("holds a click until a page just loaded for it has its bots, then opens that thread once", () => {
     let deliver: ((target: unknown) => void) | undefined;
     const unsubscribe = vi.fn();
-    vi.stubGlobal("window", { ogb: { desktopNotifications: { onOpen: (cb: (target: unknown) => void) => { deliver = cb; return unsubscribe; } } } });
+    vi.stubGlobal("window", { cry: { desktopNotifications: { onOpen: (cb: (target: unknown) => void) => { deliver = cb; return unsubscribe; } } } });
     const dispatch = vi.fn();
     const [cleanup] = opens(loading, dispatch);
     expect(cleanup).toBe(unsubscribe);

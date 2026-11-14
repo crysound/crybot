@@ -20,13 +20,13 @@ const cursor = (snapshot: InstanceInfo["snapshot"], server = true): InstanceInfo
     ...(server ? { server: { standalone: { version: "2026.10.22-27dcf5f", downloadBytes: 184_859_176 } } } : {}),
   },
 });
-const missing = { state: "unavailable" as const, reason: "`cursor-agent` isn't installed, or isn't on this app's PATH. Install it for the user running OpenMausBot or use Set CLI, then check again." };
+const missing = { state: "unavailable" as const, reason: "`cursor-agent` isn't installed, or isn't on this app's PATH. Install it for the user running Cry Bot or use Set CLI, then check again." };
 const pasted = { state: "unavailable" as const, reason: `\`${CURL}\` is not Cursor's CLI: it answered --version as another program.`, notEngineCli: true as const };
 
 let host: HTMLDivElement;
 let root: Root;
 function render(engine: InstanceInfo, cloudHome: boolean): string {
-  vi.stubGlobal("ogb", undefined);
+  vi.stubGlobal("cry", undefined);
   const store = { state: { config: cloudHome ? { cloudHome: true } : {} }, dispatch: vi.fn(), refreshInstances: vi.fn(), refreshModels: vi.fn() } as unknown as ReturnType<typeof useStore>;
   flushSync(() => root.render(createElement(BotEditorStore, { value: store, children: createElement(EngineSetup, { instance: engine }) })));
   return host.innerHTML;

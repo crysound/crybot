@@ -8,19 +8,19 @@ import { ServerList, type OwnServerSharing } from "./ServerList";
 import { useStore } from "@/state/store";
 import { sharedComputersEnabled } from "@/lib/feature-flags";
 
-type SavedWorkspaces = Awaited<ReturnType<NonNullable<NonNullable<Window["ogb"]>["environments"]>["state"]>>;
+type SavedWorkspaces = Awaited<ReturnType<NonNullable<NonNullable<Window["cry"]>["environments"]>["state"]>>;
 
 
 /** Your computers (the places list, with its label), then Environments on this computer as a section of its own. */
 export function ConnectedWorkspacesSettings({ label, description }: { label?: string; description?: string } = {}) {
   const advanced = useAdvancedMode();
   const [newOpen, setNewOpen] = useState(false);
-  const bridge = window.ogb?.environments;
+  const bridge = window.cry?.environments;
   // Security: the desktop bridge alone is not enough; never offer access the server refuses.
   const { state } = useStore();
-  const sharingOffered = sharedComputersEnabled(state.config) && Boolean(window.ogb?.computerSharing);
+  const sharingOffered = sharedComputersEnabled(state.config) && Boolean(window.cry?.computerSharing);
   // A server of the person's own takes this computer without that flag, once they allow it in main's popup.
-  const sharing = window.ogb?.computerSharing;
+  const sharing = window.cry?.computerSharing;
   const [ownServers, setOwnServers] = useState<OwnServerSharing[]>([]);
   const [saved, setSaved] = useState<SavedWorkspaces | null>(null);
   const [busy, setBusy] = useState(false);
@@ -80,7 +80,7 @@ export function ConnectedWorkspacesSettings({ label, description }: { label?: st
     }
   };
   if (!bridge) return <p className="text-[13px] text-ink-secondary">{t("servers.desktopOnly")}</p>;
-  const confirmAction = (message: string) => window.ogb?.confirm ? window.ogb.confirm(message) : window.confirm(message);
+  const confirmAction = (message: string) => window.cry?.confirm ? window.cry.confirm(message) : window.confirm(message);
   const connected = saved?.environments.find(entry => entry.id === computerId);
   const computerWorkspace = connected?.origin && !connected.home ? { id: connected.id, name: connected.name, origin: connected.origin } : undefined;
   const ownComputer = Boolean(computerWorkspace && ownServers.some((own) => own.id === computerWorkspace.id));
@@ -92,7 +92,7 @@ export function ConnectedWorkspacesSettings({ label, description }: { label?: st
   return <>
     <SettingsGroup label={label} description={description} block="your-computers">
       {!saved ? <SettingsRows><SettingRow title={t(error ? "servers.yours.loadFailed" : "servers.yours.loading")}>{null}</SettingRow></SettingsRows> :
-        <ServerList saved={saved} busy={busy} sharingOffered={sharingOffered} ownServers={ownServers} appVersion={window.ogb?.app?.version ?? null} onShare={share}
+        <ServerList saved={saved} busy={busy} sharingOffered={sharingOffered} ownServers={ownServers} appVersion={window.cry?.app?.version ?? null} onShare={share}
           onSwitch={(id) => void perform(async () => { await bridge.switch(id); return true; })} onForget={(id) => void perform(() => bridge.forget(id))} onComputerAccess={setComputerId} />}
       {saved && error && <p role="alert" className="px-4 text-[12px] leading-4 text-danger">{error}</p>}
     </SettingsGroup>

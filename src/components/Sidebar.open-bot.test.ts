@@ -75,7 +75,7 @@ beforeEach(() => {
   fixture.values = [];
   fixture.dispatch.mockReset();
   fixture.api.mockReset();
-  vi.stubGlobal("window", Object.assign(new EventTarget(), { innerWidth: 1280, innerHeight: 800, ogb: undefined, setTimeout, clearTimeout }));
+  vi.stubGlobal("window", Object.assign(new EventTarget(), { innerWidth: 1280, innerHeight: 800, cry: undefined, setTimeout, clearTimeout }));
   vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {}, removeItem: () => {} });
   vi.stubGlobal("document", { body: {} });
 });

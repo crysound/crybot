@@ -338,7 +338,7 @@ export function ComputerPanel({
 
   useEffect(() => {
     let alive = true;
-    const dv = window.ogb?.desktopViewer;
+    const dv = window.cry?.desktopViewer;
     if (dv?.currentState) {
       void dv
         .currentState()
@@ -770,12 +770,12 @@ export function ComputerPanel({
   // 15+), so repeated empty frames mean denied.
   const [localMisses, setLocalMisses] = useState(0);
   useEffect(() => {
-    if (panelView !== "computer" || phase !== "local" || !computerStatusCurrent || !window.ogb || isLinux || !pageVisible) return;
+    if (panelView !== "computer" || phase !== "local" || !computerStatusCurrent || !window.cry || isLinux || !pageVisible) return;
     let alive = true;
     setLocalMisses(0);
     const shoot = async () => {
       try {
-        const url = await window.ogb!.screenFrame();
+        const url = await window.cry!.screenFrame();
         if (alive && url) setLocalFrame(url);
         else if (alive) setLocalMisses((n) => n + 1);
       } catch {
@@ -902,7 +902,7 @@ export function ComputerPanel({
 
   const handBack = async () => {
     setError(null);
-    void window.ogb?.desktopViewer?.close(bot.id);
+    void window.cry?.desktopViewer?.close(bot.id);
     await takeover.handBack().catch((cause) => setError(cause instanceof Error ? cause : String(cause)));
   };
 
@@ -1038,7 +1038,7 @@ export function ComputerPanel({
   };
 
   const openVmSettings = () => {
-    window.sessionStorage.setItem("openmausbot.settings.section", "computer");
+    window.sessionStorage.setItem("crybot.settings.section", "computer");
     dispatch({ type: "toggleAppSettings", open: true });
   };
 
@@ -1256,7 +1256,7 @@ export function ComputerPanel({
 
       {panelView === "routines" ? (
         <div {...tabPanelProps("routines")} className={cn("min-h-0 flex-1 overflow-y-auto px-4 pb-4", TAB_PANEL_FOCUS)}>
-          <RoutinesSection key={bot.id} bot={bot} routines={botRoutines} runs={state.routineRuns} defaultRunOn={cloudRoutineReady ? "cloud" : "maus"} />
+          <RoutinesSection key={bot.id} bot={bot} routines={botRoutines} runs={state.routineRuns} defaultRunOn={cloudRoutineReady ? "cloud" : "bot"} />
         </div>
       ) : panelView === "browser" && browserEnabled ? (
         <div {...tabPanelProps("browser")} className={cn("flex min-h-0 flex-1 flex-col px-4 pb-4", TAB_PANEL_FOCUS)}>
@@ -1401,7 +1401,7 @@ export function ComputerPanel({
               <ResetCloudComputerButton botId={bot.id} botName={bot.name} onReset={() => { setError(null); setRetry((n) => n + 1); }} view={{ computer: bot.computer, cloudBackend, canManage: canManageCloud, busy: profileBot.busy === true, pending: pending !== null, phase, boatState, refusal: cloudRefused?.state }} />
               {phase === "local" && !isLinux && localMisses >= 3 && (
                 <button
-                  onClick={() => window.ogb?.permOpenSettings?.("screen")}
+                  onClick={() => window.cry?.permOpenSettings?.("screen")}
                   className="mt-1 rounded-lg bg-control px-3 py-1.5 text-[12px] text-ink hover:bg-raised-hover"
                 >
                   {t("computer.openSettings")}
@@ -1537,7 +1537,7 @@ export function ComputerPanel({
         {advanced &&
           phase === "vm" &&
           vmStatus?.mode === "per-bot" &&
-          window.ogb?.desktopWorkspace &&
+          window.cry?.desktopWorkspace &&
           onOpenVmWorkspace && (
             <button
               type="button"

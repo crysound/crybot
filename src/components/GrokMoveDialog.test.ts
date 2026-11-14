@@ -61,7 +61,7 @@ const plain = () => {
 
 beforeEach(() => {
   setLocale("en");
-  vi.stubGlobal("ogb", undefined);
+  vi.stubGlobal("cry", undefined);
   f.api.mockReset();
   f.track.mockReset();
   f.dispatch.mockReset();
@@ -109,7 +109,6 @@ describe("Move from Grok Bot", () => {
     expect(lines.indexOf(FILES_STAY)).toBe(lines.indexOf("Routines are paused. Turn each one off in Grok Bot, then on here.") + 1);
     plain();
     expect(f.api.mock.calls.map(([path]) => path)).toContain("/api/bots/b1/skills/greet");
-    expect(f.track).toHaveBeenCalledOnce();
     expect(button("Move another Bot")).toBeDefined();
     expect(button("Done")).toBeDefined();
   });
@@ -166,7 +165,7 @@ describe("Move from Grok Bot", () => {
   });
 
   it("on the desktop app looks once it is open, and offers what it found in one tap", async () => {
-    vi.stubGlobal("ogb", { remoteClient: { active: false } });
+    vi.stubGlobal("cry", { remoteClient: { active: false } });
     f.api.mockImplementation(async (path: string) => (path === "/api/setup-import/grok"
       ? { files: [{ name: "grok-bot-export-drew.json", modifiedAt: 1, text: EXPORT }], bots: ["Job Search", "Scout"] }
       : path === "/api/mcp/servers" ? { servers: [] } : {}));

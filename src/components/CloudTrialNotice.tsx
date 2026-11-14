@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, CalendarClock, CloudOff, CreditCard } from "lucide-react";
-import type { CloudPlanBridge, CloudPlanSnapshot } from "../../electron/cloud-account.mjs";
+import type { CloudPlanBridge, CloudPlanSnapshot } from "../../electron/cloud-account-types.mjs";
 import type { CloudTrialState } from "../../electron/cloud-home.mjs";
-import type { CloudTrialView } from "@/lib/cloud-plan";
+import type { CloudTrialView } from "@/lib/cloud-status";
 import { t } from "@/lib/i18n";
 import { NoticeCard, NotNowButton, PRIMARY_BUTTON } from "./NoticeCard";
 
 export const CLOUD_PLAN_REFRESH_MS = 5 * 60_000;
-const PLAN_CHANGED = "omb:cloud-plan-changed";
+const PLAN_CHANGED = "cry:cloud-plan-changed";
 export const cloudPlanChanged = () => globalThis.window?.dispatchEvent?.(new Event(PLAN_CHANGED));
 
 export function useCloudPlanSnapshot(bridge: CloudPlanBridge | undefined): CloudPlanSnapshot | null {
@@ -17,7 +17,7 @@ export function useCloudPlanSnapshot(bridge: CloudPlanBridge | undefined): Cloud
     let active = true;
     const stop = () => { active = false; unsubscribe?.(); clearInterval(timer); window.removeEventListener?.("focus", read); window.removeEventListener?.(PLAN_CHANGED, read); };
     const read = () => { void bridge.state().then(next => { if (active) setPlan(next); }, () => { if (active) setPlan({ status: "none" }); stop(); }); };
-    const unsubscribe = window.ogb?.cloudAccount?.onState(read);
+    const unsubscribe = window.cry?.cloudAccount?.onState(read);
     const timer = setInterval(read, CLOUD_PLAN_REFRESH_MS);
     window.addEventListener?.("focus", read);
     window.addEventListener?.(PLAN_CHANGED, read);

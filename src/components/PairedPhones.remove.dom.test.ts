@@ -30,11 +30,11 @@ beforeEach(() => {
 afterEach(() => {
   flushSync(() => root.unmount());
   host.remove();
-  delete (globalThis as { ogb?: unknown }).ogb;
+  delete (globalThis as { cry?: unknown }).cry;
 });
 
 async function clickRemove(revoke: () => Promise<CompanionState>) {
-  (globalThis as { ogb?: unknown }).ogb = { companion: { state: vi.fn(async () => paired), revoke: vi.fn(revoke) } };
+  (globalThis as { cry?: unknown }).cry = { companion: { state: vi.fn(async () => paired), revoke: vi.fn(revoke) } };
   flushSync(() => root.render(createElement(Page)));
   await vi.waitFor(() => expect(remove()?.disabled).toBe(false));
   remove()!.click();

@@ -1,4 +1,4 @@
-// ~/.openmausbot/config.json, with env vars overriding its credentials.
+// ~/.crybot/config.json, with env vars overriding its credentials.
 import { readFileSync, mkdirSync, existsSync, renameSync } from "node:fs";
 import { dataHome } from "./data-dir.ts";
 import { signInFromEnv } from "./sign-in-env.ts";
@@ -244,7 +244,7 @@ const featureConfigSchema = z.object({
   /** Room jobs to several members run side by side, each in a thread of its own. Off unless true. */
   parallelRoomJobs: z.boolean().optional(),
   acpPlanLines: z.boolean().optional(), // An ACP agent's plan as activity lines. Off unless true.
-}).extend({ agentsToolBridge: z.boolean().optional(), savedSteps: z.boolean().optional(), usbPhoneTakeover: z.boolean().optional(), cloudComputerAutoReplace: z.boolean().optional() }); // cloudComputerAutoReplace: delete and replace a dead cloud computer by itself, off unless true (OMB_CLOUD_COMPUTER_AUTO_REPLACE wins); agentsToolBridge: the find_tool / use_tool bridge, off unless true; savedSteps: repeat a computer task from its saved steps, on unless false; usbPhoneTakeover: watch and take over the bots' USB phone, off unless true
+}).extend({ agentsToolBridge: z.boolean().optional(), savedSteps: z.boolean().optional(), usbPhoneTakeover: z.boolean().optional(), cloudComputerAutoReplace: z.boolean().optional() }); // cloudComputerAutoReplace: delete and replace a dead cloud computer by itself, off unless true (CRYBOT_CLOUD_COMPUTER_AUTO_REPLACE wins); agentsToolBridge: the find_tool / use_tool bridge, off unless true; savedSteps: repeat a computer task from its saved steps, on unless false; usbPhoneTakeover: watch and take over the bots' USB phone, off unless true
 const onboardingConfigSchema = z.object({
   completedAt: z.string().trim().max(40).optional(),
   version: z.number().int().min(0).max(1000).optional(),
@@ -315,7 +315,7 @@ const appConfigSchema = z.object({
   newBots: newBotsConfigSchema.optional(),
   /** CLI launch preferences; never enables remote access implicitly. */
   cliStartup: z.object({
-    access: z.enum(["local", "tunnel", "tailscale", "public-url"]),
+    access: z.enum(["local", "tailscale", "public-url"]),
     publicUrl: z.string().url().optional(),
     phone: z.enum(["ios", "android"]).optional(),
   }).optional(),
@@ -403,7 +403,7 @@ const appConfigSchema = z.object({
     tidyHour: z.number().int().min(0).max(23).optional(),
   }).strict().optional(),
   threads: threadsConfigSchema.optional(), /** Burst mode on an open-source install; a Cloud's plan sets it instead. `maxParallel`: burst threads running at once (default 10). */ burst: z.object({ maxParallel: z.number().int().min(1).max(100).optional() }).strict().optional(),
-  /** Minimum days of decision-log month files kept; OMB_DECISION_RETENTION_DAYS wins. */
+  /** Minimum days of decision-log month files kept; CRYBOT_DECISION_RETENTION_DAYS wins. */
   decisions: z.object({ retentionDays: z.number().int().min(1).max(3650).optional() }).strict().optional(),
   loopGuard: loopGuardConfigSchema.optional(),
   safetyFloor: z.object({ enabled: z.boolean().optional() }).strict().optional(), // off by default: safetyFloorEnabled in server/safety-floor-gate.ts
@@ -442,7 +442,7 @@ export interface AppConfig extends HelperConfig {
   newBotDefaults?: NewBotDefaults;
   newBots?: { effort?: EffortLevel };
   cliStartup?: {
-    access: "local" | "tunnel" | "tailscale" | "public-url";
+    access: "local" | "tailscale" | "public-url";
     publicUrl?: string;
     phone?: "ios" | "android";
   };
@@ -693,7 +693,7 @@ export function changedInstanceIds(before: Record<string, unknown>, after: Recor
     .filter((id) => !isDeepStrictEqual(before[id], after[id]));
 }
 
-export const DATA_DIR = process.env.OMB_DATA_DIR || join(dataHome(), ".openmausbot");
+export const DATA_DIR = process.env.CRYBOT_DATA_DIR || join(dataHome(), ".crybot");
 const LEGACY_DATA_DIR = join(dataHome(), ".opengrokbot");
 export const EVENTS_DIR = join(DATA_DIR, "events");
 export const NATIVE_DIR = join(DATA_DIR, "native");
@@ -730,19 +730,19 @@ export function loadConfig(): AppConfig {
     }
   }
   // Env wins over the file for every credential: the desktop shell injects them as env at spawn.
-  for (const [name, env] of [["mistral", "MISTRAL_API_KEY"], ["cerebras", "CEREBRAS_API_KEY"], ["groq", "OMB_GROQ_API_KEY"], ["meta", "OMB_META_API_KEY"],
-    ["deepseek", "OMB_DEEPSEEK_API_KEY"], ["greenference", "OMB_GREENFERENCE_API_KEY"], ["modelgo", "OMB_MODELGO_API_KEY"], ["xai", "XAI_API_KEY"]] as const) {
+  for (const [name, env] of [["mistral", "MISTRAL_API_KEY"], ["cerebras", "CEREBRAS_API_KEY"], ["groq", "CRYBOT_GROQ_API_KEY"], ["meta", "CRYBOT_META_API_KEY"],
+    ["deepseek", "CRYBOT_DEEPSEEK_API_KEY"], ["greenference", "CRYBOT_GREENFERENCE_API_KEY"], ["modelgo", "CRYBOT_MODELGO_API_KEY"], ["xai", "XAI_API_KEY"]] as const) {
     cfg[name] = { ...cfg[name], ...(process.env[env] !== undefined ? { key: process.env[env] } : {}) };
   }
-  if (process.env.OMB_TREG_KEY !== undefined) cfg.treg = { ...cfg.treg, key: process.env.OMB_TREG_KEY }; if (process.env.OMB_POSTIZ_API_KEY !== undefined) cfg.postiz = { ...cfg.postiz, key: process.env.OMB_POSTIZ_API_KEY };
+  if (process.env.CRYBOT_TREG_KEY !== undefined) cfg.treg = { ...cfg.treg, key: process.env.CRYBOT_TREG_KEY }; if (process.env.CRYBOT_POSTIZ_API_KEY !== undefined) cfg.postiz = { ...cfg.postiz, key: process.env.CRYBOT_POSTIZ_API_KEY };
   // Never ANTHROPIC_API_KEY: an operator's stray variable must not move every Claude bot onto API billing.
   cfg.anthropic = { ...cfg.anthropic };
-  if (process.env.OMB_ANTHROPIC_API_KEY !== undefined) cfg.anthropic.key = process.env.OMB_ANTHROPIC_API_KEY;
-  if (process.env.OMB_ANTHROPIC_API_URL !== undefined) cfg.anthropic.url = process.env.OMB_ANTHROPIC_API_URL;
+  if (process.env.CRYBOT_ANTHROPIC_API_KEY !== undefined) cfg.anthropic.key = process.env.CRYBOT_ANTHROPIC_API_KEY;
+  if (process.env.CRYBOT_ANTHROPIC_API_URL !== undefined) cfg.anthropic.url = process.env.CRYBOT_ANTHROPIC_API_URL;
   cfg.openai = { ...cfg.openai };
-  if (process.env.OMB_OPENAI_API_KEY !== undefined) cfg.openai.key = process.env.OMB_OPENAI_API_KEY;
+  if (process.env.CRYBOT_OPENAI_API_KEY !== undefined) cfg.openai.key = process.env.CRYBOT_OPENAI_API_KEY;
   cfg.openrouter = { ...cfg.openrouter };
-  if (process.env.OMB_OPENROUTER_API_KEY !== undefined) cfg.openrouter.key = process.env.OMB_OPENROUTER_API_KEY;
+  if (process.env.CRYBOT_OPENROUTER_API_KEY !== undefined) cfg.openrouter.key = process.env.CRYBOT_OPENROUTER_API_KEY;
   cfg.openaiCompat = { ...cfg.openaiCompat };
   if (process.env.OPENAI_COMPAT_API_KEY !== undefined) cfg.openaiCompat.key = process.env.OPENAI_COMPAT_API_KEY;
   if (process.env.OPENAI_COMPAT_URL !== undefined) cfg.openaiCompat.url = process.env.OPENAI_COMPAT_URL;
@@ -755,19 +755,19 @@ export function loadConfig(): AppConfig {
   cfg.opencodeGo = { ...cfg.opencodeGo };
   if (process.env.OPENCODE_API_KEY !== undefined) cfg.opencodeGo.apiKey = process.env.OPENCODE_API_KEY;
   cfg.tts = { ...cfg.tts };
-  if (process.env.OMB_TTS_KEY !== undefined) cfg.tts.key = process.env.OMB_TTS_KEY;
-  const presetVoice = process.env.OMB_TTS_DEFAULT_VOICE?.trim();
+  if (process.env.CRYBOT_TTS_KEY !== undefined) cfg.tts.key = process.env.CRYBOT_TTS_KEY;
+  const presetVoice = process.env.CRYBOT_TTS_DEFAULT_VOICE?.trim();
   if (presetVoice && !cfg.tts.voice?.trim() && (cfg.tts.provider ?? "elevenlabs") === "elevenlabs") cfg.tts.voice = presetVoice;
-  if (process.env.OMB_FISH_AUDIO_API_KEY !== undefined) cfg.tts.fishKey = process.env.OMB_FISH_AUDIO_API_KEY;
-  if (process.env.OMB_GEMINI_API_KEY !== undefined) cfg.tts.geminiKey = process.env.OMB_GEMINI_API_KEY;
+  if (process.env.CRYBOT_FISH_AUDIO_API_KEY !== undefined) cfg.tts.fishKey = process.env.CRYBOT_FISH_AUDIO_API_KEY;
+  if (process.env.CRYBOT_GEMINI_API_KEY !== undefined) cfg.tts.geminiKey = process.env.CRYBOT_GEMINI_API_KEY;
   cfg.decider = { ...cfg.decider };
-  if (process.env.OMB_JEV_API_KEY !== undefined) cfg.decider.key = process.env.OMB_JEV_API_KEY;
-  if (process.env.OMB_OPENROUTER_DECIDER_KEY !== undefined) cfg.decider.openrouterKey = process.env.OMB_OPENROUTER_DECIDER_KEY; if (process.env.OMB_WORKERS_AI_TOKEN !== undefined) cfg.decider.workersAiToken = process.env.OMB_WORKERS_AI_TOKEN;
+  if (process.env.CRYBOT_JEV_API_KEY !== undefined) cfg.decider.key = process.env.CRYBOT_JEV_API_KEY;
+  if (process.env.CRYBOT_OPENROUTER_DECIDER_KEY !== undefined) cfg.decider.openrouterKey = process.env.CRYBOT_OPENROUTER_DECIDER_KEY; if (process.env.CRYBOT_WORKERS_AI_TOKEN !== undefined) cfg.decider.workersAiToken = process.env.CRYBOT_WORKERS_AI_TOKEN;
   cfg.live = liveConfigWithEnv(cfg.live); fishKeyFromLiveKey(cfg);
   cfg.imageGen = { ...cfg.imageGen };
-  if (process.env.OMB_OPENAI_IMAGE_KEY !== undefined) cfg.imageGen.key = process.env.OMB_OPENAI_IMAGE_KEY;
-  if (process.env.OMB_CUSTOM_IMAGE_KEY !== undefined) cfg.imageGen.customApiKey = process.env.OMB_CUSTOM_IMAGE_KEY;
-  if (process.env.OMB_GEMINI_IMAGE_KEY !== undefined) cfg.imageGen.geminiKey = process.env.OMB_GEMINI_IMAGE_KEY;
+  if (process.env.CRYBOT_OPENAI_IMAGE_KEY !== undefined) cfg.imageGen.key = process.env.CRYBOT_OPENAI_IMAGE_KEY;
+  if (process.env.CRYBOT_CUSTOM_IMAGE_KEY !== undefined) cfg.imageGen.customApiKey = process.env.CRYBOT_CUSTOM_IMAGE_KEY;
+  if (process.env.CRYBOT_GEMINI_IMAGE_KEY !== undefined) cfg.imageGen.geminiKey = process.env.CRYBOT_GEMINI_IMAGE_KEY;
   const signInEnv = signInFromEnv();
   if (signInEnv.admins || signInEnv.members) cfg.signIn = { ...cfg.signIn, ...signInEnv };
   return cfg;
@@ -790,27 +790,27 @@ export function syncCredentialEnv(patch: Partial<Omit<AppConfig, "threads" | "ne
   const secrets: Array<[value: string | undefined, name: string]> = [
     [patch.xai?.key, "XAI_API_KEY"],
     [patch.mistral?.key, "MISTRAL_API_KEY"],
-    [patch.cerebras?.key, "CEREBRAS_API_KEY"], [patch.treg?.key, "OMB_TREG_KEY"], [patch.postiz?.key, "OMB_POSTIZ_API_KEY"],
-    [patch.groq?.key, "OMB_GROQ_API_KEY"],
-    [patch.greenference?.key, "OMB_GREENFERENCE_API_KEY"], [patch.modelgo?.key, "OMB_MODELGO_API_KEY"],
-    [patch.meta?.key, "OMB_META_API_KEY"],
-    [patch.deepseek?.key, "OMB_DEEPSEEK_API_KEY"],
-    [patch.anthropic?.key, "OMB_ANTHROPIC_API_KEY"],
+    [patch.cerebras?.key, "CEREBRAS_API_KEY"], [patch.treg?.key, "CRYBOT_TREG_KEY"], [patch.postiz?.key, "CRYBOT_POSTIZ_API_KEY"],
+    [patch.groq?.key, "CRYBOT_GROQ_API_KEY"],
+    [patch.greenference?.key, "CRYBOT_GREENFERENCE_API_KEY"], [patch.modelgo?.key, "CRYBOT_MODELGO_API_KEY"],
+    [patch.meta?.key, "CRYBOT_META_API_KEY"],
+    [patch.deepseek?.key, "CRYBOT_DEEPSEEK_API_KEY"],
+    [patch.anthropic?.key, "CRYBOT_ANTHROPIC_API_KEY"],
     [patch.openaiCompat?.key, "OPENAI_COMPAT_API_KEY"],
-    [patch.openai?.key, "OMB_OPENAI_API_KEY"],
-    [patch.openrouter?.key, "OMB_OPENROUTER_API_KEY"],
+    [patch.openai?.key, "CRYBOT_OPENAI_API_KEY"],
+    [patch.openrouter?.key, "CRYBOT_OPENROUTER_API_KEY"],
     [patch.composio?.apiKey, "COMPOSIO_API_KEY"],
     [patch.box?.token, "BOX_TOKEN"],
     [patch.opencodeGo?.apiKey, "OPENCODE_API_KEY"],
-    [patch.tts?.key, "OMB_TTS_KEY"],
-    [patch.tts?.fishKey, "OMB_FISH_AUDIO_API_KEY"],
-    [patch.tts?.geminiKey, "OMB_GEMINI_API_KEY"],
-    [patch.decider?.key, "OMB_JEV_API_KEY"],
-    [patch.decider?.openrouterKey, "OMB_OPENROUTER_DECIDER_KEY"], [patch.decider?.workersAiToken, "OMB_WORKERS_AI_TOKEN"],
-    [patch.imageGen?.key, "OMB_OPENAI_IMAGE_KEY"],
-    [patch.imageGen?.customApiKey, "OMB_CUSTOM_IMAGE_KEY"],
-    [patch.imageGen?.geminiKey, "OMB_GEMINI_IMAGE_KEY"],
-    [patch.live?.key, "OMB_OPENAI_LIVE_KEY"],
+    [patch.tts?.key, "CRYBOT_TTS_KEY"],
+    [patch.tts?.fishKey, "CRYBOT_FISH_AUDIO_API_KEY"],
+    [patch.tts?.geminiKey, "CRYBOT_GEMINI_API_KEY"],
+    [patch.decider?.key, "CRYBOT_JEV_API_KEY"],
+    [patch.decider?.openrouterKey, "CRYBOT_OPENROUTER_DECIDER_KEY"], [patch.decider?.workersAiToken, "CRYBOT_WORKERS_AI_TOKEN"],
+    [patch.imageGen?.key, "CRYBOT_OPENAI_IMAGE_KEY"],
+    [patch.imageGen?.customApiKey, "CRYBOT_CUSTOM_IMAGE_KEY"],
+    [patch.imageGen?.geminiKey, "CRYBOT_GEMINI_IMAGE_KEY"],
+    [patch.live?.key, "CRYBOT_OPENAI_LIVE_KEY"],
   ];
   for (const [value, name] of secrets) {
     if (value === undefined) continue;
@@ -819,7 +819,7 @@ export function syncCredentialEnv(patch: Partial<Omit<AppConfig, "threads" | "ne
   }
   const settings: Array<[value: string | undefined, name: string]> = [
     [patch.openaiCompat?.url, "OPENAI_COMPAT_URL"],
-    [patch.anthropic?.url, "OMB_ANTHROPIC_API_URL"],
+    [patch.anthropic?.url, "CRYBOT_ANTHROPIC_API_URL"],
     [patch.openaiCompat?.model, "OPENAI_COMPAT_MODEL"],
     [patch.openaiCompat?.provider, "OPENAI_COMPAT_PROVIDER"],
     ...liveSettingEnv(patch.live),
@@ -843,10 +843,10 @@ function openCodeProviderKeyNameRefusal(name: string): string | undefined {
     return "Use the name the provider reads its key from: capitals, ending in _API_KEY, _KEY or _TOKEN, such as VENICE_API_KEY.";
   }
   if (name === "OPENCODE_API_KEY") return "Save the OpenCode key in the OpenCode API key box instead.";
-  const reserved = name.startsWith("OPENCODE_") || name.startsWith("OMB_")
+  const reserved = name.startsWith("OPENCODE_") || name.startsWith("CRYBOT_")
     || (WORKSPACE_CREDENTIAL_ENV as readonly string[]).includes(name)
     || ((PROVIDER_CREDENTIAL_ENV as readonly string[]).includes(name) && !(OPENCODE_PROVIDER_ENV as readonly string[]).includes(name));
-  return reserved ? `OpenMaus keeps ${name} for itself, so OpenCode can't be given it here. Put this key in opencode.json instead.` : undefined;
+  return reserved ? `Cry Bot keeps ${name} for itself, so OpenCode can't be given it here. Put this key in opencode.json instead.` : undefined;
 }
 
 export function openCodeProviderKeys(cfg: Pick<AppConfig, "opencodeGo">): Record<string, string> {
@@ -1134,9 +1134,9 @@ function injectedEnvironment(cfg: AppConfig, instanceId: string, driver: string)
   if (driver === "grok" && cfg.xai?.key) environment.set("XAI_API_KEY", cfg.xai.key);
   if (driver === "claudeAgent") for (const [name, value] of Object.entries(anthropicKeyEnv(cfg.anthropic, instanceId === CLAUDE_API_INSTANCE))) environment.set(name, value);
   if (driver === "openai-compat" && instanceId === OPENAI_API_INSTANCE) {
-    if (cfg.openai?.key) environment.set("OMB_OPENAI_API_KEY", cfg.openai.key);
+    if (cfg.openai?.key) environment.set("CRYBOT_OPENAI_API_KEY", cfg.openai.key);
   } else if (driver === "openai-compat" && instanceId === OPENROUTER_API_INSTANCE) {
-    if (cfg.openrouter?.key) environment.set("OMB_OPENROUTER_API_KEY", cfg.openrouter.key);
+    if (cfg.openrouter?.key) environment.set("CRYBOT_OPENROUTER_API_KEY", cfg.openrouter.key);
   } else {
     if (driver === "openai-compat" && cfg.openaiCompat?.key)
       environment.set("OPENAI_COMPAT_API_KEY", cfg.openaiCompat.key);

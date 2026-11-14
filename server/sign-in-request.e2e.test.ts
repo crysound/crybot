@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry } from "../scripts/control-cry.ts";
 import { removeTempDir } from "./testing/cleanup.ts";
 import { openSse } from "./testing/sse.ts";
 
@@ -13,11 +13,11 @@ const SIGNED_IN_REPLY = "You are signed in, so I opened the dashboard.";
 
 /** A server whose bot asks for a sign-in on its first turn and reports the dashboard on its second. */
 async function signInFixture() {
-  const tools = mkdtempSync(join(tmpdir(), "omb-sign-in-e2e-"));
+  const tools = mkdtempSync(join(tmpdir(), "cry-sign-in-e2e-"));
   const binaryPath = join(tools, "agent-browser");
   // Answers the saved-login check the mount makes; every other command succeeds silently.
   writeFileSync(binaryPath, `#!/bin/sh\nif [ "$1" = session ] && [ "$2" = list ]; then printf '{"success":true,"data":{"sessions":[]}}'; fi\nexit 0\n`, { mode: 0o755 });
-  const fixture = await launchVerificationServer({}, undefined, undefined, { binaryPath, executablePath: join(tools, "chrome") }, undefined, { scripted: true });
+  const fixture = await launchVerificationServer({}, undefined, undefined, { binaryPath, executablePath: join(tools, "chrome") }, { scripted: true });
   const url = fixture.info.url;
   const planPath = join(fixture.info.dataDir, "room-plan.json");
   const evidence = () => existsSync(`${planPath}.evidence.jsonl`)
@@ -45,8 +45,8 @@ async function signInFixture() {
       { reply: SIGNED_IN_REPLY },
     ] } }));
     const messages = async () => (await api("GET", `/api/threads/${bot.threadId}/messages`)).body.messages as any[];
-    const send = (text: string) => runControlOmb(["send", "--bot", bot.id, "--task", bot.threadId, "--text", text, "--url", url]);
-    const wait = async () => (await runControlOmb(["wait", "--bot", bot.id, "--task", bot.threadId, "--timeout", "20", "--url", url]) as any).status;
+    const send = (text: string) => runControlCry(["send", "--bot", bot.id, "--task", bot.threadId, "--text", text, "--url", url]);
+    const wait = async () => (await runControlCry(["wait", "--bot", bot.id, "--task", bot.threadId, "--timeout", "20", "--url", url]) as any).status;
     return { url, bot, api, evidence, messages, send, wait, stream, close };
   } catch (error) {
     await close();

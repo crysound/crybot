@@ -22,7 +22,7 @@ it.each([
   const posts: Array<{ url: string; body: string }> = [];
   vi.stubGlobal("fetch", (url: string, init?: RequestInit) => { posts.push({ url, body: String(init?.body) }); return new Promise(() => {}); });
   let closed: (viewer: { open: boolean; contextId: string | null }) => void = () => {};
-  vi.stubGlobal("ogb", { ...(remote ? { remoteClient: { active: true } } : {}), desktopViewer: { onState: (listener: typeof closed) => { closed = listener; return () => {}; } } });
+  vi.stubGlobal("cry", { ...(remote ? { remoteClient: { active: true } } : {}), desktopViewer: { onState: (listener: typeof closed) => { closed = listener; return () => {}; } } });
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);

@@ -71,7 +71,7 @@ it("uses the verified install response instead of relying on another status requ
 });
 
 it("never opens a local terminal to install on a paired remote server", () => {
-  vi.stubGlobal("window", Object.assign(window, { ogb: { platform: "win32", openInstallTerminal: vi.fn(), remoteClient: { active: true } } }));
+  vi.stubGlobal("window", Object.assign(window, { cry: { platform: "win32", openInstallTerminal: vi.fn(), remoteClient: { active: true } } }));
   mount(createElement(EngineSetup, { instance: engine }));
   expect(host.textContent).not.toContain("Open install in Terminal");
   expect(host.textContent).toContain("fixture-install");
@@ -87,6 +87,6 @@ it("says plainly when the engine now runs the copy the app installed", async () 
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ instances: [ready], usingAppCopy: true }))));
   mount(createElement(EngineSetup, { instance: opencode }));
   await act(async () => button("Install OpenCode here").click());
-  expect(host.textContent).toContain("Another copy of OpenCode on this computer doesn't start, so OpenCode now uses the copy MausBot installed.");
+  expect(host.textContent).toContain("Another copy of OpenCode on this computer doesn't start, so OpenCode now uses the copy Cry Bot installed.");
   expect(host.textContent).toContain("Installation verified");
 });

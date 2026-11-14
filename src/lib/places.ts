@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { CloudSwatch } from "../../electron/cloud-list.mjs";
-import type { RailPlace, RailState } from "../../electron/cloud-rail.mjs";
+import type { RailPlace, RailState } from "../../electron/rail.mjs";
 import type { PlaceColorOutcome } from "../../electron/place-look.mjs";
-import type { CloudRemoveOutcome } from "../../electron/cloud-account.mjs";
+import type { CloudRemoveOutcome } from "../../electron/cloud-account-types.mjs";
 import { ipcErrorText } from "@/lib/cloud-send";
 import { t } from "@/lib/i18n";
 
@@ -12,7 +12,7 @@ let started = false;
 const listeners = new Set<(state: RailState) => void>();
 
 function bridge() {
-  const workspaces = typeof window === "undefined" || window.ogb?.remoteClient?.active ? undefined : window.ogb?.workspaces;
+  const workspaces = typeof window === "undefined" || window.cry?.remoteClient?.active ? undefined : window.cry?.workspaces;
   return workspaces?.places ? workspaces : undefined;
 }
 

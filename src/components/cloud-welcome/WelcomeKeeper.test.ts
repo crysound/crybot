@@ -66,7 +66,7 @@ beforeEach(() => {
     removeItem: (key: string) => { stored.delete(key); },
   });
   fixture.state = {
-    connected: true, selectedId: "b1", activeView: "chat", routines: [], groups: [], bots: [{ id: "b1", threadId: "t1", name: "Maus" }],
+    connected: true, selectedId: "b1", activeView: "chat", routines: [], groups: [], bots: [{ id: "b1", threadId: "t1", name: "Bot" }],
     instances: [{ instanceId: "claude" }], config: { cloudHome: true, onboarding: { ...EMPTY_ONBOARDING }, profile: { name: "", email: "", aboutMe: "" } },
   };
   server = structuredClone(fixture.state.config);
@@ -76,7 +76,7 @@ beforeEach(() => {
     if (patch.onboarding) server = { ...server, onboarding: { ...server.onboarding, ...patch.onboarding } };
     return Promise.resolve().then(() => structuredClone(server));
   });
-  window.ogb = { platform: "darwin", workspaces: { state: vi.fn().mockResolvedValue({ local: false, name: "Studio Cloud" }), menu: vi.fn() } } as unknown as typeof window.ogb;
+  window.cry = { platform: "darwin", workspaces: { state: vi.fn().mockResolvedValue({ local: false, name: "Studio Cloud" }), menu: vi.fn() } } as unknown as typeof window.cry;
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -84,18 +84,18 @@ beforeEach(() => {
 afterEach(() => {
   flushSync(() => root.unmount());
   host.remove();
-  delete window.ogb;
+  delete window.cry;
   vi.unstubAllGlobals();
 });
 
 describe("an end of the welcome kept on this device", () => {
   it("keeps the welcome away, reaches the Cloud's record when it can, and is then let go", async () => {
-    localStorage.setItem("omb.cloudWelcome.done", "1");
+    localStorage.setItem("cry.cloudWelcome.done", "1");
     resetCloudWelcome();
     flushSync(() => root.render(createElement(Harness)));
     expect(document.body.textContent).not.toContain("What should Studio Cloud start with?");
     await vi.waitFor(() => expect(server.onboarding.hintsSeen).toContain("cloud-welcome-done"));
-    await vi.waitFor(() => expect(localStorage.getItem("omb.cloudWelcome.done")).toBeNull());
+    await vi.waitFor(() => expect(localStorage.getItem("cry.cloudWelcome.done")).toBeNull());
     expect(welcomeNow().doneHere).toBe(false);
   });
 });

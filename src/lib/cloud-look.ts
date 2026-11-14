@@ -1,13 +1,11 @@
-import type { CloudColor } from "../../electron/cloud-buy.mjs";
+import type { CloudColor } from "../../electron/cloud-types.mjs";
 import type { LocaleKey } from "@/locales";
 
 /** A Cloud's colour names, as main saves them (environments.cjs ENTRY_COLORS); each skin tunes its own tone of each. */
 export const CLOUD_COLORS = ["blue", "teal", "purple", "orange", "red", "yellow"] as const satisfies readonly CloudColor[];
-export const DEFAULT_CLOUD_COLOR: CloudColor = "blue";
-export const CLOUD_NAME_MAX = 28;
 export const CLOUD_COLOR_LABEL = {
-  blue: "cloudBuy.color.blue", teal: "cloudBuy.color.teal", purple: "cloudBuy.color.purple",
-  orange: "cloudBuy.color.orange", red: "cloudBuy.color.red", yellow: "cloudBuy.color.yellow",
+  blue: "cloudPlan.color.blue", teal: "cloudPlan.color.teal", purple: "cloudPlan.color.purple",
+  orange: "cloudPlan.color.orange", red: "cloudPlan.color.red", yellow: "cloudPlan.color.yellow",
 } as const satisfies Record<CloudColor, LocaleKey>;
 
 export function cloudColor(value: unknown): CloudColor | null {
@@ -18,9 +16,4 @@ export function cloudColor(value: unknown): CloudColor | null {
 export function cloudColorFill(value: unknown): string {
   const color = cloudColor(value);
   return color ? `var(--identity-${color})` : "var(--color-control)";
-}
-
-/** What the sheet shows while typing; main keeps the name it last accepted. */
-export function cloudNameShown(typed: string, fallback: string): string {
-  return typed.trim().replace(/\s+/g, " ") || fallback;
 }

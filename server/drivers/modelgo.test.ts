@@ -1,6 +1,6 @@
 import { createServer, type Server, type ServerResponse } from "node:http";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MODELGO_URL } from "../../shared/modelgo.ts";
+const MODELGO_URL = "https://modelgo.ai";
 import type { ProviderInstance } from "../contracts.ts";
 import { recordEvents } from "../testing/events.ts";
 import { classifyError } from "./retry.ts";

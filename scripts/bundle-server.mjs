@@ -2,7 +2,7 @@
 // packaged app ships no node_modules. Entry points keep their exact relative
 // paths under dist-server, where the server locates each proxy by path.
 import { build } from "esbuild";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { serverLocalePlugin } from "./server-locale-plugin.mjs";
@@ -25,18 +25,18 @@ const yamlEsmPlugin = {
 // only through a require of its own (esbuild otherwise throws "Dynamic require
 // of "events" is not supported" when it loads).
 const NODE_REQUIRE = {
-  js: 'import { createRequire as __ombCreateRequire } from "node:module";\nconst require = __ombCreateRequire(import.meta.url);',
+  js: 'import { createRequire as __cryCreateRequire } from "node:module";\nconst require = __cryCreateRequire(import.meta.url);',
 };
 
 // Every file run as its own process.
 const ENTRY_POINTS = [
   "index.ts",
   "message-search.worker.ts",
-  // the `openmausbot` command
-  "openmausbot.ts",
+  // the `crybot` command
+  "crybot.ts",
   "pair-cli.ts",
   "workspace-backup.worker.ts",
-  // the OMB Cloud Pro home image's entry point
+  // the CRY Cloud Pro home image's entry point
   "cloud-home-start.ts",
   // the container image's entry point
   "server-launcher.ts",
@@ -46,7 +46,7 @@ const ENTRY_POINTS = [
   "local-computer.ts",
   "local-computer-proxy.ts",
   // the hook helper Claude Code runs at PostToolUse/PreCompact/SessionStart/Stop
-  "hooks/omb-hook.ts",
+  "hooks/cry-hook.ts",
   "container-mcp.ts",
   "vps-container-mcp.ts",
   "permission-proxy.ts",
@@ -99,7 +99,7 @@ await build({
   plugins: [serverLocalePlugin],
 });
 
-// `openmausbot serve --tunnel` spawns the connector guardian as its own
+// `crybot serve --tunnel` spawns the connector guardian as its own
 // process, so it must exist as a file beside the server.
 await build({
   entryPoints: [join(root, "electron", "managed-companion-guardian-main.mjs")],
@@ -125,23 +125,7 @@ await build({
   logLevel: "info",
 });
 
-// The enterprise layer (enterprise/LICENSE; delete the folder for pure OSS).
-// Shipped bundled to dist-server/enterprise/server/index.js, where the server
-// finds it; its own license travels with it.
-if (existsSync(join(root, "enterprise", "server", "index.ts"))) {
-  await build({
-    entryPoints: [join(root, "enterprise", "server", "index.ts")],
-    bundle: true,
-    platform: "node",
-    target: "node20",
-    format: "esm",
-    outfile: join(root, "dist-server", "enterprise", "server", "index.js"),
-    allowOverwrite: true,
-    logLevel: "info",
-    plugins: [serverLocalePlugin],
-  });
-  copyFileSync(join(root, "enterprise", "LICENSE"), join(root, "dist-server", "enterprise", "LICENSE"));
-}
+
 
 // The packaged desktop and the container launcher run this bootstrap to turn on Node's compile cache.
 // Copied, not bundled: esbuild would inline index.js into it.

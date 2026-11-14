@@ -19,7 +19,7 @@ export function filesFolderOf(root, accountId, read = (file) => { try { return J
   return !first || first === accountId ? root : path.join(root, "accounts", createHash("sha256").update(accountId).digest("hex").slice(0, 32));
 }
 
-/** `stateDir`: Files' own folder under userData; the staging Admin keeps its own (cloud-account.mjs cloudTarget).
+/** `stateDir`: Files' own folder under userData; the staging Admin keeps its own (account.mjs cloudTarget).
  * `lending`: main's pieces for lending to My Cloud ({ environment, sharing, validate }): each lent folder gets a copy,
  * and a folder added here is lent, read only (lent-folders.mjs). */
 export function installCloudFiles({ app, ipcMain, dialog, shell, powerMonitor, fetch, localWorkspaceOnly, send, cloudOrigin, cloudAccount, localDataDir, power, lending: lendingParts = null, now = Date.now, stateDir = "cloud-sync", makeService = createCloudFilesService, t }) {

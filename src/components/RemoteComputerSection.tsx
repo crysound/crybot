@@ -25,8 +25,8 @@ export function isServerPairingLink(input: string): boolean {
 
 /** `legacyOnly`: only an installation already in client mode sees this card, to leave it before the mode ends. */
 export function RemoteComputerSection({ hideWhenUnavailable = false, legacyOnly = false }: { hideWhenUnavailable?: boolean; legacyOnly?: boolean }) {
-  const bridge = window.ogb?.remoteClient;
-  const environments = window.ogb?.environments;
+  const bridge = window.cry?.remoteClient;
+  const environments = window.cry?.environments;
   const [state, setState] = useState<DesktopRemoteClientState>({ active: bridge?.active === true });
   const [connection, setConnection] = useState<"server" | "companion">(environments ? "server" : "companion");
   const [serverLink, setServerLink] = useState("");
@@ -156,11 +156,11 @@ export function RemoteComputerSection({ hideWhenUnavailable = false, legacyOnly 
               {/* A chat-only link cannot pass the ownership check behind "Make … my home", so full access comes first. */}
               <div data-pair-access="full" className="flex flex-col gap-1">
                 <p className="text-[12px] font-medium text-ink">{t("remote.client.server.fullTitle")}</p>
-                <code className="select-all rounded-lg bg-inset px-3 py-2 text-[12px] text-ink">npx openmausbot pair</code>
+                <code className="select-all rounded-lg bg-inset px-3 py-2 text-[12px] text-ink">npx crybot pair</code>
               </div>
               <div data-pair-access="client" className="flex flex-col gap-1">
                 <p className="text-[12px] font-medium text-ink">{t("remote.client.server.clientTitle")}</p>
-                <code className="select-all rounded-lg bg-inset px-3 py-2 text-[12px] text-ink">npx openmausbot pair --client</code>
+                <code className="select-all rounded-lg bg-inset px-3 py-2 text-[12px] text-ink">npx crybot pair --client</code>
                 <p className="text-[12px] leading-relaxed text-ink-secondary">{t("remote.client.server.clientNote")}</p>
               </div>
               <label className="flex flex-col gap-1.5 text-[12px] text-ink-secondary">
@@ -191,7 +191,7 @@ export function RemoteComputerSection({ hideWhenUnavailable = false, legacyOnly 
                 <input
                   value={endpoint}
                   onChange={(event) => setEndpoint(event.target.value)}
-                  placeholder="https://…openmausbot.com or computer.tailnet.ts.net"
+                  placeholder="https://server.example.com"
                   disabled={busy}
                   autoCapitalize="none"
                   autoCorrect="off"

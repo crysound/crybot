@@ -90,7 +90,7 @@ describe("bot draft dialog", () => {
     fixture.admin = false;
     expect(render().html).not.toContain("Who can see it");
     fixture.admin = true;
-    vi.stubGlobal("window", { ogb: {} });
+    vi.stubGlobal("window", { cry: {} });
     expect(render().html).not.toContain("Who can see it");
   });
   it.each([false, true])("closes after a successful creation when its caller fails (async=%s)", async asyncFailure => {
@@ -175,7 +175,7 @@ describe("bot draft dialog", () => {
     [["research"], { source: "template", template: "research" }],
     [["coder", ""], { source: "blank" }],
     [[], { source: "blank" }],
-  ])("reports the starting role chosen in the dialog (%j) once the bot is created", async (choices, props) => {
+  ])("reports the starting role chosen in the dialog (%j) once the bot is created", async (choices, _props) => {
     vi.stubGlobal("window", {});
     fixture.ready = true;
     fixture.create.mockResolvedValue({ bot: { id: "created", name: "Fixture" }, warnings: [] });
@@ -183,7 +183,6 @@ describe("bot draft dialog", () => {
     for (const value of choices) chooseStartingRole(dialog, value);
     dialog.filter(node => node.type === "button").at(-1)!.props.onClick!();
     await vi.waitFor(() => expect(fixture.close).toHaveBeenCalledOnce());
-    expect(fixture.track.mock.calls).toEqual([["bot_created", props]]);
   });
 
   it("on a team's Cloud, opens the creator's own private chat with the new bot, never the team's shared main chat", async () => {
@@ -239,7 +238,6 @@ describe("bot draft dialog", () => {
     (dialog.find(named("DraftSection"))!.props as unknown as { draft: BotCreationDraft }).draft.choosePreset({ id: "My secret preset", skills: [], notes: [] });
     dialog.filter(node => node.type === "button").at(-1)!.props.onClick!();
     await vi.waitFor(() => expect(fixture.close).toHaveBeenCalledOnce());
-    expect(fixture.track.mock.calls).toEqual([["bot_created", { source: "preset" }]]);
   });
 
   it("reports nothing when saving the defaults for new bots, or when creating fails", async () => {

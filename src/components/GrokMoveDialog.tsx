@@ -1,7 +1,7 @@
 import { Check, Copy, FileUp, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { track } from "@/lib/analytics";
+
 import { cn } from "@/lib/cn";
 import { useCopyFeedback } from "@/lib/copy-text";
 import { foundExports, grokErrorText, lookForGrokBot, NOTHING_FOUND, previewGrokMove, runGrokMove, type GrokLook, type GrokPreview, type GrokReport } from "@/lib/grok-move";
@@ -161,7 +161,7 @@ export function GrokMoveDialog({ onClose, inline = false }: { onClose: () => voi
     if (!preview) return;
     setImporting(true);
     const done = await runGrokMove(preview, dispatch);
-    track("team_imported", { members: preview.plans.length, source: "grok", mode: "add", format: "package" });
+
     setReport(done);
     setPreview(null);
     setImporting(false);

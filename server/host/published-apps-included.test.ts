@@ -13,7 +13,7 @@ import { createPublishedApps, type PublishedAppsDeps } from "./published-apps.ts
 
 const ADA = "ada@acme.test", BEN = "ben@acme.test", OLIVE = "olive@acme.test";
 const KEYS: Record<string, string> = { [ADA]: "p_adaadaadaadaadaadaada1", [BEN]: "p_benbenbenbenbenbenben1", [OLIVE]: "p_oliveoliveoliveolive01" };
-const TOKEN = "omb_host_published_apps_token_0123456789abcdef";
+const TOKEN = "cry_host_published_apps_token_0123456789abcdef";
 
 const bots = [
   { id: "mira", name: "Mira", threadId: "main", tasks: [{ threadId: "main" }, { threadId: "ada-chat" }, { threadId: "ben-chat" }] },
@@ -100,7 +100,7 @@ describe("the plan's included apps on a person's own Cloud", () => {
     expect(listed.map((app) => [app.id, app.bot.id])).toEqual([[`included-${ledger.key}`, "bens-own"]]);
   });
 
-  it("shows an app MausBot took down, and one that was never live, without an address to open as live", async () => {
+  it("shows an app CryBot took down, and one that was never live, without an address to open as live", async () => {
     const bakery = await publish("mira", join(workspace("mira"), "bakery"), "Bakery order page");
     const rota = await publish("mira", join(workspace("mira"), "rota"), "Staff rota");
     fake.takeDown(bakery.key);

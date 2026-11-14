@@ -2,10 +2,10 @@ import { useState, type FormEvent } from "react";
 import { ExternalLink, KeyRound, Loader2, LockKeyhole, RefreshCw, X } from "lucide-react";
 
 import { CUSTOM_SECRET_TARGET, credentialResumeOutcome, credentialSaveRequest, desktopCredentialSlot, isConfigCredentialTarget, isProviderCredentialTarget } from "../../shared/credential-request";
-import { credentialProvider } from "@/lib/analytics-allowlist";
+
 import { cn } from "@/lib/cn";
 import { activeLocale, t } from "@/lib/i18n";
-import { keySaved, keySaveFailure, savedKeyResult } from "@/lib/product-events";
+
 import { api, useStore, type Bot, type ConfigStatus, type Message } from "@/state/store";
 import { ASK_FIELD, askPrimary, ASK_QUIET_BUTTON, AskCard, AskSettledLine, returnFocusToComposer } from "./AskCard";
 import { EmailConnectForm, type EmailConnectRefusal } from "./EmailCard";
@@ -52,7 +52,7 @@ export function SecretRequestCard({
   const custom = secret.target === CUSTOM_SECRET_TARGET;
   // A page reached through a desktop paired to another computer: a key that computer keeps in its own encrypted store can
   // only be typed there. Anything its server keeps, a custom secret or a provider key, is typed here like on any page.
-  const onlyOnHost = window.ogb?.remoteClient?.active === true && secret.target !== CUSTOM_SECRET_TARGET && desktopCredentialSlot(secret.target) !== null && !isProviderCredentialTarget(secret.target);
+  const onlyOnHost = window.cry?.remoteClient?.active === true && secret.target !== CUSTOM_SECRET_TARGET && desktopCredentialSlot(secret.target) !== null && !isProviderCredentialTarget(secret.target);
   const outcome = credentialResumeOutcome(secret);
   const provided = outcome === "provided";
   const declined = outcome === "dismissed";
@@ -150,7 +150,7 @@ export function SecretRequestCard({
     if (saving || (!value.trim() && !savedLocally)) return;
     setSaving(true);
     setLocalError(null);
-    const provider = credentialProvider(secret.target);
+
     let saved = savedLocally;
     try {
       if (!savedLocally && secret.target !== CUSTOM_SECRET_TARGET) {
@@ -166,14 +166,14 @@ export function SecretRequestCard({
           dispatch({ type: "configStatus", config: status });
         } else await api(request.path, { method: request.method, body: JSON.stringify(request.body) });
         saved = true;
-        keySaved(provider, "chat_request", savedKeyResult(provider));
+
         setValue("");
         setSavedLocally(true);
       }
       await notifyProvided();
       returnFocusToComposer();
     } catch (error) {
-      if (!saved) keySaved(provider, "chat_request", keySaveFailure(error));
+      if (!saved) {}
       setLocalError(error instanceof Error ? error.message : String(error));
     } finally {
       setSaving(false);

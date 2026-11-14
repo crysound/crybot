@@ -12,7 +12,6 @@ export const STAR_NOTICE = "github-star-dismissed";
 /** Bots on this computer and on another place of the person's (two-places.ts): dismissed per place, by main. */
 export const TWO_PLACES_NOTICE = "two-places";
 export const PRODUCT_HUNT_NOTICE = "product-hunt-launch-2026-10";
-export const PRODUCT_HUNT_URL = "https://www.producthunt.com/products/mausbot";
 export const PRODUCT_HUNT_UNTIL = Date.UTC(2026, 10, 1);
 export const BOAT_OFFER_NOTICE = "boat-credit-2026-11";
 /** The Move from Grok Bot popup: each person sees it once, first of all, after their welcome. */
@@ -20,7 +19,7 @@ export const GROK_MOVE_NOTICE = "grok-move-2026-11";
 /** The sponsor's card for ModelGo: each person sees it once, on every page but a branded build or a desktop whose organization
  * refuses it, and on the first launch it may show in: first when nothing else is due, else right after the launch's notice. */
 export const MODELGO_OFFER_NOTICE = "modelgo-offer-2026-11";
-/** Update MausBot on your phone: once per phone with an older app after this computer's secure link ended. */
+/** Update CryBot on your phone: once per phone with an older app after this computer's secure link ended. */
 export const PHONE_UPDATE_NOTICE = "phone-app-update";
 /** A card from the project's announcements file (src/lib/announcements.ts keeps which ones each person saw, and allows one a
  * launch): after every notice someone must act on and every built-in offer, and, as the sponsor's card, it may follow the
@@ -50,7 +49,7 @@ export const NOTICES = [
 
 export type NoticeId = (typeof NOTICES)[number];
 
-export type NoticeFacts = Record<NoticeId, boolean | null>;
+export type NoticeFacts = Partial<Record<NoticeId, boolean | null>>;
 
 /** What may still come in a launch another notice took: the product-updates question, the sponsor's card and a card from the
  * announcements file, which everyone is to see on the first launch they may show in. Each in its place in NOTICES. */
@@ -65,12 +64,12 @@ export const MUST_ACT: readonly NoticeId[] = [GROK_MOVE_NOTICE, PHONE_UPDATE_NOT
  * `closed`: that notice was closed in this page, so it doesn't come back however its facts read. The following cards follow
  * only once the launch's notice is gone, so two cards never share the corner. */
 export function nextNotice(facts: NoticeFacts, seen: (id: NoticeId) => boolean, launch: NoticeId | null = null, closed = false): NoticeId | null {
-  const launchUp = launch !== null && !closed && !seen(launch) && facts[launch] !== false;
+  const launchUp = launch !== null && !closed && !seen(launch) && facts[launch] !== undefined && facts[launch] !== false;
   let held = false;
   for (const id of NOTICES) {
     if (seen(id)) continue;
     if ((closed || (launch !== null && id !== launch)) && !FOLLOWERS.includes(id)) {
-      if (id !== launch && MUST_ACT.includes(id) && facts[id] !== false) held = true;
+      if (id !== launch && MUST_ACT.includes(id) && facts[id] !== undefined && facts[id] !== false) held = true;
       continue;
     }
     if (FOLLOWING_CARDS.includes(id) && id !== launch && (held || launchUp)) continue;
@@ -80,7 +79,7 @@ export function nextNotice(facts: NoticeFacts, seen: (id: NoticeId) => boolean, 
   return null;
 }
 
-const LAUNCH_KEY = "omb.launch.notice";
+const LAUNCH_KEY = "cry.launch.notice";
 // Where browser storage is blocked, this page's memory stands in for it, so a claim still holds for the page.
 let launchMemory: NoticeId | null = null;
 const isNotice = (id: unknown): id is NoticeId => (NOTICES as readonly unknown[]).includes(id);

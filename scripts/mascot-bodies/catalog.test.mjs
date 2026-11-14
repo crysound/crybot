@@ -14,8 +14,8 @@ describe("the generated catalog", () => {
     for (const id of MASCOT_BODY_IDS) expect(MASCOT_BODIES[id].id).toBe(id);
   });
 
-  it("defaults to the cursor", () => {
-    expect(DEFAULT_MASCOT_BODY).toBe("cursor");
+  it("defaults to the dome", () => {
+    expect(DEFAULT_MASCOT_BODY).toBe("dome");
   });
 
   it("gives every body the markup the renderer expects", () => {
@@ -49,11 +49,13 @@ describe("botMascotBody", () => {
     expect(botMascotBody("blob")).toBe("blob");
   });
 
-  it("falls back to the cursor for anything else", () => {
-    expect(botMascotBody("hexagram")).toBe("cursor");
-    expect(botMascotBody(undefined)).toBe("cursor");
-    expect(botMascotBody(null)).toBe("cursor");
-    expect(botMascotBody(42)).toBe("cursor");
+  it("falls back to the dome for anything else", () => {
+    expect(botMascotBody("cursor")).toBe("dome");
+    expect(MASCOT_BODY_IDS).not.toContain("cursor");
+    expect(botMascotBody("hexagram")).toBe("dome");
+    expect(botMascotBody(undefined)).toBe("dome");
+    expect(botMascotBody(null)).toBe("dome");
+    expect(botMascotBody(42)).toBe("dome");
   });
 
   it("exposes a schema that rejects an unknown id", () => {

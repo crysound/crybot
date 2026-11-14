@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setLocale, t } from "@/lib/i18n";
 import type { SessionState } from "./session";
-import type { CloudAccountState } from "../../electron/cloud-account.mjs";
+import type { CloudAccountState } from "../../electron/cloud-account-types.mjs";
 import {
   cloudPhoneDestination,
   connectPhoneEntry,
@@ -45,11 +45,11 @@ describe("where Connect your phone pairs", () => {
   });
 
   it("reads the window's bridges", () => {
-    vi.stubGlobal("window", { ogb: { companion: {} } });
+    vi.stubGlobal("window", { cry: { companion: {} } });
     expect(currentPhonePairingTarget(false)).toBe("computer");
-    vi.stubGlobal("window", { ogb: { companion: {}, remoteClient: { active: true } } });
+    vi.stubGlobal("window", { cry: { companion: {}, remoteClient: { active: true } } });
     expect(currentPhonePairingTarget(false)).toBe("server");
-    vi.stubGlobal("window", { ogb: { cloudPlan: {} } });
+    vi.stubGlobal("window", { cry: { cloudPlan: {} } });
     expect(currentPhonePairingTarget(true)).toBe("cloud");
     vi.stubGlobal("window", {});
     expect(currentPhonePairingTarget(false)).toBe("server");
@@ -165,16 +165,16 @@ describe("opening Settings on the phone pairing", () => {
 
 describe("the ?desktop-settings=phone request", () => {
   it("is taken off the address, keeping everything else", () => {
-    expect(takePhonePairingRequest("https://home.fly.dev/?desktop-settings=phone")).toBe("/");
-    expect(takePhonePairingRequest("https://home.fly.dev/?a=1&desktop-settings=phone#x")).toBe("/?a=1#x");
-    expect(takePhonePairingRequest("https://home.fly.dev/?desktop-settings=workspaces")).toBeNull();
-    expect(takePhonePairingRequest("https://home.fly.dev/")).toBeNull();
+    expect(takePhonePairingRequest("https://home.example.test/?desktop-settings=phone")).toBe("/");
+    expect(takePhonePairingRequest("https://home.example.test/?a=1&desktop-settings=phone#x")).toBe("/?a=1#x");
+    expect(takePhonePairingRequest("https://home.example.test/?desktop-settings=workspaces")).toBeNull();
+    expect(takePhonePairingRequest("https://home.example.test/")).toBeNull();
   });
 
   it("asks once for Pair a phone with pair=open, in the desktop window only, and drops the flag from the address", () => {
-    expect(takePhonePairingRequest("https://home.fly.dev/?desktop-settings=phone&pair=open", false)).toBe("/");
+    expect(takePhonePairingRequest("https://home.example.test/?desktop-settings=phone&pair=open", false)).toBe("/");
     expect(takePairOnOpen()).toBe(false);
-    expect(takePhonePairingRequest("https://home.fly.dev/?desktop-settings=phone&pair=open", true)).toBe("/");
+    expect(takePhonePairingRequest("https://home.example.test/?desktop-settings=phone&pair=open", true)).toBe("/");
     expect(takePairOnOpen()).toBe(true);
     expect(takePairOnOpen()).toBe(false);
   });
@@ -197,7 +197,7 @@ describe("the ?desktop-settings=phone request", () => {
 });
 
 describe("the person's Cloud as a destination on this computer", () => {
-  const origin = "https://home-7f3k2.fly.dev";
+  const origin = "https://home-7f3k2.example.test";
   const paid = (patch: Partial<CloudAccountState> = {}): CloudAccountState => ({
     status: "connected", entitlement: { plan: "pro", tier: "personal", status: "active", expiresAt: null, version: 1 }, machine: { status: "ready", origin }, ...patch,
   });
@@ -217,7 +217,7 @@ describe("the person's Cloud as a destination on this computer", () => {
   });
 
   it("a Team or Business plan has no Cloud of its own to pair here: nothing, never 'once it's ready'", () => {
-    const acme = [{ id: "team-acme", name: "Acme", role: "owner" as const, machine: { status: "ready" as const, origin: "https://omb-t-2.fly.dev" } }];
+    const acme = [{ id: "team-acme", name: "Acme", role: "owner" as const, machine: { status: "ready" as const, origin: "https://cry-t-2.example.test" } }];
     for (const tier of ["team", "business"]) {
       expect(cloudPhoneDestination(paid({ entitlement: { plan: "pro", tier, status: "active", expiresAt: null, version: 1 }, machine: undefined, teams: acme })), tier).toBeNull();
     }

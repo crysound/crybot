@@ -91,7 +91,7 @@ const press = (label: string, key: string) => {
 };
 
 beforeAll(() => {
-  vi.stubGlobal("ogb", undefined);
+  vi.stubGlobal("cry", undefined);
 });
 beforeEach(() => {
   // The panel remembers each conversation's tab, so one test's click must not choose the next test's tab.
@@ -142,7 +142,7 @@ describe("Computer panel tab", () => {
     fixture.browser = true;
     await open(makeBot());
     expect(selected()).toBe("Screen");
-    const PAGE = "https://abcdefghijklmnopqrstuvwxyz.mausbot.page/";
+    const PAGE = "https://server.example.test/";
     flushSync(() => requestPanelPage("scout", PAGE));
     await settle();
     expect(selected()).toBe("Browser");

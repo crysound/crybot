@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CompanionAccountState } from "../types/ogb";
+import type { CompanionAccountState } from "../types/cry";
 import {
   claimPhonePairingAttempt,
   closePhonePairingIfOwned,
@@ -210,12 +210,12 @@ describe("phone setup flow", () => {
     expect(secureAddressRequestLapsed(account("connecting"), waiting)).toBe(false);
     expect(secureAddressRequestLapsed(account("error"), waiting)).toBe(false);
     expect(secureAddressRequestLapsed(
-      { ...account("ready"), endpoint: "https://c-opaque.openmausbot.com" },
+      { ...account("ready"), endpoint: "https://server.example.test" },
       waiting,
     )).toBe(false);
     expect(secureAddressRequestLapsed(account("ready"), {
       enabled: true,
-      endpoints: [{ kind: "hosted", url: "https://c-opaque.openmausbot.com", priority: 0 }],
+      endpoints: [{ kind: "hosted", url: "https://server.example.test", priority: 0 }],
     })).toBe(false);
     expect(secureAddressRequestLapsed(account("ready"), { enabled: false })).toBe(false);
     expect(secureAddressRequestLapsed(null, waiting)).toBe(false);
@@ -392,9 +392,9 @@ describe("phone setup flow", () => {
     });
     const device = newlyPairedDevice(started.baselineDeviceIds, [
       { id: "old", name: "Old phone" },
-      { id: "new", name: "Milind’s iPhone" },
+      { id: "new", name: "Owner’s iPhone" },
     ]);
-    expect(device?.name).toBe("Milind’s iPhone");
+    expect(device?.name).toBe("Owner’s iPhone");
 
     const success = phoneSetupReducer(started, {
       type: "paired",
@@ -431,7 +431,7 @@ describe("phone setup flow", () => {
     expect(pairingOpen.baselineDeviceIds).toEqual(["old-1", "old-2", "old-3"]);
     expect(newlyPairedDeviceForFlow(pairingOpen, historicalDevices)).toBeNull();
 
-    const newPhone = { id: "new-1", name: "Milind’s iPhone" };
+    const newPhone = { id: "new-1", name: "Owner’s iPhone" };
     expect(newlyPairedDeviceForFlow(pairingOpen, [...historicalDevices, newPhone])).toBe(newPhone);
 
     const success = phoneSetupReducer(pairingOpen, {
@@ -467,7 +467,7 @@ describe("phone setup flow", () => {
   });
 
   it("requires pairing(true) to return a healthy live pairing window", () => {
-    const token = `omb_pair_${"a".repeat(43)}`;
+    const token = `cry_pair_${"a".repeat(43)}`;
     const fresh = {
       code: "123456",
       token,
@@ -499,13 +499,13 @@ describe("phone setup flow", () => {
     const requestId = "c285fe8c-f6f4-41a3-a737-7a2d1faf405a";
     const message = normalizePhoneSetupActionError(
       new Error(
-        `Error invoking remote method 'companion-account:request-code': Error: The secure connection request was not allowed. Try signing in again. Reference: ${requestId}.`,
+        `Error invoking remote method 'account:request-code': Error: The secure connection request was not allowed. Try signing in again. Reference: ${requestId}.`,
       ),
       "We could not send the code. Try again.",
     );
     expect(message).toBe(`We could not send the code. Try again. Reference: ${requestId}.`);
     expect(message).not.toContain("remote method");
-    expect(message).not.toContain("companion-account");
+    expect(message).not.toContain("account");
   });
 
   it("keeps the provider-capacity explanation instead of generic setup copy", () => {
@@ -513,7 +513,7 @@ describe("phone setup flow", () => {
     expect(
       normalizePhoneSetupActionError(
         new Error(
-          `Error invoking remote method 'companion-account:verify-code': Error: Secure HTTPS links are temporarily full. Try again in 10 minutes, or pair on this Wi-Fi or with Tailscale. Reference: ${requestId}.`,
+          `Error invoking remote method 'account:verify-code': Error: Secure HTTPS links are temporarily full. Try again in 10 minutes, or pair on this Wi-Fi or with Tailscale. Reference: ${requestId}.`,
         ),
         "We could not finish setup. Try again.",
       ),
@@ -528,7 +528,7 @@ describe("phone setup flow", () => {
     expect(
       normalizePhoneSetupActionError(
         new Error(
-          `Error invoking remote method 'companion-account:verify-code': Error: ${busy} Reference: ${requestId}.`,
+          `Error invoking remote method 'account:verify-code': Error: ${busy} Reference: ${requestId}.`,
         ),
         "We could not finish setup. Try again.",
       ),
@@ -538,7 +538,7 @@ describe("phone setup flow", () => {
   it("replaces arbitrary IPC details with calm setup copy", () => {
     expect(
       normalizePhoneSetupActionError(
-        new Error("Error invoking remote method 'companion-account:request-code': Error: /private/keychain failed"),
+        new Error("Error invoking remote method 'account:request-code': Error: /private/keychain failed"),
         "We could not send the code. Try again.",
       ),
     ).toBe("We could not send the code. Try again.");

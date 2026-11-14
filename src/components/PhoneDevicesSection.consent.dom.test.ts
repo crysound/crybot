@@ -34,7 +34,7 @@ beforeEach(() => {
 afterEach(() => {
   flushSync(() => root.unmount());
   host.remove();
-  delete (globalThis as { ogb?: unknown }).ogb;
+  delete (globalThis as { cry?: unknown }).cry;
 });
 
 it("stays on the choice and says why when the chosen way in could not be turned on", async () => {
@@ -45,7 +45,7 @@ it("stays on the choice and says why when the chosen way in could not be turned 
     pairing: vi.fn(async () => closed),
     refreshTailscale: vi.fn(async () => closed),
   };
-  (globalThis as { ogb?: unknown }).ogb = { companion };
+  (globalThis as { cry?: unknown }).cry = { companion };
   flushSync(() => root.render(createElement(Page)));
   await vi.waitFor(() => expect(turnOn()?.disabled).toBe(false));
   turnOn()!.click();

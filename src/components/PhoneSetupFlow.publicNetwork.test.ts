@@ -11,7 +11,7 @@ const state: CompanionState = {
   keepAwake: false,
   port: 8810,
   devices: [],
-  pairing: { code: "123456", token: `omb_pair_${"a".repeat(43)}`, expiresAt: Date.now() + 120_000 },
+  pairing: { code: "123456", token: `cry_pair_${"a".repeat(43)}`, expiresAt: Date.now() + 120_000 },
   lan: "192.168.1.34",
   publicNetwork: "Wi-Fi",
 };
@@ -28,7 +28,7 @@ const controller = (over: Partial<PhoneSetupController>): PhoneSetupController =
   accountBusy: false,
   error: null,
   accountError: null,
-  pairingLink: "openmausbot://pair?address=192.168.1.34%3A8810",
+  pairingLink: "crybot://pair?address=192.168.1.34%3A8810",
   address: "192.168.1.34",
   pairingPort: 8810,
   addressText: "192.168.1.34:8810",
@@ -88,8 +88,8 @@ describe("the pairing code", () => {
     for (const over of [{}, { state: e2e }]) {
       const html = render(over);
       expect(qrCodes(html)).toBe(1);
-      expect(html).toContain("Install MausBot on your phone from the App Store or Google Play, then scan this code in the app.");
-      expect(html).toContain("Scan it from inside the MausBot app, not the camera.");
+      expect(html).toContain("Install Cry Bot on your phone from the App Store or Google Play, then scan this code in the app.");
+      expect(html).toContain("Scan it from inside the Cry Bot app, not the camera.");
     }
   });
 

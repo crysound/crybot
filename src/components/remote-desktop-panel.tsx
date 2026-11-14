@@ -108,7 +108,7 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
   }, [bot.id, localVm]);
 
   useEffect(() => {
-    const viewer = window.ogb?.desktopViewer;
+    const viewer = window.cry?.desktopViewer;
     if (!viewer) return;
     let alive = true;
     void viewer.currentState().then((state) => {
@@ -182,7 +182,7 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
     // Set when another view holds the Local VM: this attempt opened nothing, so it must not close that view's viewer.
     let heldElsewhere = false;
     try {
-      if (!window.ogb?.desktopViewer) throw new Error(t("remoteDesktop.viewerUnavailable"));
+      if (!window.cry?.desktopViewer) throw new Error(t("remoteDesktop.viewerUnavailable"));
       // A take with no target holds the desktop the host runs this bot on, its Local VM included, as a phone's does.
       const target = !localVm && bot.cloudBackend === "vps" ? `vps/${bot.id}` : undefined;
       await openProviderDesktop({
@@ -385,7 +385,7 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
         <RoutineEditor
           bots={[bot]}
           lockedBotId={bot.id}
-          defaultRunOn={cloudRoutineReady ? "cloud" : "maus"}
+          defaultRunOn={cloudRoutineReady ? "cloud" : "bot"}
           onClose={() => setCreatingRoutine(false)}
         />
       )}

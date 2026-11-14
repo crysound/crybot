@@ -3,7 +3,7 @@ import { closeSync, existsSync, openSync, readFileSync, rmSync, writeFileSync } 
 import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
-import { launchVerificationServer, runControlOmb, verificationServerEnvironment } from "../scripts/control-omb.ts";
+import { launchVerificationServer, runControlCry, verificationServerEnvironment } from "../scripts/control-cry.ts";
 import { waitForExit } from "./testing/cleanup.ts";
 import { readHandoffs } from "./testing/handoff-rows.ts";
 
@@ -28,7 +28,7 @@ async function withRecoveryFixture(
     dataDir: string; failureFile: string; gateFile: string; evidence: unknown[];
   }) => Promise<void>,
 ) {
-  const fixture = await launchVerificationServer({}, undefined, undefined, undefined, undefined,
+  const fixture = await launchVerificationServer({}, undefined, undefined, undefined,
     options.scripted ? { scripted: true } : undefined);
   const { dataDir, url, logPath } = fixture.info;
   const failureFile = join(dataDir, "startup-failure.json");
@@ -49,7 +49,7 @@ async function withRecoveryFixture(
     return result;
   };
   const control = async (...args: string[]) => {
-    const result = await runControlOmb([...args, "--url", url]) as any;
+    const result = await runControlCry([...args, "--url", url]) as any;
     evidence.push({ command: args, result });
     return result;
   };

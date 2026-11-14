@@ -106,7 +106,6 @@ describe("Japanese IME in the real composer", () => {
     expect(fixture.dispatch).toHaveBeenCalledWith(expect.objectContaining({
       type: "send", botId: bot.id, text: "@調査担当",
     }));
-    expect(fixture.track.mock.calls).toEqual([["message_sent", { driver: "claude", queued: false }]]);
   });
 
   it("keeps ordinary slash selection and Shift+Enter working", () => {

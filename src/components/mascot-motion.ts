@@ -1,5 +1,5 @@
-import { FACE_BOX, type Ring } from "./cursor-face-data";
-import type { CursorState, StateEffects } from "./CursorAvatar";
+import { FACE_BOX, type Ring } from "./mascot-face-data";
+import type { MascotState, StateEffects } from "./AnimatedMascot";
 
 export const FULL_FRAME_MS = 1000 / 60;
 export const FRAME_SLACK_MS = 4;
@@ -72,7 +72,7 @@ export const MOTION = {
   dragging: { tilt: -6, sway: [2, 900] },
   bouncing: { bob: [12, 560], squash: 0.45 },
   "powering-down": { settle: 0.05, tilt: 4 },
-} satisfies Record<CursorState, BodyMotion>;
+} satisfies Record<MascotState, BodyMotion>;
 
 const easeOutBack = (t: number) => {
   const c = 1.7;

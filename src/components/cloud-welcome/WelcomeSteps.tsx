@@ -5,7 +5,7 @@ import { useCloudPlanSnapshot } from "@/components/CloudTrialNotice";
 import { engineReady } from "@/components/EngineLibrary";
 import { EngineCheckLine } from "@/components/EngineLiveCheck";
 import { EngineSetup } from "@/components/EngineSetup";
-import { usd } from "@/lib/cloud-plan";
+import { usd } from "@/lib/cloud-status";
 import { welcomeCredit } from "@/lib/cloud-welcome";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
@@ -17,7 +17,7 @@ import { CARD, CARD_IDLE, CardIcon, Footer, PRIMARY, QUIET, SECONDARY, StepHeadi
  * it is and the step finishes itself; otherwise one recommended sign-in, every other way folded under it. */
 export function WelcomeEngine({ name, headingRef, onFinish }: { name: string; headingRef: Ref<HTMLHeadingElement>; onFinish: () => void }) {
   const engines = useCloudEngineChoices();
-  const plan = useCloudPlanSnapshot(window.ogb?.cloudPlan);
+  const plan = useCloudPlanSnapshot(window.cry?.cloudPlan);
   const own = engines.instances.some((instance) => !instance.trialCredit && engineReady(instance));
   const credit = own ? null : welcomeCredit(engines.instances, plan);
   const readyOnOpen = useRef(own || credit?.state === "active");
@@ -65,7 +65,7 @@ export function WelcomeEngine({ name, headingRef, onFinish }: { name: string; he
  * Team Cloud, the desktop app shares folders through Files. */
 export function WelcomeFiles({ name, headingRef, onFinish }: { name: string; headingRef: Ref<HTMLHeadingElement>; onFinish: () => void }) {
   const { state, dispatch } = useStore();
-  const lent = Boolean(window.ogb?.cloudPlan) && !state.config?.team;
+  const lent = Boolean(window.cry?.cloudPlan) && !state.config?.team;
   const card = (id: string, icon: typeof Plug, title: string, body: string, action?: { label: string; run: () => void }) =>
     <div data-welcome-files={id} className={cn(CARD, CARD_IDLE)}>
       <CardIcon icon={icon} />
@@ -91,7 +91,7 @@ export function WelcomeDone({ name, bot, team = false, headingRef, onSayHi, onJo
   name: string; bot: Bot | null; headingRef: Ref<HTMLHeadingElement>; onSayHi: () => void; onJob: () => void;
   /** A Team Cloud: its first bot is named, never called anyone's Chief of Staff. */
   team?: boolean;
-  /** The team's People page on MausBot Cloud, for its Owner: the last step is bringing people in. */
+  /** The team's People page on CryBot Cloud, for its Owner: the last step is bringing people in. */
   invite?: string | null;
 }) {
   return <section aria-labelledby="cloud-welcome-step" data-welcome-step="done" className="flex flex-col items-start gap-4">

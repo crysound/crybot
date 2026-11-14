@@ -1,12 +1,8 @@
 import assert from "node:assert/strict";
-import { createServer } from "node:http";
 import test from "node:test";
-import { createCloudAccountClient } from "./cloud-account.mjs";
 import { createDesktopPrefs, registerDesktopPrefs } from "./desktop-prefs.mjs";
 import { createUpdatesConsent, parseUpdatesConsent, registerUpdatesConsent, UPDATES_CONSENT_VERSION } from "./updates-consent.mjs";
 
-// The real Cloud client and desktop prefs against a fake Admin on loopback: what this computer keeps, and what reaches
-// the Admin's consent endpoints (account: GET/POST /api/cloud/desktop/updates-consent; no account: POST /api/updates-consent).
 const accessToken = `omc_${"T".repeat(43)}`;
 /** The fake Admin's receipt for an email-only opt-in: one per address, so a withdrawal shows which email it reached. */
 const receiptOf = email => Buffer.from(email).toString("base64url").slice(0, 43).padEnd(43, "_");
@@ -14,60 +10,49 @@ const RECEIPT = receiptOf("person@example.test");
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function until(check) { for (let i = 0; i < 200; i++) { if (check()) return; await sleep(5); } assert.fail("did not reach the expected state"); }
 
-async function world(t) {
-  const f = { now: 1_800_000_000_000, approved: false, supported: true, down: false, account: null, accountId: "account-1", accessToken, requests: [], saved: null, timer: null, available: true, gate: null };
-  const identity = () => ({ cloudContractVersion: 1, expiresAt: f.now + 86400_000, device: { id: "device-1" }, account: { id: f.accountId, email: "person@example.test" } });
-  const server = createServer(async (req, res) => {
-    let raw = ""; for await (const chunk of req) raw += chunk;
-    const body = raw ? JSON.parse(raw) : undefined, bearer = req.headers.authorization === `Bearer ${f.accessToken}`;
-    const send = (status, data) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(data)); };
-    if (req.url === "/api/cloud/desktop/authorize") return send(201, { cloudContractVersion: 1, deviceCode: "A".repeat(43), userCode: "ABCDE-FGHJK",
-      verificationUriComplete: `${f.origin}/cloud/desktop?code=ABCDE-FGHJK`, expiresIn: 600, interval: 5 });
-    if (req.url === "/api/cloud/desktop/token") return f.approved ? send(200, { ...identity(), accessToken: f.accessToken }) : send(400, { error: "authorization_pending" });
-    if (req.url === "/api/cloud/desktop/session" && bearer) return send(200, { ...identity(), entitlement: { plan: "free", status: "inactive", expiresAt: null, version: 0 }, cloud: null });
-    if (req.url === "/api/cloud/desktop/updates-consent" || req.url === "/api/updates-consent") {
-      f.requests.push({ method: req.method, path: req.url, bearer, body });
-      const previous = f.account;
-      await f.gate;
-      if (f.down) return send(503, { error: "unavailable" });
-      if (!f.supported) return send(404, { error: "Not found." });
-      if (req.url === "/api/updates-consent") {
-        if (body.status === "opted_in") {
-          if (f.failOptIns > 0) { f.failOptIns--; return send(503, { error: "unavailable" }); }
-          f.emails.set(body.email, "opted_in"); return send(200, { receipt: receiptOf(body.email) });
-        }
-        if (f.failWithdrawals > 0) { f.failWithdrawals--; return send(503, { error: "unavailable" }); }
-        const email = [...f.emails.keys()].find(known => receiptOf(known) === body.receipt);
-        if (!email) return send(404, { error: "unknown_receipt" });
-        f.emails.set(email, body.status);
-        return send(200, { ok: true });
+async function world(_t) {
+  const f = { now: 1_800_000_000_000, supported: true, down: false, account: null, accountId: "account-1", accessToken, requests: [], saved: null, available: true, gate: null,
+    failWithdrawals: 0, failOptIns: 0, failAccountPosts: 0, emails: new Map() };
+  let signedIn = null;
+  const fail = code => { throw Object.assign(new Error(`Cloud request failed: ${code}`), { code }); };
+  const request = async (path, method, body, bearer = false) => {
+    f.requests.push({ method, path, bearer, body });
+    const previous = f.account;
+    await f.gate;
+    if (f.down) return fail("unavailable");
+    if (!f.supported) return fail("not_found");
+    if (path === "/api/updates-consent") {
+      if (body.status === "opted_in") {
+        if (f.failOptIns > 0) { f.failOptIns--; return fail("unavailable"); }
+        f.emails.set(body.email, "opted_in"); return { receipt: receiptOf(body.email) };
       }
-      if (!bearer) return send(401, { error: "invalid_token" });
-      if (req.method === "POST" && f.failAccountPosts > 0) { f.failAccountPosts--; return send(503, { error: "unavailable" }); }
-      if (req.method === "POST") f.account = { status: body.status, textVersion: body.textVersion, source: "desktop", decidedAt: f.now };
-      return send(200, { cloudContractVersion: 1, consent: req.method === "GET" ? previous : f.account });
+      if (f.failWithdrawals > 0) { f.failWithdrawals--; return fail("unavailable"); }
+      const email = [...f.emails.keys()].find(known => receiptOf(known) === body.receipt);
+      if (!email) return fail("unknown_receipt");
+      f.emails.set(email, body.status);
+      return { ok: true };
     }
-    send(404, { error: "not_found" });
-  });
-  Object.assign(f, { failWithdrawals: 0, failOptIns: 0, emails: new Map() });
-  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
-  f.origin = `http://127.0.0.1:${server.address().port}`;
-  f.client = createCloudAccountClient({ origin: f.origin, fixture: true, deviceName: "Fixture computer", platform: "darwin", appVersion: "0.1.125", now: () => f.now,
-    store: { read: async () => f.signIn ?? null, write: async value => { f.signIn = structuredClone(value); } }, openBrowser: async () => {},
-    setTimer: callback => { f.timer = callback; return 1; }, clearTimer: () => { f.timer = null; } });
+    if (!bearer) return fail("invalid_token");
+    if (method === "POST" && f.failAccountPosts > 0) { f.failAccountPosts--; return fail("unavailable"); }
+    if (method === "POST") f.account = { status: body.status, textVersion: body.textVersion, source: "desktop", decidedAt: f.now };
+    return { cloudContractVersion: 1, consent: method === "GET" ? previous : f.account };
+  };
+  f.client = {
+    state: () => signedIn ? { status: "connected", account: signedIn.account } : { status: "signed-out" },
+    async signOut() { signedIn = null; },
+    updatesConsent: async () => request("/api/cloud/desktop/updates-consent", "GET", undefined, signedIn?.token === f.accessToken),
+    recordUpdatesConsent: (status, textVersion) => request("/api/cloud/desktop/updates-consent", "POST", { status, textVersion }, signedIn?.token === f.accessToken),
+    updatesConsentByEmail: async body => (await request("/api/updates-consent", "POST", { status: "opted_in", ...body })).receipt,
+    withdrawUpdatesConsent: body => request("/api/updates-consent", "POST", body),
+  };
   /** A launch of the app: its prefs read from the saved file, and the consent over them. */
   f.launch = () => {
     f.prefs = createDesktopPrefs({ read: () => f.saved, write: value => { f.saved = structuredClone(value); }, now: () => f.now });
     f.consent = createUpdatesConsent({ prefs: f.prefs, account: () => f.client, available: async () => f.available, now: () => f.now });
     return f.consent;
   };
-  f.signInNow = async () => {
-    await f.client.begin(); f.approved = true;
-    const tick = f.timer; f.timer = null; tick();
-    await until(() => f.client.state().status === "connected");
-  };
+  f.signInNow = async () => { signedIn = { account: { id: f.accountId, email: "person@example.test" }, token: f.accessToken }; };
   f.launch();
-  t.after(async () => { f.client.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); });
   return f;
 }
 

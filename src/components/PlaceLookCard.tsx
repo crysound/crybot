@@ -20,7 +20,7 @@ export function PlaceLookRows() {
   const place = useSettingsPlace();
   const { state } = useStore();
   const admin = useOwnerOrAdmin() === true;
-  const computer = window.ogb?.app?.ownPage === true;
+  const computer = window.cry?.app?.ownPage === true;
   const [pending, setPending] = useState<CloudSwatch | null>(null);
   const [outcome, setOutcome] = useState<PlaceColorOutcome | null>(null);
   const locked = look?.change === null;

@@ -79,14 +79,14 @@ window.fetch = async (input, init) => {
   if (!new URL(url, location.href).pathname.startsWith("/api/")) return realFetch(input, init);
   return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
 };
-const blocked = "embedded host failed: Spawn: binaryPath C:\\Users\\you\\AppData\\Local\\Programs\\OpenMausBot\\resources\\cua-driver-background.exe; reason Operation did not complete successfully because the file contains a virus or potentially unwanted software. (os error 225)";
+const blocked = "embedded host failed: Spawn: binaryPath C:\\Users\\you\\AppData\\Local\\Programs\\CryBot\\resources\\cua-driver-background.exe; reason Operation did not complete successfully because the file contains a virus or potentially unwanted software. (os error 225)";
 const capabilities = {
   remote: false, host: { platform: "win32", label: "Windows", session: "unknown", packaged: true, homeDir: "C:\\Users\\you" }, windowChrome: "win-caption",
   screenPreview: { available: false, interaction: "none", reasonCode: "unsupported-platform" }, dictation: { available: false, engine: "none", onDevice: false },
   localComputer: { available: false, support: "unsupported", enabled: false, status: "unavailable", reasonCode: "cua-driver-blocked", message: blocked },
 };
 if (view === "pc") {
-  Object.assign(window, { ogb: { platform: "win32", getCapabilities: async () => capabilities, onCapabilitiesChanged: () => () => {}, localControl: { retry: async () => ({}) } } });
+  Object.assign(window, { cry: { platform: "win32", getCapabilities: async () => capabilities, onCapabilitiesChanged: () => () => {}, localControl: { retry: async () => ({}) } } });
 }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><Gallery /></StrictMode>);

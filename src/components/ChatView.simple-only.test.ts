@@ -53,7 +53,7 @@ beforeAll(() => {
   document.body.append(container);
   root = createRoot(container);
 });
-afterEach(() => { delete window.ogb; });
+afterEach(() => { delete window.cry; });
 afterAll(() => {
   root.unmount();
   vi.unstubAllGlobals();
@@ -70,7 +70,7 @@ describe("Simple as the only mode", () => {
     expect(head().querySelector('[data-testid="chat-more"]')).toBeNull();
     expect(document.querySelector("[data-background-activity]")).toBeNull();
 
-    window.ogb = { remoteClient: { active: true } } as NonNullable<Window["ogb"]>;
+    window.cry = { remoteClient: { active: true } } as NonNullable<Window["cry"]>;
     await draw();
     expect(head().querySelector('[data-testid="chat-more"]')).not.toBeNull();
     expect(document.querySelector("[data-background-activity]")).not.toBeNull();
