@@ -429,11 +429,11 @@ App 打包 mermaid.min.js（MIT），用一个不显示的 WKWebView 只做渲�
 ## 13. 公开仓库扫描（45）
 - `public-scan.yml`（ubuntu，每个 PR）运行 `scripts/public-scan/scan.mjs`，只看 `git diff` 里 PR 新增的行，覆盖整个仓库（含 `docs/tasks`、`docs/specs`、`server/testing`、`third_party`）。
 - 规则：
-  - 域名只放行 `example.com`、`*.example.com`、`*.invalid`，以及 `scripts/public-scan/allow-domains.txt` 里的公共域名（初始只放开源许可和官方文档要用的几个，增删由协调者审）；
+  - 域名放行 RFC 2606 / 6761 保留的 `example.com`、`example.net`、`example.org` 及其子域名，以及 TLD `.example`、`.test`、`.invalid`、`.localhost`；`localhost`、`127.0.0.1`、`::1` 也放行；另放行 `scripts/public-scan/allow-domains.txt` 里的公共域名（初始只放开源许可和官方文档要用的几个，增删由协调者审）；
   - IP 只放行 `127.0.0.1`、`::1` 和文档专用网段（192.0.2.0/24、198.51.100.0/24、203.0.113.0/24），内网网段也拦；
   - 拦 JWT（`eyJ` 开头的三段式）、`cry_sess_` 和 `cry_session_` 后面跟真实值的令牌、不是占位值的 UUID（占位值指全零或 `00000000-0000-4000-8000-` 开头）；
-  - 邮箱只放行 `@example.com`；
-  - 内部域名、人名和实例 ID 用 SHA-256 哈希黑名单比对：把新增行切成词（域名、标识符、中文人名按 2 到 4 字滑窗），小写后算哈希，命中就失败并报行号，不打印命中的原文。名单文件 `scripts/public-scan/denylist.sha256` 只存哈希，由协调者在本机生成和更新。
+  - 邮箱的域名部分属于 RFC 2606 / 6761 保留的 `example.com`、`example.net`、`example.org` 及其子域名，或 TLD `.example`、`.test`、`.invalid`、`.localhost` 时放行；
+  - 内部域名、人名和实例 ID 用 HMAC-SHA256 黑名单比对：把新增行切成词（域名、标识符、中文人名按 2 到 4 字滑窗），小写后用密钥算 HMAC，命中就失败并报行号，不打印命中的原文。名单文件 `scripts/public-scan/denylist.hmac` 只存 HMAC，由协调者在本机用 `hmac-word.mjs` 生成和更新；密钥放在 Actions secret `PUBLIC_SCAN_DENYLIST_KEY`，没有密钥时（如 fork PR）跳过这一项。
 - 另请管理员在 GitHub 上打开 secret scanning 和推送拦截（公开仓库免费）。真机截图不放进 PR。
 
 ## 14. T-1222 接口预留

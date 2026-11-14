@@ -1,0 +1,14 @@
+# Public domains needed by open-source licenses and official documentation.
+apple.com
+developer.apple.com
+swift.org
+github.com
+opensource.org
+apache.org
+livekit.io
+iana.org
+open.feishu.cn # 飞书官方开放平台，历史登录接力实现使用。
+accounts.feishu.cn # 飞书官方账号授权，历史登录接力实现使用。
+open.larksuite.com # Lark 官方开放平台，与飞书国际版登录配套。
+accounts.larksuite.com # Lark 官方账号授权，与飞书国际版登录配套。
+example.cloudflareaccess.com # 历史登录接力测试夹具的虚构团队名。
