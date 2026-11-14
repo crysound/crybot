@@ -2510,3 +2510,92 @@ describe("provider lock", () => {
       .toEqual({ ...endpoint, hidden: false, displayName: "Cry Bot", icon: { kind: "preset", preset: "anthropic" } });
   });
 });
+
+describe("shared desktop screens and resource defaults", () => {
+  it("accepts one to four screens in stored config and patches", async () => {
+    const { localVmScreens } = await import("./local-vm-settings.ts");
+    for (const screens of [1, 2, 3, 4]) {
+      const config = { localVm: { screens } };
+      expect(parseStoredConfig(config).localVm?.screens).toBe(screens);
+      expect(parseConfigPatch(config).localVm?.screens).toBe(screens);
+      expect(localVmScreens(config)).toBe(screens);
+    }
+    for (const screens of [0, 5, 1.5, "2", null]) {
+      expect(() => parseStoredConfig({ localVm: { screens } })).toThrow();
+      expect(() => parseConfigPatch({ localVm: { screens } })).toThrow();
+    }
+    expect(localVmScreens({})).toBe(4);
+    for (const mode of ["per-bot", "pool"]) expect(localVmScreens({ localVm: { mode, screens: 4 } })).toBe(1);
+  });
+
+  it("uses 8 GiB and 3 CPUs for shared defaults, clamped to host resources", async () => {
+    const { localVmResources } = await import("./local-vm-settings.ts");
+    const { clampDesktopResources, SHARED_DESKTOP_RESOURCES } = await import("./container-limits.ts");
+    const host = { cpus: 8, memoryGb: 16 };
+    expect(localVmResources({}, host)).toEqual({ memoryGb: 8, cpus: 3 });
+    expect(localVmResources({ localVm: { screens: 1 } }, host)).toEqual({ memoryGb: 8, cpus: 3 });
+    expect(localVmResources({}, { cpus: 2, memoryGb: 8 })).toEqual({ memoryGb: 6, cpus: 2 });
+    expect(clampDesktopResources(SHARED_DESKTOP_RESOURCES, { cpus: 2, memoryGb: 6 })).toEqual({ memoryGb: 4, cpus: 2 });
+    expect(localVmResources({ localVm: { memoryGb: 12, cpus: 6 } }, host)).toEqual({ memoryGb: 12, cpus: 6 });
+    expect(localVmResources({ localVm: { cpus: 1 } }, host)).toEqual({ memoryGb: 8, cpus: 1 });
+    expect(localVmResources({ localVm: { memoryGb: 4 } }, host)).toEqual({ memoryGb: 4, cpus: 3 });
+  });
+
+  it("retains 4 GiB and 2 CPU defaults and explicit settings in per-bot and pool modes", async () => {
+    const { localVmResources } = await import("./local-vm-settings.ts");
+    for (const mode of ["per-bot", "pool"]) {
+      expect(localVmResources({ localVm: { mode } }, { cpus: 1, memoryGb: 4 })).toEqual({ memoryGb: 4, cpus: 2 });
+      expect(localVmResources({ localVm: { mode, cpus: 4, memoryGb: 6 } }, { cpus: 8, memoryGb: 16 })).toEqual({ memoryGb: 6, cpus: 4 });
+    }
+  });
+});
+
+describe("shared desktop resource recovery and engine bounds", () => {
+  it.each([
+    [2, 2], [1.9, 2], [3, 3], [7.66, 5], [0, 2], [-1, 2], [NaN, 2],
+  ])("returns legal default memory for a %s GiB engine", async (memoryGb, expected) => {
+    const { localVmResources } = await import("./local-vm-settings.ts");
+    const { clampDesktopResources, SHARED_DESKTOP_RESOURCES } = await import("./container-limits.ts");
+    const host = { cpus: 4, memoryGb };
+    expect(localVmResources({}, host)).toEqual({ cpus: 3, memoryGb: expected });
+    expect(clampDesktopResources(SHARED_DESKTOP_RESOURCES, host)).toEqual({ cpus: 3, memoryGb: expected });
+  });
+
+  it.each([[0, 1], [-2, 1], [1.9, 1], [NaN, 2]])("returns legal CPUs for a %s CPU engine", async (cpus, expected) => {
+    const { localVmResources } = await import("./local-vm-settings.ts");
+    expect(localVmResources({}, { cpus, memoryGb: 16 })).toEqual({ cpus: expected, memoryGb: 8 });
+  });
+
+  it("keeps existing defaults and explicit values without engine resources", async () => {
+    const { localVmResources } = await import("./local-vm-settings.ts");
+    expect(localVmResources({})).toEqual({ memoryGb: 4, cpus: 2 });
+    expect(localVmResources({ localVm: { memoryGb: 12, cpus: 6 } })).toEqual({ memoryGb: 12, cpus: 6 });
+  });
+
+  it("reserves memory only for unset shared defaults", async () => {
+    const { localVmResources } = await import("./local-vm-settings.ts");
+    const host = { memoryGb: 7.66, cpus: 4 };
+    expect(localVmResources({ localVm: { memoryGb: 12, cpus: 6 } }, host)).toEqual({ memoryGb: 7, cpus: 4 });
+    expect(localVmResources({ localVm: { memoryGb: 6 } }, host)).toEqual({ memoryGb: 6, cpus: 3 });
+    expect(localVmResources({ localVm: { cpus: 4 } }, host)).toEqual({ memoryGb: 5, cpus: 4 });
+  });
+
+  it("preserves mode and valid resource fields when another setting is invalid", async () => {
+    const { localVmMode, localVmScreens, localVmResources } = await import("./local-vm-settings.ts");
+    const config = { localVm: { mode: "per-bot" as const, idleTimeoutMinutes: 999999 } };
+    expect(localVmMode(config)).toBe("per-bot");
+    expect(localVmScreens(config)).toBe(1);
+    expect(localVmResources(config, { memoryGb: 16, cpus: 8 })).toEqual({ memoryGb: 4, cpus: 2 });
+    expect(localVmResources({ localVm: { memoryGb: 12, idleTimeoutMinutes: 999999 } }, { memoryGb: 16, cpus: 8 }))
+      .toEqual({ memoryGb: 12, cpus: 3 });
+  });
+
+  it.each([0, -1, 1.9, NaN, Infinity])("normalizes invalid requested resources: %s", async (value) => {
+    const { clampDesktopResources } = await import("./container-limits.ts");
+    const result = clampDesktopResources({ memoryGb: value, cpus: value }, { memoryGb: 16, cpus: 8 });
+    expect(Number.isInteger(result.memoryGb)).toBe(true);
+    expect(result.memoryGb).toBeGreaterThanOrEqual(2);
+    expect(Number.isInteger(result.cpus)).toBe(true);
+    expect(result.cpus).toBeGreaterThanOrEqual(1);
+  });
+});
