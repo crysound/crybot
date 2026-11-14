@@ -1,0 +1,20 @@
+{
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "skillRequest": {
+    "action": "create",
+    "botId": "00000000-0000-4000-8000-000000000001",
+    "createdAt": 1767225600000,
+    "gist": "Example",
+    "name": "Example",
+    "requestId": "00000000-0000-4000-8000-000000000000",
+    "stagedId": "00000000-0000-4000-8000-000000000003",
+    "threadId": "00000000-0000-4000-8000-000000000002",
+    "version": 1,
+    "warnings": []
+  },
+  "subtitle": "Example request",
+  "title": "Approve request"
+}

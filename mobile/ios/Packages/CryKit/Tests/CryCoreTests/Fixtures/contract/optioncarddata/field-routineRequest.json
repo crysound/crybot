@@ -1,0 +1,28 @@
+{
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "routineRequest": {
+    "botId": "00000000-0000-4000-8000-000000000001",
+    "createdAt": 1767225600000,
+    "operation": {
+      "action": "create",
+      "routine": {
+        "durationMinutes": 1,
+        "instructions": "Example",
+        "name": "Example",
+        "runOn": "cloud",
+        "schedule": {
+          "at": 1767225600000,
+          "type": "once"
+        }
+      }
+    },
+    "requestId": "00000000-0000-4000-8000-000000000000",
+    "threadId": "00000000-0000-4000-8000-000000000002",
+    "version": 1
+  },
+  "subtitle": "Example request",
+  "title": "Approve request"
+}

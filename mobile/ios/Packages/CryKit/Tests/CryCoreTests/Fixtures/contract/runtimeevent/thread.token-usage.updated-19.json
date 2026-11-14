@@ -1,0 +1,9 @@
+{
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "eventId": "00000000-0000-4000-8000-000000000000",
+  "input": 1,
+  "output": 1,
+  "provider": "Example",
+  "threadId": "00000000-0000-4000-8000-000000000001",
+  "type": "thread.token-usage.updated"
+}

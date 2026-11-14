@@ -1,0 +1,14 @@
+{
+  "computerAsk": {
+    "device": "PC",
+    "need": "screen",
+    "reason": "blocked",
+    "state": "failed"
+  },
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "subtitle": "Example request",
+  "title": "Approve request"
+}

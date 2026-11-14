@@ -1,0 +1,13 @@
+{
+  "at": 1767225600000,
+  "id": "00000000-0000-4000-8000-000000000000",
+  "kind": "routine.run",
+  "role": "bot",
+  "routineRun": {
+    "routineId": "00000000-0000-4000-8000-000000000002",
+    "routineName": "Example",
+    "runId": "00000000-0000-4000-8000-000000000001",
+    "status": "failed"
+  },
+  "text": "Example message"
+}

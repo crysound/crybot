@@ -1,0 +1,9 @@
+{
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "subtitle": "Example request",
+  "summaryCode": "Example",
+  "title": "Approve request"
+}

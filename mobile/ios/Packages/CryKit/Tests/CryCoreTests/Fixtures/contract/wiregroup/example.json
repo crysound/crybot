@@ -1,0 +1,14 @@
+{
+  "bulletin": "Example",
+  "createdAt": 1767225600000,
+  "defaultResponder": {
+    "botId": "00000000-0000-4000-8000-000000000002",
+    "kind": "member"
+  },
+  "id": "00000000-0000-4000-8000-000000000000",
+  "memberIds": [],
+  "name": "Example",
+  "threadId": "00000000-0000-4000-8000-000000000001",
+  "unread": false,
+  "working": false
+}

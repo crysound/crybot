@@ -1,0 +1,5 @@
+{
+  "type": "scatter",
+  "x": "category",
+  "y": "value"
+}
