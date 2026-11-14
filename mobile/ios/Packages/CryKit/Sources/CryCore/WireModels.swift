@@ -144,100 +144,588 @@ public indirect enum WireAttachment: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`image`(let value): raw = try JSONValue(encoding: value)
-        case .`file`(let value): raw = try JSONValue(encoding: value)
-        case .`audio`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .`image`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`file`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`audio`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 }
 
 public struct WireMessageFields: WireModel {
-    public var `textCode`: String?
-    public var `textParams`: ServerTextParams?
-    public var `helperFollowup`: HelperFollowupFacts?
-    public var `helperIntro`: Bool?
-    public var `setupOffer`: Bool?
-    public var `setupChoices`: [String]?
-    public var `setupChoicesPending`: Bool?
-    public var `setupChoicesUpdating`: Double?
-    public var `wait`: WaitLine?
-    public var `bugReport`: BugReportStatus?
-    public var `roomRequest`: WireMessageFieldsRoomRequest?
-    public var `id`: String
-    public var `role`: WireMessageFieldsRole
-    public var `text`: String?
-    public var `digest`: TurnDigest?
-    public var `engineCompaction`: Bool?
-    public var `compaction`: WireMessageFieldsCompaction?
-    public var `attachments`: [WireAttachment]?
-    public var `card`: OptionCardData?
-    public var `widget`: WidgetPayload?
-    public var `serverCard`: Bool?
-    public var `setupSuggestion`: WireMessageFieldsSetupSuggestion?
-    public var `setupRequest`: Bool?
-    public var `app`: AppPayload?
-    public var `fromApp`: AppFromRef?
-    public var `pointed`: [AppPointedRef]?
-    public var `connector`: ConnectorCardData?
-    public var `secret`: SecretRequestCardData?
-    public var `signIn`: SignInRequestCardData?
-    public var `routineRun`: RoutineRunCardData?
-    public var `burst`: BurstCardData?
-    public var `automation`: AutomationLine?
-    public var `goalRun`: GroupGoalRunCardData?
-    public var `call`: LiveCallRecord?
-    public var `tool`: WireMessageFieldsTool?
-    public var `webhookPost`: Bool?
-    public var `steered`: Bool?
-    public var `aside`: Bool?
-    public var `via`: WireMessageFieldsVia?
-    public var `callId`: String?
-    public var `relayed`: Bool?
-    public var `sender`: ResolvedSender?
-    public var `turnId`: String?
-    public var `stoppedBy`: ResolvedSender?
-    public var `itemId`: String?
-    public var `requestMessageId`: String?
-    public var `turnSucceeded`: Bool?
-    public var `requestCancelled`: Bool?
-    public var `requestPending`: Bool?
-    public var `turnTerminal`: Bool?
-    public var `turnCompletedAt`: Double?
-    public var `savedSteps`: SavedStepsMark?
-    public var `png`: String?
-    public var `mime`: String?
-    public var `at`: Double
-    public var `parentId`: String?
-    public var `replyToId`: String?
-    public var `sendId`: String?
-    public var `channelMode`: WireMessageFieldsChannelMode?
-    public var `from`: WireMessageFieldsFrom?
-    public var `threadPost`: WireMessageFieldsThreadPost?
-    public var `peerPost`: WireMessageFieldsPeerPost?
-    public var `routedBy`: WireMessageFieldsRoutedBy?
-    public var `quickModel`: String?
-    public var `doneWhen`: String?
-    public var `peerAsk`: WireMessageFieldsPeerAsk?
-    public var `reactions`: [WireMessageFieldsReactionsElement]?
-    public var `reaction`: String?
-    public var `comm`: WireMessageFieldsComm?
-    public var `relay`: WireMessageFieldsRelay?
-    public var `inbox`: InboxItem?
-    public var `threadRef`: WireMessageFieldsThreadRef?
-    public var `sentDirectly`: WireMessageFieldsSentDirectly?
-    public var `publishedPage`: PublishedPageCard?
-    public var `dataResult`: WireMessageFieldsDataResult?
-    public var `dataContext`: WireMessageFieldsDataContext?
-    public var `queued`: Bool?
-    public var `queueId`: String?
-    public var additionalFields: [String: JSONValue] = [:]
-    private var explicitNulls: Set<String> = []
+    private final class Storage: @unchecked Sendable {
+        var `textCode`: String? = nil
+        var `textParams`: ServerTextParams? = nil
+        var `helperFollowup`: HelperFollowupFacts? = nil
+        var `helperIntro`: Bool? = nil
+        var `setupOffer`: Bool? = nil
+        var `setupChoices`: [String]? = nil
+        var `setupChoicesPending`: Bool? = nil
+        var `setupChoicesUpdating`: Double? = nil
+        var `wait`: WaitLine? = nil
+        var `bugReport`: BugReportStatus? = nil
+        var `roomRequest`: WireMessageFieldsRoomRequest? = nil
+        var `id`: String
+        var `role`: WireMessageFieldsRole
+        var `text`: String? = nil
+        var `digest`: TurnDigest? = nil
+        var `engineCompaction`: Bool? = nil
+        var `compaction`: WireMessageFieldsCompaction? = nil
+        var `attachments`: [WireAttachment]? = nil
+        var `card`: OptionCardData? = nil
+        var `widget`: WidgetPayload? = nil
+        var `serverCard`: Bool? = nil
+        var `setupSuggestion`: WireMessageFieldsSetupSuggestion? = nil
+        var `setupRequest`: Bool? = nil
+        var `app`: AppPayload? = nil
+        var `fromApp`: AppFromRef? = nil
+        var `pointed`: [AppPointedRef]? = nil
+        var `connector`: ConnectorCardData? = nil
+        var `secret`: SecretRequestCardData? = nil
+        var `signIn`: SignInRequestCardData? = nil
+        var `routineRun`: RoutineRunCardData? = nil
+        var `burst`: BurstCardData? = nil
+        var `automation`: AutomationLine? = nil
+        var `goalRun`: GroupGoalRunCardData? = nil
+        var `call`: LiveCallRecord? = nil
+        var `tool`: WireMessageFieldsTool? = nil
+        var `webhookPost`: Bool? = nil
+        var `steered`: Bool? = nil
+        var `aside`: Bool? = nil
+        var `via`: WireMessageFieldsVia? = nil
+        var `callId`: String? = nil
+        var `relayed`: Bool? = nil
+        var `sender`: ResolvedSender? = nil
+        var `turnId`: String? = nil
+        var `stoppedBy`: ResolvedSender? = nil
+        var `itemId`: String? = nil
+        var `requestMessageId`: String? = nil
+        var `turnSucceeded`: Bool? = nil
+        var `requestCancelled`: Bool? = nil
+        var `requestPending`: Bool? = nil
+        var `turnTerminal`: Bool? = nil
+        var `turnCompletedAt`: Double? = nil
+        var `savedSteps`: SavedStepsMark? = nil
+        var `png`: String? = nil
+        var `mime`: String? = nil
+        var `at`: Double
+        var `parentId`: String? = nil
+        var `replyToId`: String? = nil
+        var `sendId`: String? = nil
+        var `channelMode`: WireMessageFieldsChannelMode? = nil
+        var `from`: WireMessageFieldsFrom? = nil
+        var `threadPost`: WireMessageFieldsThreadPost? = nil
+        var `peerPost`: WireMessageFieldsPeerPost? = nil
+        var `routedBy`: WireMessageFieldsRoutedBy? = nil
+        var `quickModel`: String? = nil
+        var `doneWhen`: String? = nil
+        var `peerAsk`: WireMessageFieldsPeerAsk? = nil
+        var `reactions`: [WireMessageFieldsReactionsElement]? = nil
+        var `reaction`: String? = nil
+        var `comm`: WireMessageFieldsComm? = nil
+        var `relay`: WireMessageFieldsRelay? = nil
+        var `inbox`: InboxItem? = nil
+        var `threadRef`: WireMessageFieldsThreadRef? = nil
+        var `sentDirectly`: WireMessageFieldsSentDirectly? = nil
+        var `publishedPage`: PublishedPageCard? = nil
+        var `dataResult`: WireMessageFieldsDataResult? = nil
+        var `dataContext`: WireMessageFieldsDataContext? = nil
+        var `queued`: Bool? = nil
+        var `queueId`: String? = nil
+        var additionalFields: [String: JSONValue] = [:]
+        var explicitNulls: Set<String> = []
 
+        init(id: String, role: WireMessageFieldsRole, at: Double) {
+            self.id = id
+            self.role = role
+            self.at = at
+        }
+    }
+
+    private var storage: Storage
+
+    private mutating func ensureUniqueStorage() {
+        if !isKnownUniquelyReferenced(&storage) {
+            let copy = Storage(id: storage.id, role: storage.role, at: storage.at)
+            copy.textCode = storage.textCode
+            copy.textParams = storage.textParams
+            copy.helperFollowup = storage.helperFollowup
+            copy.helperIntro = storage.helperIntro
+            copy.setupOffer = storage.setupOffer
+            copy.setupChoices = storage.setupChoices
+            copy.setupChoicesPending = storage.setupChoicesPending
+            copy.setupChoicesUpdating = storage.setupChoicesUpdating
+            copy.wait = storage.wait
+            copy.bugReport = storage.bugReport
+            copy.roomRequest = storage.roomRequest
+            copy.text = storage.text
+            copy.digest = storage.digest
+            copy.engineCompaction = storage.engineCompaction
+            copy.compaction = storage.compaction
+            copy.attachments = storage.attachments
+            copy.card = storage.card
+            copy.widget = storage.widget
+            copy.serverCard = storage.serverCard
+            copy.setupSuggestion = storage.setupSuggestion
+            copy.setupRequest = storage.setupRequest
+            copy.app = storage.app
+            copy.fromApp = storage.fromApp
+            copy.pointed = storage.pointed
+            copy.connector = storage.connector
+            copy.secret = storage.secret
+            copy.signIn = storage.signIn
+            copy.routineRun = storage.routineRun
+            copy.burst = storage.burst
+            copy.automation = storage.automation
+            copy.goalRun = storage.goalRun
+            copy.call = storage.call
+            copy.tool = storage.tool
+            copy.webhookPost = storage.webhookPost
+            copy.steered = storage.steered
+            copy.aside = storage.aside
+            copy.via = storage.via
+            copy.callId = storage.callId
+            copy.relayed = storage.relayed
+            copy.sender = storage.sender
+            copy.turnId = storage.turnId
+            copy.stoppedBy = storage.stoppedBy
+            copy.itemId = storage.itemId
+            copy.requestMessageId = storage.requestMessageId
+            copy.turnSucceeded = storage.turnSucceeded
+            copy.requestCancelled = storage.requestCancelled
+            copy.requestPending = storage.requestPending
+            copy.turnTerminal = storage.turnTerminal
+            copy.turnCompletedAt = storage.turnCompletedAt
+            copy.savedSteps = storage.savedSteps
+            copy.png = storage.png
+            copy.mime = storage.mime
+            copy.parentId = storage.parentId
+            copy.replyToId = storage.replyToId
+            copy.sendId = storage.sendId
+            copy.channelMode = storage.channelMode
+            copy.from = storage.from
+            copy.threadPost = storage.threadPost
+            copy.peerPost = storage.peerPost
+            copy.routedBy = storage.routedBy
+            copy.quickModel = storage.quickModel
+            copy.doneWhen = storage.doneWhen
+            copy.peerAsk = storage.peerAsk
+            copy.reactions = storage.reactions
+            copy.reaction = storage.reaction
+            copy.comm = storage.comm
+            copy.relay = storage.relay
+            copy.inbox = storage.inbox
+            copy.threadRef = storage.threadRef
+            copy.sentDirectly = storage.sentDirectly
+            copy.publishedPage = storage.publishedPage
+            copy.dataResult = storage.dataResult
+            copy.dataContext = storage.dataContext
+            copy.queued = storage.queued
+            copy.queueId = storage.queueId
+            copy.additionalFields = storage.additionalFields
+            copy.explicitNulls = storage.explicitNulls
+            storage = copy
+        }
+    }
+
+    public var `textCode`: String? {
+        get { storage.`textCode` }
+        set { ensureUniqueStorage(); storage.`textCode` = newValue }
+    }
+
+    public var `textParams`: ServerTextParams? {
+        get { storage.`textParams` }
+        set { ensureUniqueStorage(); storage.`textParams` = newValue }
+    }
+
+    public var `helperFollowup`: HelperFollowupFacts? {
+        get { storage.`helperFollowup` }
+        set { ensureUniqueStorage(); storage.`helperFollowup` = newValue }
+    }
+
+    public var `helperIntro`: Bool? {
+        get { storage.`helperIntro` }
+        set { ensureUniqueStorage(); storage.`helperIntro` = newValue }
+    }
+
+    public var `setupOffer`: Bool? {
+        get { storage.`setupOffer` }
+        set { ensureUniqueStorage(); storage.`setupOffer` = newValue }
+    }
+
+    public var `setupChoices`: [String]? {
+        get { storage.`setupChoices` }
+        set { ensureUniqueStorage(); storage.`setupChoices` = newValue }
+    }
+
+    public var `setupChoicesPending`: Bool? {
+        get { storage.`setupChoicesPending` }
+        set { ensureUniqueStorage(); storage.`setupChoicesPending` = newValue }
+    }
+
+    public var `setupChoicesUpdating`: Double? {
+        get { storage.`setupChoicesUpdating` }
+        set { ensureUniqueStorage(); storage.`setupChoicesUpdating` = newValue }
+    }
+
+    public var `wait`: WaitLine? {
+        get { storage.`wait` }
+        set { ensureUniqueStorage(); storage.`wait` = newValue }
+    }
+
+    public var `bugReport`: BugReportStatus? {
+        get { storage.`bugReport` }
+        set { ensureUniqueStorage(); storage.`bugReport` = newValue }
+    }
+
+    public var `roomRequest`: WireMessageFieldsRoomRequest? {
+        get { storage.`roomRequest` }
+        set { ensureUniqueStorage(); storage.`roomRequest` = newValue }
+    }
+
+    public var `id`: String {
+        get { storage.`id` }
+        set { ensureUniqueStorage(); storage.`id` = newValue }
+    }
+
+    public var `role`: WireMessageFieldsRole {
+        get { storage.`role` }
+        set { ensureUniqueStorage(); storage.`role` = newValue }
+    }
+
+    public var `text`: String? {
+        get { storage.`text` }
+        set { ensureUniqueStorage(); storage.`text` = newValue }
+    }
+
+    public var `digest`: TurnDigest? {
+        get { storage.`digest` }
+        set { ensureUniqueStorage(); storage.`digest` = newValue }
+    }
+
+    public var `engineCompaction`: Bool? {
+        get { storage.`engineCompaction` }
+        set { ensureUniqueStorage(); storage.`engineCompaction` = newValue }
+    }
+
+    public var `compaction`: WireMessageFieldsCompaction? {
+        get { storage.`compaction` }
+        set { ensureUniqueStorage(); storage.`compaction` = newValue }
+    }
+
+    public var `attachments`: [WireAttachment]? {
+        get { storage.`attachments` }
+        set { ensureUniqueStorage(); storage.`attachments` = newValue }
+    }
+
+    public var `card`: OptionCardData? {
+        get { storage.`card` }
+        set { ensureUniqueStorage(); storage.`card` = newValue }
+    }
+
+    public var `widget`: WidgetPayload? {
+        get { storage.`widget` }
+        set { ensureUniqueStorage(); storage.`widget` = newValue }
+    }
+
+    public var `serverCard`: Bool? {
+        get { storage.`serverCard` }
+        set { ensureUniqueStorage(); storage.`serverCard` = newValue }
+    }
+
+    public var `setupSuggestion`: WireMessageFieldsSetupSuggestion? {
+        get { storage.`setupSuggestion` }
+        set { ensureUniqueStorage(); storage.`setupSuggestion` = newValue }
+    }
+
+    public var `setupRequest`: Bool? {
+        get { storage.`setupRequest` }
+        set { ensureUniqueStorage(); storage.`setupRequest` = newValue }
+    }
+
+    public var `app`: AppPayload? {
+        get { storage.`app` }
+        set { ensureUniqueStorage(); storage.`app` = newValue }
+    }
+
+    public var `fromApp`: AppFromRef? {
+        get { storage.`fromApp` }
+        set { ensureUniqueStorage(); storage.`fromApp` = newValue }
+    }
+
+    public var `pointed`: [AppPointedRef]? {
+        get { storage.`pointed` }
+        set { ensureUniqueStorage(); storage.`pointed` = newValue }
+    }
+
+    public var `connector`: ConnectorCardData? {
+        get { storage.`connector` }
+        set { ensureUniqueStorage(); storage.`connector` = newValue }
+    }
+
+    public var `secret`: SecretRequestCardData? {
+        get { storage.`secret` }
+        set { ensureUniqueStorage(); storage.`secret` = newValue }
+    }
+
+    public var `signIn`: SignInRequestCardData? {
+        get { storage.`signIn` }
+        set { ensureUniqueStorage(); storage.`signIn` = newValue }
+    }
+
+    public var `routineRun`: RoutineRunCardData? {
+        get { storage.`routineRun` }
+        set { ensureUniqueStorage(); storage.`routineRun` = newValue }
+    }
+
+    public var `burst`: BurstCardData? {
+        get { storage.`burst` }
+        set { ensureUniqueStorage(); storage.`burst` = newValue }
+    }
+
+    public var `automation`: AutomationLine? {
+        get { storage.`automation` }
+        set { ensureUniqueStorage(); storage.`automation` = newValue }
+    }
+
+    public var `goalRun`: GroupGoalRunCardData? {
+        get { storage.`goalRun` }
+        set { ensureUniqueStorage(); storage.`goalRun` = newValue }
+    }
+
+    public var `call`: LiveCallRecord? {
+        get { storage.`call` }
+        set { ensureUniqueStorage(); storage.`call` = newValue }
+    }
+
+    public var `tool`: WireMessageFieldsTool? {
+        get { storage.`tool` }
+        set { ensureUniqueStorage(); storage.`tool` = newValue }
+    }
+
+    public var `webhookPost`: Bool? {
+        get { storage.`webhookPost` }
+        set { ensureUniqueStorage(); storage.`webhookPost` = newValue }
+    }
+
+    public var `steered`: Bool? {
+        get { storage.`steered` }
+        set { ensureUniqueStorage(); storage.`steered` = newValue }
+    }
+
+    public var `aside`: Bool? {
+        get { storage.`aside` }
+        set { ensureUniqueStorage(); storage.`aside` = newValue }
+    }
+
+    public var `via`: WireMessageFieldsVia? {
+        get { storage.`via` }
+        set { ensureUniqueStorage(); storage.`via` = newValue }
+    }
+
+    public var `callId`: String? {
+        get { storage.`callId` }
+        set { ensureUniqueStorage(); storage.`callId` = newValue }
+    }
+
+    public var `relayed`: Bool? {
+        get { storage.`relayed` }
+        set { ensureUniqueStorage(); storage.`relayed` = newValue }
+    }
+
+    public var `sender`: ResolvedSender? {
+        get { storage.`sender` }
+        set { ensureUniqueStorage(); storage.`sender` = newValue }
+    }
+
+    public var `turnId`: String? {
+        get { storage.`turnId` }
+        set { ensureUniqueStorage(); storage.`turnId` = newValue }
+    }
+
+    public var `stoppedBy`: ResolvedSender? {
+        get { storage.`stoppedBy` }
+        set { ensureUniqueStorage(); storage.`stoppedBy` = newValue }
+    }
+
+    public var `itemId`: String? {
+        get { storage.`itemId` }
+        set { ensureUniqueStorage(); storage.`itemId` = newValue }
+    }
+
+    public var `requestMessageId`: String? {
+        get { storage.`requestMessageId` }
+        set { ensureUniqueStorage(); storage.`requestMessageId` = newValue }
+    }
+
+    public var `turnSucceeded`: Bool? {
+        get { storage.`turnSucceeded` }
+        set { ensureUniqueStorage(); storage.`turnSucceeded` = newValue }
+    }
+
+    public var `requestCancelled`: Bool? {
+        get { storage.`requestCancelled` }
+        set { ensureUniqueStorage(); storage.`requestCancelled` = newValue }
+    }
+
+    public var `requestPending`: Bool? {
+        get { storage.`requestPending` }
+        set { ensureUniqueStorage(); storage.`requestPending` = newValue }
+    }
+
+    public var `turnTerminal`: Bool? {
+        get { storage.`turnTerminal` }
+        set { ensureUniqueStorage(); storage.`turnTerminal` = newValue }
+    }
+
+    public var `turnCompletedAt`: Double? {
+        get { storage.`turnCompletedAt` }
+        set { ensureUniqueStorage(); storage.`turnCompletedAt` = newValue }
+    }
+
+    public var `savedSteps`: SavedStepsMark? {
+        get { storage.`savedSteps` }
+        set { ensureUniqueStorage(); storage.`savedSteps` = newValue }
+    }
+
+    public var `png`: String? {
+        get { storage.`png` }
+        set { ensureUniqueStorage(); storage.`png` = newValue }
+    }
+
+    public var `mime`: String? {
+        get { storage.`mime` }
+        set { ensureUniqueStorage(); storage.`mime` = newValue }
+    }
+
+    public var `at`: Double {
+        get { storage.`at` }
+        set { ensureUniqueStorage(); storage.`at` = newValue }
+    }
+
+    public var `parentId`: String? {
+        get { storage.`parentId` }
+        set { ensureUniqueStorage(); storage.`parentId` = newValue }
+    }
+
+    public var `replyToId`: String? {
+        get { storage.`replyToId` }
+        set { ensureUniqueStorage(); storage.`replyToId` = newValue }
+    }
+
+    public var `sendId`: String? {
+        get { storage.`sendId` }
+        set { ensureUniqueStorage(); storage.`sendId` = newValue }
+    }
+
+    public var `channelMode`: WireMessageFieldsChannelMode? {
+        get { storage.`channelMode` }
+        set { ensureUniqueStorage(); storage.`channelMode` = newValue }
+    }
+
+    public var `from`: WireMessageFieldsFrom? {
+        get { storage.`from` }
+        set { ensureUniqueStorage(); storage.`from` = newValue }
+    }
+
+    public var `threadPost`: WireMessageFieldsThreadPost? {
+        get { storage.`threadPost` }
+        set { ensureUniqueStorage(); storage.`threadPost` = newValue }
+    }
+
+    public var `peerPost`: WireMessageFieldsPeerPost? {
+        get { storage.`peerPost` }
+        set { ensureUniqueStorage(); storage.`peerPost` = newValue }
+    }
+
+    public var `routedBy`: WireMessageFieldsRoutedBy? {
+        get { storage.`routedBy` }
+        set { ensureUniqueStorage(); storage.`routedBy` = newValue }
+    }
+
+    public var `quickModel`: String? {
+        get { storage.`quickModel` }
+        set { ensureUniqueStorage(); storage.`quickModel` = newValue }
+    }
+
+    public var `doneWhen`: String? {
+        get { storage.`doneWhen` }
+        set { ensureUniqueStorage(); storage.`doneWhen` = newValue }
+    }
+
+    public var `peerAsk`: WireMessageFieldsPeerAsk? {
+        get { storage.`peerAsk` }
+        set { ensureUniqueStorage(); storage.`peerAsk` = newValue }
+    }
+
+    public var `reactions`: [WireMessageFieldsReactionsElement]? {
+        get { storage.`reactions` }
+        set { ensureUniqueStorage(); storage.`reactions` = newValue }
+    }
+
+    public var `reaction`: String? {
+        get { storage.`reaction` }
+        set { ensureUniqueStorage(); storage.`reaction` = newValue }
+    }
+
+    public var `comm`: WireMessageFieldsComm? {
+        get { storage.`comm` }
+        set { ensureUniqueStorage(); storage.`comm` = newValue }
+    }
+
+    public var `relay`: WireMessageFieldsRelay? {
+        get { storage.`relay` }
+        set { ensureUniqueStorage(); storage.`relay` = newValue }
+    }
+
+    public var `inbox`: InboxItem? {
+        get { storage.`inbox` }
+        set { ensureUniqueStorage(); storage.`inbox` = newValue }
+    }
+
+    public var `threadRef`: WireMessageFieldsThreadRef? {
+        get { storage.`threadRef` }
+        set { ensureUniqueStorage(); storage.`threadRef` = newValue }
+    }
+
+    public var `sentDirectly`: WireMessageFieldsSentDirectly? {
+        get { storage.`sentDirectly` }
+        set { ensureUniqueStorage(); storage.`sentDirectly` = newValue }
+    }
+
+    public var `publishedPage`: PublishedPageCard? {
+        get { storage.`publishedPage` }
+        set { ensureUniqueStorage(); storage.`publishedPage` = newValue }
+    }
+
+    public var `dataResult`: WireMessageFieldsDataResult? {
+        get { storage.`dataResult` }
+        set { ensureUniqueStorage(); storage.`dataResult` = newValue }
+    }
+
+    public var `dataContext`: WireMessageFieldsDataContext? {
+        get { storage.`dataContext` }
+        set { ensureUniqueStorage(); storage.`dataContext` = newValue }
+    }
+
+    public var `queued`: Bool? {
+        get { storage.`queued` }
+        set { ensureUniqueStorage(); storage.`queued` = newValue }
+    }
+
+    public var `queueId`: String? {
+        get { storage.`queueId` }
+        set { ensureUniqueStorage(); storage.`queueId` = newValue }
+    }
+    public var additionalFields: [String: JSONValue] {
+        get { storage.additionalFields }
+        set { ensureUniqueStorage(); storage.additionalFields = newValue }
+    }
+    private var explicitNulls: Set<String> {
+        get { storage.explicitNulls }
+        set { ensureUniqueStorage(); storage.explicitNulls = newValue }
+    }
     public init(
         `id`: String,
         `role`: WireMessageFieldsRole,
@@ -318,6 +806,7 @@ public struct WireMessageFields: WireModel {
         `queued`: Bool? = nil,
         `queueId`: String? = nil
     ) {
+        self.storage = Storage(id: `id`, role: `role`, at: `at`)
         self.`textCode` = `textCode`
         self.`textParams` = `textParams`
         self.`helperFollowup` = `helperFollowup`
@@ -398,7 +887,9 @@ public struct WireMessageFields: WireModel {
         self.`queueId` = `queueId`
     }
 
+    @inline(never)
     public init(from decoder: Decoder) throws {
+        self.storage = Storage(id: "", role: .user, at: 0)
         let object = try WireObject(from: decoder)
         `textCode` = try object.optional("textCode")
         `textParams` = try object.optional("textParams")
@@ -482,6 +973,90 @@ public struct WireMessageFields: WireModel {
         explicitNulls = object.nullKeys.intersection(["textCode", "textParams", "helperFollowup", "helperIntro", "setupOffer", "setupChoices", "setupChoicesPending", "setupChoicesUpdating", "wait", "bugReport", "roomRequest", "id", "role", "text", "digest", "engineCompaction", "compaction", "attachments", "card", "widget", "serverCard", "setupSuggestion", "setupRequest", "app", "fromApp", "pointed", "connector", "secret", "signIn", "routineRun", "burst", "automation", "goalRun", "call", "tool", "webhookPost", "steered", "aside", "via", "callId", "relayed", "sender", "turnId", "stoppedBy", "itemId", "requestMessageId", "turnSucceeded", "requestCancelled", "requestPending", "turnTerminal", "turnCompletedAt", "savedSteps", "png", "mime", "at", "parentId", "replyToId", "sendId", "channelMode", "from", "threadPost", "peerPost", "routedBy", "quickModel", "doneWhen", "peerAsk", "reactions", "reaction", "comm", "relay", "inbox", "threadRef", "sentDirectly", "publishedPage", "dataResult", "dataContext", "queued", "queueId"])
     }
 
+    public static func == (lhs: WireMessageFields, rhs: WireMessageFields) -> Bool {
+        lhs.`textCode` == rhs.`textCode` &&
+        lhs.`textParams` == rhs.`textParams` &&
+        lhs.`helperFollowup` == rhs.`helperFollowup` &&
+        lhs.`helperIntro` == rhs.`helperIntro` &&
+        lhs.`setupOffer` == rhs.`setupOffer` &&
+        lhs.`setupChoices` == rhs.`setupChoices` &&
+        lhs.`setupChoicesPending` == rhs.`setupChoicesPending` &&
+        lhs.`setupChoicesUpdating` == rhs.`setupChoicesUpdating` &&
+        lhs.`wait` == rhs.`wait` &&
+        lhs.`bugReport` == rhs.`bugReport` &&
+        lhs.`roomRequest` == rhs.`roomRequest` &&
+        lhs.`id` == rhs.`id` &&
+        lhs.`role` == rhs.`role` &&
+        lhs.`text` == rhs.`text` &&
+        lhs.`digest` == rhs.`digest` &&
+        lhs.`engineCompaction` == rhs.`engineCompaction` &&
+        lhs.`compaction` == rhs.`compaction` &&
+        lhs.`attachments` == rhs.`attachments` &&
+        lhs.`card` == rhs.`card` &&
+        lhs.`widget` == rhs.`widget` &&
+        lhs.`serverCard` == rhs.`serverCard` &&
+        lhs.`setupSuggestion` == rhs.`setupSuggestion` &&
+        lhs.`setupRequest` == rhs.`setupRequest` &&
+        lhs.`app` == rhs.`app` &&
+        lhs.`fromApp` == rhs.`fromApp` &&
+        lhs.`pointed` == rhs.`pointed` &&
+        lhs.`connector` == rhs.`connector` &&
+        lhs.`secret` == rhs.`secret` &&
+        lhs.`signIn` == rhs.`signIn` &&
+        lhs.`routineRun` == rhs.`routineRun` &&
+        lhs.`burst` == rhs.`burst` &&
+        lhs.`automation` == rhs.`automation` &&
+        lhs.`goalRun` == rhs.`goalRun` &&
+        lhs.`call` == rhs.`call` &&
+        lhs.`tool` == rhs.`tool` &&
+        lhs.`webhookPost` == rhs.`webhookPost` &&
+        lhs.`steered` == rhs.`steered` &&
+        lhs.`aside` == rhs.`aside` &&
+        lhs.`via` == rhs.`via` &&
+        lhs.`callId` == rhs.`callId` &&
+        lhs.`relayed` == rhs.`relayed` &&
+        lhs.`sender` == rhs.`sender` &&
+        lhs.`turnId` == rhs.`turnId` &&
+        lhs.`stoppedBy` == rhs.`stoppedBy` &&
+        lhs.`itemId` == rhs.`itemId` &&
+        lhs.`requestMessageId` == rhs.`requestMessageId` &&
+        lhs.`turnSucceeded` == rhs.`turnSucceeded` &&
+        lhs.`requestCancelled` == rhs.`requestCancelled` &&
+        lhs.`requestPending` == rhs.`requestPending` &&
+        lhs.`turnTerminal` == rhs.`turnTerminal` &&
+        lhs.`turnCompletedAt` == rhs.`turnCompletedAt` &&
+        lhs.`savedSteps` == rhs.`savedSteps` &&
+        lhs.`png` == rhs.`png` &&
+        lhs.`mime` == rhs.`mime` &&
+        lhs.`at` == rhs.`at` &&
+        lhs.`parentId` == rhs.`parentId` &&
+        lhs.`replyToId` == rhs.`replyToId` &&
+        lhs.`sendId` == rhs.`sendId` &&
+        lhs.`channelMode` == rhs.`channelMode` &&
+        lhs.`from` == rhs.`from` &&
+        lhs.`threadPost` == rhs.`threadPost` &&
+        lhs.`peerPost` == rhs.`peerPost` &&
+        lhs.`routedBy` == rhs.`routedBy` &&
+        lhs.`quickModel` == rhs.`quickModel` &&
+        lhs.`doneWhen` == rhs.`doneWhen` &&
+        lhs.`peerAsk` == rhs.`peerAsk` &&
+        lhs.`reactions` == rhs.`reactions` &&
+        lhs.`reaction` == rhs.`reaction` &&
+        lhs.`comm` == rhs.`comm` &&
+        lhs.`relay` == rhs.`relay` &&
+        lhs.`inbox` == rhs.`inbox` &&
+        lhs.`threadRef` == rhs.`threadRef` &&
+        lhs.`sentDirectly` == rhs.`sentDirectly` &&
+        lhs.`publishedPage` == rhs.`publishedPage` &&
+        lhs.`dataResult` == rhs.`dataResult` &&
+        lhs.`dataContext` == rhs.`dataContext` &&
+        lhs.`queued` == rhs.`queued` &&
+        lhs.`queueId` == rhs.`queueId` &&
+        lhs.additionalFields == rhs.additionalFields &&
+        lhs.explicitNulls == rhs.explicitNulls
+    }
+
+    @inline(never)
     public func encode(to encoder: Encoder) throws {
         var object = WireObject(additionalFields)
         try object.putOptional("textCode", `textCode`, nulls: explicitNulls)
@@ -1060,14 +1635,11 @@ public indirect enum OptionCardDataOutsideWrite: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`roomBulletin`(let value): raw = try JSONValue(encoding: value)
-        case .`memory`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .`roomBulletin`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`memory`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 }
 
@@ -1460,16 +2032,13 @@ public indirect enum CardAnswerer: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`session`(let value): raw = try JSONValue(encoding: value)
-        case .`loopback`(let value): raw = try JSONValue(encoding: value)
-        case .`worker`(let value): raw = try JSONValue(encoding: value)
-        case .`bot`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .`session`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`loopback`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`worker`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`bot`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 }
 
@@ -2765,29 +3334,24 @@ public indirect enum WireMessage: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`text`(let value): raw = try JSONValue(encoding: value)
-        case .`options`(let value): raw = try JSONValue(encoding: value)
-        case .`activity`(let value): raw = try JSONValue(encoding: value)
-        case .`screen`(let value): raw = try JSONValue(encoding: value)
-        case .`connector`(let value): raw = try JSONValue(encoding: value)
-        case .`secret`(let value): raw = try JSONValue(encoding: value)
-        case .`signin`(let value): raw = try JSONValue(encoding: value)
-        case .`routineRun`(let value): raw = try JSONValue(encoding: value)
-        case .`goalRun`(let value): raw = try JSONValue(encoding: value)
-        case .`burst`(let value): raw = try JSONValue(encoding: value)
-        case .`digest`(let value): raw = try JSONValue(encoding: value)
-        case .`compaction`(let value): raw = try JSONValue(encoding: value)
-        case .`call`(let value): raw = try JSONValue(encoding: value)
-        case .`widget`(let value): raw = try JSONValue(encoding: value)
-        case .`app`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value):
-            try value.encode(to: encoder)
-            return
+        case .`text`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`options`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`activity`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`screen`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`connector`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`secret`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`signin`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`routineRun`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`goalRun`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`burst`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`digest`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`compaction`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`call`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`widget`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`app`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 
     public var fields: WireMessageFields? {
@@ -5114,16 +5678,13 @@ public indirect enum GroupDefaultResponder: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`member`(let value): raw = try JSONValue(encoding: value)
-        case .`everyone`(let value): raw = try JSONValue(encoding: value)
-        case .`mentions`(let value): raw = try JSONValue(encoding: value)
-        case .`auto`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .`member`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`everyone`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`mentions`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`auto`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 }
 
@@ -6522,50 +7083,47 @@ public indirect enum ServerFrame: WireModel {
         }
     }
     public func encode(to encoder: Encoder) throws {
-        var raw: JSONValue
         switch self {
-        case .`sections`(let value): raw = try JSONValue(encoding: value)
-        case .`botQueued`(let value): raw = try JSONValue(encoding: value)
-        case .`message`(let value): raw = try JSONValue(encoding: value)
-        case .`messagePatch`(let value): raw = try JSONValue(encoding: value)
-        case .`thread`(let value): raw = try JSONValue(encoding: value)
-        case .`bot`(let value): raw = try JSONValue(encoding: value)
-        case .`group`(let value): raw = try JSONValue(encoding: value)
-        case .`notify`(let value): raw = try JSONValue(encoding: value)
-        case .`notificationsRead`(let value): raw = try JSONValue(encoding: value)
-        case .`groupDeleted`(let value): raw = try JSONValue(encoding: value)
-        case .`routine`(let value): raw = try JSONValue(encoding: value)
-        case .`routineDeleted`(let value): raw = try JSONValue(encoding: value)
-        case .`routineRun`(let value): raw = try JSONValue(encoding: value)
-        case .`webhook`(let value): raw = try JSONValue(encoding: value)
-        case .`webhookAttempt`(let value): raw = try JSONValue(encoding: value)
-        case .`webhookDeleted`(let value): raw = try JSONValue(encoding: value)
-        case .`appTrigger`(let value): raw = try JSONValue(encoding: value)
-        case .`appTriggerAttempt`(let value): raw = try JSONValue(encoding: value)
-        case .`appTriggerDeleted`(let value): raw = try JSONValue(encoding: value)
-        case .`appTriggerService`(let value): raw = try JSONValue(encoding: value)
-        case .`runtime`(let value): raw = try JSONValue(encoding: value)
-        case .`mcpChanged`(let value): raw = try JSONValue(encoding: value)
-        case .`screen`(let value): raw = try JSONValue(encoding: value)
-        case .`computer`(let value): raw = try JSONValue(encoding: value)
-        case .`computerControl`(let value): raw = try JSONValue(encoding: value)
-        case .`data`(let value): raw = try JSONValue(encoding: value)
-        case .`botDeleted`(let value): raw = try JSONValue(encoding: value)
-        case .`botsOrder`(let value): raw = try JSONValue(encoding: value)
-        case .`groupsOrder`(let value): raw = try JSONValue(encoding: value)
-        case .`liveCall`(let value): raw = try JSONValue(encoding: value)
-        case .`deviceJob`(let value): raw = try JSONValue(encoding: value)
-        case .`teamPresence`(let value): raw = try JSONValue(encoding: value)
-        case .`threadPresence`(let value): raw = try JSONValue(encoding: value)
-        case .`teamPeople`(let value): raw = try JSONValue(encoding: value)
-        case .`config`(let value): raw = try JSONValue(encoding: value)
-        case .`hello`(let value): raw = try JSONValue(encoding: value)
-        case .`ping`(let value): raw = try JSONValue(encoding: value)
-        case .`snapshot`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .`sections`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`botQueued`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`message`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`messagePatch`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`thread`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`bot`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`group`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`notify`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`notificationsRead`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`groupDeleted`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`routine`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`routineDeleted`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`routineRun`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`webhook`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`webhookAttempt`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`webhookDeleted`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`appTrigger`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`appTriggerAttempt`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`appTriggerDeleted`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`appTriggerService`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`runtime`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`mcpChanged`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`screen`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`computer`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`computerControl`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`data`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`botDeleted`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`botsOrder`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`groupsOrder`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`liveCall`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`deviceJob`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`teamPresence`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`threadPresence`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`teamPeople`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`config`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`hello`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`ping`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .`snapshot`(let value): try encodeTaggedWirePayload(value, kind: kind, to: encoder)
+        case .unknown(_, let value): try value.encode(to: encoder)
         }
-        raw["kind"] = .string(kind)
-        try raw.encode(to: encoder)
     }
 }
 
