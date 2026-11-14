@@ -138,4 +138,17 @@ describe("a computer that is not on My Cloud, in English", () => {
     expect(overviewLineText("Computer preference: Local VM, which isn't available on My Cloud.")).toBe("Works on: Local VM, which isn't available on My Cloud.");
     expect(overviewLineText("Computer preference: this computer, which isn't available on My Cloud.")).toBe("Works on: this computer, which isn't available on My Cloud.");
   });
+
+  it("does not name a cloud desktop while providers are locked", () => {
+    expect(overviewLineText("Computer preference: cloud computer.", undefined, true)).toBe("Works on: a configured server.");
+  });
+});
+
+it("keeps the Chinese overview free of cloud desktop wording only while locked", () => {
+  setLocale("zh");
+  for (const line of ["Computer preference: cloud computer.", "Computer preference: cloud computer, which isn't available on My Cloud."]) {
+    expect(overviewLineText(line, undefined, false)).toContain("云端桌面");
+    expect(overviewLineText(line, undefined, true)).toContain("已配置的服务器");
+    expect(overviewLineText(line, undefined, true)).not.toContain("云端桌面");
+  }
 });

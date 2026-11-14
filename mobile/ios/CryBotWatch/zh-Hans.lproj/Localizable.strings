@@ -7,7 +7,7 @@
 "REFRESH" = "刷新";
 "REFRESHING" = "正在刷新";
 "NO_REPLIES" = "暂无回复";
-"NO_BOTS" = "暂无机器人";
+"NO_BOTS" = "暂无智能体";
 "CANNOT_CONNECT" = "连不上，请重试";
 "INVALID_RESPONSE" = "无法读取服务器响应";
 "REQUEST_FAILED" = "请求失败";
@@ -26,4 +26,4 @@
 "QUICK_DETAILS" = "详细说说";
 "CANCEL" = "取消";
 "SPEAKER_ME" = "我";
-"SPEAKER_BOT" = "机器人";
+"SPEAKER_BOT" = "智能体";

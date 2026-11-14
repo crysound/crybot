@@ -488,13 +488,14 @@ export function HiddenEngines() {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
+    if (state.config?.providerLock) return;
     // An older server has no such route: nothing is hidden there.
     api<{ instances?: Array<{ instanceId: string; displayName: string }> } | undefined>("/api/instances/hidden")
       .then((result) => { if (alive) setHidden(Array.isArray(result?.instances) ? result.instances : []); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [state.instances]);
-  if (hidden.length === 0) return null;
+  }, [state.instances, state.config?.providerLock]);
+  if (state.config?.providerLock || hidden.length === 0) return null;
   const unhide = (instanceId: string) => {
     setBusy(instanceId);
     setError(null);
@@ -552,6 +553,26 @@ export function EnginesSettings({ simple = false, more }: { simple?: boolean; mo
         advanced={<>{group === "claude" ? <><ClaudeEndpoints /><ClaudeBedrockEndpoints /></> : <CodexEndpoints />}<EngineAdvanced instance={instance} /></>} />
       : <EngineRow instance={instance} bare={bare} />;
   };
+
+  if (state.config?.providerLock) {
+    return (
+      <SettingsGroup label={t("settings.ai.providers")} actions={<RefreshEngines />}>
+        <SettingsRows icons>
+          {state.instances.map((instance) => {
+            const status = simpleStatus(instance, engineReady(instance));
+            return <div key={instance.instanceId} data-simple-engine={instance.instanceId} className="flex min-h-16 items-center gap-3 px-4 py-3">
+              <SettingsMark><InstanceProviderMark instance={instance} size={18} /></SettingsMark>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-[14px] leading-5 text-ink">{instance.displayName}</span>
+                <span className="text-[13px] text-ink-secondary"><StatusDot tone={status.tone} />{status.text}</span>
+              </span>
+            </div>;
+          })}
+        </SettingsRows>
+        {state.instances.length === 0 && <div className="px-4"><ClaudeEndpoints /></div>}
+      </SettingsGroup>
+    );
+  }
 
   if (simple && more) return <>
     <SimpleEngines rows={rows} isReady={isReady} renderEngine={renderEngine} more={more} />

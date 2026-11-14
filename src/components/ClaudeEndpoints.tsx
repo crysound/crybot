@@ -149,6 +149,9 @@ function AgentEndpoints({ engine }: { engine: Engine }) {
   const { state } = useStore();
   const endpoints = state.instances.filter((instance) => engine === "claude" ? instance.claudeEndpoint : instance.codexEndpoint);
   const [open, setOpen] = useState<string | null>(null);
+  if (state.config?.providerLock) {
+    return engine === "claude" && endpoints.length === 0 ? <EndpointForm engine="claude" onDone={() => setOpen(null)} /> : null;
+  }
   return (
     <div data-claude-endpoints={engine === "claude" ? "" : undefined} data-codex-endpoints={engine === "codex" ? "" : undefined} className="mt-3 space-y-2">
       <div className="text-[13px] leading-[18px] text-ink">{t(engine === "claude" ? "claudeEndpoints.title" : "agentEndpoints.codexTitle")}</div>

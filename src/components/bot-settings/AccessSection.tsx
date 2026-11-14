@@ -601,7 +601,7 @@ export function CloudPreference({ bot, patch }: { bot: Bot; patch: ReturnType<ty
   if (!cloudPreferenceShown(bot, state.config)) return null;
   return (
     <>
-      {!bot.computer && !draft && (
+      {!state.config?.providerLock && !bot.computer && !draft && (
         <div className="mt-3 rounded-lg bg-inset px-3 py-2.5 text-[12px] leading-relaxed text-ink-secondary">
           <span className="font-medium text-ink">{t("botAccess.cloud.autoTitle")}</span>{" "}
           {t("botAccess.cloud.autoDescription")}
@@ -637,7 +637,7 @@ function DraftWorksOn({ bot, patch, seat }: { bot: Bot; patch: ReturnType<typeof
   const { capabilities } = useDesktopCapabilities();
   const providerSupportsLocal = instanceSupportsLocalComputer(state.instances, bot);
   const localReason = localComputerDisabledReason({ capabilities, providerSupportsLocal });
-  const named = { ...bot, name: bot.name || t("sidebar.newBotSimple") };
+  const named = { ...bot, ...(state.config?.providerLock ? { cloudBackend: "vps" as const } : {}), name: bot.name || t("sidebar.newBotSimple") };
   const options = worksOnChoices(state.config, capabilities).map(([mode, labelKey, descriptionKey, Icon]) => {
     const view = placeViewFor(placeFacts({
       bot: named, place: mode ?? "auto", seat, config: state.config, instances: state.instances,
@@ -646,7 +646,7 @@ function DraftWorksOn({ bot, patch, seat }: { bot: Bot; patch: ReturnType<typeof
         reason: localReason ?? t("computer.unavailableLocal"),
       },
     }));
-    const managedBy = placeManagedBy(mode, bot.cloudBackend, state.config?.managedPolicy);
+    const managedBy = placeManagedBy(mode, named.cloudBackend, state.config?.managedPolicy);
     return {
       mode, labelKey, descriptionKey, Icon, view, managedBy,
       selected: worksOnSelected(mode, bot.computer, capabilities),
@@ -655,7 +655,7 @@ function DraftWorksOn({ bot, patch, seat }: { bot: Bot; patch: ReturnType<typeof
       note: placeHasIssue(view) ? view.line : mode === "local" ? localReason ?? undefined : undefined,
     };
   });
-  const choose = (mode: WorksOnMode) => patch(mode === "browser" ? { computer: mode, browser: true } : { computer: mode });
+  const choose = (mode: WorksOnMode) => patch(mode === "cloud" && state.config?.providerLock ? { computer: mode, cloudBackend: "vps" } : mode === "browser" ? { computer: mode, browser: true } : { computer: mode });
   return <>
     <div className="text-[15px] font-medium text-ink">{t("computer.worksOn")}</div>
     <p className="mt-1 text-[12px] leading-5 text-ink-secondary">{t(state.config?.cloudHome ? "computer.worksOnHintCloudHome" : "computer.worksOnHint")}</p>

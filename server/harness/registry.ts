@@ -121,6 +121,7 @@ export class ProviderRegistry {
   /** Per instance object: settings that reload an engine make a new one, so its status is read afresh. */
   private readsOf = new WeakMap<ProviderInstance, { snapshot: ProviderSnapshot; at: number; generation: number }>();
   private driversByKind: Map<string, AnyProviderDriver>;
+  private readonly filterConfigs: ((configs: InstanceConfigMap) => InstanceConfigMap) | undefined;
   private readonly enginesBaseDir: string | undefined;
   private readonly npmPresent: () => boolean;
   private readonly status: ReturnType<typeof engineStatusFile> | null;
@@ -128,8 +129,9 @@ export class ProviderRegistry {
 
   constructor(
     drivers: readonly AnyProviderDriver[],
-    options: { enginesBaseDir?: string; npmAvailable?: () => boolean; statusFile?: string; installStandalone?: InstallStandalone } = {},
+    options: { filterConfigs?: (configs: InstanceConfigMap) => InstanceConfigMap; enginesBaseDir?: string; npmAvailable?: () => boolean; statusFile?: string; installStandalone?: InstallStandalone } = {},
   ) {
+    this.filterConfigs = options.filterConfigs;
     this.enginesBaseDir = options.enginesBaseDir;
     this.npmPresent = options.npmAvailable ?? npmAvailable;
     this.status = options.statusFile ? engineStatusFile(options.statusFile) : null;
@@ -149,6 +151,7 @@ export class ProviderRegistry {
   }
 
   async load(configs: InstanceConfigMap, decorate?: (instance: ProviderInstance) => ProviderInstance) {
+    configs = this.filterConfigs?.(configs) ?? configs;
     this.watchModelManifest();
     const slots = [...this.byId.keys()];
     const loaded = await Promise.all(

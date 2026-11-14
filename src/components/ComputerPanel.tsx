@@ -145,7 +145,7 @@ export function ComputerPanel({
   const threadPath = useCallback((suffix: string) =>
     `/api/bots/${profileBot.id}/${suffix}?threadId=${encodeURIComponent(profileBot.threadId)}`,
   [profileBot.id, profileBot.threadId]);
-  const canManageCloud = profileBot.computer === "cloud" && livePlace === "cloud";
+  const canManageCloud = profileBot.computer === "cloud" && livePlace === "cloud" && (!state.config?.providerLock || profileBot.cloudBackend === "vps");
   const canManageVm = profileBot.computer === "vm" && livePlace === "vm";
   const { capabilities, ready: capabilitiesReady } = useDesktopCapabilities();
   const localAvailable = capabilities.localComputer.available;
@@ -172,6 +172,7 @@ export function ComputerPanel({
     id: string; name: string; botId: string; section: string;
   } | null>(null);
   const cloudBackend = bot.cloudBackend ?? "box";
+  const providerLock = state.config?.providerLock === true;
   const computerSelectionPersisted = Boolean(
     persistedComputerSelection
       && persistedComputerSelection.botId === bot.id
@@ -369,7 +370,7 @@ export function ComputerPanel({
     .filter((routine) => routine.botId === bot.id)
     .sort((a, b) => Number(b.enabled) - Number(a.enabled) || (a.nextRunAt ?? Infinity) - (b.nextRunAt ?? Infinity));
   const cloudRoutineReady = Boolean(
-    state.config?.box.configured &&
+    !state.config?.providerLock && state.config?.box.configured &&
       boatCapableEngine(state.instances, bot.modelSelection.instanceId)?.snapshot.state === "available",
   );
   const activeRoutineRun = state.routineRuns.find(
@@ -390,7 +391,7 @@ export function ComputerPanel({
     setError(null);
     // The selection may be optimistic: never let it choose a provider until the PATCH confirms server state.
     if (!computerSelectionPersisted || !surfaceReady) return;
-    if (bot.computer === undefined) {
+    if (bot.computer === undefined || (providerLock && bot.computer === "cloud" && cloudBackend !== "vps")) {
       setPhase("auto-unavailable");
       return;
     }
@@ -595,6 +596,7 @@ export function ComputerPanel({
     selectedInstance?.driverKind,
     vmSupported,
     cloudSupported,
+    providerLock,
     state.config?.vps?.sshAlias,
     panelView,
     computerSelectionPersisted,
@@ -1098,7 +1100,7 @@ export function ComputerPanel({
           : boatState === "archived" || boatState === "stopped" ? "asleep" : undefined;
   const viewOf = (place: PlaceFacts["place"], refusal?: PlaceFacts["refusal"]): PlaceView => placeViewFor({
     ...placeFacts({
-      bot, place, seat: placeSeat, config: state.config, instances: state.instances,
+      bot: providerLock && place === "cloud" ? { ...bot, cloudBackend: "vps" } : bot, place, seat: placeSeat, config: state.config, instances: state.instances,
       local: { ready: localSelectable, reason: localDisabledReason ?? t("computer.unavailableLocal") },
       ...(place === "cloud" ? { computer: cloudComputer } : {}),
       ...(place === "auto" && currentTeamComputer ? { teamComputer: currentTeamComputer.name } : {}),
@@ -1112,13 +1114,13 @@ export function ComputerPanel({
   const autoView = viewOf("auto");
   const localHidden = pageOnRemoteServer(capabilities);
   const placeOptions = worksOnChoices(state.config, capabilities).map(([mode, labelKey, descriptionKey, Icon]) => {
-    const selected = worksOnSelected(mode, profileBot.computer, capabilities);
-    const managedBy = placeManagedBy(mode, profileBot.cloudBackend, managedPolicy);
+    const selected = worksOnSelected(mode, profileBot.computer, capabilities) && !(providerLock && mode === "cloud" && profileBot.cloudBackend !== "vps");
+    const managedBy = placeManagedBy(mode, providerLock ? "vps" : profileBot.cloudBackend, managedPolicy);
     const view = mode === null ? autoView : mode === "cloud" ? cloudView : viewOf(mode);
     const disabled = Boolean(managedBy) || placeBlocked(view);
     const issue = !managedBy && placeHasIssue(view);
     const unavailableTitle = managedBy ?? (issue ? view.line : mode === "browser" ? t("computer.browserOnlyTitle") : undefined);
-    return { mode, labelKey, descriptionKey, Icon, simpleLabel: worksOnSimpleLabel(mode ?? undefined, capabilities.host.platform), selected, managedBy, disabled, unavailableTitle, view, issue };
+    return { mode, labelKey, descriptionKey, Icon, simpleLabel: providerLock && mode === "cloud" ? t("botAccess.cloud.selfHostedVps") : worksOnSimpleLabel(mode ?? undefined, capabilities.host.platform), selected, managedBy, disabled, unavailableTitle, view, issue };
   });
   const worksOnView = placeOptions.find(({ selected }) => selected)?.view ?? autoView;
   const runPlaceAction = (id: PlaceActionId) => {
@@ -1137,10 +1139,11 @@ export function ComputerPanel({
       </button>
     ) : null;
   const selectPlace = (mode: (typeof placeOptions)[number]["mode"]) => {
-    if ((mode === null && profileBot.computer === undefined) || mode === profileBot.computer) return;
+    if ((mode === null && profileBot.computer === undefined) || (mode === profileBot.computer && !(providerLock && mode === "cloud" && cloudBackend !== "vps"))) return;
     if (mode === "local" && approvalModeFor(profileBot) === "auto") {
       setLocalAutoWarningTarget(bot.id);
     }
+    else if (mode === "cloud" && providerLock) updateComputerSelection({ computer: mode, cloudBackend: "vps" });
     else if (mode === "browser") updateComputerSelection({ computer: mode, browser: true });
     else updateComputerSelection({ computer: mode });
   };
@@ -1513,7 +1516,7 @@ export function ComputerPanel({
             {errorText}
           </div>
         )}
-        {(boatKeyShown || (phase === "unconfigured" && cloudView.action?.id === "add-boat-key")) && (
+        {!providerLock && (boatKeyShown || (phase === "unconfigured" && cloudView.action?.id === "add-boat-key")) && (
           <div data-boat-key className="mt-3 rounded-xl bg-card py-1.5">
             <KeyRow id="box" via="computer_panel"
               onSaved={(configured) => { setBoatKeyShown(true); if (configured) setRetry((n) => n + 1); }}
@@ -1660,7 +1663,7 @@ export function ComputerPanel({
             )}
           </div>
         )}
-        {canManageCloud && cloudBackend !== "vps" && phase !== "unconfigured" && phase !== "team-boat" && teamComputer?.botId !== bot.id && <CloudComputerRecoveryRow botId={bot.id} name={bot.name} always={advanced} />}
+        {!providerLock && canManageCloud && cloudBackend !== "vps" && phase !== "unconfigured" && phase !== "team-boat" && teamComputer?.botId !== bot.id && <CloudComputerRecoveryRow botId={bot.id} name={bot.name} always={advanced} />}
         {phase !== "team-boat" && (bot.computer !== undefined || computerStatusCurrent) && <>
           <LocalScreenPreview />
           <LinuxLocalControl />

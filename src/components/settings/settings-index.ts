@@ -10,6 +10,7 @@ export type SettingsOwner = "place" | "account" | "app";
 
 /** What this page can show, read once per render from the bridge, the server's config and the session. */
 export interface SettingsContext {
+  providerLock?: boolean;
   /** the desktop app's own window (any place in it), not a browser tab */
   desktop: boolean;
   /** this computer's own page */
@@ -185,7 +186,7 @@ export const SETTINGS_INDEX: readonly SettingsIndexEntry[] = [
   { id: "sidebar-picture", page: "overview", anchor: "sidebar", labelKey: "placeLook.sidebarPicture", sectionKey: "settings.overview.sidebar", topFor: ["wallpaper", "background", "sidebar image"], synonyms: ["picture", "banner", "image"] },
   { id: "show-helper", page: "overview", anchor: "sidebar", labelKey: "settings.search.showHelper", sectionKey: "settings.overview.sidebar", synonyms: ["helper", "starter", "default bot"] },
   { id: "providers", page: "ai", anchor: "providers", labelKey: "settings.ai.providers", topFor: ["ollama", "lm studio", "local model", "model providers"], synonyms: ["models", "engines", "claude", "codex", "sign in", "subscription", "cli"] },
-  { id: "keys", page: "ai", anchor: "ai-keys", labelKey: "settings.ai.otherServices", topFor: ["api keys", "api key"], synonyms: ["keys", "key", "openai", "anthropic", "xai", "openrouter", "router", "base url", "mistral", "groq", "cerebras", "deepseek", "opencode", "composio", "elevenlabs"] },
+  { id: "keys", when: (ctx) => !ctx.providerLock, page: "ai", anchor: "ai-keys", labelKey: "settings.ai.otherServices", topFor: ["api keys", "api key"], synonyms: ["keys", "key", "openai", "anthropic", "xai", "openrouter", "router", "base url", "mistral", "groq", "cerebras", "deepseek", "opencode", "composio", "elevenlabs"] },
   { id: "backup-model", page: "ai", anchor: "backup-model", labelKey: "settings.recovery.title", sectionKey: "settings.ai.backupModel", advanced: true, synonyms: ["backup model", "fallback", "recovery"] },
   { id: "routing", page: "ai", anchor: "routing", labelKey: "settings.ai.routing", advanced: true, synonyms: ["decision and extraction", "decision", "extraction", "routing", "who answers", "jev", "typesafe", "cloudflare", "workers ai"] },
   { id: "images", page: "ai", anchor: "images", labelKey: "settings.ai.images", advanced: true, synonyms: ["image generation", "images", "generate", "picture"] },
@@ -274,6 +275,7 @@ export function searchSettings(rawQuery: string, ctx: SettingsContext, label: (e
   const query = norm(rawQuery);
   if (!query) return [];
   const hits: SearchHit[] = [];
+  const synonyms = (words: readonly string[]) => ctx.providerLock ? words.filter((word) => !word.includes("cloud desktop")) : words;
   // Search finds everything Advanced mode would show; what Simple leaves out comes back marked `advanced`.
   const every = { ...ctx, advanced: true };
   const simpleHides = (page: SettingsPageId) => !pageById(page).when(ctx);
@@ -282,13 +284,13 @@ export function searchSettings(rawQuery: string, ctx: SettingsContext, label: (e
     if (page.id === "phone" && !ctx.here && LOCAL_ONLY_WORDS.includes(query)) continue;
     // A page named by the word itself ("phone", "pair") comes before its own rows.
     const top = PAGE_TOP[page.id] ?? [];
-    const value = top.includes(query) ? 101 : score(query, pageLabel(page), page.synonyms, []) - 1;
+    const value = top.includes(query) ? 101 : score(query, pageLabel(page), synonyms(page.synonyms), []) - 1;
     if (value > 0) hits.push({ entry: { id: `page:${page.id}`, page: page.id, labelKey: page.labelKey }, elsewhere: false, score: value, advanced: simpleHides(page.id) || undefined });
   }
   for (const listed of SETTINGS_INDEX) {
     // Simple shows some of an Advanced page's rows on a page of its own: search lands there instead.
     const entry = !ctx.advanced && listed.simple ? { ...listed, ...listed.simple } : listed;
-    const value = score(query, label(entry), entry.synonyms ?? [], entry.topFor ?? []);
+    const value = score(query, label(entry), synonyms(entry.synonyms ?? []), entry.topFor ?? []);
     if (!value) continue;
     const pageHere = pageById(entry.page).when(every);
     const here = pageHere && (entry.when?.(every) ?? true);

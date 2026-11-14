@@ -60,7 +60,7 @@ Las notas más largas van en memory/<tema>.md y se leen cuando es necesario.
 `,
   "zh-tw": `# 記憶
 
-這個機器人在不同任務之間保留的長期筆記。前 ${MEMORY_MAX_LINES} 行
+這個智能體在不同任務之間保留的長期筆記。前 ${MEMORY_MAX_LINES} 行
 會在每次工作階段開始時載入 — 請讓這個檔案保持簡短、整理好。
 較長的筆記放在 memory/<主題>.md 檔案裡，需要時再讀取。
 `,
