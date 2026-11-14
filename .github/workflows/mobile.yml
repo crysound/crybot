@@ -1,0 +1,89 @@
+name: Mobile builds
+
+permissions:
+  contents: read
+
+on:
+  push:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile.yml"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile.yml"
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: mobile/android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - run: gradle assembleDebug lintDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crybot-android-debug
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+
+  ios:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: mobile/ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - run: xcodegen generate
+      - name: Build iOS app with embedded watch app
+        run: xcodebuild -scheme CryBot -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath DerivedData/iOS build CODE_SIGNING_ALLOWED=NO
+      - name: Verify embedded watch app
+        run: test -d 'DerivedData/iOS/Build/Products/Debug-iphonesimulator/Cry Bot.app/Watch/CryBotWatch.app'
+      - name: Build watch app
+        run: xcodebuild -scheme CryBotWatch -configuration Debug -destination 'generic/platform=watchOS Simulator' -derivedDataPath DerivedData/Watch build CODE_SIGNING_ALLOWED=NO
+      - name: Select available iPhone simulator
+        run: |
+          xcrun simctl list
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/crybot-simulators.json"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          devices = json.loads((Path(os.environ["RUNNER_TEMP"]) / "crybot-simulators.json").read_text())["devices"]
+          runtimes = sorted((runtime for runtime in devices if ".iOS-" in runtime),
+                            key=lambda runtime: tuple(int(part) for part in runtime.rsplit(".iOS-", 1)[1].split("-")),
+                            reverse=True)
+          candidates = [device for runtime in runtimes
+                        for device in devices[runtime]
+                        if device.get("isAvailable") and device["name"].startswith("iPhone")]
+          if not candidates:
+              raise SystemExit("No available iPhone simulator")
+          selected = candidates[0]
+          print("Selected simulator:", selected["name"], selected["udid"])
+          with open(os.environ["GITHUB_ENV"], "a") as env:
+              env.write("CRYBOT_TEST_SIMULATOR=" + selected["udid"] + "\n")
+          PY
+      - name: Run isolated Swift unit tests
+        run: >-
+          xcodebuild -scheme CryBotWatchTests -configuration Debug
+          -destination "platform=iOS Simulator,id=$CRYBOT_TEST_SIMULATOR"
+          -derivedDataPath DerivedData/Tests -resultBundlePath DerivedData/WatchTests.xcresult
+          -parallel-testing-enabled NO test CODE_SIGNING_ALLOWED=NO
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crybot-watch-tests
+          path: mobile/ios/DerivedData/WatchTests.xcresult
+          if-no-files-found: ignore
