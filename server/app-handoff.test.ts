@@ -238,6 +238,18 @@ describe("mobile app login handoff", () => {
     expect(decryptCallback(url)).toBe(token);
   });
 
+  it.each([
+    [{ CRYBOT_APP_HOST: "app.example.com" }, "https://app.example.com"],
+    [{ CRYBOT_APP_LINK_ORIGIN: "https://legacy.example.com" }, "https://legacy.example.com"],
+    [{ CRYBOT_APP_HOST: "app.example.com", CRYBOT_APP_LINK_ORIGIN: "https://legacy.example.com" }, "https://legacy.example.com"],
+  ])("uses the resolved return origin in handoff: %j", async (config, origin) => {
+    const result = await fixture({ ...env, ...config }).get({ "cf-access-jwt-assertion": await jwt() });
+    expect(result.status).toBe(200);
+    const callback = callbackURL(result.body);
+    expect(callback.origin).toBe(origin);
+    expect(callback.pathname).toBe("/auth/app-return");
+  });
+
   it.each(["http://crybot-app.example", "https://crybot-app.example/path", "https://crybot-app.example?query"])("keeps the legacy callback for an invalid app link origin: %s", async origin => {
     const result = await fixture({ ...env, CRYBOT_APP_LINK_ORIGIN: origin }).get({ "cf-access-jwt-assertion": await jwt() });
     expect(callbackURL(result.body).protocol).toBe("crybot:");
