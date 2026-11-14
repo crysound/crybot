@@ -5,3 +5,5 @@
 "LOAD_ERROR" = "The server could not be loaded.";
 "RETRY" = "Retry";
 "CHANGE_SERVER" = "Change server";
+"LOGIN" = "Log in";
+"LOGIN_ERROR" = "Login was cancelled or could not be completed. Please log in again.";

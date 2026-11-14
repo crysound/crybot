@@ -14,6 +14,12 @@ export CRYBOT_CF_ACCESS_ALLOW='*'
 
 反向代理需保留 `Cf-Access-Jwt-Assertion`、外部 Host，以及正确的 `X-Forwarded-Proto: https`，使浏览器收到 Secure、HttpOnly 会话 cookie。无效 JWT 返回 401，名单外身份返回 403；公开的健康检查等接口保持原行为。
 
+## 手机 App 登录接力
+
+iOS / 安卓构建配置了 `CRYBOT_LOGIN_HOSTS` 时，去往登录主机的导航会改用系统认证会话或系统浏览器访问服务器的 `/auth/app-handoff?state=...`。飞书等身份源授权完成后，接力页通过 `crybot://auth` 自动返回 App；浏览器阻止自动跳转时可点击「返回 Cry Bot」。App 校验一次性 state，将 Access JWT 写入内嵌网页的 Secure、HttpOnly Cookie 后重新加载服务器。未配置登录主机时保持原有行为。
+
+接力路由只在 Cloudflare Access 已启用时开放，会重新校验 JWT 签名、issuer、audience、身份允许名单，并要求至少剩余 60 秒有效期。服务端环境变量 `CRYBOT_APP_SCHEME` 默认 `crybot`，仅接受 `^[a-z][a-z0-9+.-]{1,30}$`，非法值回落默认；请求参数不能指定回跳地址。发行版两端注册的 scheme 均为 `crybot`；自定义 scheme 需要同时调整 App 的协议注册和回调处理后重新构建。
+
 ## 安装包与更新文件
 
 ```sh
