@@ -55,12 +55,27 @@ public struct LiveState {
 
     public init() {}
 
+    public mutating func load(notifications page: NotificationsPage) {
+        let served = Set(page.notifications.map(\.id))
+        notifications = Array((notifications.filter { !served.contains($0.id) } + page.notifications)
+            .sorted { $0.at > $1.at }.prefix(500))
+        readNotificationIDs.subtract(served)
+        readNotificationIDs.formUnion(page.notifications.filter(\.read).map(\.id))
+    }
+
+    public mutating func load(config response: ConfigResponse) throws {
+        config = try JSONValue(encoding: response).objectValue ?? [:]
+    }
+
     public mutating func load(snapshot: BotsSnapshot) {
         let previous = self
         self = LiveState()
         notifications = previous.notifications
         readNotificationIDs = previous.readNotificationIDs
         config = previous.config
+        calls = previous.calls
+        computer = previous.computer
+        screens = previous.screens
         teamPresence = previous.teamPresence
         threadPresence = previous.threadPresence
         peopleRevision = previous.peopleRevision
@@ -102,7 +117,7 @@ public struct LiveState {
         case .threadPresence(let value): threadPresence[value.threadId] = value.people
         case .teamPeople: peopleRevision += 1
         case .config(let value):
-            config.merge(value.additionalFields.filter { $0.key != "kind" }) { _, new in new }
+            config = value.additionalFields.filter { $0.key != "kind" }
         case .message(let value): merge(message: value.message, thread: value.threadId, patch: false)
         case .messagePatch(let value): merge(message: value.message, thread: value.threadId, patch: true)
         case .thread(let value):

@@ -22,19 +22,19 @@ packages:
     path: Packages/CryKit
   SwiftMarkdown:
     url: https://github.com/apple/swift-markdown.git
-    exactVersion: 0.6.0
+    exactVersion: 0.9.0
   SwiftMath:
     url: https://github.com/mgriebling/SwiftMath.git
-    exactVersion: 1.7.1
+    exactVersion: 1.7.3
   HighlightSwift:
     url: https://github.com/appstefan/HighlightSwift.git
-    exactVersion: 1.0.5
+    exactVersion: 1.1.0
   LiveKit:
     url: https://github.com/livekit/client-sdk-swift.git
-    exactVersion: 2.5.0
+    exactVersion: 2.19.0
   LiveKitWebRTC:
     url: https://github.com/livekit/webrtc-xcframework.git
-    exactVersion: 125.6422.06
+    exactVersion: 150.7871.04
 targets:
   CryBot:
     type: application
@@ -120,8 +120,6 @@ targets:
       - path: CryBotTests
     dependencies:
       - target: CryBot
-      - package: CryKit
-        product: CryCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.crysound.crybot.tests

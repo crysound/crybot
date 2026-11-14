@@ -16,7 +16,39 @@ struct ContractRegistry {
     ]
 
     static func roundTrip<T: WireModel>(_ type: T.Type) -> RoundTrip {
-        { value in (try JSONValue(encoding: value.decode(type)), type.ignoredKeys) }
+        { value in
+            let decoded = try value.decode(type)
+            return (try JSONValue(encoding: decoded), ignoredPaths(in: decoded))
+        }
+    }
+    private static func ignoredPaths(in value: Any, path: String = "") -> Set<String> {
+        func joined(_ key: String) -> String { path.isEmpty ? key : path + "." + key }
+        var paths: Set<String> = []
+        if let model = value as? any WireModel {
+            paths.formUnion(type(of: model).ignoredKeys.map(joined))
+        }
+        let mirror = Mirror(reflecting: value)
+        switch mirror.displayStyle {
+        case .optional, .enum:
+            for child in mirror.children { paths.formUnion(ignoredPaths(in: child.value, path: path)) }
+        case .collection:
+            for (index, child) in mirror.children.enumerated() {
+                paths.formUnion(ignoredPaths(in: child.value, path: path + "[\(index)]"))
+            }
+        case .dictionary:
+            for child in mirror.children {
+                let pair = Array(Mirror(reflecting: child.value).children)
+                if pair.count == 2, let key = pair[0].value as? String {
+                    paths.formUnion(ignoredPaths(in: pair[1].value, path: joined(key)))
+                }
+            }
+        case .struct:
+            for child in mirror.children {
+                if let key = child.label { paths.formUnion(ignoredPaths(in: child.value, path: joined(key))) }
+            }
+        default: break
+        }
+        return paths
     }
     static func run(type: String, value: JSONValue) throws -> [String] {
         guard let transform = types[type] else { throw RegistryError.unregistered(type) }
@@ -65,6 +97,45 @@ func json(_ text: String) throws -> JSONValue { try JSONDecoder().decode(JSONVal
 func frame(_ text: String) throws -> ServerFrame { try json(text).decode() }
 
 final class ContractTests: XCTestCase {
+    func testMalformedMessagesDoNotDiscardThreadOrSnapshot() throws {
+        let good = try json(#"{"kind":"text","id":"message-1","role":"bot","at":1,"text":"Hello"}"#)
+        let bad = try json(#"{"kind":"options","id":"message-2","role":"bot","at":2,"card":false}"#)
+        let missing = try json(#"{"id":"message-3","text":"Missing kind"}"#)
+        let messages: JSONValue = .array([good, bad, missing, .null, good])
+        let page = try JSONValue.object(["messages": messages, "activeLeafId": .null]).decode(ThreadPage.self)
+        func check(_ values: [WireMessage]) throws {
+            XCTAssertEqual(values.count, 5)
+            XCTAssertEqual(values.first?.text, "Hello")
+            XCTAssertEqual(values.last?.text, "Hello")
+            guard case .unknown(let kind, let raw) = values[1] else { return XCTFail("Expected unknown malformed options") }
+            XCTAssertEqual(kind, "options")
+            XCTAssertEqual(raw, bad)
+            XCTAssertEqual(try JSONValue(encoding: values), messages)
+        }
+        try check(page.messages)
+        var snapshot = try JSONValue(encoding: fixture(BotsSnapshot.self))
+        var bot = try JSONValue(encoding: fixture(WireBot.self))
+        var group = try JSONValue(encoding: fixture(WireGroup.self))
+        bot["messages"] = messages
+        group["messages"] = messages
+        snapshot["bots"] = .array([bot]); snapshot["groups"] = .array([group])
+        let decoded = try snapshot.decode(BotsSnapshot.self)
+        try check(XCTUnwrap(decoded.bots.first?.messages))
+        try check(XCTUnwrap(decoded.groups.first?.messages))
+    }
+
+    func testNestedIgnoredKeysAreScopedToDeclaringModel() throws {
+        let raw = try json(#"{"child":{"value":1,"omitted":2},"children":[{"value":3,"omitted":4}],"lookup":{"sample":{"value":5,"omitted":6}},"wrapped":{"value":8,"omitted":9},"omitted":7}"#)
+        let (encoded, ignored) = try ContractRegistry.roundTrip(ContractParent.self)(raw)
+        XCTAssertEqual(ContractRegistry.differences(raw, encoded, ignored: ignored), [])
+        var changed = encoded
+        changed["omitted"] = .number(8)
+        XCTAssertEqual(ContractRegistry.differences(raw, changed, ignored: ignored), ["omitted: value changed"])
+        changed = encoded
+        changed["child"] = .object(["value": .number(9)])
+        XCTAssertEqual(ContractRegistry.differences(raw, changed, ignored: ignored), ["child.value: value changed"])
+    }
+
     func testServerContract() throws {
         guard let index = Bundle.module.url(forResource: "index", withExtension: "json", subdirectory: "Fixtures/contract") else {
             throw XCTSkip("Task 00 contract/index.json is not present")
@@ -149,7 +220,9 @@ final class ContractTests: XCTestCase {
     }
 
     func testRequiredFieldsAndKnownFieldTypesAreChecked() throws {
-        XCTAssertThrowsError(try json(#"{"kind":"text","role":"bot","at":1}"#).decode(WireMessage.self))
+        let malformed = try json(#"{"kind":"text","role":"bot","at":1}"#).decode(WireMessage.self)
+        guard case .unknown(let kind, _) = malformed else { return XCTFail("Expected malformed message fallback") }
+        XCTAssertEqual(kind, "text")
         XCTAssertThrowsError(try json(#"{"kind":"sections","sections":"wrong"}"#).decode(ServerFrame.self))
         XCTAssertThrowsError(try json(#"{"title":"Choose","subtitle":"One","options":5}"#).decode(OptionCardData.self))
     }
@@ -182,5 +255,30 @@ final class ContractTests: XCTestCase {
         XCTAssertEqual(PanelTarget(tab: .library, page: .skills).page, .skills)
         XCTAssertEqual(SettingsPageID(rawValue: "appearance"), .appearance)
         XCTAssertEqual(BotSettingsSection(rawValue: "permissions"), .permissions)
+    }
+}
+
+private struct ContractChild: WireModel {
+    /// This fixture models a field explicitly excluded by a nested wire contract.
+    static let ignoredKeys: Set<String> = ["omitted"]
+    var value: Int
+}
+
+private struct ContractParent: WireModel {
+    var child: ContractChild?
+    var children: [ContractChild]
+    var lookup: [String: ContractChild]
+    var wrapped: ContractEnvelope
+    var omitted: Int
+}
+
+private enum ContractEnvelope: WireModel {
+    case child(ContractChild)
+
+    init(from decoder: Decoder) throws { self = .child(try ContractChild(from: decoder)) }
+    func encode(to encoder: Encoder) throws {
+        switch self {
+        case .child(let child): try child.encode(to: encoder)
+        }
     }
 }

@@ -10,6 +10,15 @@ final class EndpointTests: XCTestCase {
         try JSONDecoder().decode(JSONValue.self, from: XCTUnwrap(endpoint.request(baseURL: base).httpBody))
     }
 
+
+    func testQueryEncodingMatchesURIComponent() throws {
+        let file = CoreEndpoints.uploadFile(name: "C++ notes&x=1.txt", mime: "text/plain", uploadId: "a+b")
+        XCTAssertEqual(try file.request(baseURL: base).url?.query, "name=C%2B%2B%20notes%26x%3D1.txt&uploadId=a%2Bb")
+        XCTAssertEqual(try CoreEndpoints.history(thread: "thread-1", before: "a+b/?#").request(baseURL: base).url?.query, "before=a%2Bb%2F%3F%23")
+        let endpoint = Endpoint<JSONValue>(path: "/api/test", query: [.init(name: "key+&", value: "中文 !'()*-._~%"), .init(name: "flag", value: nil)])
+        XCTAssertEqual(try endpoint.request(baseURL: base).url?.query, "key%2B%26=%E4%B8%AD%E6%96%87%20!'()*-._~%25&flag")
+    }
+
     func testSnapshotAndHistoryURLQueries() throws {
         XCTAssertEqual(try CoreEndpoints.snapshot(messages: 0).request(baseURL: base).url?.absoluteString, "https://example.com/prefix/api/bots?messages=0")
         let request = try CoreEndpoints.history(thread: "thread /?", before: "older &?#", limit: 40).request(baseURL: base)

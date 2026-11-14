@@ -7,15 +7,15 @@ public typealias MessageID = String
 public typealias PhoneDeviceID = String
 public typealias DataRow = [String: JSONValue]
 
-/// First matching row wins. Terminal flags (expired, stopped, dismissed, answered) do not change the kind.
+/// First matching row wins. Applied and undone cards require autoApplied, answered == "allow", and no held reason.
 ///
 /// | Priority | Field | Owner task |
 /// | --- | --- | --- |
 /// | 1 | questionRequest | 15 |
 /// | 2 | commandAllowlist | 15 |
 /// | 3 | fixedOptions | 15 |
-/// | 4 | undone | 15 |
-/// | 5 | autoApplied | 15 |
+/// | 4 | applied and undone | 15 |
+/// | 5 | applied | 15 |
 /// | 6–22 | routineRequest, webhookRequest, appTriggerRequest, profileRequest, modelRequest,
 /// teamSetupRequest, mcpRequest, skillRequest, quotaSwitch, lendingLift, outboundRequest,
 /// teamMemoryRequest, yourComputer, waitRequest, computerAsk, accessRequest, outsideWrite | 16 |
@@ -31,8 +31,9 @@ public enum RequestCardKind: String, Codable, CaseIterable, Sendable {
         if card.questionRequest != nil { return .questionRequest }
         if card.commandAllowlist != nil { return .commandAllowlist }
         if card.fixedOptions == true { return .fixedOptions }
-        if card.undone == true { return .undone }
-        if card.autoApplied == true { return .autoApplied }
+        if card.autoApplied == true, card.answered == "allow", (card.held ?? "").isEmpty {
+            return card.undone == true ? .undone : .autoApplied
+        }
         if card.routineRequest != nil { return .routineRequest }
         if card.webhookRequest != nil { return .webhookRequest }
         if card.appTriggerRequest != nil { return .appTriggerRequest }

@@ -8,10 +8,12 @@ on:
     branches: [main]
     paths:
       - "mobile/ios/**"
+      - "mobile/android/**"
       - ".github/workflows/mobile.yml"
   pull_request:
     paths:
       - "mobile/ios/**"
+      - "mobile/android/**"
       - ".github/workflows/mobile.yml"
   workflow_dispatch:
 
@@ -80,22 +82,45 @@ jobs:
           fi
       - name: Select iPhone 16 simulator
         run: |
-          xcrun simctl list devices available --json > "$RUNNER_TEMP/crybot-simulators.json"
+          xcrun simctl list --json > "$RUNNER_TEMP/crybot-simulators.json"
           python3 - <<'PYCODE'
           import json
           import os
+          import subprocess
           from pathlib import Path
 
-          devices = json.loads((Path(os.environ["RUNNER_TEMP"]) / "crybot-simulators.json").read_text())["devices"]
-          runtimes = sorted((runtime for runtime in devices if ".iOS-" in runtime),
-                            key=lambda runtime: tuple(int(part) for part in runtime.rsplit(".iOS-", 1)[1].split("-")),
-                            reverse=True)
-          candidates = [device for runtime in runtimes for device in devices[runtime]
-                        if device.get("isAvailable") and device["name"] == "iPhone 16"]
-          if not candidates:
-              raise SystemExit("No available iPhone 16 simulator")
-          selected = candidates[0]
-          print("Selected simulator:", selected["name"], selected["udid"])
+          inventory = json.loads((Path(os.environ["RUNNER_TEMP"]) / "crybot-simulators.json").read_text())
+          runtimes = [runtime for runtime in inventory["runtimes"]
+                      if runtime.get("isAvailable") and ".iOS-" in runtime["identifier"]]
+          if not runtimes:
+              raise SystemExit("No available iOS runtime")
+          runtime = max(runtimes, key=lambda item: tuple(int(part) for part in item["version"].split(".")))
+          available = [device for device in inventory["devices"].get(runtime["identifier"], [])
+                       if device.get("isAvailable")]
+          selected = next((device for device in available
+                           if device.get("deviceTypeIdentifier", "").endswith(".iPhone-16")
+                           or device["name"] == "iPhone 16"), None)
+          action = "Selected existing iPhone 16"
+          if selected is None:
+              types = json.loads(subprocess.check_output(
+                  ["xcrun", "simctl", "list", "devicetypes", "--json"], text=True))["devicetypes"]
+              device_type = next((item for item in types if item["name"] == "iPhone 16"), None)
+              if device_type is not None:
+                  udid = subprocess.check_output(
+                      ["xcrun", "simctl", "create", "iPhone 16", device_type["identifier"], runtime["identifier"]],
+                      text=True).strip()
+                  if not udid:
+                      raise SystemExit("simctl create returned an empty simulator ID")
+                  selected = {"name": "iPhone 16", "udid": udid}
+                  action = "Created iPhone 16 (" + device_type["identifier"] + ")"
+              else:
+                  selected = next((device for device in available
+                                   if ".iPhone-" in device.get("deviceTypeIdentifier", "")
+                                   or device["name"].startswith("iPhone")), None)
+                  if selected is None:
+                      raise SystemExit("No iPhone 16 device type or available iPhone in " + runtime["identifier"])
+                  action = "Fallback to available iPhone (iPhone 16 device type missing)"
+          print(action + ":", selected["name"], selected["udid"], "runtime:", runtime["identifier"])
           with open(os.environ["GITHUB_ENV"], "a") as env:
               env.write("CRYBOT_TEST_SIMULATOR=" + selected["udid"] + "\n")
           PYCODE

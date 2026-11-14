@@ -33,6 +33,64 @@ final class LiveStateTests: XCTestCase {
         return .runtime(ServerFrameRuntime(event: try raw.decode(RuntimeEvent.self)))
     }
 
+    func testLoadNotificationsMergesLiveEntriesAndServerReadState() throws {
+        var state = LiveState()
+        var entry = try json(#"{"id":"notification-1","kind":"done","botId":"bot-1","botName":"Fern","threadId":"thread-1","title":"Done","body":"Ready","at":1,"read":false}"#).decode(NotificationLogEntry.self)
+        state.load(notifications: NotificationsPage(notifications: [entry]))
+        XCTAssertEqual(state.unreadNotificationCount, 1)
+        var live = entry
+        live.id = "notification-2"; live.at = 2
+        state.apply(.notify(.init(notification: live)))
+        entry.read = true
+        state.load(notifications: NotificationsPage(notifications: [entry]))
+        XCTAssertEqual(state.notifications.map(\.id), ["notification-2", "notification-1"])
+        XCTAssertEqual(state.unreadNotificationCount, 1)
+        state.apply(.notificationsRead(.init(threadId: "thread-1", ids: [live.id])))
+        XCTAssertEqual(state.unreadNotificationCount, 0)
+        state.load(snapshot: .init(bots: [], groups: [], sections: []))
+        XCTAssertEqual(state.notifications.count, 2)
+        XCTAssertEqual(state.unreadNotificationCount, 0)
+        let many = (0..<510).map { index -> NotificationLogEntry in
+            var next = entry
+            next.id = "historical-\(index)"; next.at = Double(index + 10)
+            return next
+        }
+        state.load(notifications: NotificationsPage(notifications: many))
+        XCTAssertEqual(state.notifications.count, 500)
+        XCTAssertEqual(state.notifications.first?.id, "historical-509")
+    }
+
+    func testLoadConfigInitializesAndReplacesAllFields() throws {
+        var state = LiveState()
+        var config = try fixture(ConfigResponse.self)
+        config.language = "en"
+        config.additionalFields["future"] = .bool(true)
+        try state.load(config: config)
+        XCTAssertEqual(state.config, try JSONValue(encoding: config).objectValue)
+        XCTAssertEqual(state.config["language"], .string("en"))
+        config.additionalFields.removeValue(forKey: "future")
+        config.language = "zh"
+        try state.load(config: config)
+        XCTAssertEqual(state.config["language"], .string("zh"))
+        XCTAssertNil(state.config["future"])
+        state.load(snapshot: .init(bots: [], groups: [], sections: []))
+        XCTAssertEqual(state.config["language"], .string("zh"))
+        state.apply(try frame(#"{"kind":"config","language":"de"}"#))
+        XCTAssertEqual(state.config, ["language": .string("de")])
+    }
+
+    func testSnapshotPreservesCallComputerAndScreen() throws {
+        var state = LiveState()
+        state.apply(try frame(#"{"kind":"computer","botId":"bot-1","state":"waking"}"#))
+        state.apply(try frame(#"{"kind":"screen","botId":"bot-2","threadId":"thread-2","png":"latest"}"#))
+        let call = try json(#"{"callId":"call-1","botId":"bot-1","threadId":"thread-1","provider":"openai","status":"live","startedAt":1,"client":"ios","voice":"sample-voice"}"#).decode(LiveCallState.self)
+        state.apply(.liveCall(.init(botId: "bot-1", threadId: "thread-1", call: call)))
+        state.load(snapshot: .init(bots: [try bot("bot-1"), try bot("bot-2", thread: "thread-2")], groups: [], sections: []))
+        XCTAssertEqual(state.calls["bot-1"], call)
+        XCTAssertEqual(state.computer["bot-1"]?.state, .waking)
+        XCTAssertEqual(state.screens["bot-2"]?.png, "latest")
+    }
+
     func testSnapshotLoadsTranscriptsQueuesAndControlAndResetsStaleState() throws {
         var state = LiveState()
         state.apply(try frame(#"{"kind":"computer","botId":"old","state":"waking"}"#))
@@ -50,7 +108,7 @@ final class LiveStateTests: XCTestCase {
         XCTAssertEqual(state.threads["thread-1"]?.messages.first?.fields?.text, "Hello")
         XCTAssertEqual(state.queues["thread-1"]?.first?.queueId, "queue-1")
         XCTAssertTrue(state.computerControl["bot-1"]?.held == true)
-        XCTAssertTrue(state.computer.isEmpty)
+        XCTAssertEqual(state.computer["old"]?.state, .waking)
     }
 
     func testBotGroupUpdatesOrderingAndDeletes() throws {
@@ -85,7 +143,7 @@ final class LiveStateTests: XCTestCase {
         XCTAssertNil(state.threads["thread-group-1"])
     }
 
-    func testPresenceAndConfigMerging() throws {
+    func testPresenceAndConfigReplacement() throws {
         var state = LiveState()
         state.apply(try frame(#"{"kind":"team.presence","email":"person@example.com","here":true}"#))
         state.apply(try frame(#"{"kind":"thread.presence","threadId":"thread-1","people":["person@example.com"]}"#))
@@ -96,7 +154,7 @@ final class LiveStateTests: XCTestCase {
         XCTAssertEqual(state.threadPresence["thread-1"], ["person@example.com"])
         XCTAssertEqual(state.peopleRevision, 1)
         XCTAssertEqual(state.config["profile"], .null)
-        XCTAssertEqual(state.config["future"], .bool(true))
+        XCTAssertNil(state.config["future"])
         XCTAssertNil(state.config["kind"])
     }
 

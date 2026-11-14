@@ -393,3 +393,455 @@ App Links 已按 T-1220 的约定名称落地：全局 `CRYBOT_APP_LINK_HOST: ""
 任务 00 的真实契约索引尚未出现。目前读取数组索引或带 fixtures/samples/entries 的索引对象，样本路径支持 file/path，未知 swiftType 必失败。合并 00 后需实跑真实样本，并根据其最终索引合同核对；本任务没有写入该目录。
 
 没有超范围业务改动；本报告是指定输出。仍未解决的是上面列明的离线依赖核对、语言数量差异和 Actions/真实契约验证，不涉及已跑通的 Linux 协议逻辑。
+
+
+# 第 2 轮（2026-11-14）
+
+本轮按返工单完成 1–13 项，未 git 提交；前轮报告保留为历史记录，依赖当前值以本轮版本表为准。没有修改服务端、网页、contract 样本、release.yml 或 Package.resolved；没有做解码性能优化。开始时已有未跟踪的 `r2.md`，未修改。
+
+## 逐项修改与用例
+
+| 项 | 修改 | 本机验证 |
+| --- | --- | --- |
+| 1 | `SSEParser.swift` 按事件隔离解码失败，跳过并累加公开只读 `invalidEventCount`；同一 feed 的其他好帧正常交出。非法 UTF-8、超限事件也隔离到空行，保留内存上限。 | `testGoodBadGoodFramesInOneChunk`：同块 s:1 好、s:2 类型错、s:3 好，交出 One/Three，游标 s:3，错误数 1；另测非法 UTF-8/JSON/超限夹在好帧之间的每个分包位置。 |
+| 2 | `id:` 写入 pending 缓冲，空行才更新 `lastEventID`；ID-only 块也提交，空 ID 清空，含 NUL 的 ID 忽略；finish 丢弃未完成 ID。 | `testIncompleteEventDoesNotCommitID`：先提交 s:4，收到 `id: s:5` 和半截 data，finish 前后以及下一条无 ID 的好帧之后均保持 s:4。 |
+| 3 | `LiveState.swift` 的 config 帧直接替换字典并移除 kind。 | `testPresenceAndConfigReplacement`：第二帧不再带 future 时它必须消失，profile 的显式 null 保留。 |
+| 4 | 增加 `load(notifications: NotificationsPage)` 与 `load(config: ConfigResponse) throws`。通知对齐网页 hydrate：服务端同 ID 条目优先、保留仅实时出现的条目、按 at 降序、最多 500 条，并同步已读 ID 记录。配置完整编码为现有字典表示并替换，编码异常抛给调用方，避免静默清空状态。 | 两个 `testLoad…` 用例：初始未读数、实时/历史合并、服务端已读、后续 read 帧、500 条限制、完整配置/未知字段、重复 load 替换及 snapshot 后保留。新增方法前先记录编译失败。 |
+| 5 | `Endpoint.swift` 对所有 query 的 name/value 统一按 encodeURIComponent 字符集编码，再赋给 `percentEncodedQueryItems`。 | `testQueryEncodingMatchesURIComponent`：`C++ notes&x=1.txt` → `C%2B%2B%20notes%26x%3D1.txt`，同时覆盖 uploadId、history before、query 名称、中文、百分号、保留字符和无值 query。 |
+| 6 | `mobile.yml` 先选最新可用 iOS runtime；已有可用 iPhone 16 则选中；否则查 devicetypes 的真实 identifier 后 create；没有该 type 才退回该 runtime 中任意可用 iPhone。三个分支均打印设备、UDID、runtime 和选择原因。无可用 runtime/iPhone 或 create 失败时明确失败。 | 从 workflow 原样提取脚本，用假 xcrun 和 simctl JSON 实跑三个分支；代码、命令和输出见下。 |
+| 7 | push、pull_request 的 paths 都加入 `mobile/android/**`。 | PyYAML 解析后逐项断言，两处均有 Android 路径。 |
+| 8 | `project.yml` 五个 exactVersion 改为下表协调者指定值。 | YAML 解析断言全部精确匹配；现有 iOS Swift 文件没有这些库的 import/API 调用，无需迁移调用点。禁网，未解析远程包。 |
+| 9 | `CoreTypes.swift` 仅在 autoApplied=true、answered 精确为 allow、held 缺失或空串时分类为 applied；其中 undone=true 才为 undone，其余继续按请求字段分类。 | `testAppliedAndUndoneRequireAllowedUnheldAutoApplication` 穷举 autoApplied、answered（nil/allow/deny/Allow）、held（nil/空/非空）、undone；保留 23 类及优先级测试，修正旧测试的 applied 前置条件。 |
+| 10 | `load(snapshot:)` 保留 calls、computer、screens；快照本身的 computerControl 仍使用快照值。 | `testSnapshotPreservesCallComputerAndScreen`；更新旧快照测试，把错误的“清空 computer”预期改为保留。 |
+| 11 | `WireModels.swift` 的 WireMessage 对已知 kind 的字段解码失败降级 unknown，保留原 kind/raw；缺 kind 或非对象也降级，原始数据可往返。 | `testMalformedMessagesDoNotDiscardThreadOrSnapshot` 同时测 ThreadPage、BotsSnapshot 的 bot/group 消息数组，好/坏/缺 kind/null/好均不导致整页失败；未知消息原文不丢失。已知正常 kind 仍由原有逐类型测试确保 typed decoding。 |
+| 12 | `ContractTests.swift` 从解码后的模型树收集各 WireModel 自己的 ignoredKeys，限定到其实际嵌套路径，支持可选值、数组、字典和扁平联合 payload。 | `testNestedIgnoredKeysAreScopedToDeclaringModel`：子类型忽略键生效，父类型同名字段和子类型未声明忽略的 value 改动仍必须报差异。 |
+| 13 | `project.yml` 的 CryBotTests 移除独立 CryCore package/product 依赖，仅保留 CryBot 宿主以及 TEST_HOST/BUNDLE_LOADER。 | YAML 断言没有重复链接项；宿主测试 import CryCore 的 Xcode 编译与链接需 Actions 判定，本机不能声称通过。 |
+
+文件说明：上述 5 个 CryCore 源码文件、5 个 CryCoreTests 文件分别实现和覆盖协议修复；`.github/workflows/mobile.yml` 修正选择与触发；`mobile/ios/project.yml` 更新版本和宿主链接；本 report 追加证据。未更改其他受管源码。
+
+## Linux：先红后绿
+
+AGENTS.md 引用的 `docs/verification/README.md` 在本 worktree 不存在；`mobile/ios/scripts/linux-test.sh`、`linux-check.sh` 也尚未存在。使用下列临时脚本实际启动独立 Swift XCTest 进程，所有状态来自内存/手写协议夹具；未连接真实服务器或用户数据。缓存和构建产物均定向工作区；没有重设 HOME。
+
+脚本 `/tmp/crykit-r2-test.sh`：
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+cry_ios="$PWD/mobile/ios"
+cry_cache="$cry_ios/.linux-cache"
+export PATH="/opt/swift/usr/bin:$PATH"
+export XDG_CACHE_HOME="$cry_cache/xdg" TMPDIR="$cry_cache/tmp"
+export CLANG_MODULE_CACHE_PATH="$cry_cache/clang-module-cache" SWIFTPM_MODULECACHE_OVERRIDE="$cry_cache/swiftpm-module-cache"
+mkdir -p "$XDG_CACHE_HOME" "$TMPDIR" "$CLANG_MODULE_CACHE_PATH" "$SWIFTPM_MODULECACHE_OVERRIDE"
+timeout 1200 swift test --jobs 2 --package-path "$cry_ios/Packages/CryKit" --scratch-path "$cry_ios/.linux-build" --cache-path "$cry_cache/swiftpm" --config-path "$cry_cache/config" --security-path "$cry_cache/security" --manifest-cache local --disable-sandbox "$@"
+```
+
+改前先只加测试（不改生产实现）：
+
+```bash
+bash /tmp/crykit-r2-test.sh > /tmp/crykit-r2-red.log 2>&1
+# exit 1：42 tests，4 skipped，48 failures（2 unexpected）
+```
+
+随后补上两个初始化入口的调用用例，仍不改生产实现：
+
+```bash
+bash /tmp/crykit-r2-test.sh > /tmp/crykit-r2-red-api.log 2>&1
+# exit 1：没有 load(notifications:) / load(config:)，编译失败
+```
+
+改前失败原始输出节选（仅去除行尾空格；每项至少一条，完整本机日志为上述两个 /tmp 文件）：
+
+```text
+<EXPR>:0: error: SSEParserTests.testGoodBadGoodFramesInOneChunk : threw error "DecodingError.typeMismatch: expected value of type Array<Any>. Debug description: Expected to decode Array<Any> but found bool instead."
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryCoreTests/SSEParserTests.swift:18: error: SSEParserTests.testIncompleteEventDoesNotCommitID : XCTAssertEqual failed: ("Optional("s:5")") is not equal to ("Optional("s:4")") -
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryCoreTests/LiveStateTests.swift:112: error: LiveStateTests.testPresenceAndConfigReplacement : XCTAssertNil failed: "bool(true)" -
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryCoreTests/EndpointTests.swift:16: error: EndpointTests.testQueryEncodingMatchesURIComponent : XCTAssertEqual failed: ("Optional("name=C++%20notes%26x%3D1.txt&uploadId=a+b")") is not equal to ("Optional("name=C%2B%2B%20notes%26x%3D1.txt&uploadId=a%2Bb")") -
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryCoreTests/RequestCardTests.swift:18: error: RequestCardTests.testAppliedAndUndoneRequireAllowedUnheldAutoApplication : XCTAssertEqual failed: ("undone") is not equal to ("profileRequest") - auto=false, answered=nil, held=nil, undone=true
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryCoreTests/LiveStateTests.swift:44: error: LiveStateTests.testSnapshotPreservesCallComputerAndScreen : XCTAssertEqual failed: ("nil") is not equal to ("Optional(CryCore.LiveCallState(callId: "call-1", botId: "bot-1", threadId: "thread-1", client: CryCore.LiveClient.ios, voice: "sample-voice", startedAt: 1.0, status: CryCore.LiveCallStatus.live, endReason: nil, error: nil, additionalFields: ["provider": CryCore.JSONValue.string("openai")], explicitNulls: Set([])))") -
+<EXPR>:0: error: ContractTests.testMalformedMessagesDoNotDiscardThreadOrSnapshot : threw error "DecodingError.typeMismatch: expected value of type Dictionary<String, Any>. Debug description: Expected to decode Dictionary<String, Any> but found bool instead."
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryCoreTests/ContractTests.swift:99: error: ContractTests.testNestedIgnoredKeysAreScopedToDeclaringModel : XCTAssertEqual failed: ("["child.omitted: missing or added key", "children[0].omitted: missing or added key", "lookup.sample.omitted: missing or added key"]") is not equal to ("[]") -
+	 Executed 42 tests, with 4 tests skipped and 48 failures (2 unexpected) in 1.652 (1.652) seconds
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryCoreTests/LiveStateTests.swift:41:19: error: incorrect argument label in call (have 'notifications:', expected 'snapshot:')
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryCoreTests/LiveStateTests.swift:70:23: error: incorrect argument label in call (have 'config:', expected 'snapshot:')
+```
+
+修复后增加错误帧分包恢复和嵌套联合用例，并执行最终全包测试：
+
+```bash
+bash /tmp/crykit-r2-test.sh > /tmp/crykit-r2-green.log 2>&1
+# exit 0
+```
+
+结果：45 个 XCTest，41 个通过、4 个跳过、0 失败。跳过分别是任务 00 contract/index.json 尚未出现，以及 CryNetLogic、CryNet、CryRFB 三个占位测试；末尾 Swift Testing 的 0 tests 不是 XCTest 计数。最终命令原始输出：
+
+```text
+Building for debugging...
+[0/3] Write sources
+[1/3] Write swift-version-6F7309784324DD2.txt
+[3/6] Emitting module CryCoreTests
+[4/6] Compiling CryCoreTests ContractTests.swift
+[5/6] Compiling CryCoreTests LiveStateTests.swift
+[6/9] Compiling CryCoreTests EndpointTests.swift
+[7/9] Compiling CryCoreTests RequestCardTests.swift
+[8/9] Compiling CryCoreTests SSEParserTests.swift
+[9/17] /root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/.linux-build/x86_64-unknown-linux-gnu/debug/CryKitPackageDiscoveredTests.derived/all-discovered-tests.swift
+[10/18] Write sources
+[11/18] Wrapping AST for CryCoreTests for debugging
+[13/22] Compiling CryKitPackageDiscoveredTests CryCoreTests.swift
+[14/22] Compiling CryKitPackageDiscoveredTests CryNetLogicTests.swift
+[15/22] Compiling CryKitPackageDiscoveredTests CryNetTests.swift
+[16/22] Emitting module CryKitPackageDiscoveredTests
+[17/24] Compiling CryKitPackageDiscoveredTests CryRFBTests.swift
+[18/24] Compiling CryKitPackageDiscoveredTests all-discovered-tests.swift
+[19/25] /root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/.linux-build/x86_64-unknown-linux-gnu/debug/CryKitPackageTests.derived/runner.swift
+[20/25] Write sources
+[21/25] Wrapping AST for CryKitPackageDiscoveredTests for debugging
+[23/27] Emitting module CryKitPackageTests
+[24/27] Compiling CryKitPackageTests runner.swift
+[25/27] Write Objects.LinkFileList
+[26/27] Linking CryKitPackageTests.xctest
+Build complete! (5.90s)
+Test Suite 'All tests' started at 2026-11-14 12:50:08.525
+Test Suite 'debug.xctest' started at 2026-11-14 12:50:08.527
+Test Suite 'Placeholder' started at 2026-11-14 12:50:08.527
+Test Case 'Placeholder.testImplementationPlaceholder' started at 2026-11-14 12:50:08.527
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryNetTests/Placeholder.swift:6: Placeholder.testImplementationPlaceholder : Test skipped - CryNet implementation is pending
+Test Case 'Placeholder.testImplementationPlaceholder' skipped (0.001 seconds)
+Test Suite 'Placeholder' passed at 2026-11-14 12:50:08.528
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'ContractTests' started at 2026-11-14 12:50:08.528
+Test Case 'ContractTests.testComparatorDetectsDroppedChangedAndAddedValues' started at 2026-11-14 12:50:08.528
+Test Case 'ContractTests.testComparatorDetectsDroppedChangedAndAddedValues' passed (0.001 seconds)
+Test Case 'ContractTests.testEveryKnownUnionCaseUsesTypedDecoding' started at 2026-11-14 12:50:08.530
+Test Case 'ContractTests.testEveryKnownUnionCaseUsesTypedDecoding' passed (0.087 seconds)
+Test Case 'ContractTests.testJSONNumbersRetainLargeIntegersAndDecimals' started at 2026-11-14 12:50:08.617
+Test Case 'ContractTests.testJSONNumbersRetainLargeIntegersAndDecimals' passed (0.0 seconds)
+Test Case 'ContractTests.testMalformedMessagesDoNotDiscardThreadOrSnapshot' started at 2026-11-14 12:50:08.617
+Test Case 'ContractTests.testMalformedMessagesDoNotDiscardThreadOrSnapshot' passed (0.058 seconds)
+Test Case 'ContractTests.testManualRoundTrips' started at 2026-11-14 12:50:08.676
+Test Case 'ContractTests.testManualRoundTrips' passed (0.27 seconds)
+Test Case 'ContractTests.testNestedIgnoredKeysAreScopedToDeclaringModel' started at 2026-11-14 12:50:08.945
+Test Case 'ContractTests.testNestedIgnoredKeysAreScopedToDeclaringModel' passed (0.002 seconds)
+Test Case 'ContractTests.testPanelAndSettingsUnknownValues' started at 2026-11-14 12:50:08.947
+Test Case 'ContractTests.testPanelAndSettingsUnknownValues' passed (0.0 seconds)
+Test Case 'ContractTests.testRequiredFieldsAndKnownFieldTypesAreChecked' started at 2026-11-14 12:50:08.947
+Test Case 'ContractTests.testRequiredFieldsAndKnownFieldTypesAreChecked' passed (0.101 seconds)
+Test Case 'ContractTests.testServerContract' started at 2026-11-14 12:50:09.048
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryCoreTests/ContractTests.swift:141: ContractTests.testServerContract : Test skipped - Task 00 contract/index.json is not present
+Test Case 'ContractTests.testServerContract' skipped (0.001 seconds)
+Test Case 'ContractTests.testTypedConstructorsMatchDecodedValuesAndExposeOptionalFields' started at 2026-11-14 12:50:09.049
+Test Case 'ContractTests.testTypedConstructorsMatchDecodedValuesAndExposeOptionalFields' passed (0.001 seconds)
+Test Case 'ContractTests.testUnknownKindsAndFieldsSurvive' started at 2026-11-14 12:50:09.050
+Test Case 'ContractTests.testUnknownKindsAndFieldsSurvive' passed (0.002 seconds)
+Test Suite 'ContractTests' passed at 2026-11-14 12:50:09.052
+	 Executed 11 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.523 (0.523) seconds
+Test Suite 'EndpointTests' started at 2026-11-14 12:50:09.052
+Test Case 'EndpointTests.testInboxNotificationsConfigAndIdentityPaths' started at 2026-11-14 12:50:09.052
+Test Case 'EndpointTests.testInboxNotificationsConfigAndIdentityPaths' passed (0.001 seconds)
+Test Case 'EndpointTests.testInterruptReadAndReactionBodies' started at 2026-11-14 12:50:09.053
+Test Case 'EndpointTests.testInterruptReadAndReactionBodies' passed (0.001 seconds)
+Test Case 'EndpointTests.testOriginCannotBeReplacedByEndpoint' started at 2026-11-14 12:50:09.054
+Test Case 'EndpointTests.testOriginCannotBeReplacedByEndpoint' passed (0.001 seconds)
+Test Case 'EndpointTests.testQueryEncodingMatchesURIComponent' started at 2026-11-14 12:50:09.055
+Test Case 'EndpointTests.testQueryEncodingMatchesURIComponent' passed (0.001 seconds)
+Test Case 'EndpointTests.testSingleAndGroupSendsAndAllResponses' started at 2026-11-14 12:50:09.055
+Test Case 'EndpointTests.testSingleAndGroupSendsAndAllResponses' passed (0.001 seconds)
+Test Case 'EndpointTests.testSnapshotAndHistoryURLQueries' started at 2026-11-14 12:50:09.056
+Test Case 'EndpointTests.testSnapshotAndHistoryURLQueries' passed (0.101 seconds)
+Test Case 'EndpointTests.testUploadAndDownloadsUseRawBytesAndScopedFilePOST' started at 2026-11-14 12:50:09.157
+Test Case 'EndpointTests.testUploadAndDownloadsUseRawBytesAndScopedFilePOST' passed (0.001 seconds)
+Test Suite 'EndpointTests' passed at 2026-11-14 12:50:09.158
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.106 (0.106) seconds
+Test Suite 'LiveStateTests' started at 2026-11-14 12:50:09.158
+Test Case 'LiveStateTests.testBotGroupUpdatesOrderingAndDeletes' started at 2026-11-14 12:50:09.158
+Test Case 'LiveStateTests.testBotGroupUpdatesOrderingAndDeletes' passed (0.154 seconds)
+Test Case 'LiveStateTests.testComputerControlCallAndLatestScreen' started at 2026-11-14 12:50:09.312
+Test Case 'LiveStateTests.testComputerControlCallAndLatestScreen' passed (0.001 seconds)
+Test Case 'LiveStateTests.testFutureMessagesAndReadBeforeNotify' started at 2026-11-14 12:50:09.313
+Test Case 'LiveStateTests.testFutureMessagesAndReadBeforeNotify' passed (0.001 seconds)
+Test Case 'LiveStateTests.testLoadConfigInitializesAndReplacesAllFields' started at 2026-11-14 12:50:09.314
+Test Case 'LiveStateTests.testLoadConfigInitializesAndReplacesAllFields' passed (0.025 seconds)
+Test Case 'LiveStateTests.testLoadNotificationsMergesLiveEntriesAndServerReadState' started at 2026-11-14 12:50:09.339
+Test Case 'LiveStateTests.testLoadNotificationsMergesLiveEntriesAndServerReadState' passed (0.002 seconds)
+Test Case 'LiveStateTests.testMessagesPatchesLeavesAndQueuedConsumption' started at 2026-11-14 12:50:09.341
+Test Case 'LiveStateTests.testMessagesPatchesLeavesAndQueuedConsumption' passed (0.045 seconds)
+Test Case 'LiveStateTests.testNotificationDeduplicationReadAndReplay' started at 2026-11-14 12:50:09.386
+Test Case 'LiveStateTests.testNotificationDeduplicationReadAndReplay' passed (0.001 seconds)
+Test Case 'LiveStateTests.testPresenceAndConfigReplacement' started at 2026-11-14 12:50:09.387
+Test Case 'LiveStateTests.testPresenceAndConfigReplacement' passed (0.0 seconds)
+Test Case 'LiveStateTests.testRuntimeItemsRequestsAndTurnReset' started at 2026-11-14 12:50:09.388
+Test Case 'LiveStateTests.testRuntimeItemsRequestsAndTurnReset' passed (0.001 seconds)
+Test Case 'LiveStateTests.testRuntimeStreamingDeduplicationAndFinalMessageReplacement' started at 2026-11-14 12:50:09.389
+Test Case 'LiveStateTests.testRuntimeStreamingDeduplicationAndFinalMessageReplacement' passed (0.001 seconds)
+Test Case 'LiveStateTests.testSnapshotLoadsTranscriptsQueuesAndControlAndResetsStaleState' started at 2026-11-14 12:50:09.390
+Test Case 'LiveStateTests.testSnapshotLoadsTranscriptsQueuesAndControlAndResetsStaleState' passed (0.035 seconds)
+Test Case 'LiveStateTests.testSnapshotPreservesCallComputerAndScreen' started at 2026-11-14 12:50:09.425
+Test Case 'LiveStateTests.testSnapshotPreservesCallComputerAndScreen' passed (0.033 seconds)
+Test Case 'LiveStateTests.testSubscriptionOnlyAndUnknownFramesAreCounted' started at 2026-11-14 12:50:09.459
+Test Case 'LiveStateTests.testSubscriptionOnlyAndUnknownFramesAreCounted' passed (0.018 seconds)
+Test Suite 'LiveStateTests' passed at 2026-11-14 12:50:09.476
+	 Executed 13 tests, with 0 failures (0 unexpected) in 0.318 (0.318) seconds
+Test Suite 'RequestCardTests' started at 2026-11-14 12:50:09.476
+Test Case 'RequestCardTests.testAppliedAndUndoneRequireAllowedUnheldAutoApplication' started at 2026-11-14 12:50:09.476
+Test Case 'RequestCardTests.testAppliedAndUndoneRequireAllowedUnheldAutoApplication' passed (0.987 seconds)
+Test Case 'RequestCardTests.testEveryKindAndEveryPriorityPair' started at 2026-11-14 12:50:10.464
+Test Case 'RequestCardTests.testEveryKindAndEveryPriorityPair' passed (0.079 seconds)
+Test Case 'RequestCardTests.testFalseFlagsAndUnknownFieldUseGeneralApproval' started at 2026-11-14 12:50:10.543
+Test Case 'RequestCardTests.testFalseFlagsAndUnknownFieldUseGeneralApproval' passed (0.0 seconds)
+Test Suite 'RequestCardTests' passed at 2026-11-14 12:50:10.543
+	 Executed 3 tests, with 0 failures (0 unexpected) in 1.067 (1.067) seconds
+Test Suite 'SSEParserTests' started at 2026-11-14 12:50:10.544
+Test Case 'SSEParserTests.testCRLinesIDResetAndNulIgnored' started at 2026-11-14 12:50:10.544
+Test Case 'SSEParserTests.testCRLinesIDResetAndNulIgnored' passed (0.0 seconds)
+Test Case 'SSEParserTests.testEOFDiscardsIncompleteAndEventNameResets' started at 2026-11-14 12:50:10.544
+Test Case 'SSEParserTests.testEOFDiscardsIncompleteAndEventNameResets' passed (0.0 seconds)
+Test Case 'SSEParserTests.testEveryByteBoundaryIncludingUnicodeAndCRLF' started at 2026-11-14 12:50:10.544
+Test Case 'SSEParserTests.testEveryByteBoundaryIncludingUnicodeAndCRLF' passed (0.005 seconds)
+Test Case 'SSEParserTests.testGoodBadGoodFramesInOneChunk' started at 2026-11-14 12:50:10.550
+Test Case 'SSEParserTests.testGoodBadGoodFramesInOneChunk' passed (0.0 seconds)
+Test Case 'SSEParserTests.testIncompleteEventDoesNotCommitID' started at 2026-11-14 12:50:10.550
+Test Case 'SSEParserTests.testIncompleteEventDoesNotCommitID' passed (0.0 seconds)
+Test Case 'SSEParserTests.testMalformedEventsRecoverAtEveryChunkBoundary' started at 2026-11-14 12:50:10.550
+Test Case 'SSEParserTests.testMalformedEventsRecoverAtEveryChunkBoundary' passed (0.021 seconds)
+Test Case 'SSEParserTests.testMalformedJSONUTF8AndSizeLimits' started at 2026-11-14 12:50:10.572
+Test Case 'SSEParserTests.testMalformedJSONUTF8AndSizeLimits' passed (0.0 seconds)
+Test Case 'SSEParserTests.testMultipleDataLinesCommentsAndConsecutiveEvents' started at 2026-11-14 12:50:10.572
+Test Case 'SSEParserTests.testMultipleDataLinesCommentsAndConsecutiveEvents' passed (0.101 seconds)
+Test Suite 'SSEParserTests' passed at 2026-11-14 12:50:10.673
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.129 (0.129) seconds
+Test Suite 'Placeholder' started at 2026-11-14 12:50:10.673
+Test Case 'Placeholder.testImplementationPlaceholder' started at 2026-11-14 12:50:10.673
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryNetLogicTests/Placeholder.swift:6: Placeholder.testImplementationPlaceholder : Test skipped - CryNetLogic implementation is pending
+Test Case 'Placeholder.testImplementationPlaceholder' skipped (0.0 seconds)
+Test Suite 'Placeholder' passed at 2026-11-14 12:50:10.673
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.0 (0.0) seconds
+Test Suite 'Placeholder' started at 2026-11-14 12:50:10.673
+Test Case 'Placeholder.testImplementationPlaceholder' started at 2026-11-14 12:50:10.673
+/root/workspace/crybot/.worktrees/T-1221-core-protocol/mobile/ios/Packages/CryKit/Tests/CryRFBTests/Placeholder.swift:6: Placeholder.testImplementationPlaceholder : Test skipped - CryRFB implementation is pending
+Test Case 'Placeholder.testImplementationPlaceholder' skipped (0.1 seconds)
+Test Suite 'Placeholder' passed at 2026-11-14 12:50:10.773
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.1 (0.1) seconds
+Test Suite 'debug.xctest' passed at 2026-11-14 12:50:10.773
+	 Executed 45 tests, with 4 tests skipped and 0 failures (0 unexpected) in 2.245 (2.245) seconds
+Test Suite 'All tests' passed at 2026-11-14 12:50:10.774
+	 Executed 45 tests, with 4 tests skipped and 0 failures (0 unexpected) in 2.245 (2.245) seconds
+◇ Test run started.
+↳ Testing Library Version: 6.3.3 (48d727cc1cf4eda)
+↳ Target Platform: x86_64-unknown-linux-gnu
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+```
+
+## 模拟器选择逻辑与三分支验证
+
+workflow 的「Select iPhone 16 simulator」实际 run 内容：
+
+```bash
+xcrun simctl list --json > "$RUNNER_TEMP/crybot-simulators.json"
+python3 - <<'PYCODE'
+import json
+import os
+import subprocess
+from pathlib import Path
+
+inventory = json.loads((Path(os.environ["RUNNER_TEMP"]) / "crybot-simulators.json").read_text())
+runtimes = [runtime for runtime in inventory["runtimes"]
+            if runtime.get("isAvailable") and ".iOS-" in runtime["identifier"]]
+if not runtimes:
+    raise SystemExit("No available iOS runtime")
+runtime = max(runtimes, key=lambda item: tuple(int(part) for part in item["version"].split(".")))
+available = [device for device in inventory["devices"].get(runtime["identifier"], [])
+             if device.get("isAvailable")]
+selected = next((device for device in available
+                 if device.get("deviceTypeIdentifier", "").endswith(".iPhone-16")
+                 or device["name"] == "iPhone 16"), None)
+action = "Selected existing iPhone 16"
+if selected is None:
+    types = json.loads(subprocess.check_output(
+        ["xcrun", "simctl", "list", "devicetypes", "--json"], text=True))["devicetypes"]
+    device_type = next((item for item in types if item["name"] == "iPhone 16"), None)
+    if device_type is not None:
+        udid = subprocess.check_output(
+            ["xcrun", "simctl", "create", "iPhone 16", device_type["identifier"], runtime["identifier"]],
+            text=True).strip()
+        if not udid:
+            raise SystemExit("simctl create returned an empty simulator ID")
+        selected = {"name": "iPhone 16", "udid": udid}
+        action = "Created iPhone 16 (" + device_type["identifier"] + ")"
+    else:
+        selected = next((device for device in available
+                         if ".iPhone-" in device.get("deviceTypeIdentifier", "")
+                         or device["name"].startswith("iPhone")), None)
+        if selected is None:
+            raise SystemExit("No iPhone 16 device type or available iPhone in " + runtime["identifier"])
+        action = "Fallback to available iPhone (iPhone 16 device type missing)"
+print(action + ":", selected["name"], selected["udid"], "runtime:", runtime["identifier"])
+with open(os.environ["GITHUB_ENV"], "a") as env:
+    env.write("CRYBOT_TEST_SIMULATOR=" + selected["udid"] + "\n")
+PYCODE
+```
+
+验证脚本 `/tmp/crykit-r2-simulators.py`（临时文件，不作为源码加入仓库；以下完整内容可重建）：从当前 workflow 提取上述 run，假 xcrun 接收实际子进程调用并返回伪造的 list JSON/create UDID。最新可用版本用 26.10、旧版本用 26.2，并放入不可用 27.0、旧运行时 iPhone 16、不可用 iPhone 16 和 iPad，防止错误筛选或字典顺序影响结果。
+
+```python
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+import textwrap
+
+workflow = Path('.github/workflows/mobile.yml').read_text()
+start = workflow.index('          xcrun simctl list --json')
+end = workflow.index('          PYCODE', start) + len('          PYCODE')
+script = textwrap.dedent(workflow[start:end]) + '\n'
+Path('/tmp/crykit-r2-select-simulator.sh').write_text(script)
+latest = 'com.apple.CoreSimulator.SimRuntime.iOS-26-10'
+older = 'com.apple.CoreSimulator.SimRuntime.iOS-26-2'
+unavailable = 'com.apple.CoreSimulator.SimRuntime.iOS-27-0'
+phone_type = 'com.apple.CoreSimulator.SimDeviceType.iPhone-16'
+def device(name, suffix, available=True):
+    return {'name': name, 'udid': '00000000-0000-4000-8000-' + suffix,
+            'isAvailable': available,
+            'deviceTypeIdentifier': 'com.apple.CoreSimulator.SimDeviceType.' + name.replace(' ', '-')}
+created_id = '00000000-0000-4000-8000-000000000016'
+with tempfile.TemporaryDirectory(prefix='crykit-simctl-') as directory:
+    root = Path(directory)
+    fake = root / 'xcrun'
+    fake.write_text('''#!/usr/bin/env python3
+import json, os, sys
+from pathlib import Path
+root = Path(os.environ['RUNNER_TEMP'])
+args = sys.argv[1:]
+with (root / 'calls.jsonl').open('a') as out:
+    out.write(json.dumps(args) + '\\n')
+if args == ['simctl', 'list', '--json']:
+    print((root / 'inventory.json').read_text())
+elif args == ['simctl', 'list', 'devicetypes', '--json']:
+    print((root / 'types.json').read_text())
+elif args[:2] == ['simctl', 'create']:
+    assert args == ['simctl', 'create', 'iPhone 16',
+                    'com.apple.CoreSimulator.SimDeviceType.iPhone-16',
+                    'com.apple.CoreSimulator.SimRuntime.iOS-26-10'], args
+    print('00000000-0000-4000-8000-000000000016')
+else:
+    raise SystemExit('Unexpected simctl invocation: ' + repr(args))
+''')
+    fake.chmod(0o755)
+    for branch in ['existing', 'create', 'fallback']:
+        phone = device('iPhone 17', '000000000017')
+        devices = [device('iPad Pro', '000000000001'), phone]
+        if branch == 'existing':
+            devices.append(device('iPhone 16', '000000000002'))
+        else:
+            devices.append(device('iPhone 16', '000000000003', False))
+        inventory = {
+            'runtimes': [
+                {'identifier': older, 'version': '26.2', 'isAvailable': True},
+                {'identifier': unavailable, 'version': '27.0', 'isAvailable': False},
+                {'identifier': latest, 'version': '26.10', 'isAvailable': True}],
+            'devices': {older: [device('iPhone 16', '000000000004')], latest: devices}}
+        (root / 'inventory.json').write_text(json.dumps(inventory))
+        types = [] if branch == 'fallback' else [{'name': 'iPhone 16', 'identifier': phone_type}]
+        (root / 'types.json').write_text(json.dumps({'devicetypes': types}))
+        env_file = root / 'github-env'
+        env_file.write_text('')
+        (root / 'calls.jsonl').write_text('')
+        env = dict(os.environ, RUNNER_TEMP=str(root), GITHUB_ENV=str(env_file),
+                   PATH=str(root) + os.pathsep + os.environ['PATH'])
+        result = subprocess.run(['bash', '-e', '/tmp/crykit-r2-select-simulator.sh'],
+                                env=env, text=True, capture_output=True, check=True)
+        selected_id = (devices[-1]['udid'] if branch == 'existing'
+                       else created_id if branch == 'create' else phone['udid'])
+        assert env_file.read_text() == 'CRYBOT_TEST_SIMULATOR=' + selected_id + '\n'
+        calls = [json.loads(line) for line in (root / 'calls.jsonl').read_text().splitlines()]
+        assert sum(call[:2] == ['simctl', 'create'] for call in calls) == (branch == 'create')
+        assert latest in result.stdout
+        expected_log = {'existing': 'Selected existing', 'create': 'Created', 'fallback': 'Fallback'}[branch]
+        assert expected_log in result.stdout
+        print(branch + ': PASS; ' + result.stdout.strip())
+```
+
+命令和输出：
+
+```bash
+python3 /tmp/crykit-r2-simulators.py > /tmp/crykit-r2-simulators.log
+cat /tmp/crykit-r2-simulators.log
+```
+
+```text
+existing: PASS; Selected existing iPhone 16: iPhone 16 00000000-0000-4000-8000-000000000002 runtime: com.apple.CoreSimulator.SimRuntime.iOS-26-10
+create: PASS; Created iPhone 16 (com.apple.CoreSimulator.SimDeviceType.iPhone-16): iPhone 16 00000000-0000-4000-8000-000000000016 runtime: com.apple.CoreSimulator.SimRuntime.iOS-26-10
+fallback: PASS; Fallback to available iPhone (iPhone 16 device type missing): iPhone 17 00000000-0000-4000-8000-000000000017 runtime: com.apple.CoreSimulator.SimRuntime.iOS-26-10
+```
+
+以上证实脚本分支、命令参数、环境变量写入及日志；并不等于本机运行了真正的 Apple 模拟器。
+
+## 静态检查、依赖及第三方说明
+
+当前锁定版本（替代前轮表中的历史值）：
+
+| 包 | exactVersion | 产品 |
+| --- | --- | --- |
+| apple/swift-markdown | 0.9.0 | Markdown |
+| mgriebling/SwiftMath | 1.7.3 | SwiftMath |
+| appstefan/HighlightSwift | 1.1.0 | HighlightSwift |
+| livekit/client-sdk-swift | 2.19.0 | LiveKit |
+| livekit/webrtc-xcframework | 150.7871.04 | LiveKitWebRTC |
+
+`third_party` 相关说明：执行 `rg -l 'LiveKit|SwiftMath|HighlightSwift|swift-markdown|webrtc-xcframework' third_party` 无匹配，仓库尚没有这五项的说明或许可副本可同步版本。本轮不伪造离线许可内容；协调者收取上述版本的依赖及传递依赖许可时，应按此表和实际 Package.resolved 生成 third_party 说明。`rg -n 'import (LiveKit|LiveKitWebRTC|Markdown|SwiftMath|HighlightSwift)' mobile/ios --glob '*.swift'` 也无匹配，无现有 API 调用需要修改。
+
+静态检查脚本 `/tmp/crykit-r2-static.py`：
+
+```python
+from pathlib import Path
+import re
+import subprocess
+import yaml
+workflow = yaml.safe_load(Path('.github/workflows/mobile.yml').read_text())
+triggers = workflow.get('on', workflow.get(True))
+assert all('mobile/android/**' in triggers[event]['paths'] for event in ['push', 'pull_request'])
+project = yaml.safe_load(Path('mobile/ios/project.yml').read_text())
+versions = {'LiveKit':'2.19.0', 'LiveKitWebRTC':'150.7871.04', 'SwiftMarkdown':'0.9.0', 'SwiftMath':'1.7.3', 'HighlightSwift':'1.1.0'}
+assert {key:str(project['packages'][key]['exactVersion']) for key in versions} == versions
+tests = project['targets']['CryBotTests']
+assert tests['dependencies'] == [{'target':'CryBot'}]
+assert tests['settings']['base']['BUNDLE_LOADER'] == '$(TEST_HOST)'
+assert tests['settings']['base']['TEST_HOST'] == '$(BUILT_PRODUCTS_DIR)/Cry Bot.app/Cry Bot'
+print('YAML: Android triggers, five dependency versions, and hosted test linkage PASS')
+core = Path('mobile/ios/Packages/CryKit')
+for module in ['CryCore', 'CryNetLogic', 'CryRFB']:
+    for path in (core / 'Sources' / module).glob('*.swift'):
+        imports = re.findall(r'^import (\w+)', path.read_text(), re.M)
+        assert set(imports) <= {'Foundation', 'FoundationNetworking'}, path
+banned = set('TimelineView Text Image Label Link Table Section Form Group List Menu Toggle Picker Grid Canvas Layout Gauge ProgressView ShareLink WebView WebPage Tab Data Date URL Error Result Task Notification Operation Timer Process Thread LoginCookies ServerAddress WatchAPIError WatchRequest BotList MessagePage SendMessage SendResult WatchBot WatchCredentials WatchMessage'.split())
+for path in core.rglob('*.swift'):
+    names = set(re.findall(r'\b(?:struct|enum|class|protocol|typealias)\s+`?(\w+)', path.read_text()))
+    assert not names.intersection(banned), path
+print('Foundation-only imports and forbidden type names PASS')
+subprocess.run(['git', 'diff', '--check'], check=True)
+changed = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
+allowed = ['.github/workflows/mobile.yml', 'mobile/ios/project.yml', 'docs/tasks/T-1200/T-1221-core-protocol/report.md']
+assert all(path in allowed or path.startswith('mobile/ios/Packages/CryKit/') for path in changed)
+assert not any('/Fixtures/contract/' in path for path in changed)
+print('Diff whitespace and allowed scope PASS')
+```
+
+```bash
+python3 /tmp/crykit-r2-static.py
+```
+
+```text
+YAML: Android triggers, five dependency versions, and hosted test linkage PASS
+Foundation-only imports and forbidden type names PASS
+Diff whitespace and allowed scope PASS
+```
+
+## 覆盖表与协调者后续
+
+本轮涉及的既有覆盖项：ServerFrame 的 config、notify、notifications.read、snapshot、computer、live.call、screen；BotsSnapshot、ThreadPage、WireMessage 的消息解码；OptionCardData 的 autoApplied/answered/held/undone；NotificationsPage、ConfigResponse 初始化。没有新增联合 kind，没有修改 `server/testing/ios-contract/coverage.ts`。
+
+新增公共入口是 `load(notifications:)`、`load(config:) throws` 和 `invalidEventCount`；原入口签名保留，App 功能入口未改。通知/配置加载由后续 App hydrate 调用，config 入口需要 try。
+
+需要 Actions 判定：远程依赖解析及其传递版本兼容性、真实 macos-26 的 simctl 创建/选择、XcodeGen 工程生成、CryBot/CryBotWatch 编译、CryBotTests 宿主 import CryCore 与链接，以及各测试 target 实际执行数量。此沙箱禁网且无 Xcode，未运行这些步骤、没有新 Actions 链接，不声称 App 编译通过。协调者推分支后请附运行链接和 package-resolved 产物；release.yml 的锁文件任务仍由另项处理。

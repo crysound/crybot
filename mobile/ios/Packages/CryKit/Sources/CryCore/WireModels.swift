@@ -2736,27 +2736,32 @@ public indirect enum WireMessage: WireModel {
     public init(from decoder: Decoder) throws {
         let raw = try JSONValue(from: decoder)
         guard let kind = raw["kind"]?.stringValue else {
-            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Missing kind"))
+            self = .unknown(kind: "", raw: raw)
+            return
         }
         var payload = raw
         payload["kind"] = nil
-        switch kind {
-        case "text": self = .`text`(try payload.decode(WireMessageFields.self))
-        case "options": self = .`options`(try payload.decode(WireMessageFields.self))
-        case "activity": self = .`activity`(try payload.decode(WireMessageFields.self))
-        case "screen": self = .`screen`(try payload.decode(WireMessageFields.self))
-        case "connector": self = .`connector`(try payload.decode(WireMessageFields.self))
-        case "secret": self = .`secret`(try payload.decode(WireMessageFields.self))
-        case "signin": self = .`signin`(try payload.decode(WireMessageFields.self))
-        case "routine.run": self = .`routineRun`(try payload.decode(WireMessageFields.self))
-        case "goal.run": self = .`goalRun`(try payload.decode(WireMessageFields.self))
-        case "burst": self = .`burst`(try payload.decode(WireMessageFields.self))
-        case "digest": self = .`digest`(try payload.decode(WireMessageFields.self))
-        case "compaction": self = .`compaction`(try payload.decode(WireMessageFields.self))
-        case "call": self = .`call`(try payload.decode(WireMessageFields.self))
-        case "widget": self = .`widget`(try payload.decode(WireMessageFields.self))
-        case "app": self = .`app`(try payload.decode(WireMessageFields.self))
-        default: self = .unknown(kind: kind, raw: raw)
+        do {
+            switch kind {
+            case "text": self = .`text`(try payload.decode(WireMessageFields.self))
+            case "options": self = .`options`(try payload.decode(WireMessageFields.self))
+            case "activity": self = .`activity`(try payload.decode(WireMessageFields.self))
+            case "screen": self = .`screen`(try payload.decode(WireMessageFields.self))
+            case "connector": self = .`connector`(try payload.decode(WireMessageFields.self))
+            case "secret": self = .`secret`(try payload.decode(WireMessageFields.self))
+            case "signin": self = .`signin`(try payload.decode(WireMessageFields.self))
+            case "routine.run": self = .`routineRun`(try payload.decode(WireMessageFields.self))
+            case "goal.run": self = .`goalRun`(try payload.decode(WireMessageFields.self))
+            case "burst": self = .`burst`(try payload.decode(WireMessageFields.self))
+            case "digest": self = .`digest`(try payload.decode(WireMessageFields.self))
+            case "compaction": self = .`compaction`(try payload.decode(WireMessageFields.self))
+            case "call": self = .`call`(try payload.decode(WireMessageFields.self))
+            case "widget": self = .`widget`(try payload.decode(WireMessageFields.self))
+            case "app": self = .`app`(try payload.decode(WireMessageFields.self))
+            default: self = .unknown(kind: kind, raw: raw)
+            }
+        } catch {
+            self = .unknown(kind: kind, raw: raw)
         }
     }
     public func encode(to encoder: Encoder) throws {
@@ -2777,7 +2782,9 @@ public indirect enum WireMessage: WireModel {
         case .`call`(let value): raw = try JSONValue(encoding: value)
         case .`widget`(let value): raw = try JSONValue(encoding: value)
         case .`app`(let value): raw = try JSONValue(encoding: value)
-        case .unknown(_, let value): raw = value
+        case .unknown(_, let value):
+            try value.encode(to: encoder)
+            return
         }
         raw["kind"] = .string(kind)
         try raw.encode(to: encoder)

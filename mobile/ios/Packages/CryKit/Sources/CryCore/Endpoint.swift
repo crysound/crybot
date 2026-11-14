@@ -41,7 +41,11 @@ public struct Endpoint<Response: Decodable> {
               ["https", "http"].contains(components.scheme), components.host != nil else { throw EndpointError.invalidPath }
         let prefix = components.percentEncodedPath.hasSuffix("/") ? String(components.percentEncodedPath.dropLast()) : components.percentEncodedPath
         components.percentEncodedPath = prefix + path
-        components.queryItems = query.isEmpty ? nil : query
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.!~*'()")
+        components.percentEncodedQueryItems = query.isEmpty ? nil : query.map {
+            URLQueryItem(name: $0.name.addingPercentEncoding(withAllowedCharacters: allowed)!,
+                         value: $0.value?.addingPercentEncoding(withAllowedCharacters: allowed))
+        }
         components.fragment = nil
         guard let url = components.url else { throw EndpointError.invalidPath }
         var request = URLRequest(url: url)
