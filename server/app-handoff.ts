@@ -1,9 +1,11 @@
 import { createCipheriv, createECDH, ECDH, hkdfSync, randomBytes } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { JWTVerifyGetKey } from "jose";
-import { createCfAccessTokenVerifier } from "./cf-access.ts";
+import { cfAccessRefusal, createCfAccess, createCfAccessTokenVerifier } from "./cf-access.ts";
 import { appLinkOrigin, prefersChinese } from "./app-links.ts";
 import { parseCookies } from "./request-auth.ts";
+
+type JsonResponder = (res: ServerResponse, status: number, body: unknown) => void;
 
 function parsePublicKey(value: string): Buffer | null {
   if (!/^[A-Za-z0-9_-]{87}$/.test(value)) return null;
@@ -76,5 +78,34 @@ export function createAppHandoff(enabled: boolean, env: NodeJS.ProcessEnv = proc
       "content-security-policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
     });
     res.end(`<!doctype html><html lang="${chinese ? "zh-Hans" : "en"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title></head><body><h1>${title}</h1><p>${accountLabel}${email}</p><p><strong>${warning}</strong></p><a role="button" href="${callback}">${label}</a></body></html>`);
+  };
+}
+
+export function createAppHandoffGate(
+  env: NodeJS.ProcessEnv = process.env,
+  keySet?: JWTVerifyGetKey,
+) {
+  const access = createCfAccess(env, keySet);
+  const handoff = createAppHandoff(access !== null, env, keySet);
+  return async (
+    req: IncomingMessage,
+    res: ServerResponse,
+    url: URL,
+    method: string,
+    path: string,
+    sessions: Parameters<typeof cfAccessRefusal>[6],
+    cookieName: string,
+    json: JsonResponder,
+  ) => {
+    const refusal = await cfAccessRefusal(access, method, path, req, res, url, sessions, cookieName);
+    if (refusal) {
+      json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
+      return true;
+    }
+    if (method === "GET" && path === "/auth/app-handoff") {
+      await handoff(req, res, url);
+      return true;
+    }
+    return false;
   };
 }

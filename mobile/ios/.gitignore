@@ -2,3 +2,5 @@ DerivedData/
 *.xcodeproj/
 CryBot/Info.plist
 CryBotWatch/Info.plist
+.linux-cache/
+.linux-build/

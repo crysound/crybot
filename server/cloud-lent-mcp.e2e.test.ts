@@ -1,6 +1,7 @@
 // A real server booted as a Cloud home, the real outbound connector on the Mac side, and two MCP servers on the Mac: one
 // a program, one at a loopback address. Each runs only where the Mac lends it, and a bot's turn on My Cloud reaches it as
 // any other MCP server.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes, randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer, type Server } from "node:http";
@@ -10,7 +11,9 @@ import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, beforeAll, expect, it } from "vitest";
+import { Agent, fetch as fetchVia } from "undici";
 import { createComputerSharing } from "../electron/computer-sharing.mjs";
+import { BOX_BROKER_PORT } from "./bot-box/box.ts";
 import { cloudPairingSignature } from "./cloud-home.ts";
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
@@ -30,6 +33,7 @@ let connector: ReturnType<typeof createComputerSharing> | undefined;
 let macServer: Server | undefined;
 const macRequests: Array<{ authorization?: string; method?: string; client?: string }> = [];
 const engines: ChildProcess[] = [];
+const brokerAgents: Agent[] = [];
 
 async function api(method: string, path: string, options: { body?: unknown; token?: string } = {}) {
   const response = await fetch(`${base}${path}`, {
@@ -83,9 +87,14 @@ async function turnOf(name: string): Promise<Turn> {
 /** Talks to one MCP server of a turn as its engine would: over HTTP at its address, or through the stdio gate it runs. */
 function engineFor(spec: Spec): (method: string, params?: unknown) => Promise<any> {
   if (spec.url) {
+    const url = new URL(spec.url);
+    const brokered = url.hostname === "127.0.0.1" && url.port === String(BOX_BROKER_PORT);
+    const dispatcher = brokered ? new Agent({ connect: { socketPath: join(home, ".crybot", "box", "broker.sock") } }) : undefined;
+    if (dispatcher) brokerAgents.push(dispatcher);
     let id = 0;
     return async (method, params = {}) => {
-      const response = await fetch(spec.url!, { method: "POST", headers: { ...spec.headers, "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method, params }) });
+      const response = await fetchVia(spec.url!, { dispatcher, method: "POST", headers: { ...spec.headers, "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method, params }) });
+      expect(response.status).toBe(200);
       return (await response.json()) as any;
     };
   }
@@ -110,16 +119,16 @@ beforeAll(async () => {
   const dataDir = join(home, ".crybot");
   mkdirSync(dataDir, { recursive: true });
   mkdirSync(turnDumps());
-  const cli = join(home, "fixture-claude.mjs");
+  const cli = fixtureEnginePath(dataDir, "fixture-claude.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
-if (process.argv[2] !== "--version") { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(home, "turns"))} + "/" + process.pid + ".json"; process.env.FAKE_CLAUDE_TEXT_DUMP = ${JSON.stringify(join(home, "one-shot.json"))}; process.env.FAKE_CLAUDE_MODE = "hang"; }
+if (process.argv[2] !== "--version") { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(home, "turns"))} + "/" + crypto.randomUUID() + ".json"; process.env.FAKE_CLAUDE_TEXT_DUMP = ${JSON.stringify(join(home, "one-shot.json"))}; process.env.FAKE_CLAUDE_MODE = "hang"; }
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
   writeFileSync(join(dataDir, "config.json"), JSON.stringify({ instances: {
     ...Object.fromEntries(["codex", "cursor", "githubCopilot", "openaiCompat", "qwen", "hermes", "pi", "grok"].map((id) => [id, { driver: "not-a-real-driver" }])),
-    claude: { driver: "claudeAgent", displayName: "Claude", config: { cli } },
+    claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(cli)}` } },
   } }));
   port = await freePortBlock([0, 1]);
   base = `http://127.0.0.1:${port}`;
@@ -148,6 +157,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
 
 afterAll(async () => {
   connector?.close();
+  await Promise.all(brokerAgents.map((agent) => agent.close()));
   for (const engine of engines) engine.kill();
   await new Promise((resolve) => (macServer ? macServer.close(resolve) : resolve(null)));
   if (child) await waitForExit(child, { signal: "SIGTERM" });

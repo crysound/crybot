@@ -120,6 +120,19 @@ describe("app language preference", () => {
     preference.setLanguageChoice("uk");
     expect(preference.languageChoice()).toBe("uk");
   });
+
+  it("keeps the current language when loading the page language fails", async () => {
+    const loadLocale = vi.fn(() => Promise.reject(new Error("offline")));
+    vi.doMock("./i18n", () => ({ loadLocale }));
+    try {
+      const preference = await import("./language-preference");
+      expect(() => preference.usePageLanguage("zh")).not.toThrow();
+      await Promise.resolve();
+      expect(loadLocale).toHaveBeenCalledWith("zh");
+    } finally {
+      vi.doUnmock("./i18n");
+    }
+  });
 });
 
 // The preload and main together: one pick for every page this desktop's window shows.

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
+import { Loader2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { t } from "@/lib/i18n";
 
@@ -13,6 +14,7 @@ export type LazyScreen<P> = ((props: P) => ReactNode) & {
 export function lazyScreen<Props>(
   name: string,
   load: () => Promise<(props: Props) => ReactNode>,
+  fallback: ReactNode = null,
 ): LazyScreen<NonNullable<Props>> {
   type P = NonNullable<Props>;
   let ready: ComponentType<P> | undefined;
@@ -40,7 +42,7 @@ export function lazyScreen<Props>(
       };
     }, [Loaded]);
     if (Loaded) return <Loaded {...props} />;
-    return failed ? <ScreenUnavailable /> : null;
+    return failed ? <ScreenUnavailable /> : fallback;
   }
   return Object.assign(Screen, { preload });
 }
@@ -81,6 +83,19 @@ export const TriggersPage = lazyScreen("TriggersPage", async () => (await import
 export const SettingsModal = lazyScreen("SettingsModal", async () => (await import("./SettingsModal")).SettingsModal);
 export const TeamMapPage = lazyScreen("TeamMapPage", async () => (await import("./TeamMapPage")).TeamMapPage);
 export const PublishedAppsPage = lazyScreen("PublishedAppsPage", async () => (await import("./published-apps/PublishedAppsPage")).PublishedAppsPage);
+export const GroupView = lazyScreen("GroupView", async () => (await import("./GroupView")).GroupView,
+  <div role="status" className="flex flex-1 items-center justify-center text-ink-tertiary"><Loader2 size={20} className="animate-spin" /></div>,
+);
+export const CloudWelcome = lazyScreen("CloudWelcome", async () => (await import("./cloud-welcome/CloudWelcome")).CloudWelcome,
+  <div role="status" className="flex flex-1 items-center justify-center text-ink-tertiary"><Loader2 size={20} className="animate-spin" /></div>,
+);
+export { CloudIntent } from "./CloudIntent";
+export { TeamWelcome } from "./TeamWelcome";
+export { ConversationShareDialogs } from "./conversation-share/ConversationShareDialogs";
+export { NewBotNameHost } from "./NewBotName";
+export { LiveCallHost } from "./LiveCallHost";
+export { FirstConversationTour } from "./onboarding/FirstConversationTour";
+export const InboxPanel = lazyScreen("InboxPanel", async () => (await import("./inbox/InboxPanel")).InboxPanel);
 
 // Rarely opened, so never fetched ahead. The team library is what brings the YAML parser in.
 export const PhoneAppDialog = lazyScreen("PhoneAppDialog", async () => (await import("./PhoneAppDialog")).PhoneAppDialog);
@@ -89,7 +104,7 @@ export const GrokMoveDialog = lazyScreen("GrokMoveDialog", async () => (await im
 export const TeamLibraryPanel = lazyScreen("TeamLibraryPanel", async () => (await import("./TeamLibraryPanel")).TeamLibraryPanel);
 
 // Most opened first: a Cloud page fetches these in this order.
-const SCREENS = [
+export const SCREENS = [
   SettingsModal, BotSettingsDialog, PluginsPanel, ComputerPanel, TriggersPage, ActivityPanel, FilesView, InspectorPanel, KeyboardShortcutsModal,
   LocalVmWorkspace, NewBotDialog, RemoteAgentSettingsPanel, RemoteDesktopPanel, RoomPanel, TeamMapPage, PublishedAppsPage,
 ];

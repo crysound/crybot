@@ -2,6 +2,7 @@
 // Mac. The sites that turn away data centres go out through the Mac's device link, and the Mac checks every connection
 // itself; every other site goes My Cloud's own way. "The internet" here is a web server on this machine that only the
 // Mac's own connect reaches, under a public address. My Cloud itself is offline: it resolves no name and fetches nothing.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes, randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
@@ -198,7 +199,7 @@ async function boot() {
       HOME: home, USERPROFILE: home, CRYBOT_DATA_DIR: dataDir, CRYBOT_PORT: String(port), CRYBOT_WEBHOOK_PORT: String(port + 1),
       CRYBOT_CLOUD_ROLE: "home", CRYBOT_CLOUD_MACHINE_ID: "3f9c2a4e-8b1d-4c6e-9a7f-2d5e8c1b0a93", CRYBOT_CLOUD_ADMIN_URL: "https://cloud.example.test",
       CRYBOT_CLOUD_BOOTSTRAP_SECRET: secret, CRYBOT_PUBLIC_URL: `https://${HOST}`,
-      CRYBOT_AGENT_BROWSER_PATH: join(home, "agent-browser"),
+      CRYBOT_AGENT_BROWSER_PATH: fixtureEnginePath(join(home, ".crybot"), "agent-browser"),
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -218,26 +219,26 @@ beforeAll(async () => {
   const dataDir = join(home, ".crybot");
   mkdirSync(dataDir, { recursive: true });
   mkdirSync(turnDumps());
-  const cli = join(home, "fixture-claude.mjs");
+  const cli = fixtureEnginePath(dataDir, "fixture-claude.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
-if (process.argv[2] !== "--version") { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(turnDumps())} + "/" + process.pid + ".json"; process.env.FAKE_CLAUDE_TEXT_DUMP = ${JSON.stringify(join(home, "one-shot.json"))}; process.env.FAKE_CLAUDE_MODE = "hang"; }
+if (process.argv[2] !== "--version") { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(turnDumps())} + "/" + crypto.randomUUID() + ".json"; process.env.FAKE_CLAUDE_TEXT_DUMP = ${JSON.stringify(join(home, "one-shot.json"))}; process.env.FAKE_CLAUDE_MODE = "hang"; }
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
   // The bot's browser engine as the server finds it: it names the Chrome its turns would drive, through the gate.
   // It writes down the egress gate each command's Chrome would go through: the bot's own, for the life of the server.
-  writeFileSync(join(home, "agent-browser"), `#!${process.execPath}
+  writeFileSync(fixtureEnginePath(join(home, ".crybot"), "agent-browser"), `#!${process.execPath}
 const args = process.argv.slice(2).filter((arg) => arg !== "--json" && arg !== "--no-webmcp");
 if (args[0] === "--version") { console.log("agent-browser 0.37.0"); process.exit(0); }
 if (process.env.AGENT_BROWSER_PROXY) require("node:fs").appendFileSync(${JSON.stringify(join(home, "gates.txt"))}, process.env.AGENT_BROWSER_SESSION + " " + process.env.AGENT_BROWSER_PROXY + "\\n");
 const running = require("node:fs").existsSync(${JSON.stringify(join(home, "browser-running"))});
 process.stdout.write(JSON.stringify({ success: true, data: args[0] === "session" ? { sessions: running ? [process.env.AGENT_BROWSER_SESSION] : [] } : {} }));
 `, { mode: 0o755 });
-  chmodSync(join(home, "agent-browser"), 0o755);
+  chmodSync(fixtureEnginePath(join(home, ".crybot"), "agent-browser"), 0o755);
   writeFileSync(join(dataDir, "config.json"), JSON.stringify({ instances: {
     ...Object.fromEntries(["codex", "cursor", "githubCopilot", "openaiCompat", "qwen", "hermes", "pi", "grok"].map((id) => [id, { driver: "not-a-real-driver" }])),
-    claude: { driver: "claudeAgent", displayName: "Claude", config: { cli } },
+    claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(cli)}` } },
   } }));
   website = createServer((req, res) => {
     visits.push({ peer: req.socket.remotePort!, host: String(req.headers.host) });

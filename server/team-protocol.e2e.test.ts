@@ -5,10 +5,10 @@
 // private audience; a note a bot or a person writes into a line's body arrives escaped. The engine plays a script, so
 // the proof is what it was sent and what each person can read afterwards, not a model's judgement.
 import { randomBytes } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { writeFileSync } from "node:fs";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
+import { fixtureInput, fixtureLines, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OLIVE = { email: "olive@acme.test", role: "owner" as const };
@@ -29,10 +29,9 @@ let fx: CloudSendFixture, team: CloudTeamFixture;
 let olive = "", mira = "", ben = "";
 let support: Bot, sales: Bot;
 
-const planPath = () => join(team.home, "plan.json");
-const gate = () => join(team.home, "hold.gate");
-const turns = (): Turn[] => existsSync(`${planPath()}.evidence.jsonl`)
-  ? readFileSync(`${planPath()}.evidence.jsonl`, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line) as Turn) : [];
+const planPath = () => fixtureInput(team.home, "plan.json");
+const gate = () => fixtureInput(team.home, "hold.gate");
+const turns = () => fixtureLines<Turn>(team.home);
 const turn = (key: string): Turn => { const found = turns().find((one) => one.planKey === key); if (!found) throw new Error(`no turn ${key}`); return found; };
 /** The turn's text as the engine read it. */
 const sent = (one: Turn): string => { const content = (one.prompt as { message?: { content?: unknown } }).message?.content; return typeof content === "string" ? content : JSON.stringify(content); };
@@ -63,7 +62,7 @@ async function relay(bot: Bot, threadId: string, sendId: string, text: string, o
 }
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-3", name: "Acme", engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-3", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   olive = (await team.pair(OLIVE)).token!;
   mira = (await team.pair(MIRA)).token!;

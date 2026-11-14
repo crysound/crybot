@@ -1,5 +1,6 @@
 // One stub plays the Admin's relay: an OpenAI-compatible API (chat completions and models), nothing Anthropic-shaped.
 // Disposable home; a synthetic Claude CLI for the person's own engine; no network.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer, type Server } from "node:http";
@@ -118,7 +119,7 @@ beforeAll(async () => {
   // The person's own Claude Code, as on the image: signed out until the test
   // signs the person in. Each turn is a fresh process, which records its
   // environment; the credit's engine never runs it.
-  const cli = join(home, "fixture-claude.mjs");
+  const cli = fixtureEnginePath(data, "fixture-claude.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
 import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -152,7 +153,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     instances: {
       // Pin the fleet's other defaults so this never probes an installed CLI.
       ...Object.fromEntries(["codex", "cursor", "githubCopilot", "openaiCompat", "qwen", "hermes", "pi"].map((id) => [id, { driver: "not-a-real-driver" }])),
-      claude: { driver: "claudeAgent", displayName: "Claude", config: { cli } },
+      claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(cli)}` } },
     },
   }));
   mkdirSync(join(home, "web"));

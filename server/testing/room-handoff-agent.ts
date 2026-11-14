@@ -140,7 +140,8 @@ export async function runRoomHandoffAgent(argv: string[], planPath: string, prom
   const botPlan = JSON.parse(readFileSync(planPath, "utf8"))[botId] ?? {};
   const basePlan = (botPlan.byPrompt as Array<{ promptIncludes: string; plan: any }> | undefined)
     ?.find(rule => turnContext.includes(rule.promptIncludes))?.plan ?? botPlan;
-  const previous = existsSync(`${planPath}.evidence.jsonl`) ? readFileSync(`${planPath}.evidence.jsonl`, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)) : [];
+  const evidencePath = process.env.FAKE_CLAUDE_ROOM_EVIDENCE ?? `${planPath}.evidence.jsonl`;
+  const previous = existsSync(evidencePath) ? readFileSync(evidencePath, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)) : [];
   const turnIndex = previous.filter(p => p.botId === botId).length;
   // `script`: an unscripted turn fails loudly, and one-shot entries win over `repeat` ones.
   const script = botPlan.script as ScriptEntry[] | undefined;
@@ -149,7 +150,7 @@ export async function runRoomHandoffAgent(argv: string[], planPath: string, prom
   const matches = (entry: ScriptEntry) => entry.match.every(text => own.includes(text));
   const entry = script && (script.find(e => !e.repeat && !used.has(e.key) && matches(e)) ?? script.find(e => e.repeat && matches(e)));
   if (script && !entry) {
-    appendFileSync(`${planPath}.evidence.jsonl`, JSON.stringify({ botId, turnIndex, threadId: agent.CRYBOT_THREAD_ID, unplanned: true, resumed, system, prompt }) + "\n");
+    appendFileSync(evidencePath, JSON.stringify({ botId, turnIndex, threadId: agent.CRYBOT_THREAD_ID, unplanned: true, resumed, system, prompt }) + "\n");
     throw new Error(`Unplanned fixture turn for ${botId}: ${own.slice(0, 300)}`);
   }
   const plan: any = entry ?? (basePlan.turns ? basePlan.turns[turnIndex] : basePlan);
@@ -255,7 +256,7 @@ export async function runRoomHandoffAgent(argv: string[], planPath: string, prom
     closing = true;
     clearTimeout(timer); clearTimeout(delayTimer); clearInterval(gateTimer); lines.close(); child.stdin.destroy();
     await waitForExit(child, { signal: "SIGTERM", graceMs: 500 });
-    appendFileSync(`${planPath}.evidence.jsonl`, JSON.stringify({ botId, turnIndex, threadId: agent.CRYBOT_THREAD_ID, pid: process.pid,
+    appendFileSync(evidencePath, JSON.stringify({ botId, turnIndex, threadId: agent.CRYBOT_THREAD_ID, pid: process.pid,
       model: argv.includes("--model") ? arg("--model") : undefined,
       permissionMode: argv.includes("--permission-mode") ? arg("--permission-mode") : undefined,
       restricted: argv.includes("--restricted"), permissionPromptTool: argv.includes("--permission-prompt-tool"),

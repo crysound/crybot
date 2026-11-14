@@ -6,6 +6,7 @@ import {
 import { bootstrapBrand, productName } from "./lib/brand";
 import { t } from "./lib/i18n";
 import { loadPageLanguage } from "./lib/language-preference";
+import { renderPage } from "./lib/render-page";
 import { applySkinChoice, readSkinChoice } from "./lib/skins";
 import { applyChatWidth, readChatWidth } from "./lib/chat-width";
 import { applyFont, readFont } from "./lib/fonts";
@@ -72,6 +73,7 @@ async function chooseRoot(): Promise<React.ReactNode> {
 
 // The window is named before the brand file is asked for: the answer only ever renames it.
 document.title = productName();
-void Promise.all([bootstrapBrand(), chooseRoot(), pageLanguage]).then(([, root]) => {
-  createRoot(document.getElementById("root")!).render(<StrictMode><PageBoundary>{root}</PageBoundary></StrictMode>);
+void renderPage(createRoot(document.getElementById("root")!), async () => {
+  const [, root] = await Promise.all([bootstrapBrand(), chooseRoot(), pageLanguage]);
+  return <StrictMode><PageBoundary>{root}</PageBoundary></StrictMode>;
 });

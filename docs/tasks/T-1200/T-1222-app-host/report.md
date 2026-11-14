@@ -234,3 +234,91 @@ timeout 600 pnpm exec vitest run server/app-host.e2e.test.ts --maxWorkers=2
 ### 4. 范围
 
 `server/index.ts` 行数 **15460 → 15460**，本轮未修改实现、其他测试或 mobile 文件，未提交。文件大小棘轮按本轮要求不处理、不重跑，由协调者合 main 后处理；没有新增依赖。
+
+## 第 5 轮：解决合入最新 main 的冲突
+
+### 1. 逐处合并说明
+
+本轮只修改三个冲突文件及本报告。已通过 `git log -p origin/main -- server/cf-access.ts server/cf-access.test.ts server/index.ts server/app-handoff.ts` 核对 main 的意图：T-1215 提取公开探针判断和 Access/接力页组合门，目的是满足文件大小棘轮，原鉴权顺序与公开探针列表不变。
+
+| 冲突 | 合并结果 |
+|---|---|
+| `server/cf-access.ts` 文件开头 | 同时保留本分支的 `verifiedRequests` / `accessVerified` 和 main 的 `CF_ACCESS_DOMAIN_CHECK_PATH` / `isCfAccessPublicProbe`；main 的 `cfAccessRefusal` 保留。本分支在 JWT 验证成功后、已有会话短路前打标记的逻辑不变。 |
+| `server/cf-access.test.ts` import | 合并为导入 `accessVerified`、`createCfAccess`、`isCfAccessPublicProbe`；保留双方全部测试，包括有效 JWT + cookie 会话的标记断言和 main 的 GET 公开探针边界测试。 |
+| `server/index.ts` import | 保留 App 门、登录/吊销审计、应用链接和接力页导入，并加入 main 的 `cfAccessRefusal`。此入口使用分开的 Access/接力处理，才能在中间执行 App 门；未删除或修改 main 在 `app-handoff.ts` 导出的 `createAppHandoffGate`。 |
+| `server/index.ts` 初始化 | 保留单个 `cfAccess`、`appLinks`、`appHandoff` 实例；接力页仍以 Access 是否配置决定启用。没有再实例化组合门，避免重复验证或让接力处理抢在 App 门之前返回。 |
+| `server/index.ts` 请求前置处理 | 顺序为桌面更新文件 → App Host 携带 Access JWT 的廉价检查 → 应用链接/回跳页 → main 的 `cfAccessRefusal`（包含公开探针豁免）→ `appGate(accessVerified(req))`（主机限制/限流）→ 接力页。保留 401/403 的原响应内容，复用 main 的探针判断，去掉分支中重复的内联探针列表。 |
+
+`cfAccess` 仍不删除 `Cf-Access-Jwt-Assertion` 请求头；App 通道判断依据验签标记，不能以是否有头代替。自动合并进来的 T-1212、T-1224、T-1221-01、T-1215 其他文件均未修改；本分支的限流、回跳页、审计逻辑保持原样。
+
+### 2. 单测与静态检查
+
+环境使用预装依赖，未安装任何依赖。`crybot-link-deps` 不存在（退出 127）；`systemd-run --scope -q -p MemoryMax=2G` 被沙箱拒绝（`Operation not permitted`，未启动测试）。后续使用 `PATH=/opt/node24/bin:$PATH`，Vitest/Node/oxlint 设置 `NODE_OPTIONS=--max-old-space-size=2048`，tsc 设置 4096；所有测试串行执行，tsc 前检查无其他 Vitest、Node 测试或 tsc 进程。
+
+下表每个 Vitest 文件均单独执行：`timeout 600 pnpm exec vitest run <文件> --maxWorkers=2 --configLoader runner`。
+
+| 文件 | 结果 |
+|---|---|
+| `server/cf-access.test.ts` | 20 passed |
+| `server/app-host.test.ts` | 8 passed |
+| `server/app-links.test.ts` | 42 passed |
+| `server/app-handoff.test.ts` | 68 passed |
+| `server/auth-rate-limit.test.ts` | 4 passed |
+| `scripts/testing/file-size-ratchet.test.ts` | 1 passed |
+| `src/lib/cloud-status.test.ts` | 21 passed |
+| `src/components/CloudRoomCard.dom.test.ts` | 5 passed |
+| `src/components/CloudTrialNotice.test.ts` | 5 passed |
+| `src/components/CloudUsageMeter.test.ts` | 8 passed |
+| `src/components/ProIntroduction.test.ts` | 6 passed |
+| `src/components/SettingsModal.cloudPlan.test.ts` | 4 passed |
+| `src/components/SidebarProfileMenu.cloud.test.ts` | 2 passed |
+
+指定服务端五文件共 **142 passed**；T-1212 前端七文件共 **51 passed**。
+
+T-1212 Electron 测试执行：
+
+```sh
+timeout 600 node --test --test-concurrency=1 \
+  electron/account-service.node-test.mjs \
+  electron/accounts-main.node-test.mjs \
+  electron/cloud-disabled.node-test.mjs \
+  electron/cloud-home.node-test.mjs \
+  electron/cloud-signin.node-test.mjs \
+  electron/cloud-sync-preload.node-test.mjs \
+  electron/home-window.node-test.mjs \
+  electron/hosted-disabled.node-test.mjs \
+  electron/native-language.node-test.mjs
+```
+
+**8 文件通过，1 文件失败**（Node 的进程隔离摘要按文件计数）。signOut 清凭据、禁用环境去重相关文件均通过。为展开失败详情，单独运行：
+
+```sh
+timeout 600 node --test --test-isolation=none --test-reporter=tap electron/cloud-home.node-test.mjs
+```
+
+该文件 **22 passed / 1 failed**：`electron/cloud-home.node-test.mjs:322` 的 Server menu 用例在 `:343` 调用从 main 提取的 `switchEnvironment`，遇到 `ReferenceError: workspaceActionsAllowed is not defined`。`electron/main.mjs:1538` 使用该函数，但此 VM 夹具未注入。`git diff origin/main -- electron/cloud-home.node-test.mjs electron/main.mjs electron/cloud-home.mjs` 无输出，确认这些文件与 main 一致；本轮不扩大范围修复此现有失败，交协调者处理。
+
+| 检查命令 | 结果 |
+|---|---|
+| `timeout 600 pnpm exec tsc -p tsconfig.server.json --noEmit --pretty false` | 退出 0 |
+| `timeout 600 pnpm exec oxlint --deny-warnings server/cf-access.ts server/cf-access.test.ts server/index.ts` | 退出 0 |
+| `git diff --check` | 退出 0 |
+| 全工作区检索行首 Git 冲突标记（排除 `.git`、`node_modules`） | 无匹配 |
+
+### 3. 隔离验证与待补跑
+
+`docs/verification/README.md` 仍不存在。本轮单测使用各自新建的内存 HTTP、临时 SessionRegistry、VM 或 DOM 夹具，没有访问用户 live app 或数据。本沙箱不支持监听端口，按本轮要求未启动端口 E2E，也不宣称端到端验证通过。请协调者在沙箱外用隔离 fixture 补跑：
+
+```sh
+timeout 600 pnpm exec vitest run server/app-host.e2e.test.ts --maxWorkers=2 --configLoader runner
+timeout 600 pnpm exec vitest run server/app-links.e2e.test.ts --maxWorkers=2 --configLoader runner
+timeout 600 pnpm exec vitest run server/index.test.ts --maxWorkers=2 --configLoader runner
+```
+
+前两项验证本分支主机/限流/回跳行为及有效 JWT + cookie 接力；`server/index.test.ts` 虽名为 test，也是启动真实服务的集成测试，作为合并后入口回归交协调者补跑。
+
+### 4. 行数与交付状态
+
+- `wc -l server/index.ts`：本轮起点（含冲突标记和双方片段）**15436 → 15416**，低于 **15515**，文件大小棘轮通过；没有通过挤语句或删除无关空行凑数。
+- 只修改 `server/cf-access.ts`、`server/cf-access.test.ts`、`server/index.ts` 和本报告；未新增依赖、未修改 mobile 或 Electron 文件。
+- 未执行 `git add`、`git commit` 或 `git merge --abort`。三个文件的文本冲突已解决，索引按要求仍保留 unmerged 状态（`UU`），由协调者检查、暂存并完成合并提交。

@@ -17,7 +17,7 @@ export function waitForExit(
 ): Promise<void> {
   const { signal, graceMs = 5_000 } = typeof options === "number" ? { graceMs: options } : options;
 
-  return new Promise<void>((resolve) => {
+  return new Promise<void>((resolve, reject) => {
     // A process killed by a signal reports it in signalCode and leaves exitCode null.
     if (!child || child.exitCode !== null || child.signalCode !== null) return resolve();
 
@@ -26,7 +26,7 @@ export function waitForExit(
       if (timer) clearTimeout(timer);
       resolve();
     };
-    child.on("close", done);
+    child.once("close", done);
 
     if (signal) {
       try {
@@ -36,7 +36,7 @@ export function waitForExit(
 
     timer = setTimeout(() => {
       child.kill("SIGKILL");
-      timer = setTimeout(done, 2_000);
+      timer = setTimeout(() => reject(new Error(`process ${child.pid} did not close after SIGKILL`)), 2_000);
       timer.unref?.();
     }, graceMs);
     timer.unref?.();
@@ -44,8 +44,8 @@ export function waitForExit(
 }
 
 /** A just-killed child lets go of its files a beat later, and rmSync's maxRetries misses EACCES/EPERM on
- * the directory itself: retry briefly, then warn and leave it. */
-export async function removeTempDir(dir: string): Promise<void> {
+ * the directory itself: retry briefly, then report the failure. */
+export async function removeTempDirStrict(dir: string): Promise<void> {
   let lastError: unknown;
   for (let i = 0; i < 20; i++) {
     try {
@@ -56,7 +56,13 @@ export async function removeTempDir(dir: string): Promise<void> {
       await new Promise((r) => setTimeout(r, 100));
     }
   }
-  console.warn(
-    `test cleanup could not remove ${dir}: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
-  );
+  throw lastError;
+}
+
+export async function removeTempDir(dir: string): Promise<void> {
+  try {
+    await removeTempDirStrict(dir);
+  } catch (error) {
+    console.warn(`test cleanup could not remove ${dir}: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }

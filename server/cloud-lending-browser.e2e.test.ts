@@ -1,6 +1,7 @@
 // Browsing through a lent PC, on one machine: a real server booted as a Cloud home, a second real server as the PC's
 // own desktop server (its screen lease), and the real outbound connector between them. A scripted cua-driver stands in
 // for the PC's screen and answers browser tools the way cua-driver does for a browser without a DevTools endpoint.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer, type Server } from "node:http";
@@ -133,7 +134,7 @@ beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "cry-lent-browser-"));
   const dataDir = join(home, ".crybot");
   mkdirSync(dataDir, { recursive: true });
-  const cli = join(home, "fixture-claude.mjs");
+  const cli = fixtureEnginePath(dataDir, "fixture-claude.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
@@ -142,7 +143,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
 `, { mode: 0o755 });
   writeFileSync(join(dataDir, "config.json"), JSON.stringify({ instances: {
     ...Object.fromEntries(["codex", "cursor", "githubCopilot", "openaiCompat", "qwen", "hermes", "pi", "grok"].map((id) => [id, { driver: "not-a-real-driver" }])),
-    claude: { driver: "claudeAgent", displayName: "Claude", config: { cli } },
+    claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(cli)}` } },
   } }));
   chmodSync(cli, 0o755);
   const port = await freePortBlock([0, 1]);

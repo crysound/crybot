@@ -1,3 +1,4 @@
+import { USER_COLLAPSE_CHARS, USER_COLLAPSE_LINES } from "@/lib/user-message-collapse";
 import { useSessionDisplayName } from "@/lib/session-profile";
 import { createContext, memo, use, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch } from "react";
 import { useAdvancedMode } from "@/lib/interface-mode";
@@ -136,9 +137,6 @@ import { pendingApprovals } from "./PendingApproval";
 import { TranscriptAnnouncer } from "./TranscriptAnnouncer";
 import { JumpToLatestButton } from "./JumpToLatestButton";
 import { isBotTextRow, joinedCorners, needsStamp, quietRow, simpleRowLayout, SIMPLE_BOT_BUBBLE, SIMPLE_BUBBLE_MAX, SIMPLE_BUBBLE_TEXT, SIMPLE_STACKED, SIMPLE_USER_BUBBLE, type BubbleJoin } from "./chat-bubble";
-
-const USER_COLLAPSE_CHARS = 600;
-const USER_COLLAPSE_LINES = 8;
 
 interface ChatRows {
   botId: string; threadId: string; botName: string; botColor: Bot["color"]; voiceId?: string;

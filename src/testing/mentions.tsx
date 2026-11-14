@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "./preview-locale";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { StoreProvider, useStore } from "../state/store";
@@ -6,6 +7,8 @@ import { GroupView } from "../components/GroupView";
 import { DesktopCapabilitiesProvider } from "../components/DesktopCapabilities";
 import { applySkin } from "../lib/skins";
 import "../styles.css";
+
+await preparePreviewLocale();
 
 function Fixture() {
   const { state } = useStore();

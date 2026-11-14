@@ -51,7 +51,11 @@ describe("Settings in another language", () => {
   it("stays English when no language is picked", async () => {
     setLocale("en");
     const html = await renderSettings();
-    for (const key of NAV) expect(html, key).toContain(en[key].replaceAll("&", "&amp;"));
+    for (const key of NAV) {
+      const label = en[key];
+      if (label === undefined) throw new Error(`Missing English label: ${key}`);
+      expect(html, key).toContain(label.replaceAll("&", "&amp;"));
+    }
   });
 
   it("has no page picker of its own: the nav is the list, and the dialog keeps its name", async () => {

@@ -4,6 +4,7 @@ import type { Connect, Plugin } from "vite";
 import { configDefaults, defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { localeBundles } from "./scripts/locale-bundles.ts";
 import { DurationSequencer } from "./scripts/testing/duration-sequencer.ts";
 import { hostE2eOnly, portableE2eFiles } from "./scripts/testing/host-e2e.ts";
 import { hostTimeout } from "./server/testing/host-timeout.ts";
@@ -17,6 +18,15 @@ const { version } = JSON.parse(
 const root = fileURLToPath(new URL(".", import.meta.url));
 const workers = Number(process.env.CRYBOT_VITEST_WORKERS) || 1;
 const page = (file: string) => fileURLToPath(new URL(file, import.meta.url));
+
+function frontendChunk(id: string): string | undefined {
+  if (!id.includes("/node_modules/")) return undefined;
+  if (id.includes("/react-dom/") || id.includes("/react@") || id.includes("/scheduler/")) return "vendor-react";
+  if (id.includes("/lucide-react/")) return "vendor-icons";
+  if (id.includes("/zod@")) return "vendor-schema";
+  if (id.includes("/tldts@")) return "vendor-url";
+  return undefined;
+}
 
 /** The window's rail of places loads /rail: rail.html, its own small page, in development as from the server. */
 function railPage(): Plugin {
@@ -44,9 +54,9 @@ const include = [
 ];
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), railPage()],
+  plugins: [react(), tailwindcss(), railPage(), localeBundles()],
   build: {
-    rollupOptions: { input: { index: page("./index.html"), rail: page("./rail.html") } },
+    rollupOptions: { input: { index: page("./index.html"), rail: page("./rail.html") }, output: { manualChunks: frontendChunk } },
   },
   define: {
     __APP_VERSION__: JSON.stringify(version),

@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "./preview-locale";
 // The real chat/composer against the disposable approval smoke server.
 import { createRoot } from "react-dom/client";
 import { ChatView, ErrorRow } from "../components/ChatView";
@@ -8,6 +9,8 @@ import { useBotSettingsDerived } from "../components/bot-settings/useBotSettings
 import { applySkin } from "../lib/skins";
 
 import "../styles.css";
+
+await preparePreviewLocale();
 
 function Permissions({ bot }: { bot: Bot }) {
   const derived = useBotSettingsDerived(bot);
