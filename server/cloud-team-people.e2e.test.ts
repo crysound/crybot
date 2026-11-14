@@ -4,9 +4,9 @@
 // conversation are capped, and a My Cloud has none of it. Where a message lands is cloud-team-inbox.e2e.test.ts.
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
+import { fixtureInput, fixtureOutput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OLIVE = { email: "olive@acme.test", role: "owner" as const };
@@ -26,9 +26,9 @@ let scout: { id: string; threadId: string; mainThreadId?: string };
 let mainThread = "", adaThread = "";
 
 const script = (calls: unknown[] | null, reply = "Done.") => {
-  const file = join(team.home, "tool-calls.json");
+  const file = fixtureInput(team.home, "tool-calls.json");
   if (calls) writeFileSync(file, JSON.stringify(calls)); else rmSync(file, { force: true });
-  writeFileSync(join(team.home, "reply.txt"), reply);
+  writeFileSync(fixtureInput(team.home, "reply.txt"), reply);
 };
 const messages = async (token: string, threadId: string) => {
   const answer = await team.as(token, "GET", `/api/threads/${threadId}/messages?limit=200`);
@@ -45,12 +45,12 @@ async function until(done: () => Promise<boolean> | boolean, timeoutMs = 60_000)
 }
 /** As `token`, one message to Scout in `threadId`, through the bot's settled turn. */
 async function turn(token: string, threadId: string, text: string) {
-  rmSync(join(team.home, "dump.json"), { force: true });
+  rmSync(fixtureOutput(team.home, scout.id, "dump.json"), { force: true });
   const sent = await team.as(token, "POST", `/api/bots/${scout.id}/messages`, { text, threadId });
   expect(sent.status, JSON.stringify(sent.body)).toBe(202);
-  await until(() => existsSync(join(team.home, "dump.json")));
-  await until(async () => await idle() && (await messages(token, threadId)).rows.some((row) => row.role === "bot" && row.kind === "text" && row.text === readFileSync(join(team.home, "reply.txt"), "utf8")));
-  return JSON.parse(readFileSync(join(team.home, "dump.json"), "utf8")) as { systemPrompt: string; mcpConfig: { mcpServers: { agents?: { env?: Record<string, string> } } } };
+  await until(() => existsSync(fixtureOutput(team.home, scout.id, "dump.json")));
+  await until(async () => await idle() && (await messages(token, threadId)).rows.some((row) => row.role === "bot" && row.kind === "text" && row.text === readFileSync(fixtureInput(team.home, "reply.txt"), "utf8")));
+  return JSON.parse(readFileSync(fixtureOutput(team.home, scout.id, "dump.json"), "utf8")) as { systemPrompt: string; mcpConfig: { mcpServers: { agents?: { env?: Record<string, string> } } } };
 }
 /** message_person straight from a turn's own bearer, as the agents server sends it. */
 async function passDirect(threadId: string, to: string, message: string) {
@@ -61,7 +61,7 @@ async function passDirect(threadId: string, to: string, message: string) {
 
 beforeAll(async () => {
   fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, cloudEnv: { CRYBOT_TEST_INTERNAL_CAPABILITY_KEY: CLOUD_CAPABILITY_KEY },
-    team: { id: "team-acme-1", name: "Acme", engine: ENGINE } });
+    team: { id: "team-acme-1", name: "Acme", engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   olive = (await team.pair(OLIVE)).token!;
   ada = (await team.pair(ADA)).token!;

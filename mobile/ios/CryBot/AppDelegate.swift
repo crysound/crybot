@@ -17,4 +17,18 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationDidBecomeActive(_ application: UIApplication) {
         WatchSync.shared.refresh()
     }
+
+    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        return (window?.rootViewController as? ViewController)?.handleAuthCallback(url) ?? false
+    }
+
+    func application(
+        _ application: UIApplication,
+        continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+    ) -> Bool {
+        guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+              let url = userActivity.webpageURL, url.scheme == "https" else { return false }
+        return (window?.rootViewController as? ViewController)?.handleAuthCallback(url) ?? false
+    }
 }

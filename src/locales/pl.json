@@ -5386,6 +5386,8 @@
   "newBot.sharePreset": "Udostępnij jako ustawienie wstępne…",
   "newBot.customSettings": "Ustawienia niestandardowe",
   "newBot.randomName": "Losowa nazwa",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.team": "Dział",
   "newBot.enabled": "Włączone",
   "newBot.removeRoutine": "Usuń: {name}",
@@ -7186,5 +7188,8 @@
   "computer.recovery.restart": "Uruchom komputer ponownie",
   "computer.recovery.restartTitle": "Zatrzymuje i ponownie uruchamia ten komputer w chmurze. Otwarte programy zostaną zamknięte; pliki zostają.",
   "computer.recovery.replace": "Zastąp komputer",
-  "computer.recovery.replaceTitle": "Usuwa ten komputer w chmurze i daje botowi nowy. Pliki, które są tylko na nim, zostaną utracone."
+  "computer.recovery.replaceTitle": "Usuwa ten komputer w chmurze i daje botowi nowy. Pliki, które są tylko na nim, zostaną utracone.",
+  "settings.profile.nameFromLogin": "Z konta używanego do logowania",
+  "botOverview.preference.cloud.locked": "skonfigurowany serwer",
+  "keys.section.computers.purpose.locked": "Twój własny serwer i logowanie do witryn."
 }

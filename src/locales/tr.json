@@ -4342,6 +4342,8 @@
   "newBot.sharePreset": "Ön ayar olarak paylaş…",
   "newBot.customSettings": "Özel ayarlar",
   "newBot.randomName": "Rastgele ad",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.edit": "Düzenle",
   "newBot.loading": "Ayarlar yükleniyor…",
   "newBot.failed": "Yeni bot oluşturulamadı: {error}",
@@ -5929,5 +5931,8 @@
   "computer.recovery.restart": "Bilgisayarı yeniden başlat",
   "computer.recovery.restartTitle": "Bu bulut bilgisayarı durdurup yeniden başlatır. Açık programlar kapanır; dosyaları kalır.",
   "computer.recovery.replace": "Bilgisayarı değiştir",
-  "computer.recovery.replaceTitle": "Bu bulut bilgisayarı siler ve bota yenisini verir. Yalnızca üzerinde olan dosyalar kaybolur."
+  "computer.recovery.replaceTitle": "Bu bulut bilgisayarı siler ve bota yenisini verir. Yalnızca üzerinde olan dosyalar kaybolur.",
+  "settings.profile.nameFromLogin": "Oturum açtığınız hesaptan",
+  "botOverview.preference.cloud.locked": "yapılandırılmış bir sunucu",
+  "keys.section.computers.purpose.locked": "Kendi sunucunuz ve web sitesi oturumlarınız."
 }

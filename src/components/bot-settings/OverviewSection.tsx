@@ -15,6 +15,7 @@ export function OverviewSection({
   promptError,
   onOpen,
   onSetup,
+  providerLock = false,
 }: {
   overview: BotOverview | null;
   refreshError?: boolean;
@@ -22,6 +23,7 @@ export function OverviewSection({
   promptError?: boolean;
   onOpen: (section: BotSettingsSection) => void;
   onSetup?: () => void;
+  providerLock?: boolean;
 }) {
   const [promptOpen, setPromptOpen] = useState(false);
 
@@ -107,7 +109,7 @@ export function OverviewSection({
         ) : (
           <ul className="mt-2 flex flex-col gap-1.5 text-[13px] leading-relaxed text-ink">
             {overview.does.map((line, i) => (
-              <li key={i}>{overviewRoutineText(overview.doesRoutines?.[i]) ?? overviewLineText(line)}</li>
+              <li key={i}>{overviewRoutineText(overview.doesRoutines?.[i]) ?? overviewLineText(line, undefined, providerLock)}</li>
             ))}
           </ul>
         )}
@@ -120,7 +122,7 @@ export function OverviewSection({
         ) : (
           <ul className="mt-2 flex flex-col gap-1.5 text-[13px] leading-relaxed text-ink">
             {overview.reaches.map((line, i) => (
-              <li key={i}>{overviewLineText(line, overview.managedSections)}</li>
+              <li key={i}>{overviewLineText(line, overview.managedSections, providerLock)}</li>
             ))}
           </ul>
         )}
@@ -130,7 +132,7 @@ export function OverviewSection({
         <div className="text-[15px] font-medium text-ink">{t("botOverview.wont")}</div>
         <ul className="mt-2 flex flex-col gap-1.5 text-[13px] leading-relaxed text-ink">
           {overview.wont.map((line, i) => (
-            <li key={i}>{overviewLineText(line, overview.managedSections)}</li>
+            <li key={i}>{overviewLineText(line, overview.managedSections, providerLock)}</li>
           ))}
         </ul>
       </div>

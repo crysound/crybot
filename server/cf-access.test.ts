@@ -6,9 +6,10 @@ import { createRemoteJWKSet, customFetch, exportJWK, generateKeyPair, SignJWT } 
 import { WebSocketServer } from "ws";
 import { memoryHttp, memoryRequest } from "./testing/memory-http.ts";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { createCfAccess } from "./cf-access.ts";
+import { createCfAccess, isCfAccessPublicProbe } from "./cf-access.ts";
 import { SessionRegistry, SESSION_TTL_MS } from "./sessions.ts";
 import { resolveRequestAuth } from "./request-auth.ts";
+import { lendingPersonKey, OWN_SERVER_LENDER, personKey } from "./person-key.ts";
 import { appendUpgradeCookies, createUpgrades } from "./routes/upgrades.ts";
 
 const env = { CRYBOT_CF_ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com", CRYBOT_CF_ACCESS_AUD: "first, second", CRYBOT_CF_ACCESS_ALLOW: "owner@example.com" };
@@ -22,13 +23,18 @@ beforeAll(async () => {
 });
 const cleanups: Array<() => Promise<void> | void> = [];
 afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup(); });
-async function jwt({ email = "OWNER@EXAMPLE.COM", aud = "second", iss = "https://example.cloudflareaccess.com", exp = "5m", wrong = false, sub = "owner-sub" }: { email?: string | null; aud?: string; iss?: string; exp?: string; wrong?: boolean; sub?: string | null } = {}) {
-  return new SignJWT({ ...(email === null ? {} : { email }), ...(sub === null ? {} : { sub }) }).setProtectedHeader({ alg: "RS256", kid: "test" }).setIssuer(iss).setAudience(aud).setExpirationTime(exp).sign(wrong ? wrongKeys.privateKey : keys.privateKey);
+async function jwt({ email = "OWNER@EXAMPLE.COM", aud = "second", iss = "https://example.cloudflareaccess.com", exp = "5m", wrong = false, sub = "owner-sub", name, customName }: { email?: string | null; aud?: string; iss?: string; exp?: string; wrong?: boolean; sub?: string | null; name?: string; customName?: string } = {}) {
+  return new SignJWT({ ...(email === null ? {} : { email }), ...(sub === null ? {} : { sub }), ...(name ? { name } : {}), ...(customName ? { custom: { name: customName } } : {}) }).setProtectedHeader({ alg: "RS256", kid: "test" }).setIssuer(iss).setAudience(aud).setExpirationTime(exp).sign(wrong ? wrongKeys.privateKey : keys.privateKey);
 }
 async function fixture(config: NodeJS.ProcessEnv = env) {
   const dir = mkdtempSync(join(tmpdir(), "cry-access-"));
   cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
-  const sessions = new SessionRegistry({ file: join(dir, "sessions.json") });
+  let sessions = new SessionRegistry({ file: join(dir, "sessions.json") });
+  const restart = () => {
+    sessions.close();
+    sessions = new SessionRegistry({ file: join(dir, "sessions.json") });
+  };
+  cleanups.push(() => sessions.close());
   const issue = vi.spyOn(sessions, "issueAccess");
   const fetchKeys = vi.fn(async () => new Response(JSON.stringify(jwks)));
   const keySet = createRemoteJWKSet(new URL("https://example.cloudflareaccess.com/cdn-cgi/access/certs"), { [customFetch]: fetchKeys });
@@ -64,10 +70,55 @@ async function fixture(config: NodeJS.ProcessEnv = env) {
     socket.destroy();
     return raw;
   };
-  return { get, direct, upgrade, sessions, issue, fetchKeys };
+  return { get, direct, upgrade, get sessions() { return sessions; }, restart, issue, fetchKeys };
 }
 
 describe("Cloudflare Access", () => {
+  it("recognizes only GET public probes", () => {
+    const domainCheck = `/.well-known/crybot/domain-check/${"a".repeat(64)}`;
+    const publicPaths = ["/api/health", "/api/brand", "/.well-known/crybot/environment", domainCheck];
+    for (const path of publicPaths) expect(isCfAccessPublicProbe("GET", path)).toBe(true);
+    for (const method of ["POST", "HEAD", "PUT"]) {
+      for (const path of publicPaths) expect(isCfAccessPublicProbe(method, path)).toBe(false);
+    }
+    for (const path of [
+      "/.well-known/crybot/domain-check/short",
+      `/.well-known/crybot/domain-check/${"A".repeat(64)}`,
+      `${domainCheck}/extra`,
+      "/api/bots",
+    ]) expect(isCfAccessPublicProbe("GET", path)).toBe(false);
+  });
+
+  it("stores the OIDC name from custom or top-level claims and refreshes it", async () => {
+    const f = await fixture();
+    const first = await f.get({ "cf-access-jwt-assertion": await jwt({ customName: " 张三 ", name: "Ignored" }) });
+    expect((await first.json()).session).toMatchObject({ accessEmail: "owner@example.com", displayName: "张三" });
+    const second = await f.get({ "cf-access-jwt-assertion": await jwt({ name: "Alex" }) });
+    expect((await second.json()).session).toMatchObject({ accessEmail: "owner@example.com", displayName: "Alex" });
+  });
+  it("refreshes the cookie's session after restarts without issuing or evicting sessions", async () => {
+    const f = await fixture({ ...env, CRYBOT_CF_ACCESS_ALLOW: "*" });
+    const first = await f.get({ "cf-access-jwt-assertion": await jwt({ customName: "张三" }) });
+    const cookie = String(first.headers["set-cookie"]).split(";")[0]!;
+    const id = (await first.json()).session.id;
+    const other = f.sessions.issueAccess("other", "Safari on iPhone");
+    for (let i = 0; i < 6; i++) {
+      f.restart();
+      const response = await f.get({ cookie, "cf-access-jwt-assertion": await jwt({ customName: `Alex ${i}`, email: "ALEX@EXAMPLE.TEST" }) });
+      expect(response.status).toBe(200);
+      expect(response.headers["set-cookie"]).toBeUndefined();
+      const refreshed = (await response.json()).session;
+      expect(refreshed).toMatchObject({ id, displayName: `Alex ${i}`, accessEmail: "alex@example.test" });
+      expect(refreshed.email).toBeUndefined();
+      expect(personKey(refreshed)).toBe(personKey({ id }));
+      expect(lendingPersonKey(refreshed, { admin: null })).toBe(OWN_SERVER_LENDER);
+      expect(f.sessions.list()).toHaveLength(2);
+      expect(f.sessions.authenticate(other.token)?.id).toBe(other.session.id);
+    }
+    f.restart();
+    expect(f.sessions.authenticate(cookie.split("=")[1])).toMatchObject({ id, displayName: "Alex 5", accessEmail: "alex@example.test" });
+    expect(f.sessions.list()).toHaveLength(2);
+  });
   it("issues an owner cookie, reuses it, and caches the JWKS", async () => {
     const f = await fixture();
     const token = await jwt();
@@ -79,6 +130,7 @@ describe("Cloudflare Access", () => {
     const auth = await response.json();
     expect(auth.session.scopes).toEqual(["admin", "client"]);
     expect(auth.session.email).toBeUndefined();
+    expect(auth.session.accessEmail).toBe("owner@example.com");
     expect((await f.get({ cookie })).status).toBe(200);
     expect((await f.get({ cookie, "cf-access-jwt-assertion": "bad" })).status).toBe(200);
     expect(f.issue).toHaveBeenCalledTimes(1);

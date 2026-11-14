@@ -172,3 +172,28 @@ describe("buildApplicationMenu", () => {
     expect(build("linux").find((entry) => entry.role === "windowMenu").submenu.at(-1).label).toBe("Close");
   });
 });
+
+it.each(["darwin", "win32"])("hides all server choices while keeping reload in a remote-only %s build", platform => {
+  const previous = process.platform;
+  Object.defineProperty(process, "platform", { value: platform, configurable: true });
+  try {
+    const t = nativeText.createNativeText({ system: () => "zh-CN" }).t;
+    const onReload = vi.fn();
+    const input = { environments: [{ id: "gateway", name: "Deployment", origin: "https://gateway.example" }], activeId: "gateway", t, onReload };
+    const normal = buildApplicationMenu(input);
+    expect(normal.find(item => item.label === "服务器")).toBeDefined();
+    const locked = buildApplicationMenu({ ...input, remoteOnly: true });
+    expect(locked.find(item => item.label === "服务器")).toBeUndefined();
+    const items = locked.flatMap(item => item.submenu ?? []);
+    expect(items.some(item => item.type === "radio" || item.id === "organization-sign-in")).toBe(false);
+    const focusedWindow = { id: "settings" };
+    for (const label of ["重新加载", "强制重新加载"]) items.find(item => item.label === label).click({}, focusedWindow);
+    expect(onReload).toHaveBeenCalledTimes(2);
+    expect(onReload).toHaveBeenNthCalledWith(1, false, focusedWindow);
+    expect(onReload).toHaveBeenNthCalledWith(2, true, focusedWindow);
+    expect(locked.map(item => item.label)).toContain("编辑");
+    expect(locked.map(item => item.label)).toContain("视图");
+  } finally {
+    Object.defineProperty(process, "platform", { value: previous, configurable: true });
+  }
+});

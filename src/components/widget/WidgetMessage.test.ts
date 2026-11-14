@@ -17,7 +17,7 @@ import { WidgetMessage } from "./WidgetMessage";
 
 function sample(name: string): WidgetRoot {
   const input = name === "kitchenSink"
-    ? JSON.parse(JSON.stringify(WIDGET_SAMPLES[name]).replaceAll('"/app-icon-512.png"', '"https://example.test/app-icon-512.png"'))
+    ? JSON.parse(JSON.stringify(WIDGET_SAMPLES[name]).replaceAll('"https://example.com/app-icon-512.png"', '"https://example.test/app-icon-512.png"'))
     : WIDGET_SAMPLES[name];
   const parsed = parseWidgetInput(input);
   if (!parsed.ok) throw new Error(parsed.error);

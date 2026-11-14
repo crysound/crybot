@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
 import { personKey } from "./person-key.ts";
+import { fixtureOutput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OWNER = { email: "olive@acme.test", role: "owner" as const };
@@ -26,7 +27,7 @@ const adaKey = personKey({ id: "", email: ADA.email });
 type Bot = { id: string; threadId: string; name: string; tasks?: Array<{ threadId: string; private?: true; title?: string }>; movedTo?: { team: { id: string; name: string }; state: string }; hidden?: boolean };
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-move-${randomBytes(8).toString("hex")}`, team: { ...ACME, engine: ENGINE } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-move-${randomBytes(8).toString("hex")}`, team: { ...ACME, engine: withFixtureState(ENGINE) } });
   team = fx.team!;
   for (const [who, member] of Object.entries({ olive: OWNER, ben: ADMIN, ada: ADA, cleo: CLEO })) tokens[who] = (await team.pair(member)).token!;
   // Ada's CryBot Cloud sign-in lists Acme, and the Admin pairs her there as herself.
@@ -174,11 +175,11 @@ it("moves Scout with its two chats, its routine and its files; its notes about A
   const teamNotes = teamHome("workspaces", scout.bot.id, "MEMORY.md");
   expect(existsSync(teamNotes) ? readFileSync(teamNotes, "utf8") : "").not.toContain("oolong");
   expect((await onTeam("ada")("GET", "/api/me")).body?.aboutMe ?? "").not.toContain("Fernando");
-  rmSync(join(team.home, "dump.json"), { force: true });
+  rmSync(fixtureOutput(team.home, scout.bot.id, "dump.json"), { force: true });
   expect((await onTeam("ada")("POST", `/api/bots/${scout.bot.id}/messages`, { text: "What do I drink in the morning?", threadId: scout.main })).status).toBe(202);
-  await expect.poll(() => existsSync(join(team.home, "dump.json")), { timeout: 60_000, interval: 100 }).toBe(true);
+  await expect.poll(() => existsSync(fixtureOutput(team.home, scout.bot.id, "dump.json")), { timeout: 60_000, interval: 100 }).toBe(true);
   await expect.poll(async () => idle(onTeam("ada")), { timeout: 60_000, interval: 100 }).toBe(true);
-  const turn = readFileSync(join(team.home, "dump.json"), "utf8");
+  const turn = readFileSync(fixtureOutput(team.home, scout.bot.id, "dump.json"), "utf8");
   expect(turn).not.toContain("oolong-7731");
   expect(turn).not.toContain("Fernando-4471");
 

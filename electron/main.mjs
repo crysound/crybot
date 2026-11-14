@@ -1,4 +1,5 @@
-import { readDesktopBuildConfig, defaultServerEnvironment, loginNavigationAllowed } from "./desktop-build-config.mjs";
+import { loadDesktopWindow, remoteOnlyLoadFailed, reloadDesktopWindow, desktopEnvironmentsToSave, desktopEnvironmentSaveFailure, workspaceActionsAllowed, workspaceHandler, desktopStartupUrl } from "./remote-only.mjs";
+import { readDesktopBuildConfig, defaultServerEnvironment, localServerEnvironment, loginNavigationAllowed } from "./desktop-build-config.mjs";
 import { app, autoUpdater as nativeAutoUpdater, BrowserWindow, Tray, WebContentsView, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, net, powerMonitor, powerSaveBlocker, safeStorage, screen, session, shell, systemPreferences, utilityProcess, nativeTheme } from "electron";
 import { createRequire } from "node:module";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -304,7 +305,7 @@ const serverSupervisor = createServerSupervisor({
     routineWake.start();
     for (const win of appWindows()) {
       if (!serverUnavailableWindows.has(win) || activeRemote(environmentsState)) continue;
-      void win.loadURL(`http://127.0.0.1:${SERVER_PORT}`).then(() => {
+      void loadDesktopWindow(win, `http://127.0.0.1:${SERVER_PORT}`, desktopBuild).then(() => {
         serverUnavailableWindows.delete(win);
       }).catch((error) => {
         slog(`recovered server window failed to load: ${error?.message ?? error}`);
@@ -988,7 +989,7 @@ async function startServerOn(port, dataDir = runningDataDir ?? startupEnvironmen
     userData: app.getPath("userData"),
   });
   const childEnv = managedComposioChildEnvironment(composioBrokerUrl(), secureCredentials, {
-    ...process.env,
+    ...localServerEnvironment(desktopBuild, process.env),
     // The parent owns the data-dir lease; a child only validates it, so fallback-port children never replace it.
     ...desktopDataDirLease.utilityServerLeaseEnvironment(),
     CRYBOT_DATA_DIR: dataDir,
@@ -1288,7 +1289,7 @@ ipcMain.on("desktop:unread-count", (event, value) => {
   applyUnreadBadge(sender);
 });
 
-const { LOCAL_ID, activeEnvironment, activeRemote, allowedOrigins, bootEnvironmentDir, otherPlaces, savedPlace, startupEnvironmentDir, withActive, withEnvironment, withEnvironmentLook, withLocalEnvironment, withMicrophone, withPlaceColor, withoutEnvironment, withOwnCloud, withTeam, placesMenuOptions, workspaceMenuTemplate, workspaceNavigationAllowed, workspaceSenderAllowed, workspaceSummary, workspaceWindowTitle } = environmentsModule;
+const { LOCAL_ID, activeEnvironment, activeRemote, allowedOrigins, bootEnvironmentDir, otherPlaces, savedPlace, startupEnvironmentDir, withActive, withEnvironment, withLocalEnvironment, withMicrophone, withPlaceColor, withoutEnvironment, withOwnCloud, withTeam, placesMenuOptions, workspaceMenuTemplate, workspaceNavigationAllowed, workspaceSenderAllowed, workspaceSummary, workspaceWindowTitle } = environmentsModule;
 const desktopBuild = readDesktopBuildConfig(app.isPackaged ? process.resourcesPath : "");
 let environmentsState = { environments: [], activeId: LOCAL_ID };
 let computerSharing;
@@ -1351,7 +1352,7 @@ async function openCloudSettings() {
   const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : createWindow({ deferNavigation: true });
   if (!desktopTray?.show()) activateExistingWindow(appWindows());
   if (!win.webContents.isLoadingMainFrame() && senderIsLocal({ sender: win.webContents })) win.webContents.send("app:open-settings", "cloud-settings");
-  else await win.loadURL(`${rendererOrigin()}/?desktop-settings=cloud-settings`);
+  else await loadDesktopWindow(win, `${rendererOrigin()}/?desktop-settings=cloud-settings`, desktopBuild);
 }
 
 const lendingActivity = createActivityWindow({ BrowserWindow, icon: APP_ICON, background: () => windowBackground(nativeTheme.shouldUseDarkColors),
@@ -1383,6 +1384,8 @@ function activeOrigin() {
 function refreshApplicationMenu() {
   Menu.setApplicationMenu(
     buildApplicationMenu({
+      remoteOnly: desktopBuild.remoteOnly,
+      onReload: reloadServerPage,
       environments: environmentsState.environments,
       activeId: environmentsState.activeId,
       onSwitch: (id) => void workspaceMenuAction(() => switchEnvironment(id)),
@@ -1400,8 +1403,17 @@ function refreshApplicationMenu() {
 
 function mainWindowTitle() { return workspaceWindowTitle(environmentsState, desktopRemoteAccess, homeWindow.cloudOrigin(), nativeT); }
 
+function reloadServerPage(ignoreCache, focusedWindow) {
+  return reloadDesktopWindow(focusedWindow, mainWindow, desktopBuild, ignoreCache, navigateMainWindow);
+}
+
 function persistEnvironments(next) {
-  environmentsStore.write(next);
+  next = desktopEnvironmentsToSave(next, desktopBuild, randomUUID);
+  try { environmentsStore.write(next); } catch (error) {
+    const message = desktopEnvironmentSaveFailure(desktopBuild, error);
+    if (message === null) throw error;
+    slog(message);
+  }
   environmentsState = next;
   refreshApplicationMenu();
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setTitle(mainWindowTitle());
@@ -1419,7 +1431,7 @@ async function workspaceMenuAction(action) {
 function navigateMainWindow(url, keepingRecovery = false) {
   if (!keepingRecovery) homeWindow.cancel();
   if (!mainWindow || mainWindow.isDestroyed()) return Promise.resolve(false);
-  return mainWindow.loadURL(url).then(() => true, () => false);
+  return loadDesktopWindow(mainWindow, url, desktopBuild).then(() => true, () => false);
 }
 
 let rememberedHome = null;
@@ -1523,6 +1535,7 @@ async function switchLocalEnvironmentTo(targetDir, targetId, quiet = false) {
 }
 
 async function switchEnvironment(id, stale = () => false) {
+  if (!workspaceActionsAllowed(desktopBuild)) return;
   if (id === LOCAL_ID && cleanWorkspace.profile()) return void await (homeWindow.cloudOrigin() ? localProfiles.open(cleanWorkspace.profile()) : localProfiles.computer()); if (id !== LOCAL_ID && !environmentsState.environments.some((entry) => entry.id === id)) return; if (id === environmentsState.activeId && !homeWindow.asking()) { if (placeSwitch.replacing()) { homeWindow.stay(); homePlaces.remember(placeSwitch.before()); } return; }
   const entry = environmentsState.environments.find((candidate) => candidate.id === id);
   if (entry?.team || entry?.cloud) return void await showHome({ place: entry.team ? { team: entry.team.id, name: entry.name } : { cloud: entry.cloud.id, name: entry.name } });
@@ -1604,7 +1617,7 @@ const organizationEntry = createOrganizationEntry({
     if (!win.webContents.isLoadingMainFrame() && senderIsLocal({ sender: win.webContents })) {
       win.webContents.send("app:open-settings", "organization");
     } else {
-      await win.loadURL(`${rendererOrigin()}/?desktop-settings=organization`);
+      await loadDesktopWindow(win, `${rendererOrigin()}/?desktop-settings=organization`, desktopBuild);
     }
   },
   relaunch: relaunchAfterDesktopRemoteChange,
@@ -1825,6 +1838,7 @@ function createWindow({ deferNavigation = false } = {}) {
       contextIsolation: true,
       preload: path.join(__dirname, "preload.cjs"),
       additionalArguments: [...desktopCompanionRendererArguments(rendererOrigin(), desktopRemoteAccess),
+        ...(desktopBuild.remoteOnly ? ["--cry-remote-only"] : []),
         ...(app.isPackaged && !desktopRemoteAccess ? ["--cry-company-desktop=1"] : []), `--cry-app-version=${app.getVersion()}`, ...(linuxSoftwareRendering ? [SOFTWARE_RENDERING_ARG] : [])],
     },
   });
@@ -1861,7 +1875,7 @@ function createWindow({ deferNavigation = false } = {}) {
     if (mainWindow === win) mainWindow = null;
   });
 
-  const loginAllowed = (url, options) => loginNavigationAllowed(url, activeRemote(environmentsState), desktopBuild.loginHosts, options);
+  const loginAllowed = (url, options) => loginNavigationAllowed(url, activeRemote(environmentsState), desktopBuild.loginHosts, { ...options, remoteOnly: desktopBuild.remoteOnly });
   const externalOpenedAt = new Map();
   const openNavigationExternal = url => {
     try {
@@ -1876,7 +1890,7 @@ function createWindow({ deferNavigation = false } = {}) {
     } catch {}
   };
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (loginAllowed(url, { popup: true })) { void win.loadURL(url).catch(() => {}); return { action: "deny" }; }
+    if (loginAllowed(url, { popup: true })) { void loadDesktopWindow(win, url, desktopBuild).catch(() => {}); return { action: "deny" }; }
     openNavigationExternal(url);
     return { action: "deny" };
   });
@@ -1909,6 +1923,7 @@ function createWindow({ deferNavigation = false } = {}) {
     }
   });
   win.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (remoteOnlyLoadFailed(win, desktopBuild, { code: errorCode, url: validatedURL, mainFrame: isMainFrame }, nativeText)) return;
     if (!isMainFrame || errorCode === -3) return; // -3: aborted by a newer navigation
     const remote = activeRemote(environmentsState);
     if (!remote) return;
@@ -2048,14 +2063,16 @@ function createWindow({ deferNavigation = false } = {}) {
   const remote = activeRemote(environmentsState);
   if (!serverReady && (desktopRemoteAccess || (app.isPackaged && !remote))) serverUnavailableWindows.add(win);
   if (deferNavigation) return win;
-  if (desktopRemoteAccess) {
-    win.loadURL(serverReady ? `http://127.0.0.1:${SERVER_PORT}` : buildErrorPage({ allPortsOccupied: serverStartConflictOnly, logDir: LOG_DIR }, nativeText));
+  if (desktopBuild.remoteOnly) {
+    void loadDesktopWindow(win, desktopBuild.defaultServerUrl, desktopBuild).catch(() => {});
+  } else if (desktopRemoteAccess) {
+    loadDesktopWindow(win, serverReady ? `http://127.0.0.1:${SERVER_PORT}` : buildErrorPage({ allPortsOccupied: serverStartConflictOnly, logDir: LOG_DIR }, nativeText), desktopBuild);
   } else if (remote) {
-    void win.loadURL(remote.origin).catch(() => {});
+    void loadDesktopWindow(win, remote.origin, desktopBuild).catch(() => {});
   } else if (app.isPackaged) {
-    win.loadURL(serverReady ? `http://127.0.0.1:${SERVER_PORT}` : buildErrorPage({ allPortsOccupied: serverStartConflictOnly, logDir: LOG_DIR }, nativeText));
+    loadDesktopWindow(win, serverReady ? `http://127.0.0.1:${SERVER_PORT}` : buildErrorPage({ allPortsOccupied: serverStartConflictOnly, logDir: LOG_DIR }, nativeText), desktopBuild);
   } else {
-    win.loadURL(DEV_URL);
+    loadDesktopWindow(win, DEV_URL, desktopBuild);
   }
   return win;
 }
@@ -2443,6 +2460,11 @@ const homeWindow = createHomeWindow({ clean: cleanWorkspace, journal: oneHome.jo
 installHomeWindowIpc({ ipcMain, homeWindow, cloudPage: cloudPageAsking });
 /** Every path that shows the window: My Cloud once it is the person's home, else as before. */
 function showHome(options) {
+  if (desktopBuild.remoteOnly) {
+    if (!mainWindow || mainWindow.isDestroyed()) createWindow({ deferNavigation: true });
+    mainWindow.show();
+    return navigateMainWindow(desktopBuild.defaultServerUrl);
+  }
   return homeWindow.show(options).catch(error => slog(`home: ${error?.message ?? error}`));
 }
 const showStartPlace = () => openStartPlace({ home: homeWindow, places: homePlaces, profiles: localProfiles, log: slog, server: id => { const entry = environmentsState.environments.find(candidate => candidate.id === id && handSaved(candidate)); return entry ? reopenSavedServer(entry, { saved: () => environmentsState.environments.filter(handSaved), fetch: (...args) => session.defaultSession.fetch(...args), opened: async (found) => { if (!mainWindow || mainWindow.isDestroyed()) createWindow({ deferNavigation: true }); persistEnvironments(withActive(environmentsState, found.id)); return navigateMainWindow(activeOrigin()); } }) : Promise.resolve(false); } }).catch(error => slog(`start: ${error?.message ?? error}`));
@@ -2451,12 +2473,12 @@ const localProfiles = createLocalProfiles({ registry: createProfileRegistry({ da
 // The rail as the window's own chrome (chrome-rail.mjs): this app's page beside every place's page, the one that lists.
 const placeSwitch = createPlaceSwitch({ changed: () => railChanged(), stop: () => homeWindow.stopOpening(), kept: () => homePlaces.remembered(), pageSettled: () => { const page = mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null; if (page?.isLoadingMainFrame()) return new Promise(done => { page.once("did-stop-loading", done); page.once("destroyed", done); }); } }); const openPlace = (id, stale) => workspaceMenuAction(async () => { if (id === LOCAL_ID) await cleanWorkspace.settled(); if (!stale()) await switchEnvironment(id, stale); }); const chromeRail = createChromeRail({ createView: options => new WebContentsView(options), preload: path.join(__dirname, "preload.cjs"), log: slog, prefs: () => desktopPrefs, changed: () => rail.changed(), openComputer: (page) => openComputerSettings({ window: () => mainWindow, onLocal: (win) => senderIsLocal({ sender: win.webContents }), showLocal: () => placeSwitch.ask(LOCAL_ID, stale => { localProfiles.cancel(); return openPlace(LOCAL_ID, stale); }) }, page),
   args: () => [...desktopCompanionRendererArguments(rendererOrigin(), desktopRemoteAccess), ...(app.isPackaged && !desktopRemoteAccess ? ["--cry-company-desktop=1"] : []), `--cry-app-version=${app.getVersion()}`],
-  url: () => `${rendererOrigin()}${CHROME_RAIL_PATH}`, wanted: () => !desktopRemoteAccess && (serverReady || placeSwitch.target() !== null) && railList().length > 0 });
+  url: () => `${rendererOrigin()}${CHROME_RAIL_PATH}`, wanted: () => !desktopBuild.remoteOnly && !desktopRemoteAccess && (serverReady || placeSwitch.target() !== null) && railList().length > 0 });
 chromeRail.install(ipcMain);
 function railChanged() { chromeRail.refresh(); rail.changed(); }
 const accountPages = [() => (mainWindow && !mainWindow.isDestroyed() && senderIsLocal({ sender: mainWindow.webContents }) ? mainWindow.webContents : null), () => ({ send: channel => chromeRail.send(channel) })];
 const accountRing = createDesktopRing(); const accounts = installAccounts({ ipcMain, ownPage: event => chromeRail.owns(event) || cloudPageAsking(event) === "local", placePage: event => cloudPageAsking(event) !== null || ownCloudPage(event) !== null || homeWindow.homePage(event) || (Boolean(ownHome?.home()) && activeEnvironment(environmentsState)?.origin === ownHome.home().origin && workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin())), account: () => (app.isPackaged && !desktopRemoteAccess ? cloudAccount : null), client: getCloudAccount, ring: accountRing, t: nativeT, holdSheet: open => chromeRail.holdOpen(open), tellSheet: () => chromeRail.send("accounts:open-sheet"), tell: () => { for (const page of accountPages) page()?.send("accounts:changed"); } });
-const rail = installRail({ t: nativeT, ipcMain, switchAccount: id => accountRing()?.switchTo(id), account: () => (app.isPackaged && !desktopRemoteAccess ? cloudAccount : null),
+const rail = installRail({ t: nativeT, ipcMain, config: desktopBuild, switchAccount: id => accountRing()?.switchTo(id), account: () => (app.isPackaged && !desktopRemoteAccess ? cloudAccount : null),
   guard: handler => (event, ...args) => (chromeRail.owns(event) ? handler(event, ...args) : workspaceOnly(handler)(event, ...args)),
   lists: event => chromeRail.owns(event), trusted: event => chromeRail.owns(event) || senderIsLocal(event), beside: () => chromeRail.shown(),
   targets: () => [mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null, { send: channel => chromeRail.send(channel), isDestroyed: () => false }],
@@ -2466,7 +2488,7 @@ const rail = installRail({ t: nativeT, ipcMain, switchAccount: id => accountRing
 const desktopNotifications = installDesktopNotifications({ ipcMain, Notification, nativeImage, fetch: (...args) => session.defaultSession.fetch(...args), window: () => mainWindow, mayNotify: (contents, url) => appPermissions?.check(contents, "notifications", url, { isMainFrame: true }) === true, reveal: revealForLink, openPlace: origin => (origin === homeWindow.cloudOrigin() ? showHome({ place: "cloud" }) : workspaceMenuAction(() => switchEnvironment(origin === rendererOrigin() ? LOCAL_ID : environmentsState.environments.find(entry => entry.origin === origin)?.id))) });
 // A place's colour (place-look.mjs): the Admin's for a Cloud, this app's for This computer and a server connected by
 // hand; changed on the place's own page or from the window's rail, whatever that server runs.
-installPlaceLook({ ipcMain, guard: workspaceOnly, place: () => savedPlace(environmentsState), session: () => ({ clouds: desktopRemoteAccess ? null : cloudAccount?.state().clouds ?? null, homeOrigin: myCloud() }),
+installPlaceLook({ ipcMain, guard: workspaceOnly, config: desktopBuild, place: () => savedPlace(environmentsState), session: () => ({ clouds: desktopRemoteAccess ? null : cloudAccount?.state().clouds ?? null, homeOrigin: myCloud() }),
   setColor: (id, swatch) => getCloudAccount().setCloudColor(id, swatch), save: (id, color) => persistEnvironments(withPlaceColor(environmentsState, id, color)),
   rail: { owns: event => chromeRail.owns(event), places: railList, saved: id => savedPlace(environmentsState, id) }, t: nativeT });
 const lendingDialogs = createLendingDialogs({ dialog, window: () => mainWindow, validate: validateSharedFolders, isHome: isHomeFolder, t: nativeT });
@@ -2522,12 +2544,13 @@ installServerStatus({ ipcMain, guard: localWorkspaceOnly, status: savedServerSta
 
 // A cloud page may open the native chooser, never choose a destination or edit the saved list.
 // Once My Cloud is home the switcher lists only whole places, and shows only when there is more than My Cloud.
+const workspaceIpcOnly = handler => workspaceHandler(desktopBuild, workspaceOnly(handler));
 const homeAlone = () => Boolean(homeWindow.cloudOrigin()) && !otherPlaces(environmentsState, homeWindow.cloudOrigin()) && !localProfiles.places({ activeLocal: false }).length;
-ipcMain.handle("workspaces:state", workspaceOnly(event => ({ ...workspaceSummary(environmentsState), ...(homeAlone() && homeWindow.homePage(event) ? { home: true } : {}), ...(cleanWorkspace.profile() && senderIsLocal(event) ? { profile: cleanWorkspace.profile(), ...(localProfiles.name(cleanWorkspace.profile()) ? { profileName: localProfiles.name(cleanWorkspace.profile()) } : {}) } : {}) })));
-ipcMain.handle("workspaces:line", workspaceOnly(event => (cleanWorkspace.active() && senderIsLocal(event) ? (cleanWorkspace.profile() ? { kind: "profile", ...(localProfiles.name(cleanWorkspace.profile()) ? { name: localProfiles.name(cleanWorkspace.profile()) } : {}) } : { kind: "clean", ...(accountRing.waiting().some(row => row.id === oneHome.journal()?.cloud?.account) ? { saved: true } : {}) }) : homePlaces.line())));
+ipcMain.handle("workspaces:state", workspaceIpcOnly(event => ({ ...workspaceSummary(environmentsState), ...(homeAlone() && homeWindow.homePage(event) ? { home: true } : {}), ...(cleanWorkspace.profile() && senderIsLocal(event) ? { profile: cleanWorkspace.profile(), ...(localProfiles.name(cleanWorkspace.profile()) ? { profileName: localProfiles.name(cleanWorkspace.profile()) } : {}) } : {}) })));
+ipcMain.handle("workspaces:line", workspaceIpcOnly(event => (cleanWorkspace.active() && senderIsLocal(event) ? (cleanWorkspace.profile() ? { kind: "profile", ...(localProfiles.name(cleanWorkspace.profile()) ? { name: localProfiles.name(cleanWorkspace.profile()) } : {}) } : { kind: "clean", ...(accountRing.waiting().some(row => row.id === oneHome.journal()?.cloud?.account) ? { saved: true } : {}) }) : homePlaces.line())));
 let workspaceMenuOpen = false;
-ipcMain.handle("workspaces:menu", workspaceOnly(async (event, from) => {
-  if (workspaceMenuOpen || homeAlone()) return;
+ipcMain.handle("workspaces:menu", workspaceIpcOnly(async (event, from) => {
+  if (desktopBuild.remoteOnly || workspaceMenuOpen || homeAlone()) return;
   workspaceMenuOpen = true;
   try {
     await cloudOffersReady();
@@ -2723,7 +2746,7 @@ app.whenReady().then(async () => {
   if (app.isPackaged) await ensurePhoneSecretIdentity();
   companionE2E = createDesktopCompanionE2E({ isPackaged: app.isPackaged, appVersion: app.getVersion(), readCredentials: () => secureCredentialState?.read() ?? secureCredentials, updateCredentials: updateSecureCredentialDocument, powerMonitor, log: slog, onState: phoneLinkFact.observe });
   void companionE2E.start();
-  desktopRemoteAccess = desktopCompanionAccess(secureCredentials);
+  desktopRemoteAccess = desktopBuild.remoteOnly ? null : desktopCompanionAccess(secureCredentials);
   // Display capture needs a one-shot renderer intent from the same frame/origin, no audio, and a user gesture.
   if (process.platform === "darwin" || process.platform === "linux") {
     session.defaultSession.setDisplayMediaRequestHandler(
@@ -2876,16 +2899,16 @@ app.whenReady().then(async () => {
     void cloudAccountStarted.then(() => computerSharing?.cloudChanged());
   });
   let restoredOrganizationEntry = false;
-  if (hostedAvailable) await workspaceMenuAction(async () => { restoredOrganizationEntry = await organizationEntry.restore(); });
+  if (!desktopBuild.remoteOnly && hostedAvailable) await workspaceMenuAction(async () => { restoredOrganizationEntry = await organizationEntry.restore(); });
   organizationEntryReady = true;
   // A cold-start action owns its first navigation; a default load started first would be aborted by it.
-  const deliveredOrganizationEntry = await deliverOrganizationEntry();
-  const deliveredCloudEntry = await cloudEntry.ready();
+  const deliveredOrganizationEntry = !desktopBuild.remoteOnly && await deliverOrganizationEntry();
+  const deliveredCloudEntry = !desktopBuild.remoteOnly && await cloudEntry.ready();
   if (!hiddenStart && !restoredOrganizationEntry && !deliveredOrganizationEntry && !deliveredCloudEntry) {
-    const remote = activeRemote(environmentsState);
-    if (remote && handSaved(remote)) {
+    const startupUrl = desktopStartupUrl(desktopBuild, environmentsState, handSaved);
+    if (startupUrl) {
       if (!mainWindow || mainWindow.isDestroyed()) createWindow({ deferNavigation: true });
-      await navigateMainWindow(remote.origin);
+      await navigateMainWindow(startupUrl);
     } else await showStartPlace();
   } if (hostedAvailable) void cloudAccountRestored().then(() => teamLinks.ready());
   // Registering from an unreadable store would mint a second installation identity.

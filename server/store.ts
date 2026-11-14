@@ -1,3 +1,5 @@
+import { UNTITLED_THREAD, threadTitleFrom } from "./thread-title.ts";
+export { UNTITLED_THREAD, threadTitleFrom, titleFromLlm } from "./thread-title.ts";
 import { chmodSync, existsSync, readFileSync, mkdirSync, rmSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path"; import { isDeepStrictEqual } from "node:util";
 
@@ -136,29 +138,6 @@ export type StoreChange =
   | { type: "bots.order" } | { type: "groups.order" }
   | { type: "group"; groupId: string }
   | { type: "group.deleted"; groupId: string };
-
-export const UNTITLED_THREAD = "New thread";
-
-/** Every title (a bot's or a person's) passes through here, so equality tells a machine-made title from a rename. */
-const TASK_TITLE_MAX = 80;
-export function threadTitleFrom(title?: string): string {
-  return title?.trim().slice(0, TASK_TITLE_MAX) || UNTITLED_THREAD;
-}
-
-export function titleFromLlm(raw: string): string | null {
-  const line = raw
-    .trim()
-    .split("\n")[0]!
-    .replace(/^[#*\-\u2022]+/, "")
-    .replace(/^["'\u201C\u201D\u2018\u2019\u0060]+/, "")
-    .replace(/["'\u201C\u201D\u2018\u2019\u0060]+$/, "")
-    .replace(/^[#*\-\u2022]+/, "")
-    .replace(/[#*]+$/, "")
-    .replace(/[.\u3002]+$/, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  return line.length >= 1 && line.length <= 48 ? line : null;
-}
 
 export interface BotRecord extends Omit<WireBot, "avatarUrl" | "tasks"> {
   tasks?: TaskRecord[];
@@ -1299,7 +1278,7 @@ export class Store {
       >
     > = {},
     opts: {
-      seedMessages?: boolean; id?: string; threadId?: string; beforeShown?: (bot: BotRecord) => void;
+      seedMessages?: boolean; language?: string; id?: string; threadId?: string; beforeShown?: (bot: BotRecord) => void;
     } = {},
   ): BotRecord {
     const toolScope = parseToolScope(profile.toolScope);
@@ -1351,7 +1330,7 @@ export class Store {
     // Before its transcript: clients need the bot/thread mapping to place either message.
     opts.beforeShown?.(bot); this.emit({ type: "bot", botId: bot.id });
     if (opts.seedMessages !== false) {
-      this.appendMessage(bot.threadId, initialGreetingMessage(name, this.initialLanguage, !bot.soul?.trim() && !bot.description.trim(), this.personName()));
+      this.appendMessage(bot.threadId, initialGreetingMessage(name, opts.language ?? this.initialLanguage, !bot.soul?.trim() && !bot.description.trim(), this.personName()));
     }
     return bot;
   }
@@ -1691,14 +1670,14 @@ export class Store {
     return changed;
   }
 
-  renameInstances(ids: ReadonlyMap<string, string>): number {
+  renameInstances(ids: ReadonlyMap<string, string>, options: { discardResumeCursors?: boolean } = {}): number {
     const touches = (record?: Record<string, unknown>) => Boolean(record && Object.keys(record).some(key => ids.has(key)));
-    const rename = <T>(record: Record<string, T>): Record<string, T> => {
+    const rename = <T>(record: Record<string, T>, discard = false): Record<string, T> => {
       const next: Record<string, T> = {};
       for (const [key, value] of Object.entries(record)) {
         const target = ids.get(key);
         if (!target) next[key] = value;
-        else if (!Object.prototype.hasOwnProperty.call(record, target)) next[target] = value;
+        else if (!discard && !Object.prototype.hasOwnProperty.call(record, target)) next[target] = value;
       }
       return next;
     };
@@ -1707,11 +1686,15 @@ export class Store {
       let dirty = false;
       const selected = ids.get(bot.modelSelection.instanceId);
       if (selected) { bot.modelSelection = { ...bot.modelSelection, instanceId: selected }; dirty = true; }
-      if (touches(bot.resumeCursors)) { bot.resumeCursors = rename(bot.resumeCursors); dirty = true; }
+      if (bot.fallback?.some((candidate) => ids.has(candidate.instanceId))) {
+        bot.fallback = bot.fallback.map((candidate) => ({ ...candidate, instanceId: ids.get(candidate.instanceId) ?? candidate.instanceId }));
+        dirty = true;
+      }
+      if (touches(bot.resumeCursors)) { bot.resumeCursors = rename(bot.resumeCursors, options.discardResumeCursors); dirty = true; }
       for (const task of bot.tasks ?? []) {
         const taskSelected = task.modelSelection && ids.get(task.modelSelection.instanceId);
         if (task.modelSelection && taskSelected) { task.modelSelection = { ...task.modelSelection, instanceId: taskSelected }; dirty = true; }
-        if (touches(task.resumeCursors)) { task.resumeCursors = rename(task.resumeCursors); dirty = true; }
+        if (touches(task.resumeCursors)) { task.resumeCursors = rename(task.resumeCursors, options.discardResumeCursors); dirty = true; }
         if (task.handedMessages && touches(task.handedMessages)) { task.handedMessages = rename(task.handedMessages); dirty = true; }
         const last = task.lastInstanceId && ids.get(task.lastInstanceId);
         if (last) { task.lastInstanceId = last; dirty = true; }

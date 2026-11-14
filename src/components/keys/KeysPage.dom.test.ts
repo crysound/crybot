@@ -335,3 +335,32 @@ describe("Self-hosted VPS alias", () => {
     expect(text).toContain("Tailscale name as the alias's HostName");
   });
 });
+
+it("removes AI keys and Boat when provider lock is enabled, including focused links", () => {
+  setConfig({ ...fx.config, providerLock: true });
+  page();
+  expect(section("ai")).toBeNull();
+  expect([...host.querySelectorAll<HTMLElement>("[data-keys-section]")].map((element) => element.dataset.keysSection))
+    .toEqual(["servers", "voice", "computers", "apps", "helpers"]);
+  openKeySettings("anthropic");
+  page();
+  expect(section("ai")).toBeNull();
+  expect(row("anthropic")).toBeNull();
+});
+
+it.each([false, true])("shows the Boat row and search result only without provider lock: %s", (providerLock) => {
+  setConfig({ ...fx.config, providerLock });
+  openKeySettings("box");
+  page();
+  expect(row("box") === null).toBe(providerLock);
+  expect(row("vps")).not.toBeNull();
+  expect(host.textContent?.includes("Boat")).toBe(!providerLock);
+});
+
+it.each([false, true])("uses a Chinese computers purpose without cloud desktops when locked: %s", providerLock => {
+  setLocale("zh");
+  setConfig({ ...fx.config, providerLock });
+  page();
+  expect(host.textContent?.includes("云端桌面")).toBe(!providerLock);
+  if (providerLock) expect(host.textContent).toContain("你自己的服务器和网站登录信息。");
+});

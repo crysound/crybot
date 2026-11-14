@@ -4,10 +4,10 @@ import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const fixture = vi.hoisted(() => ({ hidden: [] as Array<{ instanceId: string; displayName: string }>, calls: [] as Array<{ path: string; body?: unknown }>, refresh: vi.fn() }));
+const fixture = vi.hoisted(() => ({ providerLock: false, hidden: [] as Array<{ instanceId: string; displayName: string }>, calls: [] as Array<{ path: string; body?: unknown }>, refresh: vi.fn() }));
 vi.mock("@/state/store", async (original) => ({
   ...await original<typeof import("@/state/store")>(),
-  useStore: () => ({ state: { instances: [] }, refreshInstances: fixture.refresh }),
+  useStore: () => ({ state: { instances: [], config: { providerLock: fixture.providerLock } }, refreshInstances: fixture.refresh }),
   api: async (path: string, init?: RequestInit) => {
     fixture.calls.push({ path, ...(init?.body ? { body: JSON.parse(String(init.body)) } : {}) });
     if (path === "/api/instances/hidden") return { instances: fixture.hidden };
@@ -22,6 +22,7 @@ let root: Root;
 let host: HTMLElement;
 const settle = () => new Promise((done) => setTimeout(done, 0));
 beforeEach(() => {
+  fixture.providerLock = false;
   fixture.calls = [];
   fixture.refresh.mockReset();
   host = document.createElement("div");
@@ -50,4 +51,14 @@ describe("hidden providers in Settings", () => {
     expect(fixture.calls).toContainEqual({ path: "/api/instances/hermes", body: { hidden: false } });
     expect(fixture.refresh).toHaveBeenCalled();
   });
+});
+
+
+it("does not request or render hidden providers when locked", async () => {
+  fixture.providerLock = true;
+  fixture.hidden = [{ instanceId: "hidden-fixture", displayName: "Fixture provider" }];
+  flushSync(() => root.render(createElement(HiddenEngines)));
+  await settle();
+  expect(host.querySelector("[data-hidden-engines]")).toBeNull();
+  expect(fixture.calls).toEqual([]);
 });

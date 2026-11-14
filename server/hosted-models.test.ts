@@ -100,3 +100,11 @@ it("sends a hosted Claude turn and helper through the approved model with synthe
   spawned = JSON.parse(readFileSync(dump, "utf8"));
   expect(spawned.argv[spawned.argv.indexOf("--model") + 1]).toBe("claude-fixture");
 });
+it("rejects provider lock combined with hosted model configuration", () => {
+  expect(hostedModelPolicy(directory(), { CRYBOT_PROVIDER_LOCK: "1" })).toBeNull();
+  expect(hostedModelPolicy(directory(), { ...env(), CRYBOT_PROVIDER_LOCK: "0" })?.allows({ instanceId: "claude", model: "claude-fixture" })).toBe(true);
+  for (const hosted of [env(), { CRYBOT_HOSTED_MODELS: "{}" }, { CRYBOT_HOSTED_MODEL_TOKEN: token }]) {
+    expect(() => hostedModelPolicy(directory(), { ...hosted, CRYBOT_PROVIDER_LOCK: "1" }))
+      .toThrow("CRYBOT_PROVIDER_LOCK=1 cannot be enabled together with hosted model policy (CRYBOT_HOSTED_MODELS / CRYBOT_HOSTED_MODEL_TOKEN)");
+  }
+});

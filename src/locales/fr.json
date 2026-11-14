@@ -2563,6 +2563,9 @@
   "mcp.auth.loadingTools": "Connecté. Connexion au serveur…",
   "update.card.idleNote": "Redémarrez maintenant, ou laissez faire : {app} l’installe tout seul la prochaine fois que vous serez absent et que rien ne tourne.",
   "update.updatedItself": "{app} s’est mis à jour tout seul vers la version {version}.",
+  "newBot.randomName": "Random name",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.failed": "Impossible de créer le nouveau bot : {error}",
   "newBot.startsOnAsk": "{name} demandera avant d'agir. Pour qu'il agisse seul sur cet ordinateur, choisissez « Approuver à ma place » dans ses réglages.",
   "automations.firstRun": "Première exécution {when}",
@@ -3737,5 +3740,8 @@
   "computer.recovery.restart": "Redémarrer l'ordinateur",
   "computer.recovery.restartTitle": "Arrête puis relance cet ordinateur cloud. Les programmes ouverts sont fermés ; ses fichiers restent.",
   "computer.recovery.replace": "Remplacer l'ordinateur",
-  "computer.recovery.replaceTitle": "Supprime cet ordinateur cloud et en donne un nouveau au bot. Les fichiers qui ne sont que dessus sont perdus."
+  "computer.recovery.replaceTitle": "Supprime cet ordinateur cloud et en donne un nouveau au bot. Les fichiers qui ne sont que dessus sont perdus.",
+  "settings.profile.nameFromLogin": "Depuis votre compte de connexion",
+  "botOverview.preference.cloud.locked": "un serveur configuré",
+  "keys.section.computers.purpose.locked": "Votre propre serveur et vos connexions aux sites web."
 }

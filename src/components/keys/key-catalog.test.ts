@@ -4,7 +4,7 @@ import { setLocale, t } from "@/lib/i18n";
 import type { ConfigStatus } from "@/state/store";
 import { WORKSPACE_CREDENTIAL_ENV } from "../../../server/credential-env.ts";
 import { CREDENTIAL_TARGETS, credentialConfigPatch, desktopCredentialSlot, isConfigCredentialTarget } from "../../../shared/credential-request";
-import { KEY_CATALOG, KEY_SECTIONS, keyEntry, keyForInstance, keyHidden, keyMatches, looksLikeOtherKey, savedState, type KeyId } from "./key-catalog";
+import { KEY_CATALOG, KEY_SECTIONS, keyEntry, keyForInstance, keyHidden, keyMatches, looksLikeOtherKey, savedState, sectionPurposeKey, type KeyId } from "./key-catalog";
 
 const NOT_A_PERSONS_KEY: Record<string, string> = {
   CRYBOT_ANTHROPIC_API_URL: "the address the Anthropic key goes to, set by a hosted install",
@@ -96,6 +96,12 @@ describe("every credential has one home on the keys page", () => {
     expect(t(live.labelKey)).toBe("OpenAI key");
     expect(t(keyEntry("openai").labelKey)).toBe("OpenAI API key");
   });
+
+  it("removes the cloud desktop wording from the locked computers section", () => {
+    const section = KEY_SECTIONS.find((candidate) => candidate.id === "computers")!;
+    expect(t(sectionPurposeKey(section, { providerLock: true } as ConfigStatus))).not.toContain("cloud");
+    expect(t(sectionPurposeKey(section, { providerLock: false } as ConfigStatus))).toContain("Cloud");
+  });
 });
 
 describe("searching the keys", () => {
@@ -154,4 +160,11 @@ describe("engines that run on a key", () => {
     expect(keyForInstance("claude")).toBeUndefined();
     expect(keyForInstance(undefined)).toBeUndefined();
   });
+});
+
+it.each([false, true])("hides only the Boat computer key when provider lock is %s", (providerLock) => {
+  const config = { providerLock } as ConfigStatus;
+  const computers = KEY_CATALOG.filter((entry) => entry.section === "computers" && !keyHidden(entry.id, config));
+  expect(computers.map((entry) => entry.id)).toEqual(providerLock ? ["vps", "onePassword"] : ["box", "vps", "onePassword"]);
+  expect(computers.filter((entry) => keyMatches(entry, "boat", config)).map((entry) => entry.id)).toEqual(providerLock ? [] : ["box"]);
 });

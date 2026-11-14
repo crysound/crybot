@@ -96,6 +96,11 @@ describe("who the served UI is on its own machine", () => {
     expect(await readSessionState(answer({ ...shared, reactor: 7 }))).toEqual(shared);
     expect(await readSessionState(answer(shared))).toEqual(shared);
   });
+  it("keeps the login display name without an unused shared flag", async () => {
+    expect(await readSessionState(answer({ kind: "session", id: "s", label: "Safari on iPhone", displayName: "张三", scopes: ["admin"], expiresAt: 1, shared: true }))).toEqual({
+      kind: "session", id: "s", label: "Safari on iPhone", displayName: "张三", scopes: ["admin"], expiresAt: 1,
+    });
+  });
   it("is the owner on loopback unless the server says local requests are only a service", async () => {
     const owner = await readSessionState(answer({ kind: "loopback", scopes: ["admin", "client"] }));
     expect(owner).toEqual({ kind: "loopback" });
@@ -128,6 +133,10 @@ describe("the profile shown for a signed-in session", () => {
     expect(profileForSession(owner, ada)).toEqual({ email: "ada@example.test" });
     expect(profileForSession({ name: "Owner", avatarUrl: "/owner.png" }, ada)).toEqual({ email: "ada@example.test" });
     expect(profileForSession(undefined, ada)).toEqual({ email: "ada@example.test" });
+  });
+
+  it("uses an Access display name for every scope", () => {
+    expect(profileForSession(owner, { ...ada, displayName: "张三", scopes: ["admin", "client"] })).toMatchObject({ name: "张三", email: "ada@example.test" });
   });
 
   it("keeps the configured profile when its email matches after trimming and case folding", () => {

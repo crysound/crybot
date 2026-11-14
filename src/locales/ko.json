@@ -5802,6 +5802,8 @@
   "newBot.sharePreset": "프리셋으로 공유…",
   "newBot.customSettings": "사용자 지정 설정",
   "newBot.randomName": "무작위 이름",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.team": "부서",
   "newBot.enabled": "켜짐",
   "newBot.removeRoutine": "{name} 제거",
@@ -7698,5 +7700,8 @@
   "computer.recovery.restart": "컴퓨터 다시 시작",
   "computer.recovery.restartTitle": "이 클라우드 컴퓨터를 멈췄다가 다시 시작해요. 열린 프로그램은 닫히고 파일은 그대로 남아요.",
   "computer.recovery.replace": "컴퓨터 교체",
-  "computer.recovery.replaceTitle": "이 클라우드 컴퓨터를 삭제하고 봇에게 새 컴퓨터를 줘요. 이 컴퓨터에만 있는 파일은 사라져요."
+  "computer.recovery.replaceTitle": "이 클라우드 컴퓨터를 삭제하고 봇에게 새 컴퓨터를 줘요. 이 컴퓨터에만 있는 파일은 사라져요.",
+  "settings.profile.nameFromLogin": "로그인 계정의 이름",
+  "botOverview.preference.cloud.locked": "설정된 서버",
+  "keys.section.computers.purpose.locked": "내 서버와 웹사이트 로그인."
 }

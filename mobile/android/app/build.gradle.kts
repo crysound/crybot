@@ -12,6 +12,7 @@ fun configured(name: String): String =
 
 val serverUrl = configured("CRYBOT_SERVER_URL")
 val loginHosts = configured("CRYBOT_LOGIN_HOSTS")
+val appLinkHost = configured("CRYBOT_APP_LINK_HOST")
 val versionCodeValue = configured("CRYBOT_VERSION_CODE").toIntOrNull() ?: 1
 val versionNameValue = configured("CRYBOT_VERSION_NAME").ifBlank { "0.1.0" }
 
@@ -27,6 +28,9 @@ android {
         versionName = versionNameValue
         buildConfigField("String", "CRYBOT_SERVER_URL", "\"${serverUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
         buildConfigField("String", "CRYBOT_LOGIN_HOSTS", "\"${loginHosts.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+        buildConfigField("String", "CRYBOT_APP_LINK_HOST", "\"${appLinkHost.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+        manifestPlaceholders["crybotAppLinkHost"] = appLinkHost.ifEmpty { "invalid.invalid" }
+        manifestPlaceholders["crybotAppLinksEnabled"] = appLinkHost.isNotEmpty().toString()
     }
 
     buildFeatures {

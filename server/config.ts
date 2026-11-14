@@ -1,3 +1,5 @@
+import { isValidSshAlias, normalizeVpsConfig } from "./vps-config.ts";
+export { isValidSshAlias, normalizeVpsConfig } from "./vps-config.ts";
 // ~/.crybot/config.json, with env vars overriding its credentials.
 import { readFileSync, mkdirSync, existsSync, renameSync } from "node:fs";
 import { dataHome } from "./data-dir.ts";
@@ -12,6 +14,7 @@ import { botAvatarUrlSchema } from "../shared/bot-avatar.ts";
 import { writeFileAtomic } from "./atomic.ts";
 import { defaultBotThreads, MAX_CONCURRENT_BOT_THREADS } from "./bot-thread-limits.ts";
 import { anthropicKeyEnv } from "./anthropic-key-env.ts";
+import { lockedProviderConfigs, providerLockEnabled } from "./provider-lock.ts";
 import { withoutComputerEngine } from "./computer-engine-removal.ts";
 import { newBotDefaultsSchema, type NewBotDefaults } from "./new-bot-defaults.ts";
 import { replaySettings } from "./replay-settings.ts";
@@ -35,7 +38,6 @@ import { localVmConfigSchema } from "./local-vm-settings.ts";
 export * from "./local-vm-settings.ts";
 
 const optionalText = z.string().optional();
-const SSH_ALIAS = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const LEGACY_BROWSER_PROFILE_ID = /^[A-Za-z0-9_-]{1,40}$/;
 const BROWSER_PROFILE_ID = /^[a-z0-9_-]{1,40}$/;
 
@@ -52,23 +54,6 @@ export const MAX_MCP_CALL_TIMEOUT_MINUTES = 60;
 /** The floor keeps a log tail large enough for the event inspector's recent-line window. */
 export const MIN_THREAD_EVENT_LOG_BYTES = 256 * 1024;
 export const MAX_THREAD_EVENT_LOG_BYTES = 4 * 1024 * 1024 * 1024;
-
-export function isValidSshAlias(value: unknown): value is string {
-  return typeof value === "string" && SSH_ALIAS.test(value);
-}
-
-export function normalizeVpsConfig(raw: unknown): { sshAlias?: string } {
-  if (raw === undefined || raw === null) return {};
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new Error("vps must be an object containing an SSH config alias");
-  }
-  const alias = (raw as Record<string, unknown>).sshAlias;
-  if (alias === undefined || alias === "") return {};
-  if (!isValidSshAlias(alias)) {
-    throw new Error("vps.sshAlias must be a simple SSH config alias (letters, numbers, dot, dash, or underscore)");
-  }
-  return { sshAlias: alias };
-}
 
 const vpsConfigSchema = z.object({
   sshAlias: z.string().refine((value) => value === "" || isValidSshAlias(value), { message: "must be a simple SSH config alias" }).optional(),
@@ -904,7 +889,7 @@ export function saveConfig(
     if (parsed.success) disk = parsed.data;
   } catch {
   }
-  const checkedPatch = appConfigSchema.partial().extend({ threads: threadsPatchSchema.optional(), newBots: newBotsPatchSchema.optional(), imageGen: imageGenPatchSchema.optional() }).parse(patch);
+  const checkedPatch = appConfigSchema.partial().extend(helperStoredShape).extend({ threads: threadsPatchSchema.optional(), newBots: newBotsPatchSchema.optional(), imageGen: imageGenPatchSchema.optional() }).parse(patch);
   const before = configSaveListeners.size ? structuredClone(disk) : disk;
   const keepImageModels = keepKeysOutOfImageModels(disk, checkedPatch.imageGen);
   const storedProfiles = storedBrowserProfilesSchema.safeParse(disk.browserProfiles);
@@ -928,6 +913,7 @@ export function saveConfig(
   if (checkedPatch.signIn !== undefined) disk.signIn = checkedPatch.signIn;
   // Replace the section so clearing a backup cannot revive the old selection.
   if (checkedPatch.automaticRecovery !== undefined) disk.automaticRecovery = checkedPatch.automaticRecovery;
+  if (checkedPatch.helper !== undefined) disk.helper = checkedPatch.helper;
   if (checkedPatch.cacheKeepWarm !== undefined) disk.cacheKeepWarm = checkedPatch.cacheKeepWarm;
   if (checkedPatch.defaultModelSelection !== undefined) {
     disk.defaultModelSelection = checkedPatch.defaultModelSelection;
@@ -1044,7 +1030,7 @@ export function withInstanceCli(
 
 /** Materialize defaults without freezing injected workspace settings or secrets. */
 export function persistableInstanceConfigs(cfg: AppConfig): InstanceConfigMap {
-  const map = instanceConfigs(cfg);
+  const map = unlockedInstanceConfigs(cfg);
   for (const [id, entry] of Object.entries(map)) {
     const environment = cfg.instances?.[id]?.environment;
     if (environment) entry.environment = { ...environment };
@@ -1151,6 +1137,10 @@ function injectedEnvironment(cfg: AppConfig, instanceId: string, driver: string)
 }
 
 export function instanceConfigs(cfg: AppConfig): InstanceConfigMap {
+  return providerLockEnabled() ? lockedProviderConfigs(cfg.instances ?? {}) : unlockedInstanceConfigs(cfg);
+}
+
+function unlockedInstanceConfigs(cfg: AppConfig): InstanceConfigMap {
   const configured = cfg.instances && Object.keys(cfg.instances).length ? cfg.instances : null;
   const map: InstanceConfigMap = withoutComputerEngine(configured ? { ...configured } : { ...DEFAULT_FLEET });
   if (

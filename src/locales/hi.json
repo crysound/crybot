@@ -2563,6 +2563,9 @@
   "mcp.auth.loadingTools": "साइन इन हो गया। कनेक्ट हो रहा है…",
   "update.card.idleNote": "अभी रीस्टार्ट करें, या ऐसे ही छोड़ दें: अगली बार जब आप दूर हों और कुछ न चल रहा हो, {app} इसे अपने आप इंस्टॉल कर लेगा।",
   "update.updatedItself": "{app} ने खुद को {version} पर अपडेट कर लिया।",
+  "newBot.randomName": "Random name",
+  "newBot.anotherName": "Another name",
+  "newBot.anotherNameFailed": "Couldn't get another name. Try again.",
   "newBot.failed": "नया बॉट नहीं बन सका: {error}",
   "newBot.startsOnAsk": "{name} कुछ भी करने से पहले पूछेगा। इसे इस कंप्यूटर पर अपने-आप काम करने देने के लिए, इसकी सेटिंग्स में “मेरी ओर से मंज़ूरी दें” चुनें।",
   "automations.firstRun": "पहली बार {when}",
@@ -3591,5 +3594,8 @@
   "computer.recovery.restart": "कंप्यूटर फिर से चालू करें",
   "computer.recovery.restartTitle": "इस क्लाउड कंप्यूटर को बंद करके फिर से चालू करें। खुले प्रोग्राम बंद हो जाते हैं; फ़ाइलें बनी रहती हैं।",
   "computer.recovery.replace": "कंप्यूटर बदलें",
-  "computer.recovery.replaceTitle": "यह क्लाउड कंप्यूटर हटाकर बॉट को नया दें। जो फ़ाइलें सिर्फ़ इस पर हैं, वे खो जाती हैं।"
+  "computer.recovery.replaceTitle": "यह क्लाउड कंप्यूटर हटाकर बॉट को नया दें। जो फ़ाइलें सिर्फ़ इस पर हैं, वे खो जाती हैं।",
+  "settings.profile.nameFromLogin": "आपके लॉगिन खाते से",
+  "botOverview.preference.cloud.locked": "कॉन्फ़िगर किया गया सर्वर",
+  "keys.section.computers.purpose.locked": "आपका अपना सर्वर और वेबसाइटों के लॉगिन।"
 }

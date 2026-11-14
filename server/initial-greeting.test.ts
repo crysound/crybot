@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { initialGreeting, setupRequestLine } from "./initial-greeting.ts";
+import { initialGreeting, initialGreetingMessage, setupChoices, setupRequestLine } from "./initial-greeting.ts";
 
 describe("the line after Set me up", () => {
   it("is written in the app's language, by region, with English for any other", () => {
@@ -32,4 +32,14 @@ describe("a new bot's greeting", () => {
       expect(initialGreeting("Scout", "en", person)).toBe("Hi, I'm Scout. What would you like me to do?");
     }
   });
+});
+
+it.each(["zh", "zh-cn", "zh-hans", "zh-sg", "ZH-CN"])("seeds Simplified Chinese for %s", (language) => {
+  expect(initialGreetingMessage("Fixture", language, true)).toMatchObject({
+    text: "你好，我是 Fixture。你想让我帮你做什么？",
+    setupOffer: true,
+    setupChoices: ["研究与深入探索主题", "帮我留意各种事情", "电子邮件、日历和消息", "预约、购物和跑腿", "数据、电子表格和报告"],
+  });
+  expect(setupRequestLine(language)).toContain("收件箱");
+  expect(setupChoices(language)).toEqual(setupChoices("zh"));
 });

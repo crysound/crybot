@@ -23,7 +23,7 @@ export function createComputerUsageRoutes(deps: ComputerUsageRouteDeps): RouteHa
 }
 
 async function cloudComputers({ cfg, managedBoatOwners, computerProviderConfigTransitions }: ComputerUsageRouteDeps): Promise<number | null> {
-  if (!boat.boatConfigured(cfg)) return 0;
+  if (!boat.boatOffered(cfg)) return 0;
   if (computerProviderConfigTransitions.has("box")) return null;
   // A count must never adopt a legacy computer or retire a recorded deletion.
   const inventory = await boat.listManagedBoats(cfg, managedBoatOwners(), { adoptLegacy: false });

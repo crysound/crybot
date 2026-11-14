@@ -18,6 +18,10 @@ function around(template, name) {
   return at < 0 ? [template, ""] : [template.slice(0, at), template.slice(at + name.length + 2)];
 }
 
+export function remoteServerErrorPage(retryUrl, text = nativeText.englishText) {
+  return "data:text/html;charset=utf-8," + encodeURIComponent(`<!doctype html><html lang="${escapeText(text.intlTag())}"><meta charset="utf-8"><meta name="color-scheme" content="dark"><title>${escapeText(text.t("native.remoteOnly.unreachable"))}</title><body style="margin:0;display:grid;place-items:center;height:100vh;background:#121212;color:#fcfcfc;font:16px system-ui"><main style="text-align:center"><h1>${escapeText(text.t("native.remoteOnly.unreachable"))}</h1><a style="color:#fcfcfc" href="${escapeText(retryUrl)}">${escapeText(text.t("native.remoteOnly.retry"))}</a></main></body></html>`);
+}
+
 /** The page the main window shows when the background server never came up, in `text`'s language. */
 export function buildErrorPage({ allPortsOccupied, logDir }, text = nativeText.englishText) {
   const serverLogPath = path.join(logDir, "server.log");

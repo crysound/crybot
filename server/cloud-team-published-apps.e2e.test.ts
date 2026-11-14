@@ -4,16 +4,15 @@
 // carries its link), a member's own CryBot's site for that member alone, and nobody's private project for anyone
 // else, by list or by id. Delete uses the team's saved Netlify token against a loopback stand-in for Netlify.
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
 
 import { launchCloudSendFixture, type CloudSendFixture, type CloudTeamFixture } from "../scripts/testing/cloud-send-fixture.ts";
 import type { PublishedApp } from "../shared/published-apps.ts";
 import { SITE_FILE } from "./host/netlify-sites.ts";
-import { removeTempDir } from "./testing/cleanup.ts";
 import { startFakeNetlify, type FakeNetlify } from "./testing/fake-netlify.ts";
+import { fixtureInput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OWNER = { email: "olive@acme.test", role: "owner" as const };
@@ -26,7 +25,7 @@ const TOKEN = "nfp_team_shared_token_0123456789abcdef0123";
 type Bot = { id: string; name: string; threadId: string; mainThreadId?: string; defaultBot?: { person?: string }; tasks?: Array<{ threadId: string }> };
 
 let fx: CloudSendFixture, team: CloudTeamFixture;
-let scratch = "", replyFile = "";
+let replyFile = "";
 let owner = "", admin = "", ada = "", ben = "";
 let mira: Bot, adaBot: Bot;
 let adaThread = "", benThread = "", mainThread = "";
@@ -64,16 +63,15 @@ const listOf = async (token: string) => {
 const titles = async (token: string) => (await listOf(token)).map((app) => app.title).sort();
 
 beforeAll(async () => {
-  scratch = mkdtempSync(join(tmpdir(), "published-apps-team-"));
-  replyFile = join(scratch, "reply.txt");
-  writeFileSync(replyFile, "Hello.");
   fake = await startFakeNetlify(TOKEN);
   const onNetlify = async () => ((await (await fetch(`${fake.url}/sites`, { method: "POST", headers: { authorization: `Bearer ${TOKEN}` }, body: "{}" })).json()) as { id: string }).id;
   shopId = await onNetlify();
   teamSiteId = await onNetlify();
   fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`,
-    team: { id: "team-acme-apps", name: "Acme", env: { CRYBOT_NETLIFY_API_URL: fake.url }, engine: `process.env.FAKE_CLAUDE_REPLY_FILE = ${JSON.stringify(replyFile)};` } });
+    team: { id: "team-acme-apps", name: "Acme", env: { CRYBOT_NETLIFY_API_URL: fake.url }, engine: withFixtureState(`process.env.FAKE_CLAUDE_REPLY_FILE = process.env.FAKE_CLAUDE_FIXTURE_DIR + "/reply.txt";`) } });
   team = fx.team!;
+  replyFile = fixtureInput(team.home, "reply.txt");
+  writeFileSync(replyFile, "Hello.");
   owner = (await team.pair(OWNER)).token!;
   admin = (await team.pair(ADMIN)).token!;
   ada = (await team.pair(ADA)).token!;
@@ -107,7 +105,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await fx?.close();
   await fake?.stop();
-  if (scratch) await removeTempDir(scratch);
 });
 
 it("shows each member their own projects and the team's, and none of another member's", async () => {

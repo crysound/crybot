@@ -82,7 +82,7 @@ const whereItLives = (environment) => (environment.kind === "local" ? environmen
  * @param {{ checked: boolean, onToggle: (on: boolean) => void } | null} [input.openAtLogin] Open at Login, in the app
  *   menu on macOS and the File menu elsewhere; absent when this build cannot add a login item.
  */
-export function buildApplicationMenu({ environments, activeId, onSwitch, onAddFromClipboard, onConnect, onForget, onOpenSettings, onOrganizationSignIn, onAddCloud, sublabels = {}, home = null, openAtLogin = null, t = nativeText.englishText.t }) {
+export function buildApplicationMenu({ environments, activeId, onSwitch, onAddFromClipboard, onConnect, onForget, onOpenSettings, onOrganizationSignIn, onAddCloud, sublabels = {}, home = null, openAtLogin = null, remoteOnly = false, onReload, t = nativeText.englishText.t }) {
   const isMac = process.platform === "darwin";
   const active = environments.find((e) => e.id === activeId) ?? null;
   const others = home ? environments.filter((e) => e.origin !== home.origin && e.kind !== "local") : [];
@@ -122,6 +122,8 @@ export function buildApplicationMenu({ environments, activeId, onSwitch, onAddFr
   };
   const atLogin = openAtLogin ? [{ id: "open-at-login", label: t("native.menu.openAtLogin"), type: "checkbox", checked: openAtLogin.checked, click: () => openAtLogin.onToggle(!openAtLogin.checked) }] : [];
   const roles = roleMenus(t, isMac);
+  if (remoteOnly) roles.view.submenu = roles.view.submenu.map(item => ["reload", "forceReload"].includes(item.role)
+    ? { label: item.label, accelerator: item.role === "reload" ? "CmdOrCtrl+R" : "CmdOrCtrl+Shift+R", click: (_item, focusedWindow) => onReload(item.role === "forceReload", focusedWindow) } : item);
   const appMenu = {
     label: app.name,
     submenu: [
@@ -140,7 +142,7 @@ export function buildApplicationMenu({ environments, activeId, onSwitch, onAddFr
     ...(isMac ? [appMenu] : []),
     !isMac && openAtLogin ? { ...roles.file, submenu: [...atLogin, { type: "separator" }, role(t, "quit", "native.role.quit")] } : roles.file,
     roles.edit,
-    ...(home && !others.length ? [] : [server]),
+    ...(remoteOnly || (home && !others.length) ? [] : [server]),
     roles.view,
     roles.window,
   ];

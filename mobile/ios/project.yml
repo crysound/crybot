@@ -10,6 +10,8 @@ settings:
     CODE_SIGN_STYLE: Automatic
     CRYBOT_SERVER_URL: ""
     CRYBOT_LOGIN_HOSTS: ""
+    CRYBOT_APP_LINK_HOST: ""
+    CRYBOT_IOS_ENTITLEMENTS: ""
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
 targets:
@@ -31,6 +33,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.crysound.crybot
         PROVISIONING_PROFILE_SPECIFIER: $(CRYBOT_IOS_PROFILE_SPECIFIER)
+        CODE_SIGN_ENTITLEMENTS: $(CRYBOT_IOS_ENTITLEMENTS)
         PRODUCT_NAME: Cry Bot
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -46,6 +49,9 @@ targets:
         CFBundleInfoDictionaryVersion: "6.0"
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - crybot
         LSRequiresIPhoneOS: true
         ITSAppUsesNonExemptEncryption: false
         NSMicrophoneUsageDescription: Cry Bot needs microphone access for voice features.
@@ -53,6 +59,7 @@ targets:
         NSPhotoLibraryUsageDescription: Cry Bot needs photo library access to choose files.
         CRYBOT_SERVER_URL: $(CRYBOT_SERVER_URL)
         CRYBOT_LOGIN_HOSTS: $(CRYBOT_LOGIN_HOSTS)
+        CRYBOT_APP_LINK_HOST: $(CRYBOT_APP_LINK_HOST)
         UILaunchScreen:
           UIColorName: LaunchBackground
         UISupportedInterfaceOrientations:

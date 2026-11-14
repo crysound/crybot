@@ -1,3 +1,4 @@
+import { workspaceHandler } from "./remote-only.mjs";
 import nativeText from "./native-text.cjs";
 // The rail of places at the left of the window (the renderer's PlacesRail, drawn by the window's own chrome rail page,
 // chrome-rail.mjs) and its ＋: main builds the list, says who may read it, and does what a circle or ＋ asks through
@@ -100,19 +101,20 @@ const plain = value => (typeof value === "string" ? value : "");
 const seen = ({ cloudId: _cloudId, account: _account, ...place }) => place;
 const CHOICES = Object.freeze(["link", "address"]);
 
-export function installRail({ ipcMain, guard, trusted, lists = trusted, beside = () => false, places, open, add, account, targets, makeHome = null, forget = null, switchAccount = null, openProfile = null, local = null, ask = (_id, run) => run(() => false), switching = () => null, t = nativeText.englishText.t }) {
+export function installRail({ ipcMain, config = {}, guard, trusted, lists = trusted, beside = () => false, places, open, add, account, targets, makeHome = null, forget = null, switchAccount = null, openProfile = null, local = null, ask = (_id, run) => run(() => false), switching = () => null, t = nativeText.englishText.t }) {
+  const register = (channel, handler) => ipcMain.handle(channel, workspaceHandler(config, handler));
   let sent = "";
   const allowed = (channel, handler) => guard((event, ...args) => {
     if (!trusted(event)) throw new Error(`${channel} is only available in this app's window`);
     return handler(event, ...args);
   });
-  const handle = (channel, handler) => ipcMain.handle(channel, allowed(channel, handler));
-  const listed = (channel, handler) => ipcMain.handle(channel, guard((event, ...args) => {
+  const handle = (channel, handler) => register(channel, allowed(channel, handler));
+  const listed = (channel, handler) => register(channel, guard((event, ...args) => {
     if (!lists(event)) throw new Error(`${channel} is only available in this app's window`);
     return handler(event, ...args);
   }));
   const choices = () => ({ ...add.choices(), cloud: false, organization: false, account: false, local: local?.creatable() === true });
-  ipcMain.handle("workspaces:places", guard((event) => (lists(event) ? { places: places().map(seen), add: choices(), ...(switching() ? { switching: switching() } : {}) }
+  register("workspaces:places", guard((event) => (lists(event) ? { places: places().map(seen), add: choices(), ...(switching() ? { switching: switching() } : {}) }
     : { places: [], add: { cloud: false, link: false, address: false, organization: false }, ...(beside() ? { beside: true } : {}) })));
   const opening = (place, stale) => {
     if (!place.profile) { local?.cancel(); return open(place.id, stale); }

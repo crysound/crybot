@@ -15,6 +15,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".MainActivity"
+            android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode|smallestScreenSize|screenLayout|density"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">
@@ -22,6 +23,24 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="crybot" android:host="auth" />
+            </intent-filter>
         </activity>
+        <activity-alias
+            android:name=".AppLinkActivity"
+            android:targetActivity="com.crysound.crybot.MainActivity"
+            android:enabled="${crybotAppLinksEnabled}"
+            android:exported="true">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${crybotAppLinkHost}" android:path="/auth/app-return" />
+            </intent-filter>
+        </activity-alias>
     </application>
 </manifest>

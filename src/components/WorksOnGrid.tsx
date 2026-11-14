@@ -19,8 +19,9 @@ const WORKS_ON_CHOICES = [
   ["off", "vm.dest.off", "computer.dest.offDesc", Power],
 ] as const satisfies ReadonlyArray<readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon]>;
 
-export function worksOnChoices(config: Parameters<typeof placeOffered>[1], capabilities: DesktopCapabilities) {
-  return WORKS_ON_CHOICES.filter(([mode]) => mode === null || mode === "off" || (placeOffered(mode, config) && !(mode === "local" && pageOnRemoteServer(capabilities))));
+export function worksOnChoices(config: Parameters<typeof placeOffered>[1], capabilities: DesktopCapabilities): ReadonlyArray<readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon]> {
+  return WORKS_ON_CHOICES.map((choice): readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon] => config?.providerLock && choice[0] === "cloud"
+    ? ["cloud", "botAccess.cloud.selfHostedVps", "botAccess.cloud.vpsDescription", Cloud] : choice).filter(([mode]) => mode === null || mode === "off" || (placeOffered(mode, config, config?.providerLock ? "vps" : undefined) && !(mode === "local" && pageOnRemoteServer(capabilities))));
 }
 
 export function worksOnSelected(mode: WorksOnMode, computer: Bot["computer"], capabilities: DesktopCapabilities): boolean {

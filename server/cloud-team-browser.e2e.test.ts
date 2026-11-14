@@ -14,6 +14,7 @@ import { resolveAgentBrowserBinary } from "./browser-engine.ts";
 import { audienceBrowserSuffix } from "./browser/audience.ts";
 import { TEAM_SESSION_MAX_MS } from "./cloud-team.ts";
 import { personKey } from "./person-key.ts";
+import { fixtureInput, withFixtureState } from "./testing/fixture-state.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
 const OWNER = { email: "olive@acme.test", role: "owner" as const };
@@ -44,7 +45,7 @@ let bot: { id: string; mainThreadId: string };
 let adaThread = "", cleoThread = "", roomId = "", roomThread = "";
 
 beforeAll(async () => {
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: ENGINE, ...(stub ? { env: { CRYBOT_AGENT_BROWSER_PATH: stub.engine } } : {}) } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-team-${randomBytes(8).toString("hex")}`, team: { id: "team-acme-1", name: "Acme", engine: withFixtureState(ENGINE), ...(stub ? { env: { CRYBOT_AGENT_BROWSER_PATH: stub.engine } } : {}) } });
   team = fx.team!;
   owner = (await team.pair(OWNER)).token!;
   admin = (await team.pair(ADMIN)).token!;
@@ -158,7 +159,7 @@ it("pairs a member's phone with a code she made: her address and role, her chats
 }, hostTimeout(60_000));
 
 const scriptToolCalls = (calls: unknown[] | null) => {
-  const file = join(team.home, "tool-calls.json");
+  const file = fixtureInput(team.home, "tool-calls.json");
   if (calls) writeFileSync(file, JSON.stringify(calls)); else rmSync(file, { force: true });
 };
 const COOKIE_SITE = "https://example.com/";
