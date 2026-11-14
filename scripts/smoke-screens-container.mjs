@@ -120,18 +120,38 @@ def read_until(sock, marker):
         more = sock.recv(4096)
         if not more: raise RuntimeError('websocket handshake disconnected')
         data += more
-    return data
-def websocket_read(sock):
-    first, second = read(sock, 2)
+    head, _, rest = data.partition(marker)
+    return head + marker, rest
+def websocket_frame(read_raw):
+    first, second = read_raw(2)
     length = second & 0x7f
-    if length == 126: length = struct.unpack('!H', read(sock, 2))[0]
-    elif length == 127: length = struct.unpack('!Q', read(sock, 8))[0]
-    mask = read(sock, 4) if second & 0x80 else b''
-    payload = bytearray(read(sock, length))
+    if length == 126: length = struct.unpack('!H', read_raw(2))[0]
+    elif length == 127: length = struct.unpack('!Q', read_raw(8))[0]
+    mask = read_raw(4) if second & 0x80 else b''
+    payload = bytearray(read_raw(length))
     if mask:
         for index in range(length): payload[index] ^= mask[index % 4]
     if first & 0x0f == 8: raise RuntimeError('websocket closed during RFB')
     return bytes(payload)
+# RFB reads fixed byte counts, but websockify frames do not line up with them,
+# and the handshake read may already hold the first frame.
+def websocket_reader(sock, leftover):
+    raw = bytearray(leftover)
+    frames = bytearray()
+    def read_raw(count):
+        while len(raw) < count:
+            more = sock.recv(4096)
+            if not more: raise RuntimeError('RFB disconnected')
+            raw.extend(more)
+        data = bytes(raw[:count])
+        del raw[:count]
+        return data
+    def read_packet(_sock, count):
+        while len(frames) < count: frames.extend(websocket_frame(read_raw))
+        data = bytes(frames[:count])
+        del frames[:count]
+        return data
+    return read_packet
 def websocket_write(sock, payload):
     mask = b'CBOT'
     length = len(payload)
@@ -166,9 +186,9 @@ def authenticate_token(token, password):
         sock.settimeout(10)
         key = base64.b64encode(os.urandom(16)).decode()
         sock.sendall((f'GET /websockify?token={token} HTTP/1.1\r\nHost: 127.0.0.1:6901\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Protocol: binary\r\n\r\n').encode())
-        headers = read_until(sock, b'\r\n\r\n')
+        headers, leftover = read_until(sock, b'\r\n\r\n')
         assert b' 101 ' in headers, f'token {token} did not upgrade: {headers.splitlines()[0]!r}'
-        return rfb_authenticate(sock, password, websocket_read, websocket_write)
+        return rfb_authenticate(sock, password, websocket_reader(sock, leftover), websocket_write)
 for n, password in enumerate(passwords, 1):
     assert authenticate(5900+n, password), f's{n} correct password refused'
     assert not authenticate(5900+n, 'wrong-pw'), f's{n} wrong password accepted'
