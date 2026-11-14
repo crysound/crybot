@@ -169,12 +169,32 @@ try {
   }
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "! test -r /home/crybot-s1 && ! test -r /home/cua/workspace/screens/s1 && ! test -r /run/user/61001/crybot-cua.sock"]));
   await docker(screenIdentityArgs(screen(2), ["sh", "-c", "sleep 300 >/dev/null 2>&1 &"]));
+  await docker(root(["rm", "-f", "/tmp/crybot-usercustomize-s2"]));
+  await docker(screenIdentityArgs(screen(2), ["sh", "-c", "printf '%s\\n' 'open(\"/tmp/crybot-usercustomize-s2\", \"w\").write(\"injected\\n\")' > \"$HOME/usercustomize.py\""]));
   await stopScreen("docker", screen(2));
   await waitForScreens({ 1: "running", 2: "off" });
   for (let attempt = 0; ; attempt++) {
     try { await docker(root(["sh", "-c", "! pgrep -u crybot-s2"])); break; }
     catch (error) { if (attempt >= 10) throw error; await delay(500); }
   }
+  await startScreen("docker", screen(2), passwords[1]);
+  await waitForScreens({ 1: "running", 2: "running" });
+  await docker(root(["sh", "-c", "test ! -e /tmp/crybot-usercustomize-s2 || [ \"$(stat -c %u /tmp/crybot-usercustomize-s2)\" -ne 0"]));
+  await docker(root(["sh", "-c", "mkdir -p /root/crybot-runtime-target; chown 0:0 /root/crybot-runtime-target; stat -c %u:%g /root/crybot-runtime-target"]));
+  await docker(screenIdentityArgs(screen(2), ["sh", "-c", "rm -rf \"$XDG_RUNTIME_DIR/tmp\"; ln -s /root/crybot-runtime-target \"$XDG_RUNTIME_DIR/tmp\""]));
+  await docker(["restart", name], { timeout: 60_000 });
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await docker(root(["test", "-S", "/run/crybot/supervisor.sock"]));
+      break;
+    } catch (error) {
+      if (attempt >= 60) throw error;
+      await delay(1000);
+    }
+  }
+  await docker(root(["sh", "-c", "test \"$(stat -c %u:%g /root/crybot-runtime-target)\" = 0:0"]));
+  await startScreen("docker", screen(1), passwords[0]);
+  await waitForScreens({ 1: "running", 2: "off" });
   await tokenHandshake(port, 1);
   console.log("Multi-screen smoke passed: isolated supervisor, VNC auth, token routing, UID/env/limits, stop cleanup");
 } catch (error) {
@@ -182,7 +202,26 @@ try {
   await docker(root(["sh", "-c", "cat /var/log/supervisor/screens.log /var/log/supervisor/screen-*.log /var/log/supervisor/websockify*.log"]), { inherit: true }).catch(() => {});
   throw error;
 } finally {
-  await docker(["rm", "-f", name]).catch(() => {});
-  await docker(["image", "rm", image]).catch(() => {});
-  await rm(fixture, { recursive: true, force: true });
+  const cleanupErrors = [];
+  try {
+    await docker(root(["sh", "-c", "find /home/cua/workspace -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +"]));
+  } catch (error) {
+    cleanupErrors.push(`workspace cleanup: ${error instanceof Error ? error.message : error}`);
+  }
+  try {
+    await docker(["rm", "-f", name]);
+  } catch (error) {
+    cleanupErrors.push(`container cleanup: ${error instanceof Error ? error.message : error}`);
+  }
+  try {
+    await docker(["image", "rm", image]);
+  } catch (error) {
+    cleanupErrors.push(`image cleanup: ${error instanceof Error ? error.message : error}`);
+  }
+  try {
+    await rm(fixture, { recursive: true, force: true });
+  } catch (error) {
+    cleanupErrors.push(`fixture cleanup: ${error instanceof Error ? error.message : error}`);
+  }
+  if (cleanupErrors.length) console.warn(`Smoke cleanup warning: ${cleanupErrors.join("; ")}`);
 }

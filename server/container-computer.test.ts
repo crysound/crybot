@@ -1636,7 +1636,7 @@ describe("screen execution regressions", () => {
     const run = vi.fn(async () => ({ stdout: "" }));
     await installScreenPackages(sharedScreenTarget(2), ["python3-pip", "g++"], { runtime: "docker", runner: run });
     expect(run).toHaveBeenCalledExactlyOnceWith("docker", ["exec", "-u", "0", "-e", "CRYBOT_PACKAGE_SCREEN=s2", CONTAINER,
-      "env", "-u", "VNC_PW", "crybot-pkg", "python3-pip", "g++"], 300_000);
+      "env", "-u", "VNC_PW", "/usr/local/sbin/crybot-pkg", "python3-pip", "g++"], 300_000);
   });
 });
 
@@ -1706,6 +1706,31 @@ describe("shared container probes for screen targets", () => {
     expect(status.screens_layout).toBe("single");
     expect(status.ready).toBe(true);
     expect(fake.calls).toContain(statusProbe);
+  });
+
+  it("keeps container health fields when the screen layout marker probe fails", async () => {
+    const detail = JSON.parse(readyInspect())[0];
+    detail.Config.Labels[SCREENS_LAYOUT_LABEL] = "multi";
+    const fake = runner({
+      "/usr/bin/which docker": "docker\n",
+      "/usr/bin/which podman": new Error("missing"),
+      "docker info --format {{.ServerVersion}}": "29.0\n",
+      [`docker image inspect ${IMAGE}`]: preparedImageInspect(),
+      [`docker inspect ${CONTAINER}`]: JSON.stringify([detail]),
+      [`docker exec -u 0 ${CONTAINER} env -u VNC_PW sh -c if [ -f /run/crybot/screens-layout-single ]; then echo single; else echo multi; fi`]: new Error("marker unavailable"),
+    });
+    const status = await containerComputerStatus(fake.run, "linux");
+    expect(status).toMatchObject({
+      imageMatches: true,
+      managed: true,
+      network: "loopback",
+      security: "hardened",
+      persistence: "durable",
+      screens_layout: "multi",
+      desktopReady: false,
+    });
+    expect(status.desktop_error).toContain("screen layout probe failed");
+    expect(status.ready).toBe(false);
   });
 });
 

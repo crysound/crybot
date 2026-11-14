@@ -91,10 +91,12 @@ describe("container screen layout", () => {
 
   it("keeps signal supervision at root and permanently drops the desktop child identity", () => {
     const script = screenProcessScript();
+    expect(script.startsWith("#!/usr/bin/python3 -I\n")).toBe(true);
     expect(script).toContain("os.setgroups([])\n    os.setgid(user.pw_gid)\n    os.setuid(user.pw_uid)");
     expect(script).toContain("os.seteuid(user.pw_uid)\n        os.killpg(pid, signum)");
     expect(script).toContain("finally:\n        os.seteuid(0)");
     expect(screenSupervisorConf(2)).toContain("screen-process crybot-s2 /usr/bin/Xvnc");
+    expect(screenSupervisorConf(2)).not.toContain("environment=HOME=");
     execFileSync("python3", ["-c", "import sys; compile(sys.argv[1], 'screen-process', 'exec')", script], { stdio: "ignore", timeout: 3000 });
   });
 
@@ -111,7 +113,7 @@ describe("container screen layout", () => {
     for (let n = 1; n <= 4; n++) {
       expect(script).toContain(`groupadd -g ${61000 + n} crybot-s${n}`);
       expect(script).toContain(`useradd -u ${61000 + n} -g ${61000 + n}`);
-      expect(script).toContain(`install -d -o crybot-s${n} -g crybot-s${n} -m 0700 /run/user/${61000 + n}\ninstall -d -o crybot-s${n} -g crybot-s${n} -m 0700 /run/user/${61000 + n}/tmp`);
+      expect(script).toContain(`rm -rf /run/user/${61000 + n}\ninstall -d -o crybot-s${n} -g crybot-s${n} -m 0700 /run/user/${61000 + n}\ninstall -d -o crybot-s${n} -g crybot-s${n} -m 0700 /run/user/${61000 + n}/tmp`);
     }
     execFileSync("sh", ["-n", "-c", script], { timeout: 3000, stdio: "ignore" });
   });

@@ -64,3 +64,24 @@
 当前 worktree 缺少 `docs/verification/README.md` 和独立的 `docs/specs/2026-11-14-multi-screen.md`；已完整读取 brief 中附录的执行规格。所有能运行的验证使用 mock 或隔离临时 fixture，没有访问用户 live app/data。
 
 服务端重启后经 root exec 读回口令，以及包安装工具层暴露，留给接线任务。未改 `server/index.ts`、`server/vps-computer.ts`、IMAGE_LAYER_VERSION 或两种端口安全判定；未处理 main 合入、未提交、未推送。
+
+## 第 3 轮返工（2026-11-14）
+
+### 实现
+
+- 屏幕 supervisor 的 Python 监护脚本改用 `#!/usr/bin/python3 -I`。supervisor 程序段不再注入屏幕用户的 HOME、USER、DISPLAY、XDG_RUNTIME_DIR、TMPDIR 或 DBus 环境；监护进程在 setuid 子进程中设置这些变量后才 exec 屏幕程序。测试锁定 shebang 和 root 程序段环境。
+- 初始化每块屏幕前删除 `/run/user/<uid>` 后重新建立父目录与 tmp 子目录；可被屏幕用户替换的工作区链接和运行目录链接在 root 操作前清理或重建，避免符号链接把 install/chown 导向其他目录。
+- Docker 的 fallback 标记探测移到 network/image/managed/security/persistence 等容器字段赋值之后，使用单独的 try/catch。探测失败写入 `desktop_error` 并保持屏幕未就绪，容器级健康字段继续保留。
+- 屏幕包安装调用改为绝对路径 `/usr/local/sbin/crybot-pkg`。
+- 真实镜像冒烟增加 usercustomize 注入重启检查和运行目录 tmp 符号链接提权检查。收尾时先用容器 root 清空挂载工作区，再删除容器和宿主临时目录；清理错误只输出一行警告，不覆盖检查失败的退出码。
+
+### 第 3 轮验证
+
+- `crybot-link-deps`：通过。
+- `pnpm exec vitest run server/container-screens.test.ts`：22/22 通过。
+- `pnpm exec vitest run server/container-computer.test.ts`：148/148 通过，含标记探测失败回归。
+- `pnpm exec vitest run server/container-mcp.test.ts`：9 项校验通过；原有 4 项子进程桥接 fixture 仍因当前沙箱禁止该管道子进程返回 stdout 而失败，和第 2 轮相同，完整桥接结果以 Actions 为准。
+- `pnpm exec tsc -b --pretty false`、`pnpm exec tsc -p tsconfig.server.json --pretty false`：通过。
+- 本轮改动文件 `oxlint --deny-warnings`、冒烟脚本语法检查、`git diff --check`：通过。
+- `pnpm lint` 仍只报仓库已有的 `server/lazy-container-mcp.ts:122` 与 `scripts/public-scan/scan.mjs:297` 两条 warning，在 `--deny-warnings` 下退出失败；本轮改动文件没有 warning。
+- 当前沙箱没有 Docker daemon，且禁止端口型 e2e；真实镜像 usercustomize、运行目录链接和收尾流程以 Actions「Real VM screens」为准。

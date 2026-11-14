@@ -29,7 +29,6 @@ export function screenSupervisorConf(n: number): string {
     Object.entries(programs).map(([name, command]) => `[program:screen-s${n}-${name}]
 command=prlimit --nproc=1500 -- /usr/local/libexec/crybot/screen-program /usr/local/libexec/crybot/screen-process ${user} ${command}
 user=root
-environment=HOME="/home/${user}",USER="${user}",DISPLAY=":${n}",XDG_RUNTIME_DIR="${runtime}",TMPDIR="${runtime}/tmp",DBUS_SESSION_BUS_ADDRESS="unix:path=${runtime}/bus"
 umask=007
 stdout_logfile=/var/log/supervisor/screen-s${n}-${name}.log
 stderr_logfile=/var/log/supervisor/screen-s${n}-${name}.error.log
@@ -107,7 +106,7 @@ exit "$result"
 
 // Linux kill(2) requires CAP_KILL across UIDs; the fixed desktop capability set omits it.
 export function screenProcessScript(): string {
-  return `#!/usr/bin/python3
+  return `#!/usr/bin/python3 -I
 import os
 import pwd
 import signal
@@ -124,6 +123,17 @@ if pid == 0:
     os.setgroups([])
     os.setgid(user.pw_gid)
     os.setuid(user.pw_uid)
+    suffix = user.pw_name.rsplit("-s", 1)[-1]
+    runtime = f"/run/user/{user.pw_uid}"
+    os.environ.update({
+        "HOME": user.pw_dir,
+        "USER": user.pw_name,
+        "LOGNAME": user.pw_name,
+        "DISPLAY": f":{suffix}",
+        "XDG_RUNTIME_DIR": runtime,
+        "TMPDIR": f"{runtime}/tmp",
+        "DBUS_SESSION_BUS_ADDRESS": f"unix:path={runtime}/bus",
+    })
     os.write(ready_write, b"1")
     os.close(ready_write)
     os.execvp(sys.argv[2], sys.argv[2:])
@@ -207,11 +217,15 @@ ${Array.from({ length: max }, (_, i) => {
 id -u ${user} >/dev/null 2>&1 || useradd -u ${uid} -g ${uid} --create-home --shell /bin/sh ${user}
 [ "$(id -u ${user}):$(id -g ${user})" = "${uid}:${uid}" ] || exit 1
 chmod 0700 /home/${user}
+if [ -L /home/cua/workspace/screens/s${n} ]; then rm -f /home/cua/workspace/screens/s${n}; fi
 install -d -o ${user} -g cua -m 2770 /home/cua/workspace/screens/s${n}
+rm -rf /run/user/${uid}
 install -d -o ${user} -g ${user} -m 0700 /run/user/${uid}
 install -d -o ${user} -g ${user} -m 0700 /run/user/${uid}/tmp
+if [ -L /run/crybot/screens/s${n} ]; then rm -f /run/crybot/screens/s${n}; fi
 install -d -o root -g root -m 0711 /run/crybot/screens/s${n}
-ln -sfn /home/cua/workspace/screens/s${n} /home/${user}/workspace
+rm -rf /home/${user}/workspace
+ln -s /home/cua/workspace/screens/s${n} /home/${user}/workspace
 `;
   }).join("")}
 cat > ${SCREENS_SUPERVISOR_CONFIG} <<'CONF'

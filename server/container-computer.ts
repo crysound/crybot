@@ -672,11 +672,6 @@ async function probeContainerComputerStatus(
       const rootIsHostRoot = desktopRootIsHostRoot(status.runtime, platform, host);
       status.container = detail?.State?.Running ? "running" : "stopped";
       status.screens_layout = screensLayoutOf(detail?.Config?.Labels);
-      if (status.screens_layout === "multi" && status.container === "running") {
-        const fallback = await runner(status.runtime, ["exec", "-u", "0", target.containerName,
-          "env", "-u", "VNC_PW", "sh", "-c", `if [ -f ${SCREENS_FALLBACK_FILE} ]; then echo single; else echo multi; fi`], 8000);
-        status.screens_layout = screensLayoutOf(detail?.Config?.Labels, fallback.stdout.trim() !== "multi");
-      }
       status.stopped_at = status.container === "stopped" ? detail?.State?.FinishedAt ?? null : null;
       status.network = dockerPortsAreLocal(detail?.HostConfig?.PortBindings) ? "loopback" : "unsafe";
       status.viewer_port = dockerViewerPort(detail?.NetworkSettings?.Ports, target.viewerPort);
@@ -706,6 +701,16 @@ async function probeContainerComputerStatus(
   } catch {
   }
 
+  if (options.probeDesktop !== false && status.runtime === "docker" && status.screens_layout === "multi" && status.container === "running") {
+    try {
+      const fallback = await runner(status.runtime, ["exec", "-u", "0", target.containerName,
+        "env", "-u", "VNC_PW", "sh", "-c", `if [ -f ${SCREENS_FALLBACK_FILE} ]; then echo single; else echo multi; fi`], 8000);
+      status.screens_layout = fallback.stdout.trim() === "multi" ? "multi" : "single";
+    } catch (error) {
+      status.desktop_error = error instanceof Error ? `screen layout probe failed: ${error.message.slice(0, 280)}` : "screen layout probe failed";
+    }
+  }
+
   const canProbe = options.probeDesktop !== false &&
     status.container === "running" &&
     status.imageMatches &&
@@ -713,7 +718,7 @@ async function probeContainerComputerStatus(
     status.network === "loopback" &&
     status.security === "hardened" &&
     status.persistence === "durable";
-  if (canProbe && status.screens_layout === "multi") status.desktopReady = true;
+  if (canProbe && status.screens_layout === "multi" && !status.desktop_error) status.desktopReady = true;
   if (canProbe && status.screens_layout !== "multi") {
     try {
       const expected = `cua-driver ${CUA_DRIVER_VERSION}`;
@@ -1123,7 +1128,7 @@ export async function installScreenPackages(target: LocalVmTarget, names: string
   const runtime = options.runtime ?? (await containerRuntimeStatus()).runtime;
   if (!runtime) throw new Error("No container runtime is available");
   await (options.runner ?? sh)(runtime, ["exec", "-u", "0", "-e", `CRYBOT_PACKAGE_SCREEN=s${target.screen}`,
-    target.containerName, "env", "-u", "VNC_PW", "crybot-pkg", ...names], 300_000);
+    target.containerName, "env", "-u", "VNC_PW", "/usr/local/sbin/crybot-pkg", ...names], 300_000);
 }
 
 export type ScreenshotCheck = { ok: boolean; mime: "image/png" | "image/jpeg" };
