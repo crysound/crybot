@@ -28,5 +28,5 @@ struct ConversationListView: View {
 }
 
 struct SidebarGallery: View {
-    var body: some View { ConversationListView() }
+    var body: some View { NavigationStack { ConversationListView() } }
 }

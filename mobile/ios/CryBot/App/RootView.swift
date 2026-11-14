@@ -38,7 +38,7 @@ struct RootView: View {
         @Bindable var store = store
         if sizeClass == .regular {
             NavigationSplitView {
-                RootTabs()
+                RootTabs(usesNavigationStacks: false)
             } detail: {
                 NavigationStack(path: $store.path) {
                     EmptyState(title: ShellText.value("selectConversation"), systemImage: "bubble.left.and.bubble.right")
@@ -46,35 +46,51 @@ struct RootView: View {
                 }
             }
         } else {
-            NavigationStack(path: $store.path) {
-                RootTabs()
-                    .navigationDestination(for: AppRoute.self) { RouteDestination(route: $0) }
-            }
+            RootTabs()
         }
     }
 }
 
 private struct RootTabs: View {
+    var usesNavigationStacks = true
     @Environment(AppStore.self) private var store
 
     var body: some View {
         @Bindable var store = store
         TabView(selection: $store.selectedTab) {
-            ConversationListView()
-                .tabItem {
-                    Label(ShellText.value("chats"), systemImage: "bubble.left.and.bubble.right")
-                        .accessibilityIdentifier("Root.tab.chats")
+            Group {
+                if usesNavigationStacks {
+                    NavigationStack(path: $store.chatsPath) {
+                        ConversationListView()
+                            .navigationDestination(for: AppRoute.self) { RouteDestination(route: $0) }
+                    }
+                } else {
+                    ConversationListView()
                 }
-                .tag(AppStore.RootTab.chats)
-                .accessibilityIdentifier("Root.tab.chats")
-            InboxScreen()
-                .tabItem {
-                    Label(ShellText.value("inbox"), systemImage: "tray")
-                        .accessibilityIdentifier("Root.tab.inbox")
+            }
+            .tabItem {
+                Label(ShellText.value("chats"), systemImage: "bubble.left.and.bubble.right")
+                    .accessibilityIdentifier("Root.tab.chats")
+            }
+            .tag(AppStore.RootTab.chats)
+            .accessibilityIdentifier("Root.tab.chats")
+            Group {
+                if usesNavigationStacks {
+                    NavigationStack(path: $store.inboxPath) {
+                        InboxScreen()
+                            .navigationDestination(for: AppRoute.self) { RouteDestination(route: $0) }
+                    }
+                } else {
+                    InboxScreen()
                 }
-                .badge(store.inboxUnreadCount)
-                .tag(AppStore.RootTab.inbox)
-                .accessibilityIdentifier("Root.tab.inbox")
+            }
+            .tabItem {
+                Label(ShellText.value("inbox"), systemImage: "tray")
+                    .accessibilityIdentifier("Root.tab.inbox")
+            }
+            .badge(store.inboxUnreadCount)
+            .tag(AppStore.RootTab.inbox)
+            .accessibilityIdentifier("Root.tab.inbox")
         }
     }
 }
@@ -87,7 +103,7 @@ private struct RouteDestination: View {
         case .conversation(let ref):
             switch ref {
             case .bot: ChatScreen(ref: ref)
-            case .group(let id, _, _): GroupScreen(group: id)
+            case .group(let id, let thread, let focus): GroupScreen(group: id, thread: thread, focus: focus)
             }
         case .inbox: InboxScreen()
         case .notifications: NotificationsScreen()

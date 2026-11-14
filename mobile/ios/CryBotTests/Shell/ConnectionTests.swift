@@ -8,7 +8,7 @@ import CryCore
 
 @MainActor
 final class ConnectionTests: XCTestCase {
-    func testBackoffCapsAtThirtySecondsAndAnyFrameResetsIt() {
+    func testBackoffCapsAtThirtySecondsAndStableConnectionResetsIt() {
         var policy = ConnectionPolicy(now: 10)
         XCTAssertEqual((0..<8).map { _ in policy.retryDelay() }, [1, 2, 4, 8, 16, 30, 30, 30])
         XCTAssertFalse(policy.isTimedOut(at: 49.999))
@@ -16,9 +16,9 @@ final class ConnectionTests: XCTestCase {
         policy.connected(at: 60)
         XCTAssertFalse(policy.isTimedOut(at: 99))
         XCTAssertEqual(policy.retryDelay(), 30)
-        policy.receivedFrame(at: 80)
-        XCTAssertFalse(policy.isTimedOut(at: 119.999))
-        XCTAssertTrue(policy.isTimedOut(at: 120))
+        policy.receivedFrame(at: 90)
+        XCTAssertFalse(policy.isTimedOut(at: 129.999))
+        XCTAssertTrue(policy.isTimedOut(at: 130))
         XCTAssertEqual(policy.retryDelay(), 1)
     }
 
@@ -52,9 +52,10 @@ final class ConnectionTests: XCTestCase {
 
     func testPingExtendsDeadlineAndResumeCarriesCursor() async throws {
         let clock = ShellManualClock()
-        let hello = ServerFrame.hello(ServerFrameHello(resumed: true, cursor: "fixture-cursor"))
+        let hello = ServerFrame.hello(ServerFrameHello(resumed: true, cursor: "STREAM:0"))
         let store = try AppStore.fixture(loaded: shellScenario(frames: [
-            .init(afterMs: 1_000, frame: hello),
+            .init(afterMs: 0, frame: hello),
+            .init(afterMs: 1_000, frame: try shellFrame(#"{"kind":"mcp.changed","seq":7}"#)),
             .init(afterMs: 30_000, frame: .ping(ServerFramePing()))
         ]), clock: clock.clock)
         let transport = try XCTUnwrap(store.transport as? FixtureTransport)
@@ -62,7 +63,7 @@ final class ConnectionTests: XCTestCase {
         store.resumeRealtime()
         try await shellEventually { clock.sleeperCount == 2 }
         clock.advance(by: 1)
-        try await shellEventually { store.connectionStatus == .connected && clock.sleeperCount == 2 }
+        try await shellEventually { store.state.unhandledFrameCounts["mcp.changed"] == 1 && clock.sleeperCount == 2 }
         clock.advance(by: 29)
         try await shellEventually { store.state.unhandledFrameCounts["ping"] == 1 }
         clock.advance(by: 10)
@@ -74,7 +75,7 @@ final class ConnectionTests: XCTestCase {
         try await shellEventually { store.connectionStatus == .waiting(1) && clock.sleeperCount == 1 }
         clock.advance(by: 1)
         try await shellEventually { transport.requests.count == 2 }
-        XCTAssertEqual(transport.requests.last?.since, "fixture-cursor")
+        XCTAssertEqual(transport.requests.last?.since, "STREAM:7")
     }
 
     func testHelloWithoutResumeRefreshesSnapshotButResumedHelloDoesNot() async throws {
@@ -98,6 +99,102 @@ final class ConnectionTests: XCTestCase {
         XCTAssertEqual(transport.requests.filter { $0.path == "/api/bots" }.count, 1)
     }
 
+    func testFirstConnectionWaitsForHelloAndOnlyNonResumedHelloLoadsOneSnapshot() async throws {
+        for resumed in [false, true] {
+            let clock = ShellManualClock()
+            let transport = ShellControlledTransport()
+            let store = AppStore(clock: clock.clock)
+            defer { store.pauseRealtime() }
+            store.attach(transport: transport)
+            try await shellEventually { transport.eventRequests.count == 1 }
+            XCTAssertFalse(store.isFixture)
+            XCTAssertTrue(transport.base.requests.isEmpty)
+            transport.emit(.hello(ServerFrameHello(resumed: resumed, cursor: "STREAM:0")))
+            try await shellEventually {
+                store.connectionStatus == .connected && (resumed || transport.inboxRequestCount == 1)
+            }
+            XCTAssertEqual(transport.base.requests.filter { $0.path == "/api/bots" }.count, resumed ? 0 : 1)
+            XCTAssertEqual(transport.inboxRequestCount, resumed ? 0 : 1)
+        }
+    }
+
+    func testHelloOnlyDisconnectionsKeepIncreasingBackoff() async throws {
+        let clock = ShellManualClock()
+        let transport = ShellControlledTransport()
+        let store = AppStore(clock: clock.clock)
+        defer { store.pauseRealtime() }
+        store.attach(transport: transport)
+        for (index, delay) in [1.0, 2.0, 4.0, 8.0].enumerated() {
+            try await shellEventually { transport.eventRequests.count == index + 1 && clock.sleeperCount == 1 }
+            transport.emit(.hello(ServerFrameHello(resumed: true, cursor: "STREAM:0")))
+            try await shellEventually { store.connectionStatus == .connected }
+            transport.finish()
+            try await shellEventually { store.connectionStatus == .waiting(delay) && clock.sleeperCount == 1 }
+            clock.advance(by: delay)
+        }
+    }
+
+    func testLiveInboxBadgeRefreshesAfterSnapshotAndRelevantFrames() async throws {
+        let clock = ShellManualClock()
+        let scenario = try FixtureScenario.load(named: "shell-basic")
+        let transport = ShellControlledTransport(scenario: scenario)
+        transport.inboxCount = 3
+        let store = AppStore(clock: clock.clock)
+        defer { store.pauseRealtime() }
+        store.attach(transport: transport)
+        try await shellEventually { transport.eventRequests.count == 1 }
+        XCTAssertFalse(store.isFixture)
+        XCTAssertEqual(store.inboxUnreadCount, 0)
+        transport.emit(.hello(ServerFrameHello(resumed: false, cursor: "STREAM:0")))
+        try await shellEventually { store.inboxUnreadCount == 3 }
+        XCTAssertEqual(transport.inboxRequestCount, 1)
+        let changes: [(ServerFrame, Int)] = [
+            (.bot(ServerFrameBot(bot: scenario.snapshot.bots[0])), 5),
+            (.group(ServerFrameGroup(group: scenario.snapshot.groups[0])), 4),
+            (.botDeleted(ServerFrameBotDeleted(botId: "bot-1")), 2),
+            (.notificationsRead(ServerFrameNotificationsRead(threadId: "thread-1", ids: [])), 0)
+        ]
+        for (frame, count) in changes {
+            transport.inboxCount = count
+            transport.emit(frame)
+            try await shellEventually { store.inboxUnreadCount == count }
+        }
+        XCTAssertEqual(transport.inboxRequestCount, 5)
+        transport.inboxCount = 2
+        try await store.refreshSnapshot()
+        XCTAssertEqual(store.inboxUnreadCount, 2)
+        XCTAssertEqual(transport.inboxRequestCount, 6)
+    }
+
+    func testReconnectSinceUsesLatestSequenceAfterHello() async throws {
+        let clock = ShellManualClock()
+        let transport = ShellControlledTransport()
+        let store = AppStore(clock: clock.clock)
+        defer { store.pauseRealtime() }
+        store.attach(transport: transport)
+        try await shellEventually { transport.eventRequests.count == 1 }
+        transport.emit(.hello(ServerFrameHello(resumed: true, cursor: "STREAM:0")))
+        transport.emit(try shellFrame(#"{"kind":"mcp.changed","seq":42}"#))
+        try await shellEventually { store.state.unhandledFrameCounts["mcp.changed"] == 1 }
+        transport.finish()
+        try await shellEventually { store.connectionStatus == .waiting(1) && clock.sleeperCount == 1 }
+        clock.advance(by: 1)
+        try await shellEventually { transport.eventRequests.count == 2 }
+        XCTAssertEqual(transport.eventRequests.last?.since, "STREAM:42")
+        XCTAssertEqual(transport.eventRequests.last?.screens, false)
+    }
+
+    func testCursorHandlesUnknownFramesHeartbeatAndStreamChanges() throws {
+        XCTAssertEqual(FrameCursor.value(for: try shellFrame(#"{"kind":"future","seq":9}"#), previous: "STREAM:8"), "STREAM:9")
+        XCTAssertNil(FrameCursor.value(for: .ping(ServerFramePing()), previous: "STREAM:9"))
+        XCTAssertEqual(FrameCursor.value(for: .hello(ServerFrameHello(resumed: false, cursor: "NEXT:0")), previous: "STREAM:9"), "NEXT:0")
+        for seq in ["-1", "1.5", "9007199254740992", "null", "\"9\""] {
+            let frame = try shellFrame("{\"kind\":\"mcp.changed\",\"seq\":\(seq)}")
+            XCTAssertNil(FrameCursor.value(for: frame, previous: "STREAM:9"))
+        }
+        XCTAssertNil(FrameCursor.value(for: try shellFrame(#"{"kind":"mcp.changed","seq":1}"#), previous: nil))
+    }
+
     func testAttachLoadsSnapshotAndDetachStopsStream() async throws {
         let clock = ShellManualClock()
         let transport = FixtureTransport(scenario: try FixtureScenario.load(named: "shell-basic"), clock: clock.clock)
@@ -105,7 +202,8 @@ final class ConnectionTests: XCTestCase {
         store.attach(transport: transport)
         try await shellEventually { store.state.bots.count == 2 && transport.requests.contains { $0.operation == .events } }
         XCTAssertTrue(store.signedIn)
-        XCTAssertEqual(transport.requests.first?.path, "/api/bots")
+        XCTAssertEqual(transport.requests.first?.path, "/api/events")
+        XCTAssertEqual(transport.requests.filter { $0.path == "/api/bots" }.count, 1)
         store.detach()
         XCTAssertNil(store.transport)
         XCTAssertEqual(store.connectionStatus, .disconnected)

@@ -76,6 +76,20 @@ final class FixtureTransportTests: XCTestCase {
         try await shellEventually { clock.sleeperCount == 0 }
     }
 
+    func testResumeSkipsFramesThroughTheHelloPrefixAndSequence() async throws {
+        let scenario = shellScenario(frames: [
+            .init(afterMs: 0, frame: .hello(ServerFrameHello(resumed: true, cursor: "STREAM:0"))),
+            .init(afterMs: 0, frame: try shellFrame(#"{"kind":"sections","sections":["old"],"seq":7}"#)),
+            .init(afterMs: 0, frame: try shellFrame(#"{"kind":"sections","sections":["new"],"seq":8}"#))
+        ])
+        let transport = FixtureTransport(scenario: scenario)
+        var iterator = transport.events(since: "STREAM:7", screens: false).makeAsyncIterator()
+        let frame = try await iterator.next()
+        guard case .sections(let sections) = frame else { return XCTFail("Expected the next sequenced frame") }
+        XCTAssertEqual(sections.sections, ["new"])
+        XCTAssertEqual(sections.additionalFields["seq"], .number(8))
+    }
+
     func testMalformedFixtureTimingIsRejected() {
         let json = #"{"signedIn":true,"snapshot":{"bots":[],"groups":[],"sections":[]},"frames":[{"afterMs":-1,"frame":{"kind":"ping"}}]}"#
         XCTAssertThrowsError(try JSONDecoder().decode(FixtureScenario.self, from: Data(json.utf8)))

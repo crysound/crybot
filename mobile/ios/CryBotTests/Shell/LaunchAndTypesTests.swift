@@ -17,6 +17,8 @@ final class LaunchAndTypesTests: XCTestCase {
         XCTAssertNil(missing.appearance)
         XCTAssertEqual(missing.gallery, "Chat")
         XCTAssertEqual(LaunchOptions(arguments: ["-CryAppearance", "light"]).appearance, .light)
+        XCTAssertEqual(LaunchOptions(arguments: ["-CryAppearance", "LIGHT"]).appearance, .light)
+        XCTAssertEqual(LaunchOptions(arguments: ["-CryAppearance", "DaRk"]).appearance, .dark)
         XCTAssertNil(LaunchOptions(arguments: ["-CryGallery"]).gallery)
     }
 

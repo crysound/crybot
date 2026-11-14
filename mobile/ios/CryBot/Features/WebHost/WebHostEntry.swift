@@ -74,7 +74,44 @@ struct WebMessageSummary: View {
 }
 
 struct WebHostGallery: View {
+    enum Scene: Hashable { case screen, menu, summary }
+    @Environment(AppStore.self) private var store
+    @State private var scene: Scene
+
+    init(scene: Scene = .screen) { _scene = State(initialValue: scene) }
+
     var body: some View {
-        WebHostScreen(target: .settings(nil))
+        TabView(selection: $scene) {
+            WebHostScreen(target: .settings(nil))
+                .tabItem { Text("WebHostScreen") }
+                .accessibilityIdentifier("WebHostGallery.screen")
+                .tag(Scene.screen)
+            NavigationStack {
+                VStack(spacing: Theme.Spacing.medium) {
+                    WebEntryMenu(scope: .global)
+                    WebEntryMenu(scope: .bot("bot-1"))
+                    WebEntryMenu(scope: .group("group-1"))
+                }
+            }
+            .tabItem { Text("WebEntryMenu") }
+            .accessibilityIdentifier("WebHostGallery.menu")
+            .tag(Scene.menu)
+            NavigationStack {
+                VStack(spacing: Theme.Spacing.medium) {
+                    WebMessageSummary(message: .widget(WireMessageFields(id: "message-3", role: .bot, at: 3)), context: context)
+                    WebMessageSummary(message: .app(WireMessageFields(id: "message-4", role: .bot, at: 4)), context: context)
+                }
+                .padding()
+            }
+            .tabItem { Text("WebMessageSummary") }
+            .accessibilityIdentifier("WebHostGallery.summary")
+            .tag(Scene.summary)
+        }
+    }
+
+    private var context: MessageContext {
+        MessageContext(conversation: .bot("bot-1", thread: "thread-1"), thread: "thread-1",
+                       isStreaming: false, isGroup: false, respond: { try await store.respond($0) },
+                       openLink: { _ in }, open: { store.navigate(to: $0) })
     }
 }

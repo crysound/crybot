@@ -131,9 +131,14 @@ final class FixtureTransport: Transport, @unchecked Sendable {
         let entries = scenario.frames.enumerated().sorted {
             $0.element.afterMs == $1.element.afterMs ? $0.offset < $1.offset : $0.element.afterMs < $1.element.afterMs
         }.map(\.element)
-        let startIndex = since.flatMap { cursor in
-            entries.lastIndex { FrameCursor.value(for: $0.frame) == cursor }.map { $0 + 1 }
-        } ?? 0
+        var frameCursor: String?
+        var startIndex = 0
+        for (index, entry) in entries.enumerated() {
+            if let next = FrameCursor.value(for: entry.frame, previous: frameCursor) {
+                frameCursor = next
+                if let since, next == since { startIndex = index + 1 }
+            }
+        }
         let clock = clock
         return AsyncThrowingStream { continuation in
             let task = Task {

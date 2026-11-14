@@ -1,124 +1,113 @@
 # T-1221-app-shell 交付报告
 
-## 第 1 轮：2026-11-14
+## 第 1 轮：2026-11-14（实现记录摘要）
 
-已在工作区写入 SwiftUI 骨架、夹具传输、19 个功能占位和 27 个 XCTest 方法；没有提交、推送或运行 App。本轮不作 App 编译或测试通过的结论。Actions 运行链接由协调者补充。
+上轮交付 SwiftUI 骨架、状态仓库、夹具传输、19 个功能占位、主题资源及 27 个 XCTest 方法；当时只有静态核对，没有 App 编译、XCTest 执行或截图结果。上轮实现已包含在本次检出的已提交基线中，不能再描述为「等待创建分支、尚未提交的工作区代码」。与 brief 重复的入口表、任务要求和旧环境脚本已删去；本轮的实际状态如下。
 
-### 1. 文件改动
+## 第 2 轮：2026-11-14（审核第 1 轮返工）
 
-下表路径以 `mobile/ios/` 为根。
+本轮在已有代码上修复，未创建提交、未推送。当前沙箱的 `git branch --show-current` 输出为 `master`，`git log -1 --format='%h %s'` 输出为 `758b74a InstaBox task baseline`；上一轮文件已在 HEAD 中。本轮差异留在工作区，待协调者带回任务分支。
+
+### 审核意见逐条处理
+
+| 项 | 本轮结果与依据 |
+|---|---|
+| 1 续传游标 | `FrameCursor` 直接读取各帧 payload 的 `additionalFields["seq"]`，unknown 读取 raw 对象；使用 hello cursor 的 stream 前缀拼成 `STREAM:seq`。无 seq 的 ping 不改变游标，拒绝非整数、负数和超过 JS 安全整数范围的 seq。不再逐帧编码/解码。FixtureTransport 同步使用该规则定位续传位置。`shell-basic.json` 增加真实 hello，后续帧只带数字 seq。测试断言 hello 后 seq=42，第二次 `events` 的 since 为 `STREAM:42`；另测 ping、未知帧、stream 切换及夹具从 seq=7 后回放 seq=8。 |
+| 2 图片 URL | `ImageDataCache.swift` 在读取缓存和 Transport 前检查 scheme、host 均为空，且没有 baseURL；绝对 URL 直接抛 `EndpointError.invalidPath`，AuthImage 现有失败分支显示占位。相对路径测试检查下载数据、query、缓存和退出清理；绝对 https/http、协议相对 URL、file URL 即使命中预填缓存也失败，并断言请求记录为空。 |
+| 3 紧凑布局 | TabView 中对话与收件箱各自拥有 NavigationStack，分别绑定 `chatsPath` / `inboxPath`；push 发生在页签内。iPad 保留 NavigationSplitView，detail 使用当前页签路径。规格 §6 要求系统导航控件，没有相反的层级规定。测试覆盖切换页签后各自路径保留；页签栏、标题与 toolbar 的实际渲染待 Actions。 |
+| 4 群聊引用 | `RouteDestination` 显式把 group、thread、focus 传给 GroupScreen。保留 `GroupScreen(group:)` 调用形式，新增带默认 nil 的 thread/focus 参数，在入口内构成完整 `ref`；不再读取 `store.path.last`。测试覆盖导航继续 push 后入口的 ref 不变。focus 保存给后续群聊实现使用，占位页没有新增消息定位功能。 |
+| 5 未读数 | `refreshSnapshot()` 成功加载快照后刷新 inbox count；bot/group、删除、message/message.patch、thread、notify/notifications.read、snapshot 帧归并后也刷新。计数请求失败保留已有值，不使有效事件流反复重连（服务端无收件箱时可能返回 404，见 `server/routes/inbox.ts:27`）。测试通过普通 attach 分支（`isFixture == false`，底层仍为隔离测试传输）验证初始 0 → hello 快照后 3 → bot 5 → group 4 → 删除 2 → notifications.read 0，再手动快照刷新至 2。 |
+| 6 初次快照 | 删除连接前的预拉取；只有 hello.resumed=false 拉快照。快照失败时清除本连接的游标，让下次重新取得完整状态。测试断言 hello 前无快照请求，false 恰好一次，true 零次。 |
+| 7 连接状态 | receive 中仅在当前状态不是 connected 时写 connected，普通连续帧不重复触发该属性更新。 |
+| 8 deinit 隔离 | 删除 AppStore 的 deinit，将 Task 存放在非 actor 的私有 ConnectionTaskLifetime 中，由它的 deinit 取消自身 Task；不从 nonisolated deinit 访问 MainActor 属性，不加 unsafe 隔离绕过。Swift 6 编译验证仍受下述工具链缺失限制。 |
+| 9 退避 | 连续连接至少 30 秒后的帧才清零失败数；重连开始重置稳定时间起点。新增只发 hello 随即断开的流测试，逐次等待 1/2/4/8 秒；原策略测试覆盖 30 秒上限、稳定后复位和 40 秒无帧超时。 |
+| 10 消息布局 | 第二个测试对全部 15 个已知 kind 和 unknown 比较完整的 `[leadingExtras, 对应正文, attachments, trailingExtras]`，包含正文 part 断言。 |
+| 11 Gallery | SidebarGallery 外层增加 NavigationStack。WebHostGallery 增加 menu/summary scene，默认 screen 保留；可以直接构造 `WebHostGallery(scene: .menu)` 或 `.summary` 供 App 内截图，或在 Gallery 页签选择。menu 含 global/bot/group，summary 含 widget/app。没有在本机生成截图。 |
+| 12 外观参数 | `-CryAppearance` 值先 lowercased；新增 LIGHT、DaRk 测试，原有无效值/缺值测试保留。 |
+| 13 设计令牌 | 增加六个 Color Set 及 Theme 属性，RGBA 逐通道对照 CSS。规格 §6（`docs/specs/2026-11-14-ios-native.md:318`、`:319`）要求系统控件、动态字体及 Accessibility L 不截断，没有要求间距按字体缩放；保留现有固定 Spacing 和系统动态 Font。实际大字体布局仍需截图验收。 |
+| 14 报告 | 保留上轮实现摘要，追加本轮结果、协议行号、逐项验收及原始检查输出；更正提交状态。任务描述说本机有 swiftc，但本次实际检索没有找到，不能据此填写虚假的编译结果。 |
+
+协议核对依据（只读，没有改服务端）：
+
+- `server/index.ts:4749` 递增 seq；`:4751` 写 SSE `id: STREAM_ID:seq` 并把数字 seq 放进 data；`:4754` 的客户端投影也保持同样格式。
+- `server/index.ts:14716` 从 Last-Event-ID / since 读取续传位置；`:14728`–`:14730` 的 hello 才有 cursor；`:14735` 跳过 seq 小于等于 since 的缓冲帧。`:14700` 附近的 heartbeat 不带 id。
+- CryCore `WireModels.swift:6318` 的 hello 有 cursor，普通 payload 通过 additionalFields 保留 seq；Transport 目前只交付 ServerFrame，没有 SSE id 参数，因此在本任务允许范围内用 stream 前缀加 seq 解决。
+
+### 本轮文件
+
+路径以 `mobile/ios/` 为根；仅下列原允许路径及本报告有版本控制差异。
 
 | 文件 | 改动 |
 |---|---|
-| `CryBot/AppDelegate.swift` | 移除 UIKit 窗口、旧控制器与回调转发，保留 UIApplicationDelegateAdaptor 所需的启动代理。 |
-| `CryBot/ViewController.swift` | 删除旧网页壳控制器。 |
-| `CryBot/App/CryBotApp.swift` | 提供 SwiftUI @main、两种 URL 回调、外观启动参数与前后台连接处理；真实模式前台继续刷新手表，夹具模式不实例化 WatchSync。 |
-| `CryBot/App/RootView.swift` | 提供登录分支、对话/收件箱两页签、未读徽标、iPad 分栏、原生 push、提醒层和根级 fullScreenCover 网页占位。 |
-| `CryBot/App/Types.swift` | 定义人员、会话、消息上下文、动作和所有原生/网页路由类型，导航与动作值支持 Hashable。 |
-| `CryBot/App/LaunchOptions.swift` | 解析场景、外观和 Gallery 启动参数，忽略缺值与无效外观。 |
-| `CryBot/App/GalleryDestination.swift` | 按名字选择 19 个 Gallery。 |
-| `CryBot/App/MessageBodyView.swift` | 按纯逻辑的固定计划组合正文、附件及前后附加信息，widget/app 使用网页摘要。 |
-| `CryBot/App/Logic/MessageLayout.swift` | 完整分发 15 种消息及 unknown，未知消息仍保留可解码的附件。 |
-| `CryBot/App/Logic/FrameCursor.swift` | 统一提取 hello 与普通帧 JSON 中的 cursor。 |
-| `CryBot/App/ShellText.swift` | 从独立 Shell 文案表读取骨架文案，不使用旧 Localizable 表。 |
-| `CryBot/App/Shell.xcstrings` | 提供页签、菜单、关闭、加载、错误和摘要等英文/简体中文文案。 |
-| `CryBot/App/Fixtures/shell-basic.json` | 提供两个机器人、一个群聊、文本/widget/app 消息、未读计数、定时帧和示例 socket 数据。 |
-| `CryBot/App/Fixtures/shell-signed-out.json` | 提供无登录的隔离场景。 |
-| `CryBot/Store/AppStore.swift` | 实现 Transport 接入、CoreEndpoints 动作、快照/翻页、帧订阅、导航、连接生命周期和顺序退出登录。 |
-| `CryBot/Store/ConnectionPolicy.swift` | 实现可注入单调时钟、40 秒无帧判断和 1/2/4/8/16/30 秒退避。 |
-| `CryBot/Store/FixtureTransport.swift` | 加载包内场景、匹配响应、记录请求并定时回放 SSE 与 WebSocket，缺响应直接报错。 |
-| `CryBot/Store/ImageDataCache.swift` | 经当前 Transport 下载图片并使用有容量上限的会话内缓存，退出/换传输清除缓存。 |
-| `CryBot/Design/Theme.swift` | 提供 daylight/midnight 语义颜色、品牌紫、动态字号、间距与圆角令牌。 |
-| `CryBot/Design/Controls.swift` | 提供 CardContainer、SectionHeader、EmptyState、ErrorBanner 和 LoadingRow。 |
-| `CryBot/Design/AuthImage.swift` | 将当前 Transport 下载的缓存图片显示为原生图片，并处理取消与失败。 |
-| `CryBotTests/Shell/ShellTestSupport.swift` | 提供取消安全的手动时钟、异步条件等待与延迟响应传输。 |
-| `CryBotTests/Shell/AppStoreTests.swift` | 用 11 个测试覆盖同步夹具、状态归并、订阅取消、导航、顺序/并发退出、旧响应隔离、动作、历史与图片缓存。 |
-| `CryBotTests/Shell/ConnectionTests.swift` | 用 5 个测试覆盖退避、无帧超时、后台取消、游标恢复、ping 保活和 hello 快照刷新。 |
-| `CryBotTests/Shell/FixtureTransportTests.swift` | 用 4 个测试覆盖响应匹配、请求记录、上传下载、socket 回放/关闭和无效场景。 |
-| `CryBotTests/Shell/MessageLayoutTests.swift` | 用 3 个测试覆盖全部 kind、unknown、附件与附加信息顺序。 |
-| `CryBotTests/Shell/LaunchAndTypesTests.swift` | 用 4 个测试覆盖启动参数、共用类型、Hashable 与禁止目录静态检查。 |
+| `CryBot/App/Logic/FrameCursor.swift` | 直接提取 seq、保留 hello 前缀并处理未知帧。 |
+| `CryBot/App/Fixtures/shell-basic.json` | 使用 hello cursor + 后续 seq 的服务端形状。 |
+| `CryBot/App/RootView.swift` | 每页签独立导航栈并传递完整群聊参数。 |
+| `CryBot/App/LaunchOptions.swift` | 外观取值忽略大小写。 |
+| `CryBot/Store/AppStore.swift` | 修复快照时机、游标、未读数调用、导航路径及 Task 生命周期。 |
+| `CryBot/Store/ConnectionPolicy.swift` | 增加 30 秒稳定阈值。 |
+| `CryBot/Store/FixtureTransport.swift` | 以真实 seq 规则定位回放起点。 |
+| `CryBot/Store/ImageDataCache.swift` | 在下载和缓存之前拒绝非相对 URL。 |
+| `CryBot/Features/Group/GroupEntry.swift` | 显式接收 thread/focus，保留原入口调用。 |
+| `CryBot/Features/Sidebar/SidebarEntry.swift` | Gallery 提供工具栏所需的导航容器。 |
+| `CryBot/Features/WebHost/WebHostEntry.swift` | 增加可选的菜单和摘要 Gallery 场景。 |
+| `CryBot/Design/Theme.swift` | 暴露六个新增语义色。 |
+| `CryBotTests/Shell/AppStoreTests.swift` | 更新夹具，补图片拒绝、独立页签路径及群聊引用测试。 |
+| `CryBotTests/Shell/ConnectionTests.swift` | 补最新游标、首个 hello、真实 attach 未读数及 hello-only 退避测试。 |
+| `CryBotTests/Shell/FixtureTransportTests.swift` | 补按 seq 跳过已处理帧的回放测试。 |
+| `CryBotTests/Shell/LaunchAndTypesTests.swift` | 补外观大小写测试。 |
+| `CryBotTests/Shell/MessageLayoutTests.swift` | 加强带附件消息的正文断言。 |
+| `CryBotTests/Shell/ShellTestSupport.swift` | 增加可主动发送/结束事件流、改变 inbox 计数的隔离传输。 |
 
-19 个占位目录及固定入口如下；表中两个文件都位于 `CryBot/Features/<目录>/`，每个 Entry 文件同时包含 `<目录>Gallery()`。
+六个资源各为 `CryBot/Assets.xcassets/<名称>.colorset/Contents.json`：
 
-| 目录 | Entry 文件与说明 | 固定入口签名 | 文案文件与说明 |
-|---|---|---|---|
-| Login | `LoginEntry.swift`：提供 LoginModel 与返回 false 的 LoginRouter 占位。 | `LoginFlowView(model: LoginModel)`、`LoginRouter.handle(url: URL) -> Bool` | `Login.xcstrings`：空字符串表，源语言 en。 |
-| Avatar | `AvatarEntry.swift`：按固定签名显示入口名称和占位标识。 | `BotAvatar(bot: WireBot, size: CGFloat)`、`PersonAvatar(person: PersonRef, size: CGFloat)` | `Avatar.xcstrings`：空字符串表，源语言 en。 |
-| Sidebar | `SidebarEntry.swift`：列出夹具会话，并在工具栏放 global 菜单。 | `ConversationListView()` | `Sidebar.xcstrings`：空字符串表，源语言 en。 |
-| Chat | `ChatEntry.swift`：提供单聊页头 bot 菜单及调用冻结消息分发器的时间线占位。 | `ChatScreen(ref: ConversationRef)`、`ThreadTimelineView(thread: ThreadID, style: TimelineStyle)` | `Chat.xcstrings`：空字符串表，源语言 en。 |
-| Composer | `ComposerEntry.swift`：按固定签名显示入口名称和占位标识。 | `ComposerView(target: ComposerTarget)` | `Composer.xcstrings`：空字符串表，源语言 en。 |
-| Activity | `ActivityEntry.swift`：按固定签名显示入口名称和占位标识。 | `ActivityMessageView(message: WireMessage, context: MessageContext)`、`RuntimeItemsView(thread: ThreadID)` | `Activity.xcstrings`：空字符串表，源语言 en。 |
-| Markdown | `MarkdownEntry.swift`：按固定签名显示入口名称和占位标识。 | `MarkdownView(source: String, streaming: Bool, context: MessageContext)` | `Markdown.xcstrings`：空字符串表，源语言 en。 |
-| Code | `CodeEntry.swift`：按固定签名显示入口名称和占位标识。 | `CodeBlockView(code: String, language: String?)` | `Code.xcstrings`：空字符串表，源语言 en。 |
-| Math | `MathEntry.swift`：按固定签名显示入口名称和占位标识。 | `MathView(latex: String, display: Bool)` | `Math.xcstrings`：空字符串表，源语言 en。 |
-| Media | `MediaEntry.swift`：按固定签名显示入口名称和占位标识。 | `AttachmentsView(attachments: [WireAttachment], context: MessageContext)` | `Media.xcstrings`：空字符串表，源语言 en。 |
-| CardsApproval | `CardsApprovalEntry.swift`：按固定签名显示入口名称和占位标识。 | `OptionsCardView(message: WireMessage, context: CardContext)` | `CardsApproval.xcstrings`：空字符串表，源语言 en。 |
-| CardsRequests | `CardsRequestsEntry.swift`：按固定签名显示入口名称和占位标识。 | `RequestCardBody(card: OptionCardData, kind: RequestCardKind, context: CardContext)` | `CardsRequests.xcstrings`：空字符串表，源语言 en。 |
-| CardsConnect | `CardsConnectEntry.swift`：按固定签名显示入口名称和占位标识。 | `ConnectCardView(message: WireMessage, context: CardContext)` | `CardsConnect.xcstrings`：空字符串表，源语言 en。 |
-| Records | `RecordsEntry.swift`：按固定签名显示入口名称和占位标识。 | `RecordRowView(message: WireMessage, context: MessageContext)` | `Records.xcstrings`：空字符串表，源语言 en。 |
-| MessageExtras | `MessageExtrasEntry.swift`：按固定签名显示入口名称和占位标识。 | `MessageLeadingExtras(message: WireMessage, context: MessageContext)`、`MessageTrailingExtras(message: WireMessage, context: MessageContext)` | `MessageExtras.xcstrings`：空字符串表，源语言 en。 |
-| Group | `GroupEntry.swift`：提供群聊页头 group 菜单，并保留路由所带线程。 | `GroupScreen(group: GroupID)` | `Group.xcstrings`：空字符串表，源语言 en。 |
-| Inbox | `InboxEntry.swift`：提供收件箱、通知与不拦截触摸的提醒层占位。 | `InboxScreen()`、`NotificationsScreen()`、`NotifyBannerHost()` | `Inbox.xcstrings`：空字符串表，源语言 en。 |
-| Desktop | `DesktopEntry.swift`：按固定签名显示入口名称和占位标识。 | `DesktopViewer(target: DesktopTarget)` | `Desktop.xcstrings`：空字符串表，源语言 en。 |
-| WebHost | `WebHostEntry.swift`：提供原生全屏容器占位、关闭按钮、菜单和消息打开按钮。 | `WebHostScreen(target: WebHostTarget)`、`WebEntryMenu(scope: WebEntryScope)`、`WebMessageSummary(message: WireMessage, context: MessageContext)` | `WebHost.xcstrings`：空字符串表，源语言 en。 |
+| 名称 | daylight | midnight |
+|---|---|---|
+| ThemeAccentInk | #FFFFFF | #FFFFFF |
+| ThemeDangerInk | #FFFFFF | #FFFFFF |
+| ThemeSuccessInk | #FFFFFF | #072114 |
+| ThemeAccentBorder | #1680F3 | #459FFE |
+| ThemeEdge | #1C1C1C1F | #F5F5F50F |
+| ThemeMenu | #FFFFFF | #1F1F1F |
 
-空 `.xcstrings` 使用标准的 `sourceLanguage: en / strings: {} / version: 1.0`；空表没有语言条目可填写，工程现有 knownRegions 已含 en、zh-Hans。实际新增的骨架文案在 `Shell.xcstrings` 中逐项包含这两种语言。
+对应源为 `src/styles.css:259` 的 midnight 和 `:750` 的 daylight 块，未修改网页文件。
 
-新增以下 Color Set；路径为 `CryBot/Assets.xcassets/<名字>.colorset/Contents.json`，每个文件提供浅色默认值和深色覆盖，未改原有图标及 LaunchBackground。
+### 检查命令与实际输出
 
-| 名字 | 说明 |
-|---|---|
-| ThemeAccent | 提供浅色 `#126FD4`、深色 `#1084FE`。 |
-| ThemeAccentText | 提供浅色 `#0B69CC`、深色 `#7FC0FF`。 |
-| ThemeBackground | 提供浅色 `#FCFCFC`、深色 `#121212`。 |
-| ThemeBrand | 提供浅色 `#5733E6`、深色 `#5733E6`。 |
-| ThemeCard | 提供浅色 `#EFEFEF`、深色 `#1F1F1F`。 |
-| ThemeComposer | 提供浅色 `#FFFFFF`、深色 `#1F1F1F`。 |
-| ThemeControl | 提供浅色 `#E3E3E3`、深色 `#282828`。 |
-| ThemeDanger | 提供浅色 `#CD2834`、深色 `#FF5667`。 |
-| ThemeHairline | 提供浅色 `#1C1C1C3D`、深色 `#383838`。 |
-| ThemeInk | 提供浅色 `#1C1C1C`、深色 `#F5F5F5`。 |
-| ThemeInset | 提供浅色 `#E9E9E9`、深色 `#1B1B1B`。 |
-| ThemePanel | 提供浅色 `#F5F5F5`、深色 `#0E0E0E`。 |
-| ThemeRaised | 提供浅色 `#E4E4E4`、深色 `#202020`。 |
-| ThemeSecondaryInk | 提供浅色 `#1C1C1CAD`、深色 `#F5F5F5A8`。 |
-| ThemeSuccess | 提供浅色 `#007A44`、深色 `#38D591`。 |
-| ThemeTertiaryInk | 提供浅色 `#1C1C1CA6`、深色 `#F5F5F591`。 |
-| ThemeUserBubble | 提供浅色 `#1C1C1C`、深色 `#5A5A5A`。 |
-| ThemeUserBubbleInk | 提供浅色 `#FCFCFC`、深色 `#F5F5F5`。 |
-| ThemeWarning | 提供浅色 `#9C5B00`、深色 `#FF9800`。 |
-
-`report.md`：记录本轮实现、静态检查、执行限制及后续衔接事项。未修改工程、Packages、WatchSync、手表、Shared、工作流、服务端或网页代码；没有新增依赖。
-
-冻结的调用关系：`AppRoute.web(target)` 设置 `AppStore.webTarget`，`RootView.fullScreenCover` 负责弹出 `WebHostScreen(target:)`，关闭使用 dismiss 回写绑定；48 只替换容器内容。单聊/群聊路由和远程桌面使用原生 NavigationStack。
-
-夹具的 `afterMs` 是从本次流连接开始计的绝对毫秒偏移，同一时间保持文件顺序；已知 cursor 恢复到该帧之后。socket 的字符串 data 是文本，`{"base64":"AQID"}` 是二进制，其他 JSON data 编码成文本。事件脚本结束后保持流打开，供超时/后台取消测试使用；socket 脚本结束则结束接收。请求先匹配带查询参数的响应，再匹配 `METHOD /path`，最后回退到 snapshot/threads；所有未登记请求报错，不回退联网。
-
-`AppStore.fixture(scenario:)` 同步加载 signedIn、snapshot、threads，以及 responses 中已有的 config/notifications/inbox count，尚不回放 frames；App 的 active 生命周期调用 `resumeRealtime()` 后才按时播放。截图调用方只构造 store 即可得到首帧之前的稳定状态。
-
-### 2. 检查命令与实际结果
-
-开工在仓库根目录执行 `crybot-link-deps`，返回：
+开工执行 `crybot-link-deps`，退出码 0，原始输出：
 
 ```text
-crybot-link-deps: linked 73 entries from /opt/crybot-deps/node_modules into node_modules
+crybot-link-deps: linked 73 entries from /opt/crybot-deps/node_modules into /data/home/codex-t-1221-app-shell-39eca854c5bf/node_modules
 ```
 
-上行对工具输出中的绝对工作区路径作了省略。没有运行 Web/服务端测试；沙箱禁止监听端口，e2e 未执行，以 Actions 为准。`docs/verification/README.md` 在当前检出中不存在，没有操作任何线上实例。
+`docs/verification/README.md` 在当前检出不存在。没有启动或修改用户 live app，也没有对真实服务器发请求。新增测试全部使用进程内的 FixtureTransport 或 ShellControlledTransport，不需要监听端口；由于没有 Swift 工具链，本机没有执行这些夹具测试。沙箱端口 e2e 未运行，以 Actions 为准；没有为此尝试启动服务。
 
-任务 43 尚未提供 `mobile/ios/scripts/linux-test.sh` 和 `linux-check.sh`。本地创建忽略目录下的 `mobile/ios/.linux-build/shell-parse.sh`，运行：
+`command -v swiftc` 无输出，`ls /opt/swift/usr/bin/swiftc` 原始输出：
+
+```text
+ls: cannot access '/opt/swift/usr/bin/swiftc': No such file or directory
+```
+
+`find / -name swiftc -o -name swift-frontend 2>/dev/null` 也无命中。没有 Xcode/macOS，也未自行安装工具链或依赖。`mobile/ios/scripts/linux-test.sh`、`linux-check.sh` 尚不存在（任务 43 未接入本检出）。
+
+在忽略目录中写入检查脚本，缓存全部指向 `.linux-cache`，没有使用 systemd，也没有覆盖 HOME。以下是本次调用和原始输出；两次均在编译器检查处退出 127，**不是 Swift 编译器的成功日志**。计划的 parse 输入是本轮改动的 17 个 Swift 文件；类型检查覆盖可在 Linux 使用 Foundation/Observation 的 App/Logic、Types、LaunchOptions、Store，SwiftUI 文件仍须由 Xcode 检查。
 
 ```bash
-bash mobile/ios/.linux-build/shell-parse.sh
+bash mobile/ios/.linux-build/shell-swift-check.sh parse
 ```
-
-退出码 127，原样输出：
 
 ```text
-Swift syntax check NOT RUN: /opt/swift/usr/bin/swiftc is absent and swiftc is not on PATH.
+swiftc -parse NOT RUN: swiftc is not on PATH and /opt/swift/usr/bin/swiftc does not exist.
 ```
 
-脚本内容如下，协调者可在有工具链的环境重建；不覆盖 HOME，所有模块缓存都在指定忽略目录内，逐文件运行：
+```bash
+bash mobile/ios/.linux-build/shell-swift-check.sh typecheck
+```
+
+```text
+swiftc -typecheck NOT RUN: swiftc is not on PATH and /opt/swift/usr/bin/swiftc does not exist.
+```
+
+检查脚本内容（忽略目录不随提交传播，可在装有工具链的工作区重建）：
 
 ```bash
 #!/usr/bin/env bash
@@ -128,88 +117,82 @@ export CLANG_MODULE_CACHE_PATH="$XDG_CACHE_HOME/clang"
 export SWIFTPM_MODULECACHE_OVERRIDE="$XDG_CACHE_HOME/modules"
 mkdir -p "$CLANG_MODULE_CACHE_PATH" "$SWIFTPM_MODULECACHE_OVERRIDE"
 compiler=/opt/swift/usr/bin/swiftc
-if [[ ! -x "$compiler" ]]; then
-  compiler="$(command -v swiftc || true)"
-fi
-if [[ -z "$compiler" || ! -x "$compiler" ]]; then
-  echo 'Swift syntax check NOT RUN: /opt/swift/usr/bin/swiftc is absent and swiftc is not on PATH.'
+if [[ ! -x "$compiler" ]]; then compiler="$(command -v swiftc || true)"; fi
+if [[ -z "$compiler" ]]; then
+  echo "swiftc -$1 NOT RUN: swiftc is not on PATH and /opt/swift/usr/bin/swiftc does not exist."
   exit 127
 fi
-count=0
-while IFS= read -r file; do
-  "$compiler" -parse -module-cache-path "$CLANG_MODULE_CACHE_PATH" "$file"
-  count=$((count + 1))
-done < <(rg --files mobile/ios/CryBot/App mobile/ios/CryBot/Store mobile/ios/CryBot/Design mobile/ios/CryBot/Features mobile/ios/CryBotTests/Shell -g '*.swift'; echo mobile/ios/CryBot/AppDelegate.swift)
-echo "Swift syntax check: $count files parsed."
+if [[ "$1" == parse ]]; then
+  count=0
+  while IFS= read -r file; do
+    "$compiler" -parse -module-cache-path "$CLANG_MODULE_CACHE_PATH" "$file"
+    count=$((count + 1))
+  done < <(git diff --name-only -- '*.swift')
+  echo "swiftc -parse: $count changed Swift files parsed."
+else
+  mapfile -t core < <(rg --files mobile/ios/Packages/CryKit/Sources/CryCore -g '*.swift')
+  "$compiler" -swift-version 5 -emit-module -parse-as-library -module-name CryCore \
+    -module-cache-path "$CLANG_MODULE_CACHE_PATH" -emit-module-path mobile/ios/.linux-build/CryCore.swiftmodule "${core[@]}"
+  mapfile -t sources < <(rg --files mobile/ios/CryBot/App/Logic mobile/ios/CryBot/Store -g '*.swift')
+  "$compiler" -swift-version 5 -typecheck -I mobile/ios/.linux-build \
+    -module-cache-path "$CLANG_MODULE_CACHE_PATH" mobile/ios/CryBot/App/Types.swift \
+    mobile/ios/CryBot/App/LaunchOptions.swift "${sources[@]}"
+  echo 'swiftc -typecheck: Foundation/Observation shell sources checked; SwiftUI/XCTest app target requires Xcode.'
+fi
 ```
 
-执行静态源文件/资源核对脚本（临时文件保存在忽略目录中）：
-
-```bash
-python3 mobile/ios/.linux-build/shell-static-check.py
-```
-
-退出码 0，原样输出：
+执行 `python3 mobile/ios/.linux-build/shell-static-check.py`，退出码 0，原始输出：
 
 ```text
-Entry source audit: 19 feature directories, 28 fixed signatures, 19 galleries, 19 empty catalogs.
-Route source audit: 16 WebHostTarget cases, 3 WebEntryScope cases.
-Web embedding source audit: only WatchSync.swift matches the requested pattern.
-Removed entry source audit: no matches in CryBot Swift sources.
-App/Logic imports: Foundation and CryCore only.
-Resource JSON audit: 22 files parsed; fixture shape and shell locales checked.
-XCTest source inventory: 27 methods in 6 Swift files; execution NOT performed.
-Static source audits do not compile Swift or run the app.
+Feature audit: 19 allowed directories, entry files, galleries and empty catalogs; removed directories absent.
+Route audit: 16 WebHostTarget cases and 3 WebEntryScope cases.
+Cursor audit: exhaustive direct payload access for all 38 known frame kinds plus unknown; no encode/decode.
+Fixture audit: hello cursor, numeric seq on subsequent frames, two bots, one group and signed-out scenario.
+Color audit: all six new Color Sets match daylight/midnight RGBA values in src/styles.css.
+Web embedding audit: only WatchSync.swift matches.
+Removed entry audit: no removed entry names in CryBot Swift sources (documents excluded).
+XCTest source inventory: 35 test methods; execution NOT performed.
+git diff --check: passed.
+Static audits do not compile Swift, execute XCTest or render the app.
 ```
 
-另用 Python 对照 CryCore 解码器的 required/nullable 字段检查 shell-basic 的 bot/group 对象，并扫描 Swift 声明的禁用名字，最终输出：
-
-```text
-Fixture required-field audit: shell-basic bots and groups include all CryCore required/nullable keys.
-Type-name audit: no declarations collide with the specification blacklist.
-```
-
-`git diff --check` 退出码 0，无输出。运行 `rg -n 'import WebKit|WKWebView|WebView\(|WebPage' mobile/ios/CryBot`，仅输出：
+单独执行 `git diff --check` 退出码 0，无输出。执行 `rg -n 'import WebKit|WKWebView|WebView\(|WebPage' mobile/ios/CryBot`，退出码 0，原始输出：
 
 ```text
 mobile/ios/CryBot/WatchSync.swift:3:import WebKit
 ```
 
-已删除入口名的无命中范围是 CryBot Swift 源码；规格、旧任务说明以及网页源码仍可能含这些名字，不在本任务范围内删除。
+本轮新增 8 个 XCTest 方法，总计 35 个；这里是源码数量，实际执行数为 0，等待 Mobile builds。没有用无关的 Web/服务端测试替代 Swift 验证。
 
-交给 04/协调者的启动参数：
+### 原 brief 验收逐项复核
+
+| 验收项（按原顺序） | 本轮结果 |
+|---|---|
+| 1 Actions App 编译、CryBotTests | 待协调者推任务分支后运行 Mobile builds；当前没有运行链接，不能判通过。 |
+| 2 WebKit 扫描 | 静态检查符合，仅命中 WatchSync.swift:3。 |
+| 3 保留入口及删除项 | 静态检查 19 个目录/Entry/Gallery/空表齐全；逐一对照原 28 个入口名称及参数，保留调用形式。GroupScreen(group:) 兼容并增加可选参数。删除目录和 CryBot Swift 源码中的删除入口名均无命中；原文所谓「全仓 grep 不到」在规格/任务文档仍有引用，不能据此称全仓零命中。 |
+| 4 共用枚举及 widget/app 分发 | Types 保持 16 个 WebHostTarget / 3 个 WebEntryScope；MessageLayout 两类均为 webSummary，MessageBodyView 对应 WebMessageSummary。源码复核符合，布局测试执行待 Actions。 |
+| 5 shell-basic 直接进入对话、不联网 | 夹具源路径与同步构造保持离线，两个机器人/一个群聊和 widget/app 消息齐全；启动及渲染待 04 的截图确认。启动参数见下。 |
+| 6 逻辑单元测试覆盖并通过 | 35 个测试方法覆盖原要求及本轮回归；未执行，不能判通过。 |
+| 7 Linux 脚本/语法检查 | 43 脚本缺失，按 brief 准备 parse/typecheck 脚本；实际缺少 swiftc，退出 127，原文输出见上。 |
+| 8 三类 Actions 绿灯且测试数大于 0 | Mobile builds / Public scan 链接待协调者补；iOS Linux 待 43 合并。当前无通过证据。 |
+
+供协调者/04 运行的入口：
 
 ```text
 -CryFixtureScenario shell-basic -CryAppearance light
 -CryFixtureScenario shell-basic -CryAppearance dark
 -CryFixtureScenario shell-signed-out
+-CryFixtureScenario shell-basic -CryGallery Sidebar -CryAppearance light
 -CryFixtureScenario shell-basic -CryGallery WebHost -CryAppearance dark
 ```
 
-没有执行 Swift 语法检查、类型检查、XCTest、模拟器启动或截图；上面的静态核对不能代替它们。共写入 27 个 XCTest 方法，实际执行数须由 Actions 日志确认。本任务没有截图测试，也没有占用 04 的 Support 文件或测试后缀。
+App 内截图可分别使用 `WebHostGallery(scene: .screen/.menu/.summary)`，注入隔离的 `AppStore.fixture(scenario: "shell-basic")`。本任务只提供 Gallery，不修改 04 的截图 Support 或 UITests；菜单展开后的截图、三屏宽深浅色及 Accessibility L 均待 Actions。
 
-待协调者填写：Mobile builds 运行链接与实际测试数；Public scan 运行链接；43 合并后 iOS Linux 运行链接。当前没有可附的 Actions 运行链接。
+### 覆盖与后续衔接
 
-### 3. 覆盖表对应项
+本轮覆盖的是帧游标/续传、hello 快照时机、相关帧后的收件箱计数、消息布局断言及原生导航/网页入口骨架；没有把占位内容标记为完整功能。未修改覆盖表，当前检出仍无 `server/testing/ios-contract/coverage.ts`。
 
-当前检出没有 `server/testing/ios-contract/coverage.ts`，未修改或猜测它的具体键名。完成的是以下基础接线；原生功能正文和网页内容仍是占位，不能据此把功能行标成 done 或 web：
+不需要改 project.yml、Packages、服务端、网页、WatchSync、手表、Shared 或工作流，也没有新增第三方依赖。05 接入 LiveTransport 时可以将 Store 中最小连接策略替换为 03 的状态机，保留本轮退避、无帧超时和 since 行为测试，避免双重重连。Group 的 thread/focus 参数和三个 WebHost Gallery scene 供 22/04 接续；48 继续替换现有全屏 WebHostScreen 内容。
 
-- WireMessage kind 的分发：text、options、activity、screen、connector、secret、signin、routine.run、goal.run、burst、digest、compaction、call、widget、app；另有 unknown 提示与可解码附件兜底。
-- WireMessage attachments 与前后附加信息的固定组合入口。
-- ServerFrame 所有 kind 的 LiveState 先归并、再按 kinds 订阅分发，包括当前无原生消费者的 routine/webhook/app-trigger/mcp.changed/device.job/data 等帧。
-- hello.resumed=false 重新拉快照、screens=false、40 秒无帧断开、退避与前后台恢复的仓库接线。
-- 原生会话/收件箱/通知/远程桌面导航，以及 16 个 WebHostTarget 的统一弹出入口。
-
-### 4. 需要协调者处理
-
-- **分支与 CI**：尝试 `git switch -c T-1221-app-shell` 失败，原因是 `.git` 所在文件系统只读（不能创建 refs 锁文件）；当前仍在 master，改动留在工作区，没有提交。请协调者创建指定分支、提交、推送并开草稿 PR，检查 Mobile builds 与 Public scan；实际 XCTest 数须大于 0。
-- **工具链**：当前环境既没有 Xcode，也没有说明指定的 Swift 编译器；需要在有工具链的环境执行报告中的语法脚本，再由 Mobile builds 编译和执行测试。没有自行安装依赖。
-- **project.yml**：本任务无必须新增的行，现有递归 CryBot/CryBotTests sources 应收集新增 Swift、JSON、xcstrings 和 Color Set；请在首轮 Actions 确认两个 shell JSON 进入 App 包。工程的 PRODUCT_NAME 含空格，测试通过条件导入同时兼容 CryBot 与 Cry_Bot 模块。残留的 LiveKit、LiveKitWebRTC 仍由协调者另行删除，本任务没有导入它们。
-- **状态机衔接**：Store 中是最小可注入时钟版本；05 接入 LiveTransport 时可以换成 03 的状态机，保留目前的行为测试，避免两层同时重连。AppStore 负责前后台开关、订阅和顺序退出；03 负责网络和身份细节。
-- **游标衔接**：当前 Transport 只交付 ServerFrame，没有单独交付 SSE id；CryCore SSEParser 的 lastEventID 也未混入帧。仓库使用 hello.cursor 和帧原始 JSON 的 cursor。05/03 接入时应核对 LiveTransport 是否内部保存最新 SSE id，或按现有保留字段交付游标，避免重连只使用 hello 的旧游标；本任务未修改 Packages 协议。
-- **历史读取**：CryCore LiveState 没有公开历史页载入方法；`loadOlder(thread:)` 在 AppStore 保存历史并由 `page(thread:)` 与实时页合并。08/22 请通过该入口读取翻页结果；若希望历史直接进入 LiveState，建议由协调者安排 01 增加公开 load(history:) API，本任务未越界修改。
-- **入口细节**：固定 28 个功能签名均保留。规格未给出部分上下文的字段明细：本轮采用 `ConversationRef.bot/group(id, thread:, focus: = nil)`、`ComposerTarget(conversation, thread, replyTo)`、`RespondAction(thread, body: RespondBody)`、`WidgetAction(action, values)`、`DesktopTarget(bot, desktopID?)`、`CallRef(bot, callID?)` 和 `McpScope.global/bot`；请协调者在冻结前与 08、16、35、48 对表。
-- **人员列表转换**：CryCore 当前只有 ResolvedSender 和 WireMessageFieldsRelay，没有人员列表元素模型，因此 `PersonRef(member:)` 接 `[String: JSONValue]`，读取 id/name/email/avatarUrl/color；建议提供明确成员模型后增加有类型的构造入口。
-- **图片 URL**：AuthImage 只经当前 Transport 使用 URL 的路径与查询，不创建外部网络会话；05 接入具有 API/web 不同前缀的服务器时，请与 03 核对资源路径归一化，当前 Transport 协议不暴露服务器基址。
-- **退出与网页登录**：05 与 48 分别注册清身份/通知手表和清网页存储的 handler，仓库按注册顺序 await，完成后清内存；更换服务器也先 signOut。LoginRouter 当前返回 false，05 替换成调用 03 CallbackRouter；WebHost 当前只有原生占位，48 替换内容而不改变根级 fullScreenCover 方式。
-- **范围与未解决项**：除指定报告外，未改允许范围之外的文件。剩余验收缺口是工具链/Actions 的实际编译、测试及截图证据；没有声称登录、网页容器或其他功能占位已经实现业务功能。
+尚未完成的验收只有运行验证：需要协调者提供 Swift 工具链或由 Actions 做语法/类型检查、App 编译、35 个测试实际执行及截图检查，并补 Mobile builds / Public scan 的真实链接。本机没有可附的 Swift 或 Xcode 成功结果。

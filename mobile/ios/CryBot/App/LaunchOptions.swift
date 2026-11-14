@@ -19,7 +19,7 @@ struct LaunchOptions: Equatable {
             let value = arguments[index + 1]
             switch flag {
             case "-CryFixtureScenario": fixtureScenario = value
-            case "-CryAppearance": appearance = Appearance(rawValue: value)
+            case "-CryAppearance": appearance = Appearance(rawValue: value.lowercased())
             case "-CryGallery": gallery = value
             default: break
             }

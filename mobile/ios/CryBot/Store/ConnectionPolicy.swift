@@ -2,16 +2,24 @@ import Foundation
 
 struct ConnectionPolicy {
     static let inactivityTimeout: TimeInterval = 40
+    static let stabilityInterval: TimeInterval = 30
+    private var connectedAt: TimeInterval
     private(set) var failures = 0
     private(set) var lastFrameAt: TimeInterval
 
-    init(now: TimeInterval) { lastFrameAt = now }
+    init(now: TimeInterval) {
+        lastFrameAt = now
+        connectedAt = now
+    }
 
-    mutating func connected(at now: TimeInterval) { lastFrameAt = now }
+    mutating func connected(at now: TimeInterval) {
+        lastFrameAt = now
+        connectedAt = now
+    }
 
     mutating func receivedFrame(at now: TimeInterval) {
         lastFrameAt = now
-        failures = 0
+        if now - connectedAt >= Self.stabilityInterval { failures = 0 }
     }
 
     func isTimedOut(at now: TimeInterval) -> Bool {

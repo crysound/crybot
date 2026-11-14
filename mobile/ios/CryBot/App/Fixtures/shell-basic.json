@@ -161,10 +161,17 @@
   },
   "frames": [
     {
+      "afterMs": 0,
+      "frame": {
+        "kind": "hello",
+        "resumed": false,
+        "cursor": "STREAM:0"
+      }
+    },
+    {
       "afterMs": 1000,
       "frame": {
         "kind": "message",
-        "cursor": "fixture-1",
         "threadId": "thread-1",
         "message": {
           "kind": "text",
@@ -173,14 +180,15 @@
           "at": 7,
           "parentId": null,
           "text": "A replayed message."
-        }
+        },
+        "seq": 1
       }
     },
     {
       "afterMs": 2000,
       "frame": {
         "kind": "mcp.changed",
-        "cursor": "fixture-2"
+        "seq": 2
       }
     }
   ],

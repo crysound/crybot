@@ -3,6 +3,10 @@ import CryCore
 
 struct GroupScreen: View {
     let group: GroupID
+    var thread: ThreadID? = nil
+    var focus: MessageID? = nil
+
+    var ref: ConversationRef { .group(group, thread: thread, focus: focus) }
     @Environment(AppStore.self) private var store
 
     var body: some View {
@@ -20,10 +24,7 @@ struct GroupScreen: View {
     }
 
     private var selectedThread: ThreadID? {
-        if let route = store.path.last, case .conversation(.group(let id, let thread, _)) = route,
-           id == group, let thread {
-            return thread
-        }
+        if let thread = ref.thread { return thread }
         return store.state.groups.first { $0.id == group }?.threadId
     }
 }

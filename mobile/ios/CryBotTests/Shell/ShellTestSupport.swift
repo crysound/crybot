@@ -97,3 +97,51 @@ final class ShellDelayedTransport: Transport {
     func download(_ endpoint: Endpoint<Data>) async throws -> Data { try await base.download(endpoint) }
     func webSocket(path: String) async throws -> any WebSocketChannel { try await base.webSocket(path: path) }
 }
+
+final class ShellControlledTransport: Transport, @unchecked Sendable {
+    let base: FixtureTransport
+    private let lock = NSLock()
+    private var streams: [AsyncThrowingStream<ServerFrame, Error>.Continuation] = []
+    private var recordedEvents: [FixtureRequest] = []
+    private var count = 0
+    private var countRequests = 0
+
+    init(scenario: FixtureScenario = shellScenario()) {
+        base = FixtureTransport(scenario: scenario)
+    }
+
+    var eventRequests: [FixtureRequest] { lock.withLock { recordedEvents } }
+    var inboxRequestCount: Int { lock.withLock { countRequests } }
+    var inboxCount: Int {
+        get { lock.withLock { count } }
+        set { lock.withLock { count = newValue } }
+    }
+
+    func send<R: Decodable>(_ endpoint: Endpoint<R>) async throws -> R {
+        if endpoint.path == "/api/inbox/count" {
+            let value = lock.withLock { countRequests += 1; return count }
+            return try endpoint.decode(Data("{\"count\":\(value)}".utf8))
+        }
+        return try await base.send(endpoint)
+    }
+
+    func events(since: String?, screens: Bool) -> AsyncThrowingStream<ServerFrame, Error> {
+        let stream = AsyncThrowingStream<ServerFrame, Error>.makeStream()
+        lock.withLock {
+            streams.append(stream.continuation)
+            recordedEvents.append(FixtureRequest(operation: .events, method: "GET", path: "/api/events",
+                                                  since: since, screens: screens))
+        }
+        return stream.stream
+    }
+
+    func emit(_ frame: ServerFrame) { lock.withLock { streams.last }?.yield(frame) }
+    func finish() { lock.withLock { streams.last }?.finish() }
+
+    func upload(_ data: Data, to endpoint: Endpoint<UploadResponse>) async throws -> UploadResponse {
+        try await base.upload(data, to: endpoint)
+    }
+
+    func download(_ endpoint: Endpoint<Data>) async throws -> Data { try await base.download(endpoint) }
+    func webSocket(path: String) async throws -> any WebSocketChannel { try await base.webSocket(path: path) }
+}

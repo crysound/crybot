@@ -19,19 +19,28 @@ final class AppStore {
     private(set) var sessionID = UUID()
     private(set) var isSigningOut = false
     var selectedTab: RootTab = .chats
-    var path: [AppRoute] = []
+    var chatsPath: [AppRoute] = []
+    var inboxPath: [AppRoute] = []
+    var path: [AppRoute] {
+        get { selectedTab == .chats ? chatsPath : inboxPath }
+        set {
+            switch selectedTab {
+            case .chats: chatsPath = newValue
+            case .inbox: inboxPath = newValue
+            }
+        }
+    }
     var webTarget: WebHostTarget?
 
     @ObservationIgnored let imageCache = ImageDataCache()
     @ObservationIgnored private let clock: ShellClock
-    @ObservationIgnored private var connectionTask: Task<Void, Never>?
+    @ObservationIgnored private let connection = ConnectionTaskLifetime()
     @ObservationIgnored private var connectionID = UUID()
     @ObservationIgnored private var signOutTask: Task<Void, Never>?
     @ObservationIgnored private var signOutHandlers: [@MainActor () async -> Void] = []
     @ObservationIgnored private var subscriptions: [UUID: FrameSubscription] = [:]
     @ObservationIgnored private var cursor: String?
     @ObservationIgnored private var policy: ConnectionPolicy
-    @ObservationIgnored private var needsSnapshot = true
     @ObservationIgnored private var foreground = true
     private var historyPages: [ThreadID: ThreadPage] = [:]
 
@@ -45,8 +54,6 @@ final class AppStore {
         policy = ConnectionPolicy(now: clock.now())
     }
 
-    deinit { connectionTask?.cancel() }
-
     func attach(transport: any Transport) {
         guard !isSigningOut else { return }
         let wasForeground = foreground
@@ -56,7 +63,6 @@ final class AppStore {
         isFixture = transport is FixtureTransport
         self.transport = transport
         signedIn = true
-        needsSnapshot = true
         if foreground { resumeRealtime() }
     }
 
@@ -72,10 +78,10 @@ final class AppStore {
 
     func resumeRealtime() {
         foreground = true
-        guard signedIn, transport != nil, connectionTask == nil, !isSigningOut else { return }
+        guard signedIn, transport != nil, connection.task == nil, !isSigningOut else { return }
         let id = UUID()
         connectionID = id
-        connectionTask = Task { [weak self] in
+        connection.task = Task { [weak self] in
             await self?.runConnection(id: id)
         }
     }
@@ -83,8 +89,8 @@ final class AppStore {
     func pauseRealtime() {
         foreground = false
         connectionID = UUID()
-        connectionTask?.cancel()
-        connectionTask = nil
+        connection.task?.cancel()
+        connection.task = nil
         connectionStatus = .disconnected
     }
 
@@ -100,6 +106,7 @@ final class AppStore {
     func refreshSnapshot() async throws {
         let snapshot = try await request(CoreEndpoints.snapshot())
         state.load(snapshot: snapshot)
+        try? await refreshInboxCount()
     }
 
     func refreshInboxCount() async throws {
@@ -222,7 +229,6 @@ final class AppStore {
         store.isFixture = true
         store.signedIn = scenario.signedIn
         store.transport = FixtureTransport(scenario: scenario, clock: clock)
-        store.needsSnapshot = false
         if scenario.signedIn {
             store.state.load(snapshot: scenario.snapshot)
             store.historyPages = scenario.threads
@@ -253,10 +259,6 @@ final class AppStore {
         while !Task.isCancelled, connectionID == id, let transport {
             connectionStatus = .connecting
             do {
-                if needsSnapshot {
-                    try await refreshSnapshot()
-                    needsSnapshot = false
-                }
                 policy.connected(at: clock.now())
                 try await withThrowingTaskGroup(of: Void.self) { group in
                     group.addTask { [weak self] in
@@ -297,16 +299,25 @@ final class AppStore {
     private func receive(_ frame: ServerFrame, connection id: UUID) async throws {
         guard id == connectionID else { throw CancellationError() }
         policy.receivedFrame(at: clock.now())
-        connectionStatus = .connected
-        if let next = FrameCursor.value(for: frame) { cursor = next }
+        if connectionStatus != .connected { connectionStatus = .connected }
+        if let next = FrameCursor.value(for: frame, previous: cursor) { cursor = next }
         state.apply(frame)
         for subscription in subscriptions.values where subscription.kinds.contains(frame.kind) {
             subscription.continuation.yield(frame)
         }
         if case .hello(let hello) = frame, !hello.resumed {
-            needsSnapshot = true
-            try await refreshSnapshot()
-            needsSnapshot = false
+            do { try await refreshSnapshot() }
+            catch {
+                if id == connectionID { cursor = nil }
+                throw error
+            }
+        } else {
+            switch frame {
+            case .bot, .group, .botDeleted, .groupDeleted, .message, .messagePatch,
+                 .thread, .notify, .notificationsRead, .snapshot:
+                try? await refreshInboxCount()
+            default: break
+            }
         }
     }
 
@@ -324,9 +335,16 @@ final class AppStore {
         fixtureError = nil
         inboxUnreadCount = 0
         selectedTab = .chats
-        path = []
+        chatsPath = []
+        inboxPath = []
         webTarget = nil
         screens = false
         policy = ConnectionPolicy(now: clock.now())
     }
+}
+
+private final class ConnectionTaskLifetime {
+    var task: Task<Void, Never>?
+
+    deinit { task?.cancel() }
 }

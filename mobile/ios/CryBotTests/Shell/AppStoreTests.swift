@@ -39,9 +39,9 @@ final class AppStoreTests: XCTestCase {
     func testReplayAppliesStateBeforeDeliveringEachSubscribersKinds() async throws {
         let clock = ShellManualClock()
         let frames = try [
-            FixtureScenario.TimedFrame(afterMs: 1_000, frame: shellFrame(#"{"kind":"sections","sections":["first"],"cursor":"one"}"#)),
+            FixtureScenario.TimedFrame(afterMs: 1_000, frame: shellFrame(#"{"kind":"sections","sections":["first"],"seq":1}"#)),
             FixtureScenario.TimedFrame(afterMs: 2_000, frame: shellFrame(#"{"kind":"mcp.changed"}"#)),
-            FixtureScenario.TimedFrame(afterMs: 3_000, frame: shellFrame(#"{"kind":"sections","sections":["second"],"cursor":"two"}"#)),
+            FixtureScenario.TimedFrame(afterMs: 3_000, frame: shellFrame(#"{"kind":"sections","sections":["second"],"seq":2}"#)),
             FixtureScenario.TimedFrame(afterMs: 4_000, frame: shellFrame(#"{"kind":"mcp.changed"}"#))
         ]
         let store = try AppStore.fixture(loaded: shellScenario(frames: frames), clock: clock.clock)
@@ -79,7 +79,7 @@ final class AppStoreTests: XCTestCase {
 
     func testReplayMessageUpdatesLiveState() async throws {
         var scenario = try FixtureScenario.load(named: "shell-basic")
-        scenario.frames = Array(scenario.frames.prefix(1))
+        scenario.frames = Array(scenario.frames.prefix(2))
         let clock = ShellManualClock()
         let store = try AppStore.fixture(loaded: scenario, clock: clock.clock)
         defer { store.pauseRealtime() }
@@ -189,15 +189,52 @@ final class AppStoreTests: XCTestCase {
         var scenario = shellScenario()
         scenario.responses["GET /api/attachments/example.png"] = .object(["base64": .string("AQID")])
         let store = try AppStore.fixture(loaded: scenario)
-        let url = try XCTUnwrap(URL(string: "https://example.com/api/attachments/example.png"))
+        let url = try XCTUnwrap(URL(string: "/api/attachments/example.png?size=small"))
         let first = try await store.imageData(url: url)
         let second = try await store.imageData(url: url)
         XCTAssertEqual(first, Data([1, 2, 3]))
         XCTAssertEqual(second, first)
         let transport = try XCTUnwrap(store.transport as? FixtureTransport)
         XCTAssertEqual(transport.requests.filter { $0.operation == .download }.count, 1)
+        XCTAssertEqual(transport.requests.first?.path, "/api/attachments/example.png")
+        XCTAssertEqual(transport.requests.first?.query, [URLQueryItem(name: "size", value: "small")])
         await store.signOut()
         XCTAssertNil(store.imageCache.data(for: url))
+    }
+
+    func testAbsoluteImageURLsFailWithoutUsingTransportOrCache() async throws {
+        let store = try AppStore.fixture(loaded: shellScenario())
+        let transport = try XCTUnwrap(store.transport as? FixtureTransport)
+        let urls = ["https://example.com/api/attachments/example.png", "http://example.com/api/private",
+                    "//example.com/api/private", "file:///api/private"]
+        for value in urls {
+            let url = try XCTUnwrap(URL(string: value))
+            store.imageCache.insert(Data([1]), for: url)
+            do {
+                _ = try await store.imageData(url: url)
+                XCTFail("Absolute image URLs must fail")
+            } catch {
+                XCTAssertTrue(error is EndpointError)
+            }
+        }
+        XCTAssertTrue(transport.requests.isEmpty)
+    }
+
+    func testEachTabRetainsItsOwnNavigationPath() throws {
+        let store = try AppStore.fixture(loaded: shellScenario())
+        let ref = ConversationRef.group("group-1", thread: "thread-2", focus: "message-3")
+        store.navigate(to: .conversation(ref))
+        store.selectedTab = .inbox
+        XCTAssertTrue(store.path.isEmpty)
+        store.navigate(to: .notifications)
+        XCTAssertEqual(store.path, [.notifications])
+        store.selectedTab = .chats
+        XCTAssertEqual(store.path, [.conversation(ref)])
+        XCTAssertEqual(store.inboxPath, [.notifications])
+        let screen = GroupScreen(group: "group-1", thread: "thread-2", focus: "message-3")
+        XCTAssertEqual(screen.ref, ref)
+        store.navigate(to: .desktop(DesktopTarget(bot: "bot-1")))
+        XCTAssertEqual(screen.ref, ref)
     }
 
     func testLateSnapshotCannotRestoreSignedOutState() async throws {
