@@ -1,8 +1,9 @@
 import { providerLockEnabled, providerUpdateDrivers, lockedProviderConfigs, providerLockConfigPatch, migrateLockedProviderReferences, migrateLockedRoutineReferences } from "./provider-lock.ts";
 // Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
 import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
-import { createCfAccess } from "./cf-access.ts";
+import { createCfAccess, accessVerified } from "./cf-access.ts";
 import { createAppHandoff } from "./app-handoff.ts";
+import { appHostConfig, createAppHost } from "./app-host.ts"; import { createAppLinks } from "./app-links.ts"; import { authAudit, createAuthRateLimiter } from "./auth-rate-limit.ts";
 import { desktopUpdateFiles } from "./routes/desktop-update-files.ts";
 import { startFailureText } from "./start-failure-text.ts";
 import { reserveGmailDrafts } from "./gmail-draft-policy.ts";
@@ -10033,7 +10034,6 @@ async function runClaimedGroupMemberTurn(
       activeInternalGenerationByThread.get(threadId) !== internalGeneration) {
     return false;
   }
-
   // A channel has no pin and no Auto fallback: only a destination the person chose reaches a desktop.
   const roomSetupIsCurrent = () => !isCancelled?.() &&
     groupSpeakers.get(threadId) === roomSpeaker &&
@@ -10087,7 +10087,6 @@ async function runClaimedGroupMemberTurn(
         roomComputerKind = "box";
       }
     }
-
     // The speaker's desktop, never the coordinator's; claim the lease before asynchronous VM setup.
     if (readyBot.computer === "vm") {
       if (instance.adapter.capabilities.computerMcp !== true) {
@@ -10132,7 +10131,6 @@ async function runClaimedGroupMemberTurn(
     if (place !== "cloud" && place !== "vm" && place !== "local") throw error;
     throw await asPlaceFailure(error, place, "room", readyBot, turnProvider(readyBot) === "vps" ? "vps" : "box");
   }
-
   const roomMembers = readyGroup.memberIds
     .map((id) => store.bot(id))
     .filter((b): b is NonNullable<typeof b> => Boolean(b));
@@ -10162,7 +10160,6 @@ async function runClaimedGroupMemberTurn(
   ]
     .filter(Boolean)
     .join("\n");
-
   const latestUserText = usesNativeImageInput ? resolvedLatestImages.text : latestUser?.text;
   const learnTurn = skillAuthoring && latestUserText ? expandLearnTurnText(latestUserText) : "";
   const learnBlock = learnTurn && learnTurn !== latestUserText ? `\n\n${learnTurn}` : "";
@@ -10184,7 +10181,6 @@ async function runClaimedGroupMemberTurn(
   const heldReplay = heldReplayFor(group.id, threadId, bot.id, userName, roomContext);
   const roomTail = `\n\n(Reply to the conversation above as ${bot.name}.)${learnBlock}${heldReplay.block}${cardContinuation ? `\n\n${cardContinuation}` : ""}${coordinationReminder}${liveRosterBlock}`;
   const text = roomContext + roomTail;
-
   const worksInWorkspace = supportsWorkspaceFiles(instance.driverKind);
   const workspace = worksInWorkspace ? ensureWorkspace(bot.id, appLanguage()) : undefined;
   // The room's folder pins at its first dispatch, so a room that already worked somewhere never has its folder moved.
@@ -10243,7 +10239,6 @@ async function runClaimedGroupMemberTurn(
     { id: "skill-instructions", label: "Skill instructions", text: renderSkillInstructions(selectedSkills, { includeRoot: Boolean(workspace) }) },
     { id: "playbooks", label: "Playbooks", text: installedPlaybookInstructions(text, bot.playbooks) },
   ], integrations.agents, { rules: cfg.everyBotRules });
-
   // Claim /learn only after setup succeeded, so a failed first responder does not consume it.
   if (skillAuthoring) skillAuthoringClaim.claimed = true;
   // Never launch a replacement into a stopped handshake's pre-id window.
@@ -12466,7 +12461,6 @@ ROUTES.push(createStatusRoutes({
   browserEngineInstall: { get: () => browserEngineInstall, set: (install) => { browserEngineInstall = install; } },
   browserEngineInstallError: { set: (error) => { browserEngineInstallError = error; } },
 }));
-
 ROUTES.push(desktopViewer.route, phoneScreen.route);
 ROUTES.push(createBrowserViewerRoutes({
   upgrades, viewers: browserLive, dataDir: DATA_DIR, person: (auth) => (auth.kind === "session" ? actorKey(auth) : "local-owner"),
@@ -12489,7 +12483,6 @@ ROUTES.push(createBrowserViewerRoutes({
     && browserSessionsOf(candidate.id, candidate.browserProfile).includes(session)).map((candidate) => ({ waitingOnBrowser: computerControl.snapshot(candidate.id).help?.place === "browser" }))),
 }));
 const internalToolRoutes = createInternalToolRoutes({ engineLimits: { instances: () => registry.instances(), configs: () => instanceConfigs(cfg), status: (instanceId) => registry.knownSnapshot(instanceId), load: (accounts) => loadPlanUsage({ accounts }), audienceOf: (threadId) => teamHost.audienceOf(threadId), guestDriven: cloudGuestDriven, dataDir: DATA_DIR }, helpers: { decider, extractor }, notifications: { bot: (id) => store.bot(id), team: sharedMembership, broadcast }, xResearch: { credential: () => researchCredential(cfg.treg?.key), botEnabled: (botId) => store.bot(botId)?.xResearch !== false, cloudHome: CLOUD_HOME !== null, researchOff: () => researchAvailability.refused() }, appPublisher }); const waitRoutes = createWaitRoutes({ waits: botWaits, cloudHome: Boolean(CLOUD_HOME), sleeps: Boolean(CLOUD_HOME) && CLOUD_TEAM === null }); ROUTES.push(createXConnectorRoutes({ credential: () => researchCredential(cfg.treg?.key), included: () => xCredential(), unavailable: () => xResearchStatus().unavailable === true }));
-
 // Live calls: the client holds the WebRTC audio; the key never leaves the harness, which creates the session.
 function liveBotFor(botId: string): LiveBot {
   const bot = store.bot(botId);
@@ -12591,8 +12584,8 @@ ROUTES.push(createLiveRoutes({
     return liveSettingsFor(cfg);
   },
 }));
-
 const cfAccess = createCfAccess();
+const appHost = createAppHost(appHostConfig(process.env, { cfAccess: cfAccess !== null, hostedWorkspace: HOSTED_WORKSPACE, cloudTeam: CLOUD_TEAM !== null })), appLinks = createAppLinks(process.env, appHost.config), authRateLimit = createAuthRateLimiter();
 const appHandoff = createAppHandoff(cfAccess !== null);
 const toolResults = new ToolResults();
 const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
@@ -12609,11 +12602,17 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
   let releaseWorkspaceRequest: (() => void) | undefined;
   try {
     if (await desktopUpdateFiles(req, res, process.env.CRYBOT_DESKTOP_UPDATES_DIR)) return;
+    if (appHost.rejectAccessAssertion(req)) return json(res, 400, { error: "Access is unavailable on the app channel" });
     const publicProbe = method === "GET" && (path === "/api/health" || path === "/api/brand" || path === "/.well-known/crybot/environment" || /^\/\.well-known\/crybot\/domain-check\/[a-f0-9]{64}$/.test(path));
     if (cfAccess && !publicProbe) {
       const refusal = await cfAccess(req, res, url, sessions, SESSION_COOKIE);
       if (refusal) return json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
     }
+    const verified = accessVerified(req), appChannel = appHost.isRequest(req, verified);
+    if (appHost.rejectRoute(req, path, verified)) return json(res, 404, { error: "not_found" });
+    if (await appLinks(req, res, url)) return;
+    const limited = authRateLimit.check(req, path, appChannel);
+    if (limited.limited) { authAudit({ action: "rate_limit", req, result: "denied" }); res.setHeader("retry-after", String(limited.retryAfter)); return json(res, 429, { error: "rate_limited" }); }
     if (method === "GET" && path === "/auth/app-handoff") return appHandoff(req, res, url);
     if (method === "GET" && path === "/api/health/hosted") {
       res.setHeader("cache-control", "no-store");
@@ -12661,7 +12660,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       return json(res, challenge ? 200 : 404, challenge ?? { error: "No active domain check." });
     }
     if (await emailSignInRoute({ cloudHome: Boolean(CLOUD_HOME), emailSignIn, sessions, cookieName: SESSION_COOKIE, target: (r) => signInMailTarget(publicUrl(), requestOrigin(r)),
-      environment: () => environmentDescriptor({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED, emailSignIn: true, sharedComputers: lendingEnabled() }) }, req, res, path, method)) return;
+      environment: () => environmentDescriptor({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED, emailSignIn: true, sharedComputers: lendingEnabled() }) }, req, res, path, method)) { if (appChannel) authAudit({ action: "login", req, result: res.statusCode < 300 ? "success" : "failure" }); return; }
     if ((cloudSigned && await cloudSigned({ req, res, url, path, method })) || chatApps.serveFile(req, res, path, method)) return;
     if (method === "POST" && path === "/api/auth/pair") {
       // JSON only: a cross-site HTML form cannot send this content type without a preflight, so no unused code is planted as a session.
@@ -12683,6 +12682,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       if (browser && !wantsCookie) return json(res, 400, { error: "a browser sign-in sets this browser's cookie; send cookie: true" });
       const result = sessions.exchange({ code, label, attemptId, browser, source: requestSource(req), fallbackLabel: labelFromUserAgent(req.headers["user-agent"]) });
       if (!result.ok) {
+        if (appChannel) authAudit({ action: "login", req, result: "failure" });
         console.warn(`pairing refused from ${requestSource(req)}: ${result.error}`);
         return json(res, result.status, refusalBody(result));
       }
@@ -12690,11 +12690,13 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const environment = environmentDescriptor({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED, emailSignIn: !CLOUD_HOME && emailSignIn.enabled(), sharedComputers: lendingEnabled(), cloudHome: Boolean(CLOUD_HOME), cloudTeam: CLOUD_TEAM !== null, ownHome: ownHome.takesMove() });
       if (wantsCookie) {
         const previous = browser ? sessions.authenticate(parseCookies(req.headers.cookie).get(SESSION_COOKIE)) : null;
-        if (previous && previous.id !== result.session.id) sessions.revoke(previous.id);
+        if (previous && previous.id !== result.session.id) { sessions.revoke(previous.id); if (appChannel) authAudit({ action: "revoke", req, result: "success", identity: (previous as { accessIdentity?: string }).accessIdentity }); }
         const secure = requestOrigin(req)?.startsWith("https://") === true;
         res.setHeader("set-cookie", serializeSessionCookie(SESSION_COOKIE, result.token, { secure, maxAgeSeconds: cookieMaxAgeSeconds(result.session) }));
+        if (appChannel) authAudit({ action: "login", req, result: "success", identity: (result.session as { accessIdentity?: string }).accessIdentity });
         return json(res, 200, { session: result.session, environment });
       }
+      if (appChannel) authAudit({ action: "login", req, result: "success", identity: (result.session as { accessIdentity?: string }).accessIdentity });
       return json(res, 200, { token: result.token, session: result.session, environment });
     }
     // The companion apps' pairing route: same window, lockout and single-use exchange as /api/auth/pair; redeeming the credential IS the sign-in.
@@ -12709,10 +12711,12 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const relayRefusal = phoneRelay?.pairingRefusal(req, credential); if (relayRefusal) return json(res, 400, { error: relayRefusal });
       const paired = sessions.exchange({ code: credential, label, attemptId, source: requestSource(req), fallbackLabel: labelFromUserAgent(req.headers["user-agent"]) });
       if (!paired.ok) {
+        if (appChannel) authAudit({ action: "login", req, result: "failure" });
         console.warn(`pairing refused from ${requestSource(req)}: ${paired.error}`);
         return json(res, paired.status, refusalBody(paired));
       }
       // The shape the companion apps decode: token, device and serverName are required.
+      if (appChannel) authAudit({ action: "login", req, result: "success", identity: (paired.session as { accessIdentity?: string }).accessIdentity });
       return json(res, 200, {
         token: paired.token,
         device: {
@@ -12769,7 +12773,6 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     // Every bot a member is sent (on a Team Cloud an admin's too) comes narrowed to what they may see once the request is done (memberBot).
     if (viewer.kind === "member" || visible.filtersThreads) onJsonBody(res, (body) => memberBody(body, visibleTo(viewer)));
     beginAdminAudit(req, res, method, path, auth);
-
     if (method === "POST" && path === "/api/workspace-backup/restore" && teamComputers.list().some(computer => computer.section !== null)) {
       return json(res, 409, { error: "Unassign team computers before restoring a workspace; restored team names must not gain access to existing desktops" });
     }
@@ -12779,10 +12782,8 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (path.startsWith("/api/") && path !== "/api/events" && path !== "/api/health" && path !== "/api/sync/changes" && !isLongPollPath(path) && !isWorkspaceBackupSessionControl(method, path)) {
       releaseWorkspaceRequest = workspaceMaintenance.request();
     }
-
     // Route modules are tried here, behind the gate; do not add route `if`s below.
     if (await dispatchRoutes(ROUTES, { req, res, url, path, method, auth, json, readBody })) return;
-
     if (method === "GET" && path === "/api/auth/session") {
       return json(
         res,
@@ -12812,7 +12813,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       return json(res, 200, sessions.issueStreamTicket(auth.session.id));
     }
     if (method === "POST" && path === "/api/auth/logout") {
-      if (auth.kind === "session") sessions.revoke(auth.session.id);
+      if (auth.kind === "session") { sessions.revoke(auth.session.id); if (appChannel) authAudit({ action: "revoke", req, result: "success", identity: auth.session.accessIdentity }); }
       res.setHeader("set-cookie", clearSessionCookie(SESSION_COOKIE));
       return json(res, 200, { ok: true });
     }
@@ -12905,6 +12906,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     m = path.match(/^\/api\/auth\/sessions\/([\w-]+)$/);
     if (m && method === "DELETE") {
       const revoked = sessions.revoke(m[1]);
+      if (revoked && appChannel) authAudit({ action: "revoke", req, result: "success" });
       if (auth.kind === "session" && auth.session.id === m[1]) res.setHeader("set-cookie", clearSessionCookie(SESSION_COOKIE));
       return json(res, revoked ? 200 : 404, revoked ? { ok: true } : { error: "no such session" });
     }
@@ -14607,7 +14609,6 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       }
       return json(res, 404, { error: "unknown internal endpoint" });
     }
-
     // Prompts and replies never leave their transcripts: this projection carries only ids, relationships, labels and timestamps.
     if (method === "GET" && path === "/api/team-map") {
       const mapped = new Set(store.bots.filter((bot) => !bot.hidden && visible.bot(bot.id)).map((bot) => bot.id));
@@ -14637,7 +14638,6 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         running: links("running"),
       });
     }
-
     if (path === "/api/routines" && method === "GET") {
       return json(res, 200, {
         routines: routines!.listRoutines().filter((routine) => routineVisible(routine, visible)).map((routine) => routineForViewer(routine, visible)),

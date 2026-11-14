@@ -5,6 +5,12 @@ import { cookieMaxAgeSeconds, type SessionRegistry } from "./sessions.ts";
 
 import { cleanAccessEmail, cleanIdentityClaim } from "./access-claims.ts";
 
+const verifiedRequests = new WeakSet<IncomingMessage>();
+
+export function accessVerified(req: IncomingMessage): boolean {
+  return verifiedRequests.has(req);
+}
+
 export function cfAccessIdentityClaims(payload: { sub?: unknown; email?: unknown; name?: unknown; custom?: unknown }): { identity?: string; email?: string; displayName?: string } {
   const email = cleanAccessEmail(payload.email);
   const custom = payload.custom && typeof payload.custom === "object" ? payload.custom as { name?: unknown } : undefined;
@@ -39,6 +45,7 @@ export function createCfAccess(env: NodeJS.ProcessEnv = process.env, keySet?: JW
     try {
       if (typeof assertion !== "string") return existing && usingCookie ? null : 401;
       const { payload } = await jwtVerify(assertion, keys, { issuer, audience, requiredClaims: ["exp"] });
+      verifiedRequests.add(req);
       claims = cfAccessIdentityClaims(payload);
     } catch {
       return existing && usingCookie ? null : 401;
