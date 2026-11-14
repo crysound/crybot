@@ -1,4 +1,7 @@
+// @vitest-environment happy-dom
 import { createElement } from "react";
+import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -14,6 +17,7 @@ import {
   CloudComputersCard,
   LocalComputerSection,
   LocalVmIdleTimeoutSetting,
+  LocalVmScreenSetting,
   LocalVmInventoryCard,
   cloudComputerActionPlan,
   cloudComputerInventoryState,
@@ -626,4 +630,78 @@ it.each([false, true])("keeps local and VPS settings and hides Boat only while l
     expect(markup).toContain("Self-hosted VPS computers");
     if (providerLock) expect(markup).not.toMatch(/Boat|data-keys-link="box"/);
   } finally { storeFixture.config = null; }
+});
+
+
+describe("shared screen settings", () => {
+  it("offers only one to four screens and describes the shared resource defaults", () => {
+    const markup = renderToStaticMarkup(createElement(LocalVmScreenSetting, { screens: 4, disabled: false, onChange: vi.fn() }));
+    expect([...markup.matchAll(/<option value="(\d)"/g)].map((match) => match[1])).toEqual(["1", "2", "3", "4"]);
+    expect(markup).toContain('value="4" selected=""');
+    expect(markup).toContain("8 GB memory · 3 CPUs");
+    expect(markup).toContain('aria-label="Number of screens"');
+  });
+
+  it("disables changes during a settings request", () => {
+    const markup = renderToStaticMarkup(createElement(LocalVmScreenSetting, { screens: 2, disabled: true, onChange: vi.fn() }));
+    expect(markup).toContain('disabled=""');
+    expect(markup).toContain('value="2" selected=""');
+  });
+});
+
+
+it.each(["shared", "per-bot", "pool"])("only shared settings expose and save screen count: %s", async (mode) => {
+  const requests: Array<{ path: string; body: unknown }> = [];
+  let screens = 4;
+  vi.stubGlobal("fetch", vi.fn(async (path: string, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body ?? "{}"));
+    requests.push({ path, body });
+    if (path === "/api/config") screens = body.localVm.screens;
+    return new Response(JSON.stringify(path === "/api/local-computer" ? {
+      mode, max_instances: 2, screens: { layout: "single", screens, slots: [], queue: [] },
+      platform: "linux", available: [], container: "missing", idle_timeout_ms: 1800000,
+    } : { instances: [], configured: false, available: true }), { headers: { "content-type": "application/json" } });
+  }));
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  try {
+    flushSync(() => root.render(createElement(LocalComputerSection, { privateOnly: true })));
+    await vi.waitFor(() => expect(container.querySelector<HTMLButtonElement>('button[role="radio"]')?.disabled).toBe(false));
+    const select = container.querySelector<HTMLSelectElement>('select[aria-label="Number of screens"]');
+    if (mode !== "shared") {
+      expect(select).toBeNull();
+      expect(container.textContent).not.toContain("8 GB memory");
+      return;
+    }
+    await vi.waitFor(() => expect(container.querySelector('select[aria-label="Number of screens"]')).not.toBeNull());
+    const input = container.querySelector<HTMLSelectElement>('select[aria-label="Number of screens"]')!;
+    expect(input.value).toBe("4");
+    flushSync(() => { input.value = "2"; input.dispatchEvent(new Event("change", { bubbles: true })); });
+    await vi.waitFor(() => expect(requests.find(({ path }) => path === "/api/config")?.body).toEqual({ localVm: { screens: 2 } }));
+    await vi.waitFor(() => expect(input.value).toBe("2"));
+  } finally {
+    flushSync(() => root.unmount());
+    container.remove();
+    vi.unstubAllGlobals();
+  }
+});
+
+it("does not show screen settings when the server omits screens", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (path: string) => new Response(JSON.stringify(path === "/api/local-computer"
+    ? { mode: "shared", max_instances: 2, platform: "linux", available: [], container: "missing", idle_timeout_ms: 1_800_000 }
+    : { instances: [], configured: false, available: true }), { headers: { "content-type": "application/json" } })));
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  try {
+    flushSync(() => root.render(createElement(LocalComputerSection, { privateOnly: true })));
+    await vi.waitFor(() => expect(container.querySelector<HTMLButtonElement>('button[role="radio"]')?.disabled).toBe(false));
+    expect(container.querySelector('select[aria-label="Number of screens"]')).toBeNull();
+    expect(container.textContent).not.toContain("8 GB memory");
+  } finally {
+    flushSync(() => root.unmount());
+    container.remove();
+    vi.unstubAllGlobals();
+  }
 });
