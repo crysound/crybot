@@ -1,9 +1,12 @@
 // The Local VM's settings, read from the config the server loaded.
+// Callers supply container engine resource limits.
 import { z } from "zod";
 
 import type { AppConfig } from "./config.ts";
 import {
   DEFAULT_DESKTOP_RESOURCES,
+  SHARED_DESKTOP_RESOURCES,
+  clampDesktopResources,
   MAX_DESKTOP_CPUS,
   MAX_DESKTOP_MEMORY_GB,
   MIN_DESKTOP_CPUS,
@@ -22,6 +25,8 @@ export const MAX_LOCAL_VM_IDLE_TIMEOUT_MINUTES = 1_440;
 /** Bot desktop isolation, default "shared"; `maxInstances` caps per-bot desktops or pool seats. Switching modes cold-starts every desktop. */
 export const localVmConfigSchema = z.object({
   mode: z.enum(["shared", "per-bot", "pool"]).optional(),
+  /** Shared desktop screen count, default 4; other modes always use one screen. */
+  screens: z.number().int().min(1).max(4).optional(),
   maxInstances: z
     .number()
     .int()
@@ -35,9 +40,9 @@ export const localVmConfigSchema = z.object({
     .max(MAX_LOCAL_VM_IDLE_TIMEOUT_MINUTES)
     .optional(),
   preserveInstalledApps: z.boolean().optional(),
-  /** Each desktop's memory limit in GiB, with no swap beyond it; 4 when unset. New desktops take a change; on Docker and Podman a stopped one takes it when it next starts. */
+  /** Memory limit in GiB, with no swap beyond it; in shared mode with engine resources supplied, the 8 GiB default is capped at engine memory minus 2 GiB where possible, explicit values at engine memory. On Docker and Podman, stopped containers apply changes on their next start. */
   memoryGb: z.number().int().min(MIN_DESKTOP_MEMORY_GB).max(MAX_DESKTOP_MEMORY_GB).optional(),
-  /** Each desktop's CPU limit; 2 when unset. Docker refuses more CPUs than its engine has. */
+  /** CPU limit; Docker and Podman reject limits above their engine's CPU count. In shared mode with engine resources supplied, the default of 3 and explicit values are capped at engine CPUs; otherwise defaults to 2 without engine clamping. On Docker and Podman, stopped containers apply changes on their next start. */
   cpus: z.number().int().min(MIN_DESKTOP_CPUS).max(MAX_DESKTOP_CPUS).optional(),
 });
 
@@ -58,9 +63,24 @@ export function localVmPreservesInstalledApps(cfg: AppConfig): boolean {
   return cfg.localVm?.preserveInstalledApps === true;
 }
 
-export function localVmResources(cfg: AppConfig): DesktopResources {
-  return {
-    memoryGb: cfg.localVm?.memoryGb ?? DEFAULT_DESKTOP_RESOURCES.memoryGb,
-    cpus: cfg.localVm?.cpus ?? DEFAULT_DESKTOP_RESOURCES.cpus,
-  };
+function localVmSettings(config: unknown): z.infer<typeof localVmConfigSchema> {
+  const parsed = z.object({ localVm: z.record(z.string(), z.unknown()).optional() }).safeParse(config);
+  const settings = parsed.success ? parsed.data.localVm ?? {} : {};
+  return Object.fromEntries(Object.entries(localVmConfigSchema.shape).flatMap(([key, schema]) => {
+    const field = schema.safeParse(settings[key]);
+    return field.success ? [[key, field.data]] : [];
+  }));
+}
+
+export function localVmScreens(config: unknown): number {
+  const settings = localVmSettings(config);
+  return (settings.mode ?? DEFAULT_LOCAL_VM_MODE) === "shared" ? settings.screens ?? 4 : 1;
+}
+
+export function localVmResources(config: unknown, host?: DesktopResources): DesktopResources {
+  const settings = localVmSettings(config);
+  const shared = (settings.mode ?? DEFAULT_LOCAL_VM_MODE) === "shared";
+  const defaults = shared && host ? clampDesktopResources(SHARED_DESKTOP_RESOURCES, host) : DEFAULT_DESKTOP_RESOURCES;
+  const resources = { memoryGb: settings.memoryGb ?? defaults.memoryGb, cpus: settings.cpus ?? defaults.cpus };
+  return shared && host ? clampDesktopResources(resources, host, 0) : resources;
 }
