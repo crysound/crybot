@@ -36,20 +36,24 @@ export function createCfAccess(env: NodeJS.ProcessEnv = process.env, keySet?: JW
     const cookie = parseCookies(req.headers.cookie).get(cookieName);
     const ticket = url.pathname === "/api/events" ? url.searchParams.get("ticket") : null;
     const ticketOwner = ticket ? sessions.ticketOwner(ticket) : null;
+    let claims: ReturnType<typeof cfAccessIdentityClaims> = {};
+    try {
+      if (typeof assertion !== "string") throw new Error("invalid assertion");
+      const { payload } = await jwtVerify(assertion, keys, { issuer, audience, requiredClaims: ["exp"] });
+      verifiedRequests.add(req);
+      claims = cfAccessIdentityClaims(payload);
+    } catch {
+      if (bearer?.startsWith("cry_sess_") && sessions.authenticate(bearer)) return null;
+      if (ticketOwner && sessions.isLive(ticketOwner)) return null;
+      const existing = sessions.authenticate(cookie);
+      const usingCookie = !bearer?.startsWith("cry_sess_") && !ticket;
+      return existing && usingCookie ? null : 401;
+    }
     if (bearer?.startsWith("cry_sess_") && sessions.authenticate(bearer)) return null;
     if (ticketOwner && sessions.isLive(ticketOwner)) return null;
     const existing = sessions.authenticate(cookie);
     const usingCookie = !bearer?.startsWith("cry_sess_") && !ticket;
     if (existing && !existing.accessIdentity && usingCookie) return null;
-    let claims: ReturnType<typeof cfAccessIdentityClaims> = {};
-    try {
-      if (typeof assertion !== "string") return existing && usingCookie ? null : 401;
-      const { payload } = await jwtVerify(assertion, keys, { issuer, audience, requiredClaims: ["exp"] });
-      verifiedRequests.add(req);
-      claims = cfAccessIdentityClaims(payload);
-    } catch {
-      return existing && usingCookie ? null : 401;
-    }
     if (!claims.identity) return 401;
     if (existing && existing.accessIdentity !== claims.identity) sessions.revoke(existing.id);
     if (existing?.accessIdentity === claims.identity && usingCookie) {

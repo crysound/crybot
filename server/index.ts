@@ -1,8 +1,8 @@
 import { providerLockEnabled, providerUpdateDrivers, lockedProviderConfigs, providerLockConfigPatch, migrateLockedProviderReferences, migrateLockedRoutineReferences } from "./provider-lock.ts";
 // Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
 import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
-import { createCfAccess } from "./cf-access.ts";
-import { createAppLinks } from "./app-links.ts";
+import { accessVerified, createCfAccess } from "./cf-access.ts";
+import { appGate, auditLogin, auditSessionRevoke, createAppLinks } from "./app-links.ts";
 import { createAppHandoff } from "./app-handoff.ts";
 import { desktopUpdateFiles } from "./routes/desktop-update-files.ts";
 import { startFailureText } from "./start-failure-text.ts";
@@ -12590,8 +12590,8 @@ ROUTES.push(createLiveRoutes({
     return liveSettingsFor(cfg);
   },
 }));
-const appLinks = createAppLinks();
 const cfAccess = createCfAccess();
+const appLinks = createAppLinks();
 const appHandoff = createAppHandoff(cfAccess !== null);
 const toolResults = new ToolResults();
 const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
@@ -12607,13 +12607,13 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
   let m: RegExpMatchArray | null = null;
   let releaseWorkspaceRequest: (() => void) | undefined;
   try {
-    if (await desktopUpdateFiles(req, res, process.env.CRYBOT_DESKTOP_UPDATES_DIR)) return;
-    if (appLinks(req, res, url)) return;
+    if (await desktopUpdateFiles(req, res, process.env.CRYBOT_DESKTOP_UPDATES_DIR) || appGate(req, res, path, false, true) || appLinks(req, res, url)) return;
     const publicProbe = method === "GET" && (path === "/api/health" || path === "/api/brand" || path === "/.well-known/crybot/environment" || /^\/\.well-known\/crybot\/domain-check\/[a-f0-9]{64}$/.test(path));
     if (cfAccess && !publicProbe) {
       const refusal = await cfAccess(req, res, url, sessions, SESSION_COOKIE);
       if (refusal) return json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
     }
+    if (appGate(req, res, path, accessVerified(req))) return;
     if (method === "GET" && path === "/auth/app-handoff") return appHandoff(req, res, url);
     if (method === "GET" && path === "/api/health/hosted") {
       res.setHeader("cache-control", "no-store");
@@ -12681,7 +12681,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         return preview ? json(res, 200, { ...preview, ...(CLOUD_TEAM ? { team: CLOUD_TEAM.name } : {}) }) : json(res, 401, userError("serverError.pair.linkExpired"));
       }
       if (browser && !wantsCookie) return json(res, 400, { error: "a browser sign-in sets this browser's cookie; send cookie: true" });
-      const result = sessions.exchange({ code, label, attemptId, browser, source: requestSource(req), fallbackLabel: labelFromUserAgent(req.headers["user-agent"]) });
+      const result = auditLogin(req, sessions.exchange({ code, label, attemptId, browser, source: requestSource(req), fallbackLabel: labelFromUserAgent(req.headers["user-agent"]) }));
       if (!result.ok) {
         console.warn(`pairing refused from ${requestSource(req)}: ${result.error}`);
         return json(res, result.status, refusalBody(result));
@@ -12707,7 +12707,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const label = typeof body?.deviceName === "string" ? body.deviceName : "";
       const attemptId = typeof body?.pairRequestId === "string" ? body.pairRequestId : undefined;
       const relayRefusal = phoneRelay?.pairingRefusal(req, credential); if (relayRefusal) return json(res, 400, { error: relayRefusal });
-      const paired = sessions.exchange({ code: credential, label, attemptId, source: requestSource(req), fallbackLabel: labelFromUserAgent(req.headers["user-agent"]) });
+      const paired = auditLogin(req, sessions.exchange({ code: credential, label, attemptId, source: requestSource(req), fallbackLabel: labelFromUserAgent(req.headers["user-agent"]) }));
       if (!paired.ok) {
         console.warn(`pairing refused from ${requestSource(req)}: ${paired.error}`);
         return json(res, paired.status, refusalBody(paired));
@@ -12812,7 +12812,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       return json(res, 200, sessions.issueStreamTicket(auth.session.id));
     }
     if (method === "POST" && path === "/api/auth/logout") {
-      if (auth.kind === "session") sessions.revoke(auth.session.id);
+      if (auth.kind === "session") auditSessionRevoke(req, sessions.revoke(auth.session.id), auth.session.label);
       res.setHeader("set-cookie", clearSessionCookie(SESSION_COOKIE));
       return json(res, 200, { ok: true });
     }
@@ -12904,7 +12904,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     }
     m = path.match(/^\/api\/auth\/sessions\/([\w-]+)$/);
     if (m && method === "DELETE") {
-      const revoked = sessions.revoke(m[1]);
+      const revoked = auditSessionRevoke(req, sessions.revoke(m[1]), auth.kind === "session" ? auth.session.label : undefined);
       if (auth.kind === "session" && auth.session.id === m[1]) res.setHeader("set-cookie", clearSessionCookie(SESSION_COOKIE));
       return json(res, revoked ? 200 : 404, revoked ? { ok: true } : { error: "no such session" });
     }

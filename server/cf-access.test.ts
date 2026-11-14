@@ -6,7 +6,7 @@ import { createRemoteJWKSet, customFetch, exportJWK, generateKeyPair, SignJWT } 
 import { WebSocketServer } from "ws";
 import { memoryHttp, memoryRequest } from "./testing/memory-http.ts";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { createCfAccess } from "./cf-access.ts";
+import { accessVerified, createCfAccess } from "./cf-access.ts";
 import { SessionRegistry, SESSION_TTL_MS } from "./sessions.ts";
 import { resolveRequestAuth } from "./request-auth.ts";
 import { lendingPersonKey, OWN_SERVER_LENDER, personKey } from "./person-key.ts";
@@ -70,7 +70,7 @@ async function fixture(config: NodeJS.ProcessEnv = env) {
     socket.destroy();
     return raw;
   };
-  return { get, direct, upgrade, get sessions() { return sessions; }, restart, issue, fetchKeys };
+  return { get, direct, upgrade, access, get sessions() { return sessions; }, restart, issue, fetchKeys };
 }
 
 describe("Cloudflare Access", () => {
@@ -121,6 +121,18 @@ describe("Cloudflare Access", () => {
     expect(f.issue).toHaveBeenCalledTimes(1);
     expect((await f.get({ "cf-access-jwt-assertion": token })).status).toBe(200);
     expect(f.fetchKeys).toHaveBeenCalledTimes(1);
+  });
+  it("marks a valid assertion before reusing a cookie-only session", async () => {
+    const f = await fixture();
+    const session = f.sessions.issue({ label: "paired fixture", scopes: ["admin", "client"] });
+    const response = await f.get({ "cf-access-jwt-assertion": await jwt(), cookie: `cry_session_test=${session.token}` });
+    expect(response.status).toBe(200);
+    const seen = await memoryHttp(async (req, res) => {
+      await f.access!(req, res, new URL(req.url!, "http://localhost"), f.sessions, "cry_session_test");
+      res.end();
+      expect(accessVerified(req)).toBe(true);
+    }, "/api/bots", "GET", { "cf-access-jwt-assertion": await jwt(), cookie: `cry_session_test=${session.token}` });
+    expect(seen.status).toBe(200);
   });
   it("reuses one session and cookie for five cookie-free requests with the same sub", async () => {
     const f = await fixture({ ...env, CRYBOT_CF_ACCESS_ALLOW: "*" });
