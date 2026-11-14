@@ -1,6 +1,5 @@
 import { boatCapableEngine, cloudEngineOf } from "@/lib/remote-desktop";
 import { canWorkOnCloud } from "../../shared/cloud-computer";
-import { viewerTargetId } from "../../shared/desktop-viewer";
 import { Switch } from "./SettingsPrimitives";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { waitForLocalVmReady } from "@/lib/local-vm-readiness";
@@ -54,7 +53,7 @@ import { openPlaceAction, panelCloudRefusal, placeBlocked, placeFacts, placeHasI
 import type { PlaceActionId, PlaceFacts, PlaceView } from "../../shared/place-view";
 import { t } from "@/lib/i18n";
 import { LocalizedPanelError, panelErrorText } from "@/lib/computer-messages";
-
+import { localVmPollInterval, localVmViewerTarget, localVmWaitState, type LocalVmStatus } from "@/lib/local-vm-screen-state";
 interface VpsComputerStatus {
   configured: boolean;
   imageMatches: boolean;
@@ -63,7 +62,6 @@ interface VpsComputerStatus {
   ready: boolean;
   problem: string | null;
 }
-
 type Phase =
   | "checking"
   | "unconfigured"
@@ -72,6 +70,7 @@ type Phase =
   | "ready"
   | "vm"
   | "vm-unavailable"
+  | "vm-waiting"
   | "vps-unconfigured"
   | "vps-incompatible"
   | "vps-stopped"
@@ -87,27 +86,6 @@ type Phase =
   | "browser"
   | "off"
   | "error";
-
-interface LocalVmStatus {
-  resumable?: boolean;
-  stop_reason?: "idle" | null;
-  mode: "shared" | "per-bot" | "pool";
-  max_instances: number;
-  image: boolean;
-  create_supported: boolean;
-  container: "running" | "stopped" | "missing";
-  imageMatches: boolean;
-  managed: boolean;
-  network: "loopback" | "unsafe" | "unknown";
-  security: "hardened" | "unsafe" | "unknown";
-  persistence: "durable" | "unsafe" | "unknown";
-  desktopReady: boolean;
-  ready: boolean;
-  problem: string | null;
-  viewer_url: string;
-  target_key: string;
-}
-
 export function ComputerPanel({
   bot: profileBot,
   onOpenVmWorkspace,
@@ -232,6 +210,7 @@ export function ComputerPanel({
   const [previewRetry, setPreviewRetry] = useState(0);
   const [vmFrame, setVmFrame] = useState<string | null>(null);
   const [vmStatus, setVmStatus] = useState<LocalVmStatus | null>(null);
+  const lastVmScreenTarget = useRef<string | null>(null); const lastVmTarget = useRef<string | null>(null);
   const [vpsStatus, setVpsStatus] = useState<VpsComputerStatus | null>(null);
   const [localFrame, setLocalFrame] = useState<string | null>(null);
   const [pending, setPending] = useState<
@@ -355,6 +334,7 @@ export function ComputerPanel({
   useAndroidTabFallback(bot.id, androidStatus, setPanelView);
   useEffect(() => {
     vmReadinessAttempts.current = 0;
+    lastVmScreenTarget.current = null; lastVmTarget.current = null;
   }, [bot.id, bot.computer]);
   const vmSupported = Boolean(
     selectedInstance?.snapshot.state === "available" &&
@@ -373,14 +353,14 @@ export function ComputerPanel({
   );
   useEffect(() => {
     if (panelView !== "computer") return;
-    let alive = true;
+    let alive = true; const keepVmWait = bot.computer === "vm" && phase === "vm-waiting";
     setResolvedComputerSelection(null);
     setTeamComputer(null);
-    setPhase("checking");
+    setPhase(keepVmWait ? "vm-waiting" : "checking");
     setPolledFrame(null);
     setPreviewError(null);
     setVmFrame(null);
-    setVmStatus(null);
+    if (!keepVmWait) setVmStatus(null);
     setVpsStatus(null);
     setLocalFrame(null);
     setError(null);
@@ -420,7 +400,15 @@ export function ComputerPanel({
           const status: LocalVmStatus = rawStatus;
           setResolvedComputerSelection({ botId: bot.id, threadId: bot.threadId, computer: bot.computer, cloudBackend });
           setVmStatus(status);
-          if (status.ready) {
+          const waitState = localVmWaitState(status);
+          const resolvedTarget = localVmViewerTarget(status); const screenTarget = status.screen?.viewerTarget;
+          if (screenTarget) lastVmScreenTarget.current = screenTarget;
+          if (resolvedTarget) lastVmTarget.current = resolvedTarget;
+          if (waitState) {
+            setPhase("vm-waiting");
+            setError(null);
+            retryTimer = window.setTimeout(() => setRetry((n) => n + 1), localVmPollInterval(status));
+          } else if (status.ready) {
             vmReadinessAttempts.current = 0;
             setPhase("vm");
           } else if (
@@ -452,6 +440,12 @@ export function ComputerPanel({
         })
         .catch((e) => {
           if (!alive) return;
+          if (e instanceof ApiError && e.status === 409 && e.body?.error === "screen_not_assigned") {
+            setError(null);
+            setPhase("vm-waiting");
+            retryTimer = window.setTimeout(() => setRetry((n) => n + 1), 2000);
+            return;
+          }
           setError(e.message);
           setPhase("vm-unavailable");
         });
@@ -626,8 +620,10 @@ export function ComputerPanel({
   }, [phase, threadPath, profileBot.busy, livePlace]);
 
   const control = state.computerControl[bot.id] ?? { held: false, helpReason: null };
-  const liveTarget = !computerStatusCurrent ? null
-    : phase === "vm" && vmStatus?.viewer_url && vmStatus.target_key ? viewerTargetId({ key: vmStatus.target_key })
+  const vmTarget = localVmViewerTarget(vmStatus ?? { screen: undefined, viewer_url: "", target_key: "" }) ?? lastVmTarget.current;
+  const statusHasStableVmTarget = bot.computer === "vm" && Boolean(lastVmTarget.current);
+  const liveTarget = !computerStatusCurrent && !statusHasStableVmTarget ? null
+    : bot.computer === "vm" ? vmTarget
       : cloudPreviewReady && cloudBackend === "vps" ? `vps/${bot.id}` : null;
   const requestControl = useCallback(async (action: ComputerControlAction, controlLeaseId?: string) => {
     const snap = computerControlSnapshotSchema.parse(await api(threadPath("computer/control"), {
@@ -644,12 +640,11 @@ export function ComputerPanel({
     return snap;
   }, [bot.id, dispatch, threadPath, liveTarget]);
   const takeover = useComputerTakeover({
-    botId: bot.id, session: `${viewerConnectionKey}:${panelView}`, held: control.held, request: requestControl,
+    botId: bot.id, session: `${viewerConnectionKey}:${panelView}:${bot.computer === "vm" ? (lastVmScreenTarget.current ?? lastVmTarget.current ?? "") : liveTarget ?? ""}`, held: control.held, request: requestControl,
     viewerClose: liveTarget?.startsWith("vps/") ? threadPath("computer/viewer-close") : null,
   });
   const liveHere = takeover.here && Boolean(liveTarget);
   useEffect(() => { if (liveTarget) void loadLiveDesktop(); }, [liveTarget]);
-
   const pageVisible = usePageVisible();
   const lastLiveAt = useRef(0);
   const previewBusy = useRef(bot.busy);
@@ -1175,6 +1170,7 @@ export function ComputerPanel({
     "vps-stopped": t("computer.phase.vpsStopped"),
     "local-unavailable": localDisabledReason ?? t("computer.phase.localUnavailable"),
     "vm-unavailable": t("computer.phase.vmUnavailable"),
+    "vm-waiting": vmStatus && localVmWaitState(vmStatus) === "queued" ? t("vm.screens.queued", { position: vmStatus.queue_position ?? 0 }) : t("vm.screens.unassignedBot"),
     browser: viewOf("browser").line,
     off: viewOf("off").line,
     error: bot.computer === "cloud" && (cloudRefused || placeBlocked(cloudView)) ? cloudView.line : t("computer.phase.error"),
@@ -1310,6 +1306,9 @@ export function ComputerPanel({
             )}
             {computerStatusCurrent && bot.computer === "cloud" && cloudBackend === "vps" && (phase === "ready" || phase === "starting") && !liveHere && <span className="text-[11px]">{t("computer.badge.vps")}</span>}
         </div>
+        {phase === "vm-waiting" && <p role="status" className="mb-3 rounded-lg bg-card p-3 text-[13px] text-ink-secondary">
+          {emptyState["vm-waiting"]} {vmStatus && localVmWaitState(vmStatus) === "queued" && t("vm.screens.queueDetail")}
+        </p>}
         <div className={cn("relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl bg-card", liveHere && "ring-2 ring-accent")}>
           {liveHere && liveTarget ? (
             <Suspense fallback={<Loader2 size={18} className="animate-spin text-ink-secondary" />}>

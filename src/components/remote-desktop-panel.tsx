@@ -181,10 +181,14 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
     setError(null);
     // Set when another view holds the Local VM: this attempt opened nothing, so it must not close that view's viewer.
     let heldElsewhere = false;
+    let viewerRequested = false;
     try {
       if (!window.cry?.desktopViewer) throw new Error(t("remoteDesktop.viewerUnavailable"));
-      // A take with no target holds the desktop the host runs this bot on, its Local VM included, as a phone's does.
-      const target = !localVm && bot.cloudBackend === "vps" ? `vps/${bot.id}` : undefined;
+      const status = localVm ? await api(`/api/bots/${bot.id}/local-computer`) : null;
+      if (status?.queue_position) throw new Error(t("vm.screens.queued", { position: status.queue_position }));
+      if (status?.screen === null) throw new Error(t("vm.screens.unassigned"));
+      const target = localVm ? status?.screen?.viewerTarget : bot.cloudBackend === "vps" ? `vps/${bot.id}` : undefined;
+      viewerRequested = true;
       await openProviderDesktop({
         botId: bot.id, title: t("computer.viewerTitle", { name: bot.name }), current: () => true,
         request: (action, controlLeaseId) => api(`/api/bots/${bot.id}/computer/control`, {
@@ -200,17 +204,18 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
             }
             path = `local-computer/join?${new URLSearchParams({ controlLeaseId })}`;
           }
-          return { joinUrl: viewerAddress((await api(`/api/bots/${bot.id}/${path}`, { method: "POST", body: "{}", signal })).joinUrl) };
+          return { joinUrl: viewerAddress((await api(`/api/bots/${bot.id}/${path}`, { method: "POST", body: JSON.stringify(target && localVm ? { target } : {}), signal })).joinUrl) };
         },
       });
     } catch (cause) {
-      if (!heldElsewhere) {
+      if (viewerRequested && !heldElsewhere) {
         await api(`/api/bots/${bot.id}/computer/viewer-close`, {
           method: "POST",
           body: "{}",
         }).catch(() => {});
       }
-      setError(panelErrorText(cause instanceof Error ? cause : String(cause)));
+      setError(cause instanceof ApiError && cause.status === 409 && cause.body?.error === "screen_not_assigned"
+        ? t("vm.screens.unassigned") : panelErrorText(cause instanceof Error ? cause : String(cause)));
     } finally {
       setPending(false);
     }

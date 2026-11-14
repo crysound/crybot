@@ -4,9 +4,10 @@ import { createElement } from "react";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { ApiError } from "@/state/api";
 import type { AppState, Bot, InstanceInfo } from "@/state/store";
 
-const fixture = vi.hoisted(() => ({ owned: true, controls: [] as Array<{ action: string; controlLeaseId?: string }>, joins: [] as string[], viewerCloses: 0 }));
+const fixture = vi.hoisted(() => ({ vm: {} as Record<string, unknown>, joinBodies: [] as unknown[], owned: true, controls: [] as Array<{ action: string; controlLeaseId?: string }>, joins: [] as string[], viewerCloses: 0 }));
 vi.mock("./DesktopCapabilities", async (importOriginal) => ({
   ...await importOriginal<typeof import("./DesktopCapabilities")>(),
   useCaptionChrome: () => ({ padClass: undefined }),
@@ -17,6 +18,10 @@ vi.mock("./RoutinesPage", () => ({ RoutineEditor: () => null }));
 vi.mock("@/state/store", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/state/store")>(),
   api: async (path: string, init?: RequestInit) => {
+    if (path === "/api/bots/scout/local-computer") {
+      if (fixture.vm.unassigned) throw new ApiError("screen_not_assigned", 409, { error: "screen_not_assigned" });
+      return fixture.vm;
+    }
     if (path === "/api/bots/scout/computer/control") {
       const body = JSON.parse(String(init?.body));
       fixture.controls.push(body);
@@ -26,6 +31,7 @@ vi.mock("@/state/store", async (importOriginal) => ({
     if (path === "/api/bots/scout/computer/viewer-close") fixture.viewerCloses += 1;
     if (path.startsWith("/api/bots/scout/local-computer/join?")) {
       fixture.joins.push(path);
+      fixture.joinBodies.push(JSON.parse(String(init?.body)));
       return { joinUrl: "/vps-viewer/relay-1" };
     }
     return {};
@@ -51,6 +57,8 @@ const bot = {
 let root: Root | null = null;
 
 beforeEach(() => {
+  fixture.vm = {};
+  fixture.joinBodies = [];
   fixture.controls = [];
   fixture.joins = [];
   fixture.viewerCloses = 0;
@@ -131,4 +139,32 @@ it("a client whose host's Local VM is already held in another view is told so, a
   expect(open).not.toHaveBeenCalled();
   // Nothing opened here, so the other view's viewer on this session stays open.
   expect(fixture.viewerCloses).toBe(0);
+});
+
+
+it.each([2, null, "conflict"])("resolves a remote Local VM screen before taking or joining: %s", async (screen) => {
+  fixture.owned = true;
+  fixture.vm = screen === "conflict" ? { unassigned: true } : { screen: screen ? { screen, viewerTarget: `local/shared-s${screen}` } : null, ...(screen ? {} : { queue_position: 3 }) };
+  const open = vi.fn(async () => true);
+  vi.stubGlobal("cry", { desktopViewer: { open, close: vi.fn(async () => true), onState: () => () => {}, currentState: async () => ({ open: false, contextId: null }) } });
+  const container = document.createElement("div");
+  document.body.append(container);
+  root = createRoot(container);
+  flushSync(() => root!.render(createElement(BotEditorStore, { value: {
+    state: { ...initialState, instances: [engine], config: { box: { configured: true } } as AppState["config"] } as AppState,
+    dispatch: vi.fn(), flushBotPatches: async () => null, refreshInstances: async () => {}, refreshModels: async () => {},
+  }, children: createElement(RemoteDesktopPanel, { bot: { ...bot, computer: "vm" } }) })));
+  const take = [...document.querySelectorAll("button")].find((button) => button.textContent?.trim() === "Take control");
+  flushSync(() => take!.click());
+  if (typeof screen === "number") {
+    await vi.waitFor(() => expect(open).toHaveBeenCalled());
+    expect(fixture.controls[0]).toMatchObject({ action: "take", target: "local/shared-s2" });
+    expect(fixture.joinBodies).toEqual([{ target: "local/shared-s2" }]);
+  } else {
+    await vi.waitFor(() => expect(document.querySelector("[role=alert]")?.textContent).toContain(screen === "conflict" ? "Waiting for a screen" : "Position 3"));
+    expect(fixture.controls).toEqual([]);
+    expect(fixture.joins).toEqual([]);
+    expect(fixture.viewerCloses).toBe(0);
+    expect(open).not.toHaveBeenCalled();
+  }
 });

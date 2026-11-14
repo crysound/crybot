@@ -23,11 +23,12 @@ import { localizeComputerProblem } from "@/lib/computer-messages";
 import { computerInventoryRequest, jsonPostRequest, type ComputerApiRequest } from "@/lib/computer-requests";
 import { useStore } from "@/state/store";
 import { VpsComputersCard } from "./VpsComputersCard"; import { KeysLink } from "./keys/KeysLink";
+import { LocalVmScreenSetting, LocalVmScreens, saveScreens, type ScreenListPayload } from "./LocalVmScreens";
 import { localVmSetupStep4Title } from "./local-vm-setup-step";
 
 type Action = "pull" | "run" | "start" | "stop" | "remove" | "recreate";
-
 interface Status {
+  screens?: ScreenListPayload;
   platform: string;
   runtime: string | null;
   available: string[];
@@ -66,6 +67,7 @@ interface Status {
   };
 }
 
+export { LocalVmScreenSetting } from "./LocalVmScreens";
 export interface LocalVmInventoryInstance {
   botId: string;
   name: string;
@@ -76,14 +78,12 @@ export interface LocalVmInventoryInstance {
   problem: string | null;
   inUse: boolean;
 }
-
 interface LocalVmInventoryPayload {
   instances: LocalVmInventoryInstance[];
   maxInstances: number;
   available: boolean;
   problem: string | null;
 }
-
 export interface CloudComputerInventoryInstance {
   boxId: string;
   name: string;
@@ -1016,7 +1016,6 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
       setPolicyPending(false);
     }
   };
-
   const saveIdleTimeout = async (idleTimeoutMinutes: number) => {
     const response = await fetch("/api/config", {
       method: "PATCH",
@@ -1027,7 +1026,6 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
     if (!response.ok) throw new Error(body.error ?? t("vm.idle.error"));
     setStatus((current) => current ? { ...current, idle_timeout_ms: idleTimeoutMinutes * 60_000 } : current);
   };
-
   const deletePerBotVm = async (instance: LocalVmInventoryInstance) => {
     if (!instance.managed) {
       setInventoryError(t("vm.unmanagedError"));
@@ -1052,7 +1050,6 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
       setDeletingBotId(null);
     }
   };
-
   const actOnCloudComputer = async (action: CloudAction, instance: CloudComputerInventoryInstance) => {
     const request = confirmComputerAction(
       cloudComputerActionPlan(action, instance),
@@ -1242,7 +1239,7 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
           >
             {t("vm.main.recheck")}
           </button>
-          {ready && !perBot && (
+          {ready && !perBot && status?.screens?.layout !== "multi" && (
             <a
               href={status?.viewer_url ?? c?.view}
               target="_blank"
@@ -1256,9 +1253,11 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
         {error && <div role="alert" className="mt-2 text-[12px] leading-4 text-danger">{error}</div>}
       </Card>
 
+      {status?.mode === "shared" && status.screens && <LocalVmScreens payload={status.screens} />}
+
       <Card
         title={t("vm.isolation.title")}
-        subtitle={t("vm.isolation.subtitle")}
+        subtitle={t(status?.screens?.layout === "multi" ? "vm.screens.detail" : "vm.isolation.subtitle")}
       >
         <div className="flex justify-end">
           <Segmented label={t("vm.isolation.title")} value={status?.mode === "per-bot" ? "per-bot" : "shared"} disabled={!status || policyPending}
@@ -1280,6 +1279,13 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
               {[1, 2, 3, 4, 5, 6, 7, 8].map((value) => <option key={value} value={value}>{value}</option>)}
             </Select>
           </div>
+        )}
+        {status?.mode === "shared" && status.screens && (
+          <LocalVmScreenSetting screens={status.screens.screens} disabled={policyPending}
+            onChange={(screens) => {
+              setPolicyPending(true); setError(null);
+              void saveScreens(screens).then(() => refresh()).catch((cause) => setError(cause instanceof Error ? cause.message : String(cause))).finally(() => setPolicyPending(false));
+            }} />
         )}
         <LocalVmIdleTimeoutSetting
           minutes={status ? Math.round(status.idle_timeout_ms / 60_000) : DEFAULT_LOCAL_VM_IDLE_TIMEOUT_MINUTES}

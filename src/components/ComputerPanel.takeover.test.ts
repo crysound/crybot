@@ -4,9 +4,11 @@ import { createElement } from "react";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/state/api";
 import type { Action, AppState, Bot, InstanceInfo } from "@/state/store";
 
 const fixture = vi.hoisted(() => ({
+  vm: {} as Record<string, unknown>,
   held: false,
   /** Whether a take with a lease gets it: false plays a hold someone else already has. */
   owned: true,
@@ -66,10 +68,12 @@ vi.mock("@/state/store", async (importOriginal) => ({
       return { held: false, helpReason: null };
     }
     if (route === "/api/bots/scout/local-computer") {
+      if (fixture.vm.unassigned) throw new ApiError("screen_not_assigned", 409, { error: "screen_not_assigned" });
       return {
         mode: "per-bot", max_instances: 2, image: true, create_supported: true, container: "running", imageMatches: true,
         managed: true, network: "loopback", security: "hardened", persistence: "durable", desktopReady: true, ready: true,
         problem: null, viewer_url: "http://127.0.0.1:49152/vnc.html#password=fixture", target_key: `bot:${"a".repeat(64)}`,
+        ...fixture.vm,
       };
     }
     if (route === "/api/bots/scout/local-computer/screenshot") return { image: "data:image/png;base64,FRAME" };
@@ -151,6 +155,7 @@ beforeEach(() => {
     setItem: (key: string, value: string) => void saved.set(key, value),
     removeItem: (key: string) => void saved.delete(key),
   });
+  fixture.vm = {};
   fixture.held = false;
   fixture.owned = true;
   fixture.refuse = false;
@@ -407,4 +412,96 @@ describe("taking control of a self-hosted VPS", () => {
     await press("Hand control back");
     expect(fixture.beacons.some((beacon) => beacon.url.startsWith("/api/bots/scout/computer/viewer-close"))).toBe(true);
   });
+});
+
+
+describe("shared screen takeover", () => {
+  it("keeps a single screen takeover through a status refresh", async () => {
+    fixture.vm = { mode: "shared", target_key: "shared", screen: { screen: 1, viewerTarget: "local/shared-s1" } };
+    await open(makeBot({ computer: "vm", section: "first" }));
+    await press("Take control");
+    await shownLive();
+    shown = makeBot({ computer: "vm", section: "changed" });
+    draw();
+    await settle();
+    expect(releases()).toEqual([]);
+    expect(liveDesktop()?.dataset.target).toBe("local/shared-s1");
+  });
+
+  it("keeps a per-bot single-screen takeover through a status refresh", async () => {
+    fixture.vm = { mode: "per-bot", target_key: `bot:${"a".repeat(64)}` };
+    await open(makeBot({ computer: "vm", section: "first" }));
+    await press("Take control");
+    await shownLive();
+    shown = makeBot({ computer: "vm", section: "changed" });
+    draw();
+    await settle();
+    expect(releases()).toEqual([]);
+    expect(liveDesktop()?.dataset.target).toBe(`local/bot-${"a".repeat(64)}`);
+  });
+
+  it("keeps the waiting status node mounted while retrying an unassigned screen", async () => {
+    fixture.vm = { mode: "shared", target_key: "shared", screen: null };
+    await open(makeBot({ computer: "vm", section: "first" }));
+    const waiting = [...document.querySelectorAll<HTMLElement>('[role="status"]')]
+      .find((node) => node.textContent?.includes("This bot has no screen assigned yet"));
+    expect(waiting).toBeDefined();
+    shown = makeBot({ computer: "vm", section: "changed" });
+    draw();
+    await settle();
+    expect(document.querySelector('[role="status"]')).toBe(waiting);
+  });
+
+  it.each([1, 2, 3, 4])("takes only the bot's assigned screen %s, including without a legacy viewer URL", async (screen) => {
+    fixture.vm = { mode: "shared", target_key: "shared", viewer_url: "", screen: { screen, viewerTarget: `local/shared-s${screen}` } };
+    await open(makeBot({ computer: "vm" }));
+    await press("Take control");
+    await shownLive();
+    expect(liveDesktop()!.dataset.target).toBe(`local/shared-s${screen}`);
+    expect(fixture.controls[0]).toMatchObject({ action: "take", target: `local/shared-s${screen}` });
+    await press("Hand control back");
+    expect(fixture.controls.at(-1)).toMatchObject({ action: "release", target: `local/shared-s${screen}` });
+  });
+
+  it("keeps the single-screen target when the server omits screen assignment", async () => {
+    fixture.vm = { mode: "shared", target_key: "shared" };
+    await open(makeBot({ computer: "vm" }));
+    await press("Take control");
+    await shownLive();
+    expect(liveDesktop()!.dataset.target).toBe("local/shared");
+  });
+
+  it.each([undefined, 2])("never takes the shared container while unassigned or queued: %s", async (position) => {
+    fixture.vm = { mode: "shared", target_key: "shared", screen: null, queue_position: position };
+    await open(makeBot({ computer: "vm" }));
+    expect(document.body.textContent).toContain(position ? "Queued · Position 2" : "This bot has no screen assigned yet");
+    expect(document.body.textContent).not.toContain("Open Settings");
+    expect(button("Take control")).toBeUndefined();
+    expect(fixture.controls).toEqual([]);
+    expect(liveDesktop()).toBeNull();
+  });
+
+  it("automatically opens the assigned screen after leaving the queue", async () => {
+    fixture.vm = { mode: "shared", target_key: "shared", screen: null, queue_position: 1 };
+    await open(makeBot({ computer: "vm" }));
+    fixture.vm = { mode: "shared", target_key: "shared", screen: { screen: 3, viewerTarget: "local/shared-s3" } };
+    await vi.waitFor(() => expect(button("Take control")).toBeDefined(), { timeout: 4000 });
+    await press("Take control");
+    await shownLive();
+    expect(liveDesktop()!.dataset.target).toBe("local/shared-s3");
+  });
+});
+
+
+it("treats a screen_not_assigned conflict as waiting and automatically retries", async () => {
+  fixture.vm = { unassigned: true };
+  await open(makeBot({ computer: "vm" }));
+  expect(document.body.textContent).toContain("This bot has no screen assigned yet");
+  expect(document.body.textContent).not.toContain("screen_not_assigned");
+  expect(fixture.controls).toEqual([]);
+  fixture.vm = { mode: "shared", screen: { screen: 4, viewerTarget: "local/shared-s4" } };
+  await vi.waitFor(() => expect(button("Take control")).toBeDefined(), { timeout: 4000 });
+  await press("Take control");
+  await shownLive();
+  expect(liveDesktop()!.dataset.target).toBe("local/shared-s4");
 });
