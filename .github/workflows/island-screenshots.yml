@@ -7,7 +7,7 @@ on:
       - 'island.html'
       - 'shared/island.ts'
       - 'src/components/IslandSettings.tsx'
-      - 'scripts/testing/island-screenshots.mjs'
+      - 'scripts/testing/island-screenshots*.mjs'
       - '.github/workflows/island-screenshots.yml'
   push:
     branches: [main, T-1231-mac-island]
@@ -17,7 +17,7 @@ on:
       - 'island.html'
       - 'shared/island.ts'
       - 'src/components/IslandSettings.tsx'
-      - 'scripts/testing/island-screenshots.mjs'
+      - 'scripts/testing/island-screenshots*.mjs'
       - '.github/workflows/island-screenshots.yml'
   workflow_dispatch:
 permissions:
@@ -40,7 +40,9 @@ jobs:
       - run: pnpm exec vite build
       - run: node --test --test-concurrency=1 electron/island*.node-test.mjs
       - run: pnpm exec vitest run src/island/Island.test.ts
+      - run: node --experimental-vm-modules --test scripts/testing/island-screenshots.node-test.mjs
       - run: pnpm exec electron scripts/testing/island-screenshots.mjs
+        timeout-minutes: 8
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

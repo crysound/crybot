@@ -138,3 +138,60 @@ git diff --check
 - 本沙箱禁止监听端口，未运行需要端口的服务端/e2e；相关结果以 Actions 为准。本轮没有运行原生 Electron 截图，也没有声称截图作业通过。协调者推送分支后，以 `macos-26` 的 `island-screenshots` 作业及四态 artifacts 为准。
 - 真机确认：其他应用在前台时第一次点击能直接展开/输入；岛成为 key window 时主窗口不被带到前面；简介/隐藏后键盘输入不会落到岛上；打开主窗口成功和地点不匹配时的焦点与提示时序。
 - 真机确认：刘海尺寸、无刘海外接屏、菜单栏穿透、Retina、Spaces/Stage Manager、全屏开关与显示器热插拔；真实会话下不同地点的流式消息和主窗口完整技能审批。
+
+## 第 3 轮返工：截图脚本启动卡死
+
+本轮只修改截图脚本、它的隔离回归测试、截图工作流和本报告，没有修改产品代码，没有提交 git。开工执行了 `crybot-link-deps`。仓库仍缺少 `docs/verification/README.md`；测试使用模拟 Electron/内存数据，原生截图脚本继续使用独立临时 userData、独立 session 和内存请求夹具，不接触用户实时应用或数据。
+
+### 根因与证据
+
+定位到入口中的确定性启动死锁：旧 `.mjs` 在模块顶层 `await app.whenReady()`；Electron 要等 ESM 入口模块求值完成后才释放应用启动屏障。入口等 ready、启动等入口完成，因而连窗口创建和 `waitFor` 都到不了。旧脚本只有全部截图结束才输出成功信息，符合 Actions 启动后无任何脚本输出的现象。
+
+依据包括本地预装 Electron **43.7.9** 二进制中的启动实现：`await e.import(...),b()`，其中 `b` 来自 `const { appCodeLoaded: b } = process`；其 `default_app.asar` 在启动指定脚本时也执行 `await import(url.pathToFileURL(filePath).toString())`。本轮把流程移入 `async main()`，入口仅调用 `void main().catch(fail)`，让模块先完成求值；userData 与协议注册仍在首次异步等待之前完成。
+
+用同一隔离 ESM 测试分别加载 HEAD 旧脚本和修改后脚本，模拟“入口求值完成后才能释放 ready”的顺序。旧脚本先红，输出：
+
+```text
+✖ ESM entry completes before Electron releases the ready barrier
+AssertionError [ERR_ASSERTION]: top-level await blocks Electron's ready event
+false !== true
+Baseline exit code: 1
+```
+
+修改后该测试通过，捕获的阶段日志如下（这是模拟夹具日志，时间由测试时钟控制，**不是 macOS Actions 实测日志**）：
+
+```text
+[island-screenshots +0ms] BEGIN app.whenReady
+[island-screenshots +0ms] DONE app.whenReady
+[island-screenshots +0ms] BEGIN create island window
+[island-screenshots +0ms] EVENT did-start-loading crybot-island://app/island.html
+[island-screenshots +0ms] EVENT did-finish-load crybot-island://app/island.html
+[island-screenshots +0ms] DONE create island window
+[island-screenshots +0ms] BEGIN page did-finish-load
+[island-screenshots +0ms] DONE page did-finish-load
+```
+
+既有三次 CI 没有阶段日志，无法从它们反推是否还有后续原生绘制问题；以上确认的是代码中的启动死锁及修复的回归结果，macos-26 的最终产物仍待协调者推分支后验证。
+
+### 脚本与工作流修改
+
+- `scripts/testing/island-screenshots.mjs`：模块开始执行即打印 START、启动 240 秒总看门狗；超时输出当前嵌套步骤并 `app.exit(1)`。`app.whenReady`、创建窗口、等待页面加载、每次 `executeJavaScript`、每次 `capturePage`、写文件及清理都通过 `Promise.race` 限时 20 秒，输出 BEGIN / DONE / FAIL 与耗时位置。`waitFor` 的整个轮询也限时，predicate 不返回不能绕过期限。
+- 窗口构造夹具在产品调用 `loadURL` **之前**安装 `did-start-loading` / `did-finish-load` / `did-fail-load` 监听；等加载完成才执行页面脚本。`did-fail-load` 记录错误码、描述、URL 和是否主框架；`render-process-gone` 记录退出详情；`unresponsive`、preload 错误也记录并立即非零退出，不在事件回调里 throw。额外记录渲染器 console 和 `child-process-gone`（含 GPU 子进程信息），便于后续 CI 排查。
+- 截图夹具注入 `paintWhenInitiallyHidden: true`、`backgroundThrottling: false`，每张图前 `showInactive()`、`invalidate()`，等待字体、两次 animation frame 和 500ms 动画收尾。截图用 `capturePage(undefined, { stayAwake: true })`，检查图像非空并记录 PNG 尺寸。产品 BrowserWindow 参数保持原样。
+- **hidden 图的取舍**：这里 hidden 是页面胶囊的零高度、透明状态，原生窗口本来就会在加载后 `showInactive()`。截图时让原生窗口保持可绘制，断言页面 `height=0`、`opacity="0"`、mode 为 hidden，并把窗口可见性和 bounds 写入 `STATE hidden` 日志。`hidden.png` 预期是有尺寸的透明窗口图，配合状态日志说明“平时不显示”；不会伪造一个可见胶囊，也不截取整个桌面。它不用于证明真机刘海或菜单栏效果。
+- **GPU 参数**：启动死锁发生在 ready / 创建窗口之前，没有证据表明本次根因需要 `--disable-gpu`，因此保留 macOS 原生默认渲染路径。软件渲染不是本轮验证结论；若 Actions 仍出 GPU 异常，可从新增子进程日志及具体绘制步骤定位。
+- `.github/workflows/island-screenshots.yml`：截图步骤增加 `timeout-minutes: 8`，作业总超时仍为 20 分钟；加入截图脚本回归测试，paths 匹配扩大到 `island-screenshots*.mjs` 以覆盖测试文件。
+- `scripts/testing/island-screenshots.node-test.mjs`：9 项隔离测试覆盖 ESM 启动屏障、ready 超时、总看门狗、页面加载不返回、JavaScript 不返回、hidden 绘制准备与 capture 不返回，以及三种原生失败事件。使用 Node VM 模块和模拟时钟，不启动 Electron、不监听端口，也不把模拟图片当作真实截图。
+
+### 本地验证与 Actions 验收
+
+| 验证 | 结果 |
+| --- | --- |
+| `node --test --test-concurrency=1 electron/island*.node-test.mjs` | 通过，4 个文件串行；另逐文件 `--test-isolation=none` 展开结果，27/27 |
+| `pnpm exec vitest run src/island/Island.test.ts` | 24/24 |
+| `node --experimental-vm-modules --test --test-isolation=none scripts/testing/island-screenshots.node-test.mjs` | 9/9；旧脚本 ESM 回归先失败，修改后通过 |
+| `pnpm exec tsc -b` | 通过 |
+| `pnpm exec oxlint --deny-warnings scripts/testing/island-screenshots.mjs scripts/testing/island-screenshots.node-test.mjs` | 通过，无告警 |
+| `node --check scripts/testing/island-screenshots.mjs`、`git diff --check` | 通过 |
+
+本沙箱没有 macOS，也不允许运行监听端口的 e2e；本轮未运行原生 Electron 截图或服务端 e2e，没有声称 macOS 截图已成功。最终验收以协调者推送后 Actions「macOS island screenshots」（macos-26）成功产出 `hidden.png`、`summary.png`、`list.png`、`chat.png` 四张图为准。日志应依次出现各模式的 `STATE`、`BEGIN capturePage`、`DONE capturePage`、`SAVED <mode>.png`，最后出现 `Saved four island screenshots`；失败则在单步 20 秒或总计 4 分钟内报告具体步骤并非零退出，外层截图步骤另有 8 分钟兜底。
