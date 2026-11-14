@@ -18,6 +18,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec tsc -b
       - run: pnpm exec tsc -p tsconfig.server.json
+      - run: pnpm exec tsc -p tsconfig.ios-contract.json
       - run: pnpm lint
       - run: pnpm i18n:check
       - run: pnpm check:brand
@@ -41,6 +42,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm vitest run --shard=${{ matrix.shard }}/8
   ios-contract:
+    env:
+      CRYBOT_RUN_IOS_CONTRACT_E2E: "1"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -51,5 +54,6 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm contract:ios
       - run: pnpm vitest run --maxWorkers=2 server/testing/ios-contract server/ios-contract.e2e.test.ts
+      - run: node --test scripts/ios-web-drift.test.mjs
+      - run: pnpm contract:ios

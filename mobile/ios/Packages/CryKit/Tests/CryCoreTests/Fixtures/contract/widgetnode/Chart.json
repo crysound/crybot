@@ -1,14 +1,20 @@
 {
-  "children": [
+  "data": [
     {
-      "id": "node-2",
-      "type": "Text",
-      "value": "Hello"
+      "category": "Example",
+      "value": 1
     }
   ],
-  "future": {
-    "nested": null
-  },
-  "id": "node-1",
-  "type": "Chart"
+  "id": "00000000-0000-4000-8000-000000000000",
+  "series": [
+    {
+      "dataKey": "value",
+      "label": "Value",
+      "type": "bar"
+    }
+  ],
+  "type": "Chart",
+  "xAxis": {
+    "dataKey": "category"
+  }
 }

@@ -1,5 +1,7 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { compareDirectories } from "../server/testing/ios-contract/compare.ts";
+import { typedSamples } from "../server/testing/ios-contract/fixtures.ts";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -11,12 +13,15 @@ const fixtureRoot = join(root, "mobile/ios/Packages/CryKit/Tests/CryCoreTests/Fi
 const areasRoot = join(root, "server/testing/ios-contract/areas");
 const allowedSwiftTypes = new Set(["WireMessage", "WireBot", "WireGroup", "BotsSnapshot", "ThreadPage", "SendResponse", "ServerFrame", "RuntimeEvent", "WidgetNode", "CryChartSpec", "OptionCardData", "InboxPage", "InboxCount", "NotificationsPage", "ConfigResponse", "EnvironmentInfo", "AuthSession", "APIError"]);
 
+const areaOf = (swiftType: string): string => swiftType === "WireMessage" ? "messages" : swiftType === "ServerFrame" ? "frames" : swiftType.toLowerCase();
+
 async function collectAreas(): Promise<AreaSample[]> {
   const files = (await readdir(areasRoot)).filter((file) => file.endsWith(".ts")).sort();
   const samples: AreaSample[] = [];
   for (const file of files) {
-    const module = await import(pathToFileURL(join(areasRoot, file)).href) as { collect?: () => AreaSample[] };
-    if (module.collect) samples.push(...module.collect());
+    if (process.argv.includes("--typed-only") && file === "live.ts") continue;
+    const module = await import(pathToFileURL(join(areasRoot, file)).href) as { collect?: () => AreaSample[] | Promise<AreaSample[]> };
+    if (module.collect) samples.push(...await module.collect());
   }
   return samples;
 }
@@ -26,8 +31,11 @@ async function build(directory: string): Promise<void> {
   const index: Array<{ file: string; swiftType: string }> = [];
   const names = new Map<string, number>();
   for (const sample of samples) {
-    if (!allowedSwiftTypes.has(sample.swiftType)) continue;
-    const area = sample.swiftType === "WireMessage" ? "messages" : sample.swiftType === "ServerFrame" ? "frames" : sample.swiftType.toLowerCase();
+    if (!allowedSwiftTypes.has(sample.swiftType)) {
+      console.warn(`Unregistered swiftType ${sample.swiftType}: ${sample.name} (not indexed)`);
+      continue;
+    }
+    const area = areaOf(sample.swiftType);
     const base = sample.name.replace(/[^A-Za-z0-9_.-]+/g, "-");
     const count = (names.get(`${area}/${base}`) ?? 0) + 1;
     names.set(`${area}/${base}`, count);
@@ -43,7 +51,20 @@ async function build(directory: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  const checked = spawnSync("pnpm", ["exec", "tsc", "-p", "tsconfig.ios-contract.json", "--pretty", "false"], { cwd: root, encoding: "utf8" });
+  if (checked.status !== 0) {
+    const diagnostics = (checked.stdout ?? "") + (checked.stderr ?? "") + (checked.error?.message ?? "");
+    console.error(diagnostics);
+    const affected = typedSamples.filter(sample => Object.keys(sample.value).some(key => (diagnostics.includes(`'${key}'`) || diagnostics.includes(`'"${key}"'`))));
+    for (const sample of affected) {
+      const area = areaOf(sample.swiftType);
+      console.error(`Affected contract file: ${area}/${sample.name}.json`);
+    }
+    process.exitCode = 1;
+    return;
+  }
   const update = process.argv.includes("--update");
+  if (process.argv.includes("--typed-only")) console.warn("Typed fixtures only: live capture and full contract verification are NOT performed.");
   const temp = await mkdtemp(join(tmpdir(), "crybot-ios-contract-"));
   try {
     await build(temp);
@@ -54,35 +75,7 @@ async function main(): Promise<void> {
       console.log(`Updated ${fixtureRoot}`);
       return;
     }
-    if (!existsSync(fixtureRoot)) {
-      console.error("Contract fixtures are missing. Run pnpm contract:ios --update");
-      process.exitCode = 1;
-      return;
-    }
-    const expected = new Set<string>();
-    async function files(dir: string): Promise<void> {
-      for (const entry of await readdir(dir, { withFileTypes: true })) {
-        const path = join(dir, entry.name);
-        if (entry.isDirectory()) await files(path); else expected.add(relative(fixtureRoot, path));
-      }
-    }
-    await files(fixtureRoot);
-    const actual = new Set<string>();
-    async function generated(dir: string): Promise<void> {
-      for (const entry of await readdir(dir, { withFileTypes: true })) {
-        const path = join(dir, entry.name);
-        if (entry.isDirectory()) await generated(path); else actual.add(relative(temp, path));
-      }
-    }
-    await generated(temp);
-    const changed: string[] = [];
-    for (const file of new Set([...expected, ...actual])) {
-      const [a, b] = await Promise.all([
-        readFile(join(fixtureRoot, file), "utf8").catch(() => ""),
-        readFile(join(temp, file), "utf8").catch(() => ""),
-      ]);
-      if (a !== b) changed.push(file);
-    }
+    const changed = await compareDirectories(fixtureRoot, temp);
     if (changed.length) {
       console.error(`Contract fixtures differ: ${changed.join(", ")}`);
       console.error("Run pnpm contract:ios --update to refresh them.");

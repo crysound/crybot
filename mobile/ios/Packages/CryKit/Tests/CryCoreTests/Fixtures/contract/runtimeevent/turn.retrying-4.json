@@ -1,0 +1,10 @@
+{
+  "attempt": 1,
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "delayMs": 1000,
+  "eventId": "00000000-0000-4000-8000-000000000000",
+  "provider": "Example",
+  "reason": "Example",
+  "threadId": "00000000-0000-4000-8000-000000000001",
+  "type": "turn.retrying"
+}

@@ -1,14 +1,5 @@
 {
-  "children": [
-    {
-      "id": "node-2",
-      "type": "Text",
-      "value": "Hello"
-    }
-  ],
-  "future": {
-    "nested": null
-  },
-  "id": "node-1",
+  "children": [],
+  "id": "00000000-0000-4000-8000-000000000000",
   "type": "Card"
 }

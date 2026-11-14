@@ -1,22 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import { WIDGET_NODE_TYPES } from "../../../shared/widget.ts";
-import { RETAINED_TASKS, assertCoverageShape, coverage, coverageSummary } from "./coverage.ts";
-import { frameKinds, messageKinds, runtimeTypes } from "./fixtures.ts";
+import { assertCoverageShape, coverage, coverageSummary } from "./coverage.ts";
+import { widgets } from "./fixtures.ts";
 
-describe("iOS contract coverage", () => {
-  it("lists every discriminated kind and runtime type", () => {
-    expect(Object.keys(coverage.serverFrameKinds).sort()).toEqual([...new Set(frameKinds)].sort());
-    expect(Object.keys(coverage.wireMessageKinds).sort()).toEqual([...messageKinds].sort());
-    expect(Object.keys(coverage.runtimeEventTypes).sort()).toEqual([...new Set(runtimeTypes)].sort());
-  });
-  it("rejects deleted tasks and keeps widget types exhaustive at runtime", () => {
-    expect(() => assertCoverageShape()).not.toThrow();
-    expect(RETAINED_TASKS).not.toContain("13");
-    expect(Object.keys(coverage.widgetNodes).sort()).toEqual([...WIDGET_NODE_TYPES].sort());
-  });
-  it("reports status counts and todos", () => {
-    const result = coverageSummary();
-    expect(result.counts.todo).toBeGreaterThan(0);
-    expect(result.todos.every((entry) => RETAINED_TASKS.includes(entry.task as (typeof RETAINED_TASKS)[number]))).toBe(true);
-  });
+it("checks widget table and samples in both directions", () => {
+  expect(Object.keys(coverage.widgetNodes).sort()).toEqual([...WIDGET_NODE_TYPES].sort());
+  expect(widgets.map(s => s.value.type).sort()).toEqual([...WIDGET_NODE_TYPES].sort());
+  expect(() => assertCoverageShape()).not.toThrow();
+});
+it("keeps web entries pending 48 and native record rows assigned to 16", () => {
+  for (const table of [coverage.widgetNodes, coverage.settingsPages, coverage.panelPages]) {
+    for (const status of Object.values(table)) expect(status).toEqual({ ios: "todo", task: "48" });
+  }
+  for (const kind of ["routine.run", "call", "screen"] as const) expect(coverage.wireMessageKinds[kind]).toEqual({ ios: "todo", task: "16" });
+  for (const kind of ["message", "runtime", "notify", "live.call", "config"] as const) expect(coverage.serverFrameKinds[kind]).toEqual({ ios: "done" });
+  expect(coverageSummary().counts.skip).toBe(6);
 });

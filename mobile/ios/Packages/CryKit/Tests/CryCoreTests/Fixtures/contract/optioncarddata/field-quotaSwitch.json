@@ -1,0 +1,11 @@
+{
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "quotaSwitch": {
+    "engines": []
+  },
+  "subtitle": "Example request",
+  "title": "Approve request"
+}

@@ -1,0 +1,13 @@
+{
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "subtitle": "Example request",
+  "teamMemoryRequest": {
+    "entryId": "00000000-0000-4000-8000-000000000000",
+    "kind": "Example",
+    "section": "Example"
+  },
+  "title": "Approve request"
+}

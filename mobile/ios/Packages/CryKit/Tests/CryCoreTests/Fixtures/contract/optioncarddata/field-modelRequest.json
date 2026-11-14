@@ -1,0 +1,26 @@
+{
+  "modelRequest": {
+    "before": {
+      "instanceId": "00000000-0000-4000-8000-000000000004",
+      "model": "Example"
+    },
+    "botId": "00000000-0000-4000-8000-000000000001",
+    "createdAt": 1767225600000,
+    "reason": "Example",
+    "requestId": "00000000-0000-4000-8000-000000000000",
+    "selection": {
+      "instanceId": "00000000-0000-4000-8000-000000000004",
+      "model": "Example"
+    },
+    "targetBotId": "00000000-0000-4000-8000-000000000003",
+    "targetName": "Example",
+    "threadId": "00000000-0000-4000-8000-000000000002",
+    "version": 1
+  },
+  "options": [
+    "Allow",
+    "Deny"
+  ],
+  "subtitle": "Example request",
+  "title": "Approve request"
+}
