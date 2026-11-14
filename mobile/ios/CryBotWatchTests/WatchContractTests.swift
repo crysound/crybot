@@ -29,13 +29,13 @@ final class WatchContractTests: XCTestCase {
         XCTAssertTrue(selected.isReady)
     }
 
-    func testMissingAccessCookieDoesNotProduceReadyLogin() {
+    func testMissingAccessCookieProducesReadyBearerLogin() {
         let selected = LoginCookies.select(from: [cookie("cry_session_443_222222222222", "cry_sess_server")],
                                            server: server, now: now)
         XCTAssertEqual(selected.sessionToken, "cry_sess_server")
-        XCTAssertEqual(selected.cfAuthorization, "")
+        XCTAssertNil(selected.cfAuthorization)
         XCTAssertNil(selected.cfExpires)
-        XCTAssertFalse(selected.isReady)
+        XCTAssertTrue(selected.isReady)
     }
 
     func testIgnoresExpiredWrongPathAndNonSessionCookies() {
@@ -46,7 +46,7 @@ final class WatchContractTests: XCTestCase {
             cookie("cry_session_443_222222222222", "invalid")
         ], server: server, now: now)
         XCTAssertEqual(selected.sessionToken, "")
-        XCTAssertEqual(selected.cfAuthorization, "")
+        XCTAssertNil(selected.cfAuthorization)
         XCTAssertFalse(selected.isReady)
     }
 
@@ -76,6 +76,78 @@ final class WatchContractTests: XCTestCase {
             cookie("cry_session_4000_222222222222", "cry_sess_latest", domain: ".example.com", expires: now.addingTimeInterval(7200))
         ], server: URL(string: "https://bot.example.com/app")!, now: now)
         XCTAssertEqual(selected.sessionToken, "cry_sess_latest")
+    }
+
+    func testLegacyCredentialsDecodeAndEncodeBothAccessFields() throws {
+        let data = Data(#"{"server":"https://bot.example.com","sessionToken":"fixture-session","cfAuthorization":"fixture-access","cfExpires":1800003600}"#.utf8)
+        let credentials = try JSONDecoder().decode(WatchCredentials.self, from: data)
+        XCTAssertEqual(credentials.server, "https://bot.example.com")
+        XCTAssertEqual(credentials.sessionToken, "fixture-session")
+        XCTAssertEqual(credentials.cfAuthorization, "fixture-access")
+        XCTAssertEqual(credentials.cfExpires, 1_800_003_600)
+        XCTAssertTrue(credentials.isReady)
+        let encoded = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(credentials)) as? [String: Any])
+        XCTAssertEqual(encoded["server"] as? String, "https://bot.example.com")
+        XCTAssertEqual(encoded["sessionToken"] as? String, "fixture-session")
+        XCTAssertEqual(encoded["cfAuthorization"] as? String, "fixture-access")
+        XCTAssertEqual(encoded["cfExpires"] as? TimeInterval, 1_800_003_600)
+    }
+
+    func testBearerCredentialsDecodeAbsentOrNullAccessFieldsAndOmitThemWhenEncoded() throws {
+        for json in [
+            #"{"server":"https://bot.example.com","sessionToken":"fixture-session"}"#,
+            #"{"server":"https://bot.example.com","sessionToken":"fixture-session","cfAuthorization":null,"cfExpires":null}"#
+        ] {
+            let credentials = try JSONDecoder().decode(WatchCredentials.self, from: Data(json.utf8))
+            XCTAssertEqual(credentials.server, "https://bot.example.com")
+            XCTAssertEqual(credentials.sessionToken, "fixture-session")
+            XCTAssertNil(credentials.cfAuthorization)
+            XCTAssertNil(credentials.cfExpires)
+            XCTAssertTrue(credentials.isReady)
+            let encoded = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(credentials)) as? [String: Any])
+            XCTAssertEqual(Set(encoded.keys), Set(["server", "sessionToken"]))
+            XCTAssertEqual(encoded["server"] as? String, "https://bot.example.com")
+            XCTAssertEqual(encoded["sessionToken"] as? String, "fixture-session")
+        }
+    }
+
+    func testContextsDecodeWithAndWithoutAccessFields() throws {
+        let bearerContext: [String: Any] = ["server": "https://bot.example.com", "sessionToken": "fixture-session"]
+        let bearer = try XCTUnwrap(WatchCredentials(context: bearerContext))
+        XCTAssertEqual(bearer.server, "https://bot.example.com")
+        XCTAssertEqual(bearer.sessionToken, "fixture-session")
+        XCTAssertNil(bearer.cfAuthorization)
+        XCTAssertNil(bearer.cfExpires)
+        XCTAssertTrue(bearer.isReady)
+        XCTAssertEqual(Set(bearer.context.keys), Set(["server", "sessionToken", "updatedAt"]))
+        XCTAssertEqual(WatchCredentials(context: bearer.context), bearer)
+
+        var legacyContext = bearerContext
+        legacyContext["cfAuthorization"] = "fixture-access"
+        legacyContext["cfExpires"] = 1_800_003_600.0
+        let legacy = try XCTUnwrap(WatchCredentials(context: legacyContext))
+        XCTAssertEqual(legacy.cfAuthorization, "fixture-access")
+        XCTAssertEqual(legacy.cfExpires, 1_800_003_600)
+        XCTAssertTrue(legacy.isReady)
+        XCTAssertEqual(legacy.context["cfAuthorization"] as? String, "fixture-access")
+        XCTAssertEqual(legacy.context["cfExpires"] as? TimeInterval, 1_800_003_600)
+        XCTAssertEqual(WatchCredentials(context: legacy.context), legacy)
+    }
+
+    func testReadinessRequiresSecureServerAndNonemptySessionToken() {
+        for access in [nil, "", "fixture-access"] as [String?] {
+            let ready = WatchCredentials(server: server.absoluteString, sessionToken: "fixture-session",
+                                         cfAuthorization: access, cfExpires: nil)
+            XCTAssertTrue(ready.isReady)
+            let emptyToken = WatchCredentials(server: server.absoluteString, sessionToken: "",
+                                              cfAuthorization: access, cfExpires: nil)
+            XCTAssertFalse(emptyToken.isReady)
+            for address in ["", "http://bot.example.com", "https://"] {
+                let invalidServer = WatchCredentials(server: address, sessionToken: "fixture-session",
+                                                     cfAuthorization: access, cfExpires: nil)
+                XCTAssertFalse(invalidServer.isReady)
+            }
+        }
     }
 
     func testContextRoundTripOmitsAbsentExpiryAndRejectsInsecureServer() {

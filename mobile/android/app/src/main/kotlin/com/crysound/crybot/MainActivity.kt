@@ -87,9 +87,11 @@ class MainActivity : Activity() {
         serverWasInjected = validServer(configuredServer)
         currentServer = if (serverWasInjected) configuredServer else preferences.getString("server", "") ?: ""
         expirePendingLogin()
+        val ignoredScheme = BuildConfig.CRYBOT_APP_LINK_HOST.isNotEmpty() &&
+            intent?.data?.scheme == "crybot" && intent?.data?.host == "auth"
         if (!consumeAuthIntent()) {
             if (validServer(currentServer)) {
-                if (loginHosts.isNotEmpty() && preferences.contains("login_state")) showError(login = true) else showWebView()
+                if (!ignoredScheme && loginHosts.isNotEmpty() && preferences.contains("login_state")) showError(login = true) else showWebView()
             } else showServerForm()
         }
     }
@@ -404,7 +406,12 @@ class MainActivity : Activity() {
     }
 
     private fun handleAuthCallback(uri: Uri?): Boolean {
-        if (uri == null || !uri.isHierarchical || uri.scheme != "crybot" || uri.host != "auth" || loginHosts.isEmpty()) return false
+        if (uri == null || !uri.isHierarchical || loginHosts.isEmpty()) return false
+        if (BuildConfig.CRYBOT_APP_LINK_HOST.isNotEmpty()) {
+            if (uri.scheme != "https" || uri.host?.lowercase(Locale.US) != BuildConfig.CRYBOT_APP_LINK_HOST.lowercase(Locale.US) || uri.path != "/auth/app-return") return false
+        } else {
+            if (uri.scheme != "crybot" || uri.host != "auth") return false
+        }
         val state = preferences.getString("login_state", null) ?: return false
         if (uri.getQueryParameters("state") != listOf(state)) return true
         if (preferences.getString("login_server", null) != currentServer) {
