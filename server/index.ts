@@ -1,11 +1,11 @@
+// Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
+import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
 import { requestedBotFields } from "./admin-audit-request-fields.ts";
 import { createSessionNames } from "./host/session-names.ts";
 import { createDataDirLeaseExit } from "./host/data-dir-lease-exit.ts";
 import { providerLockEnabled, providerUpdateDrivers, lockedProviderConfigs, providerLockConfigPatch, migrateLockedProviderReferences, migrateLockedRoutineReferences } from "./provider-lock.ts";
-// Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
-import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
-import { appGate, auditLogin, auditSessionRevoke, createAppLinks } from "./app-links.ts";
 import { createAppHandoffGate } from "./app-handoff.ts";
+import { appGate, auditLogin, auditSessionRevoke, createAppLinks } from "./app-links.ts";
 import { desktopUpdateFiles } from "./routes/desktop-update-files.ts";
 import { startFailureText } from "./start-failure-text.ts";
 import { reserveGmailDrafts } from "./gmail-draft-policy.ts";

@@ -14,7 +14,7 @@
 - `binary-skip`：HEAD 完整文件任意位置含 NUL（包括未改动行）时停止检查该文件内容，并报 `public-scan: <路径>: binary-skip`（不带行号或内容），退出码为 1；路径命中名单时仍使用脱敏占位路径。下列二进制扩展名的文件静默跳过内容。确需豁免时，在 HEAD 文件里写 `public-scan: allow binary-skip`，标记所在行未改动也有效；该文件的路径检查仍然执行。
 - `gitattributes`：PR 新增 `.gitattributes` 中的 `binary` 或 `-diff` 属性时失败；二进制判断由扫描器按扩展名和 NUL 字节完成。
 
-内容跳过扩展名为 `.png`、`.jpg`、`.jpeg`、`.gif`、`.webp`、`.ico`、`.pdf`、`.zip`、`.gz`、`.jar`、`.jks`、`.keystore`、`.p12`、`.woff`、`.woff2`、`.ttf`、`.otf` 的文件；其他含 NUL 的文件按 `binary-skip` 报告。仍检查这些文件的路径。`pnpm-lock.yaml` 和 `Package.resolved` 在 Git diff 阶段直接排除。纯改名和新增空文件同样检查新路径。确有公开内容需要保留时，可在该行写 `public-scan: allow <规则名>`，例如 `public-scan: allow domain`；豁免必须经过审核。每条规则各写一个注释；规则名是 `domain`、`ip`、`email`、`jwt`、`session-token`、`uuid`、`denylist`、`gitattributes` 或 `binary-skip`。
+内容跳过扩展名（大小写不敏感）为 `.png`、`.jpg`、`.jpeg`、`.gif`、`.webp`、`.ico`、`.icns`、`.mp3`、`.m4a`、`.caf`、`.mov`、`.mp4`、`.heic`、`.pdf`、`.zip`、`.gz`、`.jar`、`.jks`、`.keystore`、`.p12`、`.woff`、`.woff2`、`.ttf`、`.otf` 的文件；其他含 NUL 的文件按 `binary-skip` 报告。仍检查这些文件的路径。diff 头中模式为 `160000` 的子模块条目（gitlink）新增或更新时也只检查路径，不读取 HEAD 内容、不报 `binary-skip`；其他 Git 读取失败仍以退出码 2 报错。`pnpm-lock.yaml` 和 `Package.resolved` 在 Git diff 阶段直接排除。纯改名和新增空文件同样检查新路径。确有公开内容需要保留时，可在该行写 `public-scan: allow <规则名>`，例如 `public-scan: allow domain`；豁免必须经过审核。每条规则各写一个注释；规则名是 `domain`、`ip`、`email`、`jwt`、`session-token`、`uuid`、`denylist`、`gitattributes` 或 `binary-skip`。
 
 `iana-tlds.txt` 是离线内置的 IANA Root Zone Database 快照，文件头注明来源和日期。`allow-domains.txt` 每行列出一个经过审核的公共域名，支持尾随 `#` 来源注释，协调者负责增删；登记域名及其子域放行。协调者在本机维护内部名单原文及高熵随机 key，只把小写词的 HMAC-SHA256 逐行写入 `denylist.hmac`。只提交 HMAC，不提交原文、key 或命中样本。当前名单仅含注释，等待协调者用真实 key 生成；测试名单及测试 key 只用于隔离夹具。名单允许空行和 `#` 开头的注释，任何其他非 64 位十六进制行都会以配置错误退出（退出码 2），没有 key 时也校验格式。
 

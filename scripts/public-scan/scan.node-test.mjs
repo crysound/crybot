@@ -171,6 +171,72 @@ test("binary-skip alone fails and its explicit exemption permits the file", (t) 
   assert.equal(allowed.status, 0, allowed.output);
 });
 
+test("media extensions skip NUL content case-insensitively but still scan paths", (t) => {
+  const repo = repository(t);
+  const extensions = ["icns", "mp3", "m4a", "caf", "mov", "mp4", "heic"].flatMap((extension) => [extension, extension.toUpperCase()]);
+  const content = `\0\nhttps://${hostHk}\n`;
+  repo.update(Object.fromEntries(extensions.map((extension) => [`media_asset.${extension}`, content])));
+  const allowed = repo.run();
+  if (!allowed) return;
+  assert.equal(allowed.status, 0, allowed.output);
+  assert.equal(allowed.output, "Public scan passed: no findings.\n");
+  const paths = extensions.map((extension) => `${hostHk}/media_asset.${extension}`);
+  repo.update(Object.fromEntries(paths.map((path) => [path, content])));
+  const denied = repo.run();
+  if (!denied) return;
+  for (const path of paths) assertFinding(denied, path, 0, "domain");
+  assert.equal(denied.output.match(/: domain/g)?.length, paths.length);
+  assert.doesNotMatch(denied.output, /binary-skip/);
+});
+
+test("added and updated gitlinks skip content and keep path checks", (t) => {
+  const repo = repository(t);
+  const path = "vendor/fixture";
+  git(repo.directory, ["update-index", "--add", "--cacheinfo", `160000,${repo.base},${path}`]);
+  git(repo.directory, ["commit", "-qm", "add gitlink"]);
+  const addedCommit = git(repo.directory, ["rev-parse", "HEAD"]);
+  const addedDiff = git(repo.directory, ["diff", "--unified=0", repo.base, "HEAD"]);
+  assert.match(addedDiff, /^new file mode 160000$/m);
+  assert.deepEqual(scanDiff(addedDiff, () => assert.fail("gitlink content must not be read")), []);
+  const added = repo.run();
+  if (!added) return;
+  assert.equal(added.status, 0, added.output);
+  assert.equal(added.output, "Public scan passed: no findings.\n");
+
+  git(repo.directory, ["update-index", "--cacheinfo", `160000,${addedCommit},${path}`]);
+  git(repo.directory, ["commit", "-qm", "update gitlink"]);
+  const updatedDiff = git(repo.directory, ["diff", "--unified=0", addedCommit, "HEAD"]);
+  assert.match(updatedDiff, /^index [0-9a-f]+\.\.[0-9a-f]+ 160000$/m);
+  assert.deepEqual(scanDiff(updatedDiff, () => assert.fail("gitlink content must not be read")), []);
+  const updated = repo.run(["--base", addedCommit]);
+  if (!updated) return;
+  assert.equal(updated.status, 0, updated.output);
+  assert.equal(updated.output, "Public scan passed: no findings.\n");
+
+  git(repo.directory, ["update-index", "--add", "--cacheinfo", `160000,${addedCommit},${hostHk}`]);
+  git(repo.directory, ["commit", "-qm", "add gitlink with domain path"]);
+  const denied = repo.run();
+  if (!denied) return;
+  assertFinding(denied, hostHk, 0, "domain");
+  assert.doesNotMatch(denied.output, /binary-skip/);
+});
+
+test("gitlink-like text cannot bypass content checks or hide read failures", (t) => {
+  const repo = repository(t);
+  repo.update({ "fixture.txt": `Subproject commit ${repo.base}\nnew file mode 160000\nindex abcd..bcde 160000\nhttps://${hostHk}\n` });
+  const result = repo.run();
+  if (!result) return;
+  assertFinding(result, "fixture.txt", 4, "domain");
+  const diff = git(repo.directory, ["diff", "--unified=0", repo.base, "HEAD"]);
+  assert.throws(() => scanDiff(diff, () => { throw new Error("HEAD read failed"); }), /HEAD read failed/);
+  const blob = git(repo.directory, ["rev-parse", "HEAD:fixture.txt"]);
+  rmSync(join(repo.directory, ".git", "objects", blob.slice(0, 2), blob.slice(2)));
+  const unreadable = repo.run();
+  if (!unreadable) return;
+  assert.equal(unreadable.status, 2, unreadable.output);
+  assert.equal(unreadable.output, "Public scan error: invalid base, configuration, repository, or unparsed diff.\n");
+});
+
 test("real git domain scan uses the IANA table and rejects member access false positives", (t) => {
   const repo = repository(t);
   repo.update({ "fixture.txt": `user.name\nlogger.info(x)\nre.test(s)\nself.name\nwindow.app\nimport.meta.env.DEV\n${["a", "b", "hk"].join(".")}\n"${hostSh}"\nhttps://${hostApp}/\nhost: ${hostSh}\n${hostTop}/page\n` });
