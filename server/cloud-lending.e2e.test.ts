@@ -1,5 +1,6 @@
 // A real server booted as a Cloud home with no maintainer flag, and the real outbound connector on the Mac side. No guest
 // can connect, so what a guest left behind is written into the records while the server is stopped.
+import { fixtureOutputs } from "./testing/fixture-state.ts";
 import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes, randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -66,10 +67,12 @@ async function leftBehind(of: { threadIds?: string[]; routineIds?: string[] }) {
 type Turn = { argv: string[]; cwd: string; systemPrompt?: string; mcpConfig: { mcpServers: { agents: { command: string; args: string[]; env: Record<string, string> } } } };
 /** The latest turn `agentsFor` found. */
 let turn: Turn;
-const turnDumps = () => join(home, "turns");
-const readTurns = () => new Map(readdirSync(turnDumps()).filter((name) => name.endsWith(".json")).flatMap((name) => {
-  try { return [[name, readFileSync(join(turnDumps(), name), "utf8")] as const]; } catch { return []; }
-}));
+const readTurns = () => new Map(fixtureOutputs(home, "turns").flatMap((directory) => readdirSync(directory)
+  .filter((name) => name.endsWith(".json")).flatMap((name) => {
+    const file = join(directory, name);
+    try { return [[file, readFileSync(file, "utf8")] as const]; } catch { return []; }
+  })));
+
 
 /** Each engine process dumps its own turn, so the turns a restart resumes never take the place of this one. */
 async function agentsFor(start: () => Promise<void>, botId: string, threadId?: string) {
@@ -80,7 +83,8 @@ async function agentsFor(start: () => Promise<void>, botId: string, threadId?: s
       if (before.get(name) === text) continue;
       let found: Turn;
       try { found = JSON.parse(text) as Turn; } catch { continue; }
-      const env = found.mcpConfig?.mcpServers?.agents?.env;
+      const wrapped = found.mcpConfig?.mcpServers?.agents?.env;
+      const env = wrapped?.CRYBOT_GATE_UPSTREAM ? JSON.parse(wrapped.CRYBOT_GATE_UPSTREAM).env : wrapped;
       if (env?.CRYBOT_BOT_ID === botId && (!threadId || env.CRYBOT_THREAD_ID === threadId)) { turn = found; return true; }
     }
     return false;
@@ -117,13 +121,20 @@ beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "cry-cloud-lending-"));
   const dataDir = join(home, ".crybot");
   mkdirSync(dataDir, { recursive: true });
-  mkdirSync(turnDumps());
   const cli = fixtureEnginePath(dataDir, "fixture-claude.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
 // One-shot runs (a new chat's title) dump elsewhere, so they never take the place of the turn a test is waiting for.
-if (process.argv[2] !== "--version") { process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(home, "turns"))} + "/" + crypto.randomUUID() + ".json"; process.env.FAKE_CLAUDE_TEXT_DUMP = ${JSON.stringify(join(home, "one-shot.json"))}; process.env.FAKE_CLAUDE_MODE = "hang"; }
+if (process.argv[2] !== "--version") {
+  const { engineOutput } = await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fixture-state.ts")).href)});
+  const { mkdirSync } = await import("node:fs");
+  const turns = engineOutput(${JSON.stringify(home)}, process.cwd(), "turns");
+  mkdirSync(turns, { recursive: true });
+  process.env.FAKE_CLAUDE_DUMP = turns + "/" + crypto.randomUUID() + ".json";
+  process.env.FAKE_CLAUDE_TEXT_DUMP = engineOutput(${JSON.stringify(home)}, process.cwd(), "one-shot.json");
+  process.env.FAKE_CLAUDE_MODE = "hang";
+}
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
   // No `features` block: the maintainer flag is off, as on every Cloud home.

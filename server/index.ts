@@ -1,3 +1,6 @@
+import { requestedBotFields } from "./admin-audit-request-fields.ts";
+import { createSessionNames } from "./host/session-names.ts";
+import { createDataDirLeaseExit } from "./host/data-dir-lease-exit.ts";
 import { providerLockEnabled, providerUpdateDrivers, lockedProviderConfigs, providerLockConfigPatch, migrateLockedProviderReferences, migrateLockedRoutineReferences } from "./provider-lock.ts";
 // Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
 import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
@@ -647,7 +650,7 @@ import { createOutsideLineage, OUTSIDE_STAYS_HERE } from "./host/outside-lineage
 import { teamAiOwner } from "./host/team-ai-owner.ts"; import { createTeamOwners, type AskViewer } from "./host/team-owners.ts"; import { createTeamMessages } from "./host/team-messages.ts"; import { createTeamAwayHost } from "./host/team-away-host.ts"; import { createPlaceInbox, guestNameIn, placeInboxViewer } from "./host/place-inbox.ts"; import { relayedTurn } from "./host/relayed-turn.ts"; import { createPersonCalendar } from "./host/person-calendar.ts";
    import { createShareAnswer } from "./host/share-answer.ts";
 import { createCardRequester, linePersonKey } from "./host/thread-person.ts"; import { selfThreadRefusal } from "./host/self-threads.ts"; import { lookedAfterBy } from "./host/looked-after.ts"; import { createActingPeople, HANDED_PEOPLE_FILE, HandedPeople, type HandedRun, keptPrivate, privateHandBack, withPerson } from "./host/acting-person.ts"; import { createTurnCallSignals } from "./host/turn-call-signals.ts";
-import { personDisplayName, sessionsByPerson, sessionSpeakerName } from "./person-name.ts";
+import { sessionsByPerson, sessionSpeakerName } from "./person-name.ts";
 import { createThreadRoutes } from "./routes/threads.ts";
 import { createWebhookRoutes } from "./routes/webhooks.ts";
 import { withScopeHint } from "./connector-scope-hint.ts";
@@ -663,16 +666,7 @@ const STATIC_DIR = process.env.CRYBOT_STATIC_DIR || null;
 dataFormatAtStart("check", DATA_DIR, serverVersion()); ensureDirs();
 // Acquire before any durable identity, sessions, config or Store state is loaded.
 const dataDirLease = acquireDataDirLeaseForProcess(DATA_DIR);
-let dataDirLeaseReleaseAttempted = false;
-function releaseDataDirLeaseAtExit(): void {
-  if (dataDirLeaseReleaseAttempted) return;
-  dataDirLeaseReleaseAttempted = true;
-  try {
-    dataDirLease.release();
-  } catch (error) {
-    console.error(`[data-directory] lease release failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
+const { releaseDataDirLeaseAtExit } = createDataDirLeaseExit({ dataDirLease });
 process.once("exit", releaseDataDirLeaseAtExit);
 // Restore before constructing any long-lived config, Store, session or provider objects.
 let workspaceRestore: WorkspaceRestoreResult = { restored: false };
@@ -827,31 +821,7 @@ registerEnginesBinDir(); const engineUpdates = engineUpdatesFor({ drivers: provi
 const turnTriggers = new Map<string, UsageTrigger>();
 const NOBODY_PROFILE: MemberProfile = { name: "", email: "", aboutMe: "" };
 
-/** What a signed-in person is called on their lines, cards and reactions. */
-function sessionPersonName(session: { displayName?: string; email?: string; accessEmail?: string; accessIdentity?: string }, teamName?: string): string {
-  return personDisplayName(session, {
-    teamName,
-    profileName: !session.accessIdentity && !sharedMembership() ? cfg.profile?.name : undefined,
-    fallback: appLanguage()?.startsWith("zh") ? "成员" : "Member",
-  });
-}
-
-function sessionNameForPerson(key: string | undefined, fallback?: string, byPerson = sessionsByPerson(sessions.list())): string | undefined {
-  if (CLOUD_TEAM || !key) return fallback;
-  const session = byPerson.get(key);
-  return session ? sessionPersonName(session) : fallback;
-}
-
-function sessionDisplayNameForPerson(key: string | undefined): string | undefined {
-  if (!key) return undefined;
-  return sessionsByPerson(sessions.list()).get(key)?.displayName;
-}
-
-function sessionNameForEmail(email: string): string | undefined {
-  const normalized = email.trim().toLowerCase();
-  const session = sessions.list().find((candidate) => (candidate.accessEmail ?? candidate.email)?.trim().toLowerCase() === normalized);
-  return session?.displayName ? sessionPersonName(session) : undefined;
-}
+const { sessionPersonName, sessionNameForPerson, sessionDisplayNameForPerson, sessionNameForEmail } = createSessionNames({ cfg, sessions, CLOUD_TEAM: Boolean(CLOUD_TEAM), sharedMembership, appLanguage });
 
 function messageSender(auth: RequestAuth): ResolvedSender | undefined {
   if (auth.kind !== "session") return undefined;
@@ -1292,17 +1262,6 @@ const auditBot = (id: string | undefined) => (id ? botAuditSnapshot(store.bot(id
 const auditHook = (id: string | undefined) => (id ? webhooks.list().find((hook) => hook.id === id) : undefined);
 const hookFields = (hook: WebhookTrigger, fields: readonly string[] = WEBHOOK_AUDIT_FIELDS) =>
   Object.fromEntries(fields.map((field) => [field, (hook as unknown as Record<string, unknown>)[field] ?? null]));
-
-function requestedBotFields(req: IncomingMessage, path: string): string[] {
-  if (path.endsWith("/always-allow")) return ["alwaysAllow"];
-  if (path.endsWith("/model")) return ["modelSelection"];
-  const body = parsedBodyOf(req);
-  if (!body || typeof body !== "object" || Array.isArray(body)) return [];
-  const fields = new Set(Object.keys(body));
-  if (fields.has("autoApprove") || fields.has("approvalMode")) fields.add("autoApprove").add("approvalMode");
-  if (fields.has("chiefOfStaff")) fields.add("managedSections");
-  return [...fields];
-}
 
 /** Each row compares only what this request named or created, so another admin's concurrent change is not attributed here. */
 function beginAdminAudit(req: IncomingMessage, res: ServerResponse, method: string, path: string, auth: RequestAuth): void {

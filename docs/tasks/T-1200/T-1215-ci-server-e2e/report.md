@@ -258,3 +258,30 @@ T-1207 证据：`git show --format= --name-status 7124ef58` 确实删除 `cloudf
 - `git diff --check`：通过。
 
 没有提交或推送；开工时已有未跟踪的任务说明 r4.md 未改动。第一优先 9 个文件均已针对当前可定位根因落地修改，第二优先 16 个同根因文件一并修改，剩余 self-check/share-net、cloud-lending、opencode-provider-keys 保留原样并逐项记录。**真实 HTTP/e2e 和 bubblewrap 验收仍未完成，不能据本机纯测试宣称这 9 个文件已经全绿；最终以协调者推送后的 Actions 为准。**
+
+## 第 5 轮续跑（2026-11-14）
+
+本节是第 5 轮的续跑记录。工作树保留上一轮约 43 个未提交文件，本轮先按 `r5.md` 的 1–9 条核对并在原改动上完成收尾，没有重置或提交。
+
+1. `server/parallel-threads.e2e.test.ts` 的内部线程接口 helper 固定把所有成功响应当作 200；创建子线程实际返回 201，因此在“own thread through”用例的调用处失败。helper 现在接受预期状态，创建自己的子线程默认检查 201、跨 bot hand-off 检查 200；孙线程仍明确检查 409。
+2. `server/starter-bots.e2e.test.ts` 的 fixture 只写了 Claude instance，没有写默认模型选择。合入 provider-lock 后初始 Chief 的 selection 仍为空，发送消息得到空 provider instance 的 409。fixture 配置补上 `defaultModelSelection: CLAUDE`，并保留引擎输入、输出在隔离 fixture 目录中的改动。
+3. `server/steer-e2e.test.ts` 在子进程尚未完全退出时直接递归删除 home，Linux 可能留下 EACCES。清理先用 `waitForExit` 等待 close（超时才 SIGKILL），再用严格重试删除目录；公共 cleanup 保留兼容的告警包装。
+4. 五个 ratchet 超限文件的可复用逻辑已分别移到 `server/admin-audit-request-fields.ts`、`server/host/data-dir-lease-exit.ts`、`server/host/session-names.ts`、`server/thread-title.ts`、`src/lib/computer-control.ts`、`src/lib/local-vm-idle-timeout.ts` 等小模块，未提高登记行数。`scripts/testing/file-size-ratchet.test.ts` 通过。
+5. `CRYBOT_PROVIDER_LOCK` 只在服务器的 `server/provider-lock.ts` 读取，不由 bot engine、hook 或 MCP child 读取，因此加入 `SERVER_ONLY_CRYBOT`；env 合同测试通过。
+6. 执行 `node scripts/record-data-format.mjs` 重生成 `server/data-format-released.json`。差异只有版本从 `1.0.1` 更新为当前 `1.0.2`，`writes` 和 `reads` 未变。
+7. provider mark 测试原先只检查组件 HTML，Cry Bot 预设通过 SVG 文件提供颜色，因而误判为 mono。判定现在读取引用的 SVG 内容；41 个 provider mark 测试通过，仍遵守“图标自带颜色才算 brand”。
+8. 英文新增的三个键已补进 pt-BR 及其余受检语言包，翻译按各语言现有用词完成。`pnpm i18n:check` 通过（16 个语言包、10555 个英文键）。
+9. `respond-replay` 原来固定 worker port，和并发分片或 webhook 相邻端口争用。新增 `spawnReservedServer`：先由 OS 分配并持有应用和 webhook 两个 listener，通过继承 fd 启动子进程，再由 `reserved-listen` 将配置端口接到已继承的 listener；新增合同测试覆盖两组端口不冲突和服务可达性。
+
+串行验证结果：
+
+- `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm typecheck`：通过。
+- `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm lint`：通过。
+- `PATH=/opt/node24/bin:$PATH pnpm i18n:check`：通过。
+- `PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 pnpm check:brand`：通过，0 forbidden references。
+- `pnpm vitest run src/components/provider-mark-fade.test.ts --maxWorkers=1 --configLoader runner`：41 tests 通过。
+- `pnpm vitest run server/bot-box/env.test.ts --maxWorkers=1 --configLoader runner`：9 tests 通过。
+- `pnpm vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1 --configLoader runner`：通过。
+- `git diff --check`：通过。
+
+本沙箱禁止绑定 `127.0.0.1`，所以 `server/data-format.test.ts` 的 4 个真实 server 用例在 `freePortBlock` 处失败，11 个非监听测试通过；`server/starter-bots.e2e.test.ts`、`server/respond-replay.e2e.test.ts`、`server/testing/reserved-server.test.ts` 和 `server/steer-e2e.test.ts` 分别在端口分配或监听处得到 `EPERM`。`server/parallel-threads.e2e.test.ts` 同样在服务启动阶段无输出等待后终止。未把这些沙箱限制记作产品断言失败，需由协调者在 Actions/可监听环境按 r5 验收重新运行。未提交。

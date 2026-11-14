@@ -8013,5 +8013,8 @@
   "computer.recovery.restart": "コンピューターを再起動",
   "computer.recovery.restartTitle": "このクラウドコンピューターを停止して起動し直します。開いているプログラムは閉じられますが、ファイルは残ります。",
   "computer.recovery.replace": "コンピューターを置き換え",
-  "computer.recovery.replaceTitle": "このクラウドコンピューターを削除し、ボットに新しいものを用意します。ここにしかないファイルは失われます。"
+  "computer.recovery.replaceTitle": "このクラウドコンピューターを削除し、ボットに新しいものを用意します。ここにしかないファイルは失われます。",
+  "settings.profile.nameFromLogin": "ログインアカウントの名前",
+  "botOverview.preference.cloud.locked": "設定済みのサーバー",
+  "keys.section.computers.purpose.locked": "自分のサーバーとウェブサイトへのログイン。"
 }

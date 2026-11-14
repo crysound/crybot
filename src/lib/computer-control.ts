@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { ComputerHelpRef } from "../../shared/wire";
 import { t } from "./i18n";
 import { productName } from "@/lib/brand";
@@ -80,3 +81,10 @@ export async function transitionComputerControlLease<
   }
   return snap;
 }
+
+export const computerControlSnapshotSchema = z.object({
+  held: z.boolean().optional().default(false),
+  helpReason: z.string().nullable().optional().default(null),
+  help: z.unknown().optional().transform(parseComputerHelp),
+  owned: z.boolean().optional(),
+}).passthrough();

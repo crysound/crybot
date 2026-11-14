@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { removeTempDirStrict, waitForExit } from "./testing/cleanup.ts";
 import { splitLaunchNote } from "./testing/launch-note.ts";
 import { withoutTurnClock } from "./testing/turn-clock-text.ts";
 import { workerPort } from "./testing/worker-port.ts";
@@ -149,13 +150,8 @@ posixOnly("mid-turn steering e2e", () => {
   }, 30_000);
 
   afterAll(async () => {
-    child?.kill("SIGTERM");
-    await new Promise<void>((resolve) => {
-      if (!child || child.exitCode !== null) return resolve();
-      child.on("close", () => resolve());
-      setTimeout(() => (child.kill("SIGKILL"), resolve()), 5_000).unref?.();
-    });
-    rmSync(home, { recursive: true, force: true });
+    await waitForExit(child, { signal: "SIGTERM" });
+    await removeTempDirStrict(home);
   });
 
   it(

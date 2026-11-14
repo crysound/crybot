@@ -198,10 +198,10 @@ const send = async (f: Fixture, botId: string, threadId: string, text: string) =
 };
 const rows = async (f: Fixture, threadId: string) => ((await f.api("GET", `/api/threads/${threadId}/messages?limit=30`)).body.messages as any[])
   .map((message) => message.tool?.name).filter((name): name is string => typeof name === "string");
-const internal = async (f: Fixture, path: string, token: string, body: unknown) => {
+const internal = async (f: Fixture, path: string, token: string, body: unknown, expectedStatus = 200) => {
   const response = await fetch(`${f.base}${path}`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
   const result = { status: response.status, body: await response.json() as any };
-  expect(result.status, JSON.stringify(result.body)).toBe(200);
+  expect(result.status, JSON.stringify(result.body)).toBe(expectedStatus);
   return result;
 };
 
@@ -374,10 +374,10 @@ describe("a Starter Cloud", () => {
   const started = (threadId: string) => f.claudeDumps().some((file) => basename(f.dump(file).cwd) === threadId);
   const whenStarted = (threadId: string) => expect.poll(() => started(threadId), { timeout: 20_000, interval: 50 }).toBe(true);
   /** What the bot's own turn calls as start_thread, on the turn's own capability. */
-  const startThread = async (fromThread: string, title: string, toBotId?: string) => {
+  const startThread = async (fromThread: string, title: string, toBotId?: string, expectedStatus = toBotId ? 200 : 201) => {
     const agents = f.servers(fromThread).agents;
     const env = agents.env.CRYBOT_GATE_UPSTREAM ? JSON.parse(agents.env.CRYBOT_GATE_UPSTREAM).env : agents.env;
-    return internal(f, "/api/internal/threads", env.CRYBOT_COMMS_TOKEN, { title, message: `Work on ${title}`, ...(toBotId ? { toBotId } : {}) });
+    return internal(f, "/api/internal/threads", env.CRYBOT_COMMS_TOKEN, { title, message: `Work on ${title}`, ...(toBotId ? { toBotId } : {}) }, expectedStatus);
   };
   const ownThread = async (botId: string, title: string) => {
     await expect.poll(async () => (await botRow(f, botId)).tasks.find((task: any) => task.title === title)?.threadId, { timeout: 20_000, interval: 50 }).toBeTruthy();
@@ -447,7 +447,7 @@ describe("a Starter Cloud", () => {
     await whenStarted(opened.body.threadId);
     expect((await busyThreads(f, botId)).sort(), "parent and child run at once").toEqual([main, opened.body.threadId].sort());
     // A job the bot opened on itself opens no more (self-threads.e2e): only the person's own request does.
-    const grandchild = await startThread(opened.body.threadId, "Own grandchild");
+    const grandchild = await startThread(opened.body.threadId, "Own grandchild", undefined, 409);
     expect(grandchild.status, JSON.stringify(grandchild.body)).toBe(409);
   }, 90_000);
 

@@ -10550,5 +10550,8 @@
   "computer.recovery.replaceTitle": "Exclui este computador na nuvem e dá um novo ao bot. Os arquivos que estão só nele são perdidos.",
   "mascot.body.dome": "Dome",
   "native.remoteOnly.unreachable": "Não foi possível conectar ao servidor",
-  "native.remoteOnly.retry": "Tentar novamente"
+  "native.remoteOnly.retry": "Tentar novamente",
+  "settings.profile.nameFromLogin": "Da sua conta de login",
+  "botOverview.preference.cloud.locked": "um servidor configurado",
+  "keys.section.computers.purpose.locked": "Seu próprio servidor e logins de sites."
 }

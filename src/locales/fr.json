@@ -3737,5 +3737,8 @@
   "computer.recovery.restart": "Redémarrer l'ordinateur",
   "computer.recovery.restartTitle": "Arrête puis relance cet ordinateur cloud. Les programmes ouverts sont fermés ; ses fichiers restent.",
   "computer.recovery.replace": "Remplacer l'ordinateur",
-  "computer.recovery.replaceTitle": "Supprime cet ordinateur cloud et en donne un nouveau au bot. Les fichiers qui ne sont que dessus sont perdus."
+  "computer.recovery.replaceTitle": "Supprime cet ordinateur cloud et en donne un nouveau au bot. Les fichiers qui ne sont que dessus sont perdus.",
+  "settings.profile.nameFromLogin": "Depuis votre compte de connexion",
+  "botOverview.preference.cloud.locked": "un serveur configuré",
+  "keys.section.computers.purpose.locked": "Votre propre serveur et vos connexions aux sites web."
 }

@@ -35,7 +35,7 @@ export function fixtureLines<T>(home: string, name = "plan.json.evidence.jsonl")
 }
 
 export function configureFixtureOutputs(home: string): void {
-  for (const key of ["FAKE_CLAUDE_DUMP", "FAKE_CLAUDE_SHELL_LOG"]) {
+  for (const key of ["FAKE_CLAUDE_DUMP", "FAKE_CLAUDE_TEXT_DUMP", "FAKE_CLAUDE_SHELL_LOG"]) {
     if (process.env[key]) process.env[key] = engineOutput(home, process.cwd(), basename(process.env[key]));
   }
   if (process.env.FAKE_CLAUDE_ROOM_PLAN) process.env.FAKE_CLAUDE_ROOM_EVIDENCE = engineOutput(home, process.cwd(), `${basename(process.env.FAKE_CLAUDE_ROOM_PLAN)}.evidence.jsonl`);
