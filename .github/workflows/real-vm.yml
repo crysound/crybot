@@ -1,0 +1,25 @@
+name: Real VM screens
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'server/container-screens.ts'
+      - 'server/container-computer.ts'
+      - 'server/container-isolation.ts'
+      - 'scripts/smoke-screens-container.mjs'
+      - '.github/workflows/real-vm.yml'
+permissions:
+  contents: read
+jobs:
+  screens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/smoke-screens-container.mjs

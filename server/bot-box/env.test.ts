@@ -6,6 +6,8 @@ import { BOX_ENV_NAMES, BOX_ENV_NEVER, BOX_ENV_CRYBOT_NAMES, BOX_ENV_CRYBOT_PREF
 /** Every other `CRYBOT_` name the server's code knows: decided to stay on the server, never in a bot's environment. A name
  * ending in `_` is a family (`CRYBOT_CLOUD_*`). */
 const SERVER_ONLY_CRYBOT: ReadonlySet<string> = new Set([
+  // Passed only via docker exec -e to the container package-install script.
+  "CRYBOT_PACKAGE_SCREEN",
   "CRYBOT_APP_HOST", "CRYBOT_HOSTED_WORKSPACE",
   "CRYBOT_FEISHU_ADMINS", "CRYBOT_FEISHU_ALLOW", "CRYBOT_FEISHU_APP_ID", "CRYBOT_FEISHU_APP_SECRET", "CRYBOT_FEISHU_APP_SECRET_FILE",
   "CRYBOT_FEISHU_SESSION_MAX_DAYS", "CRYBOT_FEISHU_TENANTS", "CRYBOT_FEISHU_TOKEN_ENDPOINT", "CRYBOT_FEISHU_USER_INFO_ENDPOINT",

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { CONTAINER, CUA_EXECUTABLE, CUA_SOCKET } from "./container-computer.ts";
+import { containerMcpExecArgs } from "./container-mcp.ts";
 import { omittedFromErrorNote } from "./mcp-error-result.ts";
 
 const temporary: string[] = [];
@@ -188,5 +189,34 @@ posixOnly("Local VM Cua MCP bridge", () => {
       },
       { jsonrpc: "2.0", id: 2, result: { content: [{ type: "image", data: "iVBORw0KGgo=", mimeType: "image/png" }] } },
     ]);
+  });
+});
+
+describe("screen MCP connection validation", () => {
+  it.each([
+    ["/run/user/61005/crybot-cua.sock", "crybot-s5", ":5"],
+    ["/tmp/crybot-cua.sock", "crybot-s2", ":2"],
+    ["/run/user/61002/../61001/crybot-cua.sock", "crybot-s2", ":2"],
+    ["/run/user/1000/../61001/crybot-cua.sock", "crybot-s1", ":1"],
+    ["/run/user/61002/crybot-cua.sock", "crybot-s1", ":2"],
+    ["/run/user/61002/crybot-cua.sock", "crybot-s2", ":1"],
+    ["/run/user/1000/crybot-cua.sock", "crybot-s2", ":2"],
+  ])("rejects socket/identity mismatch %s %s %s", (socket, user, display) => {
+    expect(() => containerMcpExecArgs(["docker", CONTAINER, socket, user, display])).toThrow("invalid Local VM connection");
+  });
+
+  it("rejects a different container instead of silently replacing it", () => {
+    expect(() => containerMcpExecArgs(["docker", "other-container", "/run/user/61002/crybot-cua.sock", "crybot-s2", ":2"])).toThrow();
+  });
+
+  it("wraps screen MCP with environment removal, limits and the chosen driver socket", () => {
+    const { args } = containerMcpExecArgs(["docker", CONTAINER, "/run/user/61002/crybot-cua.sock", "crybot-s2", ":2"]);
+    expect(args.slice(args.indexOf(CONTAINER))).toEqual([
+      CONTAINER, "env", "-u", "VNC_PW", "prlimit", "--nproc=1500", "--",
+      "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
+      CUA_EXECUTABLE, "mcp", "--socket", "/run/user/61002/crybot-cua.sock",
+    ]);
+    expect(args).toContain("DISPLAY=:2");
+    expect(args).toContain("crybot-s2");
   });
 });
