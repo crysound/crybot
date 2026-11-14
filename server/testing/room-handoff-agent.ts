@@ -205,6 +205,13 @@ export async function runRoomHandoffAgent(argv: string[], planPath: string, prom
       const captured: Record<string, string> = {};
       for (const step of steps) {
         if (typeof step.delayMs === "number") await new Promise((resolve) => setTimeout(resolve, step.delayMs));
+        if (typeof step.waitForFile === "string" && !existsSync(step.waitForFile)) await new Promise<void>(resolve => {
+          gateTimer = setInterval(() => {
+            if (!existsSync(step.waitForFile)) return;
+            clearInterval(gateTimer);
+            resolve();
+          }, 10);
+        });
         const server = step.server ? (launch ? undefined : JSON.parse(readAtLaunch(arg("--mcp-config"))).mcpServers?.[step.server] as AgentsIntegration | undefined) : undefined;
         if (step.server && !server) throw new Error(`A scripted ${step.server} step needs that server mounted for the turn`);
         const args = withCaptured(step.arguments, captured);

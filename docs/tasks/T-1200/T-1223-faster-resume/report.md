@@ -249,3 +249,83 @@ PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=3072 pnpm exec tsc 
 行数（本轮起点 → 完工）：`server/index.ts` **15421 → 15420**。`server/container-computer.ts` 为 1174，低于仓库 ratchet 上限 1175；未改 ratchet。没有新增实现文件。当前检出与可读主仓库仍缺少 `r2.md` 和 `docs/verification/README.md`，已读取 brief、r3 及本报告保留的前轮说明，并沿用测试自带的临时 HOME/数据目录/假引擎/假容器隔离流程。
 
 最终 server tsc **通过（exit 0，无诊断）**；本轮涉及的 10 个 TypeScript 文件的 `pnpm exec oxlint --deny-warnings <文件列表>` **通过（exit 0）**；`git diff --check` **通过**。最后复核保留了第三轮的 readinessOnly 提示、网络重试、目标级冷却失效及合并 readiness 逻辑；完整服务器停车/恢复、失败收尾与速度断言仍以上述沙箱外补跑为准。
+
+## 第 5 轮：法语 notice 预期与 F4 派发时序
+
+### 改动范围
+
+在续跑留下的四个文件 diff 上继续，没有重写前轮实现、没有 git 提交：
+
+- `src/components/ToolActivity.notice.test.ts`：将 fr 预期从 `src/locales/fr.json` 的 `chat.notice.previousComputerWakeFailed` 原样提取（仅去掉 ` ({reason})` 后缀），保留 U+2019 弯撇号；仍单独断言 `desktop unavailable`。
+- `server/teammate-follow-ups.e2e.test.ts`：F4 第二步将 `delayMs: 2_000` 换为 `waitForFile: f.ready("mira")`。保留 readyFile 存在、两次 queued 回执、第一项 running / 第二项 queued、最终 MA/MB 顺序和最终回复的全部断言。
+- `server/testing/room-handoff-agent.ts`：此前只有整轮的 readyFile/gateFile，没有逐步等待文件的能力。新增最小的 step.waitForFile；文件已存在立即继续，否则每 10ms 检查。沿用整轮 `timeoutMs`（默认 20 秒），超时走 `failed` 拒绝并在 finally 清除 interval、回收 MCP 子进程；不会无限等待。
+- `server/testing/room-handoff-agent.test.ts`：增加等待文件、已存在文件、缺失文件超时且不派发被阻塞步骤的用例。续跑补上提前接住 run 的拒绝，避免轮询期间产生 unhandled rejection；最终仍断言 run 成功返回指定结果。
+
+### F4 根因结论及代码证据
+
+**结论：F4 是纯测试时序问题；代码对照未发现本分支给这一普通子任务启动增加等待或轮询间隔。** 这不是依据“本地多跑几次没失败”得出的结论；本轮没有修改生产启动代码。未取得 CI 当次逐阶段耗时，所以不推断那台机器具体慢在哪个系统调用。
+
+对照任务引入前 `e925a77a^`、第 4 轮 `2d552c1c` 与当前 `8ed1d414`：
+
+1. `server/runtime/`、`server/runtime-coordinator.ts`、`server/coordinator.ts`、`server/testing/fake-claude-cli.ts`、`server/testing/room-handoff-agent.ts`、F4 原测试在 `git diff e925a77a^ HEAD -- ...` 中均无变化。Runtime.dispatch 先记 running，再调用 runner；running 并不表示假引擎已完成初始化。假引擎进入 runRoomHandoffAgent 后，还要启动 agents MCP 子进程，完成 initialize、tools/list、list_room_targets，才写 readyFile，随后等待 gateFile。原来的 2 秒覆盖了这一整段异步链路，却没有任何就绪保证。
+2. F4 使用 `launchVerificationServer(..., { scripted: true })`，未传 Local VM/Boat 夹具；`scripts/control-cry.ts` 生成全新的临时 HOME/config，仅装 fake Claude，密封 PATH，不继承用户电脑或数据。F4 的 bot 未指定电脑，也不是 automationSource。`server/index.ts` 的 `attachLocalVm(false)` 在 `!localVmSeen.has(target.key) && !opts?.automationSource` 处返回，不会执行后续 VM 状态检查、claim 或唤醒。
+3. 第 4 轮前置的 `await bindTurnComputer(...)` 明确受 `wakeInBackground && !failure` 限制；wakeInBackground 仅在发现可挂载但尚未就绪的 VM 时为 true，F4 不满足。claimAutoLocalVm 新增的 pendingWake 合并等待也只在 VM claim 中发生，F4 不调用。
+4. `git show e925a77a^:server/local-vm-ready.ts` 已有 `setTimeout(resolve, 2000)` 的桌面就绪轮询；本分支未增加该间隔。第 4 轮的 waitForRunningDesktop 仅为后台唤醒打开正在启动桌面的等待，普通默认值 false。computer-call-gate 的 readinessOnly/onWaiting 是电脑工具调用路径；F4 只调用 agents 的 coordinate_bots/list_room_targets，不调用电脑工具。
+
+因此用 readyFile 同步第二次派发：第一项必须已进入假模型并仍被 gate 挡住，才能发出第二项。不会把 “running” 放宽成 “running 或 queued”。
+
+### 本轮验证结果
+
+所有 Vitest 命令一次一个文件、`--maxWorkers=1`；测试、tsc、lint 串行执行，Node 堆上限 2048 MiB。tsc 前确认测试进程已结束；当时 service cgroup `memory.max=6442450944`、`memory.current=582668288`，未按旧轮次的 3072 MiB 堆上限运行。
+
+命令公共前缀：`PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048`。
+
+| 命令（接公共前缀） | 结果 |
+| --- | --- |
+| `pnpm exec vitest run src/components/ToolActivity.notice.test.ts --maxWorkers=1 --configLoader runner` | **10 passed** |
+| `pnpm exec vitest run server/testing/room-handoff-agent.test.ts --maxWorkers=1 --configLoader runner` | 1 passed / 6 failed；子进程 stdin 管道限制，见下文 |
+| `pnpm exec tsc -p tsconfig.server.json --noEmit` | **exit 0** |
+| `pnpm exec tsc -p tsconfig.json --noEmit` | **exit 0** |
+| `pnpm lint` | exit 1；仅 `server/lazy-container-mcp.ts:122:54` 的既有 `unicorn(no-useless-spread)` 警告 |
+| `pnpm exec oxlint --deny-warnings server/teammate-follow-ups.e2e.test.ts server/testing/room-handoff-agent.ts server/testing/room-handoff-agent.test.ts src/components/ToolActivity.notice.test.ts` | **exit 0** |
+| `git diff --check`（无需前缀） | **exit 0** |
+
+全仓 lint 告警行由 `git blame -L 122,122 -- server/lazy-container-mcp.ts` 定位到已有提交 `e925a77a`，该文件本轮无 diff；按“只修两项”的范围保留原状。
+
+夹具单测中，原有的“收到 stdin 后 exit(7)”用例实际得到 exit(0)，原有畸形输出/回收进程用例超时；新增等待用例也在 MCP 初始化阶段遇到 exit(0)，尚未到达 waitForFile。脱离 Vitest 最小复现仍如此：
+
+```js
+import { spawn } from 'node:child_process';
+const child = spawn(process.execPath,
+  ['-e', 'process.stdin.once("data", () => process.exit(7));'],
+  { stdio: ['pipe', 'pipe', 'pipe'] });
+child.on('exit', (code, signal) => console.log({ code, signal }));
+child.stdin.write('hello\n');
+```
+
+使用 `/opt/node24/bin/node --input-type=module` 执行实际输出 `{ code: 0, signal: null }`。因此不能把本轮夹具单测记为通过；也未为绕开环境限制更改 stdio 通信实现。修正测试的拒绝处理后另跑 `pnpm exec vitest run server/testing/room-handoff-agent.test.ts -t waitForFile --maxWorkers=1 --configLoader runner`，结果见本节末尾。
+
+日志：`/tmp/T1223-r5-notice.log`、`/tmp/T1223-r5-handoff.log`、`/tmp/T1223-r5-handoff-wait.log`、`/tmp/T1223-r5-tsc-{server,ui}.log`、`/tmp/T1223-r5-lint{,-changed}.log`。
+
+### F4 与 FAKE 慢启动：协调者沙箱外补跑
+
+**尚未执行，也未声称 F4 或 3 秒慢启动验证通过。** 按本轮要求，监听端口的 e2e 交协调者在沙箱外跑。当前 worktree 和可读主仓库仍缺少 `docs/verification/README.md`；本轮可跑的测试均使用仓库的临时 HOME/数据目录和假进程，未访问 live app。
+
+已生成仅供本地验证的 `/tmp/T1223-r5-slow-f4.patch`（`git apply --check` 通过，不在待提交 diff 内）。它在 runRoomHandoffAgent 选中 plan 后、spawn MCP 之前临时加：
+
+```ts
+if (entry?.key === "MA" && own.includes("F4-A-BRIEF")) await new Promise(resolve => setTimeout(resolve, 3_000));
+```
+
+这样只延迟 F4 第一项启动 3 秒，发生在 readyFile 写入之前；不能用 plan.delayMs，它发生在 readyFile/gateFile 之后，无法模拟本问题。协调者应先正常跑 F4，再应用临时补丁跑同一用例，最后反向撤销补丁：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run server/teammate-follow-ups.e2e.test.ts -t 'F4 keeps' --maxWorkers=1 --configLoader runner
+git apply /tmp/T1223-r5-slow-f4.patch
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run server/teammate-follow-ups.e2e.test.ts -t 'F4 keeps' --maxWorkers=1 --configLoader runner
+git apply -R /tmp/T1223-r5-slow-f4.patch
+```
+
+无论慢启动运行成功或失败，都需撤销临时补丁；全部原断言应保持通过。另需在支持子进程 stdin 的环境补跑 `server/testing/room-handoff-agent.test.ts`。
+
+最终定向夹具复跑结果：**2 failed / 5 skipped**，仍为上述 stdin/MCP 初始化问题；无 unhandled rejection 报告。正常 F4、3 秒慢启动 F4 和夹具单测的沙箱外结果待协调者补充。本轮最终 `git diff --check` 通过，未引入临时慢启动代码。

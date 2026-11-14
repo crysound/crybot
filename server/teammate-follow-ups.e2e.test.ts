@@ -221,7 +221,7 @@ it("F4 keeps a second assignment Clive hands Mira in the same turn its own job, 
   f.script(f.clive.id,
     { key: "C0", match: ["F4-JOB"], steps: [
       { arguments: { bot_ids: [f.mira.id], message: "F4-A-BRIEF: export the invoices." } },
-      { delayMs: 2_000, arguments: { bot_ids: [f.mira.id], message: "F4-B-BRIEF: export the receipts." } }], reply: "C0: two exports under way." },
+      { waitForFile: f.ready("mira"), arguments: { bot_ids: [f.mira.id], message: "F4-B-BRIEF: export the receipts." } }], reply: "C0: two exports under way." },
     { key: "C1", match: [SETTLED, "F4-JOB"], reply: "F4-FINAL: both are exported." });
   f.script(f.mira.id,
     { key: "MA", match: ["F4-A-BRIEF"], readyFile: f.ready("mira"), gateFile: f.gate("mira"), reply: "F4-A-RESULT: invoices exported." },

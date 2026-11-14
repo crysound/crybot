@@ -61,7 +61,7 @@ it.each([["en", "Waking the computer…"], ["zh", "正在唤醒电脑…"]])("sh
   if (locale === "zh") expect(html).not.toContain("Waking the computer…");
 });
 
-it.each([["en", "The computer could not wake for the previous turn"], ["zh", "上一轮的电脑唤醒失败"], ["fr", "The computer could not wake for the previous turn"]])("shows a late wake failure with its reason in %s", (locale, text) => {
+it.each([["en", "The computer could not wake for the previous turn"], ["zh", "上一轮的电脑唤醒失败"], ["fr", "Impossible de réveiller l’ordinateur pour le tour précédent"]])("shows a late wake failure with its reason in %s", (locale, text) => {
   setLocale(locale);
   const html = render({ name: "The computer could not wake for the previous turn (desktop unavailable)",
     nameCode: "chat.notice.previousComputerWakeFailed", nameParams: { reason: "desktop unavailable" }, ok: false });
