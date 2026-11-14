@@ -6,7 +6,7 @@ import { createRemoteJWKSet, customFetch, exportJWK, generateKeyPair, SignJWT } 
 import { WebSocketServer } from "ws";
 import { memoryHttp, memoryRequest } from "./testing/memory-http.ts";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { createCfAccess } from "./cf-access.ts";
+import { createCfAccess, isCfAccessPublicProbe } from "./cf-access.ts";
 import { SessionRegistry, SESSION_TTL_MS } from "./sessions.ts";
 import { resolveRequestAuth } from "./request-auth.ts";
 import { appendUpgradeCookies, createUpgrades } from "./routes/upgrades.ts";
@@ -68,6 +68,21 @@ async function fixture(config: NodeJS.ProcessEnv = env) {
 }
 
 describe("Cloudflare Access", () => {
+  it("recognizes only GET public probes", () => {
+    const domainCheck = `/.well-known/crybot/domain-check/${"a".repeat(64)}`;
+    const publicPaths = ["/api/health", "/api/brand", "/.well-known/crybot/environment", domainCheck];
+    for (const path of publicPaths) expect(isCfAccessPublicProbe("GET", path)).toBe(true);
+    for (const method of ["POST", "HEAD", "PUT"]) {
+      for (const path of publicPaths) expect(isCfAccessPublicProbe(method, path)).toBe(false);
+    }
+    for (const path of [
+      "/.well-known/crybot/domain-check/short",
+      `/.well-known/crybot/domain-check/${"A".repeat(64)}`,
+      `${domainCheck}/extra`,
+      "/api/bots",
+    ]) expect(isCfAccessPublicProbe("GET", path)).toBe(false);
+  });
+
   it("issues an owner cookie, reuses it, and caches the JWKS", async () => {
     const f = await fixture();
     const token = await jwt();

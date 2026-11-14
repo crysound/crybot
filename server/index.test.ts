@@ -7985,16 +7985,16 @@ describe("harness HTTP API", () => {
     }
   });
 
-  it("a new bot greets its person by profile name and is announced in its chosen look, or a fresh one, from the first frame", async () => {
+  it("a new bot greets its person by first name and is announced in its chosen look, or a fresh one, from the first frame", async () => {
     const before = (await api("GET", "/api/config")).body.profile?.name ?? "";
-    expect((await api("PUT", "/api/config", { profile: { name: "Hangzhou Crysound Electronics Co., Ltd." } })).status).toBe(200);
+    expect((await api("PUT", "/api/config", { profile: { name: "Ada Lovelace" } })).status).toBe(200);
     const stream = await openSse(`${BASE}/api/events`);
     let id = "";
     try {
       await stream.until((frame) => frame.kind === "hello");
       const bot = (await api("POST", "/api/bots", { name: "Scout", useDefaults: false, settings: { color: "purple", mascotBody: "star" } })).body.bot;
       id = bot.id;
-      expect(bot.messages[0].text).toBe("Hi Hangzhou Crysound Electronics Co., Ltd., I'm Scout. What would you like me to do?");
+      expect(bot.messages[0].text).toBe("Hi Ada, I'm Scout. What would you like me to do?");
       const announced = await stream.until((frame) => frame.kind === "bot" && frame.bot?.id === id);
       expect(announced.bot).toMatchObject({ color: "purple", mascotBody: "star" });
       const plain = (await api("POST", "/api/bots", { name: "Wren", useDefaults: false })).body.bot;

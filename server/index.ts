@@ -1,6 +1,6 @@
 // Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
 import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
-import { createCfAccess } from "./cf-access.ts";
+import { cfAccessRefusal, createCfAccess } from "./cf-access.ts";
 import { desktopUpdateFiles } from "./routes/desktop-update-files.ts";
 import { startFailureText } from "./start-failure-text.ts";
 import { reserveGmailDrafts } from "./gmail-draft-policy.ts";
@@ -2854,10 +2854,8 @@ const sendSequencer = new SendSequencer();
 // Before the new-bot default is read: a saved default may name the engine.
 await retryComputerEngineMove(); mcpServersHost.boot();
 if (store.needsSeed()) await Promise.race([cloudCreditStarted, new Promise(resolve => setTimeout(resolve, 15_000).unref())]);
-if (store.needsSeed()) {
-  const { engines, changed } = await registry.readAtStart(enginesByUse([cfg.defaultModelSelection]), firstEngineRead);
-  await refreshUnsetModelSelections(engines); if (changed) broadcast({ kind: "config", ...configStatus() });
-} else enginesRead = registry.readAtStart(enginesByUse([cfg.defaultModelSelection, ...store.bots.map((bot) => bot.modelSelection)]), firstEngineRead).then(async ({ engines, changed }) => {
+if (store.needsSeed()) { firstEngineRead(); await refreshUnsetModelSelections(); }
+else enginesRead = registry.readAtStart(enginesByUse([cfg.defaultModelSelection, ...store.bots.map((bot) => bot.modelSelection)]), firstEngineRead).then(async ({ engines, changed }) => {
   await refreshUnsetModelSelections(engines); if (changed) broadcast({ kind: "config", ...configStatus() });
 }).catch((error) => console.warn(`[engines] reading the engines at start failed: ${error instanceof Error ? error.message : String(error)}`)).finally(() => { enginesRead = null; });
 const startupCatalogs = registry.instances().flatMap((instance) =>
@@ -12564,11 +12562,8 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
   let releaseWorkspaceRequest: (() => void) | undefined;
   try {
     if (await desktopUpdateFiles(req, res, process.env.CRYBOT_DESKTOP_UPDATES_DIR)) return;
-    const publicProbe = method === "GET" && (path === "/api/health" || path === "/api/brand" || path === "/.well-known/crybot/environment" || /^\/\.well-known\/crybot\/domain-check\/[a-f0-9]{64}$/.test(path));
-    if (cfAccess && !publicProbe) {
-      const refusal = await cfAccess(req, res, url, sessions, SESSION_COOKIE);
-      if (refusal) return json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
-    }
+    const refusal = await cfAccessRefusal(cfAccess, method, path, req, res, url, sessions, SESSION_COOKIE);
+    if (refusal) return json(res, refusal, { error: refusal === 401 ? "Invalid Cloudflare Access assertion" : "Cloudflare Access identity is not allowed" });
     if (method === "GET" && path === "/api/health/hosted") {
       res.setHeader("cache-control", "no-store");
       const hosted = hostedWorkspaceConfiguration();

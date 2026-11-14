@@ -3,6 +3,12 @@ import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
 import { bearerToken, labelFromUserAgent, parseCookies, requestOrigin, serializeSessionCookie } from "./request-auth.ts";
 import { cookieMaxAgeSeconds, type SessionRegistry } from "./sessions.ts";
 
+const CF_ACCESS_DOMAIN_CHECK_PATH = /^\/\.well-known\/crybot\/domain-check\/[a-f0-9]{64}$/;
+
+export function isCfAccessPublicProbe(method: string, path: string): boolean {
+  return method === "GET" && (path === "/api/health" || path === "/api/brand" || path === "/.well-known/crybot/environment" || CF_ACCESS_DOMAIN_CHECK_PATH.test(path));
+}
+
 export function createCfAccess(env: NodeJS.ProcessEnv = process.env, keySet?: JWTVerifyGetKey) {
   const team = env.CRYBOT_CF_ACCESS_TEAM_DOMAIN?.trim();
   const audience = env.CRYBOT_CF_ACCESS_AUD?.split(",").map(value => value.trim()).filter(Boolean);
@@ -55,4 +61,18 @@ export function createCfAccess(env: NodeJS.ProcessEnv = process.env, keySet?: JW
     }
     return null;
   };
+}
+
+export async function cfAccessRefusal(
+  access: ReturnType<typeof createCfAccess>,
+  method: string,
+  path: string,
+  req: IncomingMessage,
+  res: ServerResponse,
+  url: URL,
+  sessions: SessionRegistry,
+  cookieName: string,
+): Promise<401 | 403 | null> {
+  if (!access || isCfAccessPublicProbe(method, path)) return null;
+  return access(req, res, url, sessions, cookieName);
 }

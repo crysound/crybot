@@ -1,5 +1,6 @@
 // The full server as a Team Cloud: the Admin's signed Team admin read and removal, and the team's default language from
 // the Admin. Disposable home; every request but the test's own is offline.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -33,7 +34,7 @@ beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "cry-team-admin-"));
   dataDir = join(home, ".crybot");
   mkdirSync(dataDir, { recursive: true });
-  const cli = join(home, "fixture-claude.mjs");
+  const cli = fixtureEnginePath(dataDir, "fixture-claude.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
 if (process.argv[2] === "auth") {
   console.log(JSON.stringify({ loggedIn: true, email: "mira@gmail.com" }));
@@ -45,7 +46,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
   writeFileSync(join(dataDir, "config.json"), JSON.stringify({
     instances: {
       ...Object.fromEntries(["codex", "cursor", "githubCopilot", "openaiCompat", "qwen", "hermes", "pi"].map((id) => [id, { driver: "not-a-real-driver" }])),
-      claude: { driver: "claudeAgent", displayName: "Claude", config: { cli } },
+      claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(cli)}` } },
     },
     treg: { key: "treg-key-never-shown" },
     mcpServers: { linear: { type: "http", url: "https://mcp.linear.app/sse?token=query-never-shown", headers: { Authorization: "Bearer header-never-shown" } } },

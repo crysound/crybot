@@ -1,4 +1,5 @@
 // Three threads of one bot, each with a turn held open by a gate only the test releases, as a desktop, personal Cloud and Team Cloud server.
+import { fixtureEnginePath } from "./testing/fixture-engine.ts";
 import { randomBytes, randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -54,19 +55,20 @@ class Fixture {
     return { status: response.status, body: await response.json().catch(() => null) as any };
   }
   async start() {
-    const claude = join(this.home, "held-claude.mjs");
+    const claude = fixtureEnginePath(this.dataDir, "held-claude.mjs");
     writeFileSync(claude, `#!/usr/bin/env node
 import { join } from "node:path";
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
 if (process.argv[2] !== "--version") {
+  const run = crypto.randomUUID();
   process.env.FAKE_CLAUDE_MODE = "slow";
-  process.env.FAKE_CLAUDE_SLOW_FINISH_GATE = join(${JSON.stringify(this.gates)}, "release-" + process.pid);
-  process.env.FAKE_CLAUDE_DUMP = join(${JSON.stringify(this.gates)}, "claude-" + process.pid + ".json");
+  process.env.FAKE_CLAUDE_SLOW_FINISH_GATE = join(${JSON.stringify(this.gates)}, "release-" + run);
+  process.env.FAKE_CLAUDE_DUMP = join(${JSON.stringify(this.gates)}, "claude-" + run + ".json");
 }
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
-    const acp = join(this.home, "held-acp.mjs");
+    const acp = fixtureEnginePath(this.dataDir, "held-acp.mjs");
     writeFileSync(acp, `#!/usr/bin/env node
 process.env.FAKE_ACP_MODE = "echo-gated";
 process.env.FAKE_ACP_GATE_FILE = ${JSON.stringify(join(this.gates, "release"))};
@@ -94,8 +96,8 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-ac
       features: { smartSetupChoices: false },
       instances: {
         ...Object.fromEntries(["codex", "cursor", "githubCopilot", "qwen", "hermes", "pi"].map((id) => [id, { driver: "not-a-real-driver" }])),
-        claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: claude } },
-        heldAcp: { driver: "customAcp", displayName: "Held ACP", config: { cli: acp } },
+        claude: { driver: "claudeAgent", displayName: "Claude", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(claude)}` } },
+        heldAcp: { driver: "customAcp", displayName: "Held ACP", config: { cli: `${JSON.stringify(process.execPath)} ${JSON.stringify(acp)}` } },
       },
       openaiCompat: { key: "synthetic-fixture-key", url: chatUrl, model: "fixture-model" },
     }));
