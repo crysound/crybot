@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "./testing/preview-locale";
 // Dev-only gallery of the usage meter, served at /usage-meter-preview.html; not in the packaged app.
 // ?view=sidebar|settings|confirm&state=near|full|browser|top|trial&skin=midnight|daylight&lang=de
 import { StrictMode } from "react";
@@ -9,7 +10,7 @@ import { ConfirmDialogCard } from "@/components/ConfirmDialog";
 import { CloudUsageCardView, CloudUsageSettingsView } from "@/components/CloudUsageMeter";
 import { Card } from "@/components/SettingsPrimitives";
 import { cloudPlanLabel } from "@/lib/cloud-status";
-import { loadLocale, t } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
 import { SKIN_IDS, type SkinId } from "@/lib/skins";
 import { upgradeConfirmBody, usageCardView } from "@/lib/usage-meter";
 import "./styles.css";
@@ -97,5 +98,5 @@ function Preview() {
   </div>;
 }
 
-await loadLocale(new URLSearchParams(location.search).get("lang") ?? "en");
+await preparePreviewLocale(new URLSearchParams(location.search).get("lang") ?? "en");
 createRoot(document.getElementById("root")!).render(<StrictMode><Preview /></StrictMode>);

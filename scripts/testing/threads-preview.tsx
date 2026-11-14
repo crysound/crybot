@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "../../src/testing/preview-locale";
 import { createRoot } from "react-dom/client";
 import App from "../../src/App";
 import { setEmailGateDone } from "../../src/lib/welcome-progress";
@@ -6,6 +7,8 @@ import { GROK_MOVE_NOTICE, MODELGO_OFFER_NOTICE } from "../../src/lib/notices";
 import { markSimpleModePromptSeen } from "../../src/lib/simple-mode-prompt";
 import { applySkinChoice, readSkinChoice } from "../../src/lib/skins";
 import "../../src/styles.css";
+
+await preparePreviewLocale();
 
 // This entry point is served only by the disposable verification launcher.
 // The voice-latency harness opts in with ?cryVoiceProbe=1; the recorder in

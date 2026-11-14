@@ -1,3 +1,4 @@
+import { preparePreviewLocale } from "./testing/preview-locale";
 // Dev-only gallery of bringing the bots together on a server of the person's own, served at /one-home-preview.html; not in
 // the packaged app. It mounts the real rail and account line over fake bridges, with no server behind them.
 // ?state=menu|moving|failing|cloud-failing|suggest&skin=midnight|daylight&lang=de
@@ -8,7 +9,6 @@ import type { RailState } from "../electron/rail.mjs";
 import { PlacesRail } from "@/components/PlacesRail";
 import { SidebarFooter } from "@/components/SidebarFooter";
 import { TwoPlacesCard } from "@/components/TwoPlacesCard";
-import { loadLocale } from "@/lib/i18n";
 import { applySkinChoice, SKIN_IDS, type SkinId } from "@/lib/skins";
 import { initialState, StoreContext, type AppState } from "@/state/store";
 import "./styles.css";
@@ -17,7 +17,7 @@ const params = new URLSearchParams(location.search);
 const stateName = params.get("state") ?? "menu";
 const skin = params.get("skin") ?? "midnight";
 applySkinChoice(SKIN_IDS.includes(skin as SkinId) ? (skin as SkinId) : "midnight");
-await loadLocale(params.get("lang") ?? "en");
+await preparePreviewLocale(params.get("lang") ?? "en");
 
 const rail: RailState = { places: [
   { id: "local", name: "This computer", color: null, kind: "computer", opens: true, active: true, paint: { swatch: null } },
