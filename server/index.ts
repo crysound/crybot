@@ -647,7 +647,7 @@ import { createOutsideLineage, OUTSIDE_STAYS_HERE } from "./host/outside-lineage
 import { teamAiOwner } from "./host/team-ai-owner.ts"; import { createTeamOwners, type AskViewer } from "./host/team-owners.ts"; import { createTeamMessages } from "./host/team-messages.ts"; import { createTeamAwayHost } from "./host/team-away-host.ts"; import { createPlaceInbox, guestNameIn, placeInboxViewer } from "./host/place-inbox.ts"; import { relayedTurn } from "./host/relayed-turn.ts"; import { createPersonCalendar } from "./host/person-calendar.ts";
    import { createShareAnswer } from "./host/share-answer.ts";
 import { createCardRequester, linePersonKey } from "./host/thread-person.ts"; import { selfThreadRefusal } from "./host/self-threads.ts"; import { lookedAfterBy } from "./host/looked-after.ts"; import { createActingPeople, HANDED_PEOPLE_FILE, HandedPeople, type HandedRun, keptPrivate, privateHandBack, withPerson } from "./host/acting-person.ts"; import { createTurnCallSignals } from "./host/turn-call-signals.ts";
-import { personDisplayName, sessionMatchesPerson, sessionSpeakerName } from "./person-name.ts";
+import { personDisplayName, sessionsByPerson, sessionSpeakerName } from "./person-name.ts";
 import { createThreadRoutes } from "./routes/threads.ts";
 import { createWebhookRoutes } from "./routes/webhooks.ts";
 import { withScopeHint } from "./connector-scope-hint.ts";
@@ -828,7 +828,7 @@ const turnTriggers = new Map<string, UsageTrigger>();
 const NOBODY_PROFILE: MemberProfile = { name: "", email: "", aboutMe: "" };
 
 /** What a signed-in person is called on their lines, cards and reactions. */
-function sessionPersonName(session: { displayName?: string; email?: string; accessIdentity?: string }, teamName?: string): string {
+function sessionPersonName(session: { displayName?: string; email?: string; accessEmail?: string; accessIdentity?: string }, teamName?: string): string {
   return personDisplayName(session, {
     teamName,
     profileName: !session.accessIdentity && !sharedMembership() ? cfg.profile?.name : undefined,
@@ -836,20 +836,20 @@ function sessionPersonName(session: { displayName?: string; email?: string; acce
   });
 }
 
-function sessionNameForPerson(key: string | undefined, fallback?: string): string | undefined {
+function sessionNameForPerson(key: string | undefined, fallback?: string, byPerson = sessionsByPerson(sessions.list())): string | undefined {
   if (CLOUD_TEAM || !key) return fallback;
-  const session = sessions.list().find((candidate) => sessionMatchesPerson(candidate, key));
+  const session = byPerson.get(key);
   return session ? sessionPersonName(session) : fallback;
 }
 
 function sessionDisplayNameForPerson(key: string | undefined): string | undefined {
   if (!key) return undefined;
-  return sessions.list().find((candidate) => sessionMatchesPerson(candidate, key))?.displayName;
+  return sessionsByPerson(sessions.list()).get(key)?.displayName;
 }
 
 function sessionNameForEmail(email: string): string | undefined {
   const normalized = email.trim().toLowerCase();
-  const session = sessions.list().find((candidate) => candidate.email?.trim().toLowerCase() === normalized);
+  const session = sessions.list().find((candidate) => (candidate.accessEmail ?? candidate.email)?.trim().toLowerCase() === normalized);
   return session?.displayName ? sessionPersonName(session) : undefined;
 }
 
@@ -871,7 +871,10 @@ function teamConversationPerson(threadId: string): string | undefined {
  * a Team Cloud each line its own speaker's, and a line with none the person whose conversation it is. The server's
  * profile names nobody on a team. */
 function userNameFor(threadId: string): PersonName {
-  if (!CLOUD_TEAM) return (line) => sessionSpeakerName(line, sessions.list(), { profileName: cfg.profile?.name, fallback: "User" });
+  if (!CLOUD_TEAM) {
+    const byPerson = sessionsByPerson(sessions.list());
+    return (line) => sessionSpeakerName(line, byPerson, { profileName: cfg.profile?.name, fallback: "User" });
+  }
   const fallback = teamHost.personName(teamConversationPerson(threadId)) ?? "User";
   return (line) => teamHost.personName(line.sender?.id) ?? line.sender?.name ?? fallback;
 }
@@ -887,7 +890,8 @@ function roomPeople(threadId: string, userName: PersonName): string {
 function personNameIn(threadId: string): string | undefined {
   if (!CLOUD_TEAM) {
     const line = store.messagesFor(threadId).findLast((message) => message.role === "user" && !message.peerAsk);
-    return line ? speakerOf(userNameFor(threadId), line) : cfg.profile?.name?.trim() || undefined;
+    const session = line?.sender?.id ? sessionsByPerson(sessions.list()).get(line.sender.id) : undefined;
+    return session ? sessionPersonName(session) : cfg.profile?.name?.trim() || undefined;
   }
   return teamHost.personName(teamConversationPerson(threadId) ?? threadPersonKey(threadId));
 }
@@ -2840,9 +2844,11 @@ const outsideLineage = createOutsideLineage({
   node: (id) => coordinator.node(id), active: () => coordinator.active(), language: (threadId) => threadLanguage(threadId),
 });
 const { outsideDrivenThread, cloudGuestDriven, cloudGuestDrivenHandoff, outsideWorkStaysHere, confinedWhy, guestEngineRefusal } = outsideLineage; function botApiThread(id: string): boolean { const owner = store.botByThread(id); return Boolean(owner && store.taskByThread(owner.id, id)?.botApi); }
-const { messagePage, messageWindow } = messagePages(store, CLOUD_TEAM ? undefined : (sender) => sessionNameForPerson(sender.id, sender.name) ?? sender.name);
-const messagesWithCurrentNames = (threadId: string) => CLOUD_TEAM ? store.messagesFor(threadId) : store.messagesFor(threadId).map((message) => message.sender
-  ? { ...message, sender: { ...message.sender, name: sessionNameForPerson(message.sender.id, message.sender.name) ?? message.sender.name } } : message);
+const { messagePage, messageWindow } = messagePages(store, CLOUD_TEAM ? undefined : () => {
+  const byPerson = sessionsByPerson(sessions.list());
+  return (sender) => sessionNameForPerson(sender.id, sender.name, byPerson) ?? sender.name;
+});
+const messagesWithCurrentNames = (threadId: string) => CLOUD_TEAM ? store.messagesFor(threadId) : messagePage(threadId, undefined).messages;
 const replyVoiceNotes = createReplyVoiceNotes({ store, config: () => cfg, voiceReady: tts.voiceReady, speak: tts.speak, save: saveAudio, remove: deleteAttachment, redact: redactSecretsInText, language: threadLanguage });
 const { cloudLendingTurn, cloudLendingRefusalNotice, cloudLendingRefusalForBot, cloudLendingRefusal, cloudThreadStarters, cloudBotOpened, cloudLendingView, cloudReportFromOthers, handsOnLending, handedInUnproven, cloudOwnTurnRefusal, roomTurnStarted, roomTurnEnded, roomRun } = createCloudLendingTurns({
   store, cloudHome: CLOUD_HOME !== null, team: CLOUD_TEAM?.name ?? null, directRequest: (threadId) => directRequestOwners.get(threadId), threadStarter: (threadId) => threadStarters.get(threadId),
@@ -11845,8 +11851,7 @@ function configStatus() {
 
 /** `session`: who is asking. On a Team Cloud the profile is theirs alone, never the server's. */
 function configForAccess(status: ReturnType<typeof configStatus>, admin: boolean, session?: SessionRecord | null) {
-  const profile: MemberProfile = CLOUD_TEAM ? (session ? teamHost.memberProfile(session) : NOBODY_PROFILE)
-    : status.profile;
+  const profile: MemberProfile = CLOUD_TEAM ? (session ? teamHost.memberProfile(session) : NOBODY_PROFILE) : status.profile;
   const onboarding = CLOUD_TEAM ? teamOnboarding(status.onboarding, session, teamWelcome) : status.onboarding;
   if (admin) return CLOUD_TEAM ? { ...status, profile, onboarding } : status;
   // Client sessions get configured-or-not only: no SSH alias, email, browser partition id or sign-in list.

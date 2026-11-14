@@ -4,7 +4,7 @@ import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, un
 import { dirname } from "node:path";
 import { z } from "zod";
 import { hasMultipleSessionPeople } from "./person-name.ts";
-import { cleanIdentityClaim } from "./access-claims.ts";
+import { cleanAccessEmail, cleanIdentityClaim } from "./access-claims.ts";
 import { writeFileAtomic } from "./atomic.ts";
 import { teamSessionExpiresAt, type TeamMember, type TeamRole } from "./cloud-team.ts";
 import {
@@ -71,6 +71,7 @@ const sessionSchema = z.object({
   lastSeenAt: z.number(),
   expiresAt: z.number(),
   accessIdentity: z.string().min(1).optional(),
+  accessEmail: z.string().max(320).optional(),
   userId: z.string().max(256).optional(),
   email: z.string().max(320).optional(),
   displayName: z.string().refine((name) => Array.from(name).length <= 64).optional(),
@@ -107,6 +108,7 @@ export interface PublicSession {
   lastSeenAt: number;
   expiresAt: number;
   email?: string;
+  accessEmail?: string;
   displayName?: string;
   owner?: string;
   teamRole?: TeamRole;
@@ -191,6 +193,7 @@ function publicSession(record: SessionRecord): PublicSession {
     expiresAt: record.expiresAt,
   };
   if (record.email) view.email = record.email;
+  if (record.accessEmail) view.accessEmail = record.accessEmail;
   if (record.displayName) view.displayName = record.displayName;
   if (record.owner) view.owner = record.owner;
   if (record.teamRole) view.teamRole = record.teamRole;
@@ -281,7 +284,16 @@ export class SessionRegistry {
       return;
     }
     const parsed = fileSchema.safeParse(raw);
-    if (parsed.success) this.sessions = parsed.data.sessions.filter(session => restoreAccounts || (session.email === undefined && session.userId === undefined));
+    if (!parsed.success) return;
+    let migrated = false;
+    for (const session of parsed.data.sessions) {
+      if (session.accessIdentity === undefined || session.email === undefined) continue;
+      session.accessEmail = cleanAccessEmail(session.accessEmail ?? session.email);
+      delete session.email;
+      migrated = true;
+    }
+    this.sessions = parsed.data.sessions.filter(session => restoreAccounts || (session.email === undefined && session.userId === undefined));
+    if (migrated) this.persist();
   }
 
   private syncDirectory(): void {
@@ -552,23 +564,23 @@ export class SessionRegistry {
     return this.issueAccount(input);
   }
 
-  refreshAccessDetails(id: string, input: { email?: string; displayName?: string }): void {
+  refreshAccessDetails(id: string, input: { accessEmail?: string; displayName?: string }): void {
     this.prune();
     const session = this.sessions.find((candidate) => candidate.id === id && candidate.accessIdentity !== undefined);
     if (!session) return;
-    const email = input.email?.trim().toLowerCase() || undefined;
+    const accessEmail = cleanAccessEmail(input.accessEmail);
     const displayName = cleanIdentityClaim(input.displayName);
-    if (session.email === email && session.displayName === displayName) return;
-    if (email) session.email = email; else delete session.email;
+    if (session.accessEmail === accessEmail && session.displayName === displayName) return;
+    if (accessEmail) session.accessEmail = accessEmail; else delete session.accessEmail;
     if (displayName) session.displayName = displayName; else delete session.displayName;
     this.persist();
   }
 
-  issueAccess(identity: string, label: string, input: { email?: string; displayName?: string } = {}): { token: string; session: PublicSession } {
+  issueAccess(identity: string, label: string, input: { accessEmail?: string; displayName?: string } = {}): { token: string; session: PublicSession } {
     this.prune();
-    const email = input.email?.trim().toLowerCase();
+    const accessEmail = cleanAccessEmail(input.accessEmail);
     const displayName = cleanIdentityClaim(input.displayName);
-    const details = { ...(email ? { email } : {}), ...(displayName ? { displayName } : {}) };
+    const details = { ...(accessEmail ? { accessEmail } : {}), ...(displayName ? { displayName } : {}) };
     const matching = this.sessions.filter(session => session.accessIdentity === identity).sort((a, b) => a.createdAt - b.createdAt);
     for (const session of matching) {
       const token = this.accessTokens.get(session.id);
@@ -618,7 +630,7 @@ export class SessionRegistry {
     return this.issueAccount({ label: "Hosted workspace", email: input.email, userId: `portal:${input.grant}`, scopes: input.scopes }, "portal");
   }
 
-  private issueAccount(input: { label: string; scopes: Scope[]; userId?: string; email?: string; displayName?: string; accessIdentity?: string }, membershipAuthority?: "portal"): { token: string; session: PublicSession } {
+  private issueAccount(input: { label: string; scopes: Scope[]; userId?: string; email?: string; accessEmail?: string; displayName?: string; accessIdentity?: string }, membershipAuthority?: "portal"): { token: string; session: PublicSession } {
     this.refusePersonal(input.scopes);
     this.prune();
     const now = this.now();
@@ -635,6 +647,7 @@ export class SessionRegistry {
     if (input.accessIdentity) record.accessIdentity = input.accessIdentity;
     if (input.userId) record.userId = input.userId;
     if (input.email) record.email = input.email;
+    if (input.accessEmail) record.accessEmail = input.accessEmail;
     const displayName = cleanIdentityClaim(input.displayName);
     if (displayName) record.displayName = displayName;
     if (membershipAuthority) record.membershipAuthority = membershipAuthority;

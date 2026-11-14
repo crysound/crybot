@@ -95,3 +95,51 @@ PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vite
 3. 本 worktree 和主仓库 docs 下都未找到 `docs/verification/README.md`；请恢复/提供该文档后补做规定流程。本轮仅使用临时目录测试数据、内存 HTTP fixture，并尝试启动现有隔离服务器 fixture，没有连接或修改用户 live app / 数据；不据此宣称完整服务器验证已完成。
 
 未创建 git 提交，未添加依赖，未修改 `electron/`、`mobile/` 或 `.github/`。
+
+## 第 3 轮
+
+### 逐项处理
+
+1. **隔离 Access 邮箱，恢复原有身份键和出借人判定**：`server/sessions.ts` 新增 `accessEmail: z.string().max(320).optional()`，保持会话文件 version 1 和原有枚举不变，旧版 Zod 对象解析会忽略新增字段。`issueAccess`、`refreshAccessDetails` 及 `server/cf-access.ts` 的签发 / Cookie 刷新路径均改传和保存 `accessEmail`，不再写原有 `email`。`PublicSession` 带出该字段供服务端姓名解析使用。`server/person-name.ts` 仅将它用于姓名邮箱前缀回退和 `hasMultipleSessionPeople` 去重；`server/index.ts` 的按邮箱找显示名也改读该字段。`personKey`、本人设备和出借人判定不读取 `accessEmail`。
+   - 对第 2 轮已持久化的 Access 记录，在加载时先把 `email` 迁到 `accessEmail` 并删除原字段，再执行异常重启过滤，持久化迁移结果。普通邮箱 / portal 会话的异常重启丢弃策略不变。
+   - **Access 会话不应仅因异常重启被丢弃**：Access 授权的是本机 owner，不属于邮箱成员资格会话；恢复 main 的无 `email` 行为即可保留。`server/sessions.test.ts` 新增 `.open` 标记存在时的加载测试，以及旧文件在正常 / 异常重启两种情况下的迁移测试，均断言 token 仍有效、personKey 等于按原会话 id 计算的值、`lendingPersonKey(session, { admin: null }) === OWN_SERVER_LENDER`，配对手机也仍属于同一出借人。
+   - `server/cf-access.test.ts` 调整邮箱断言，并在连续六次重启后 Cookie 刷新路径断言原 `email` 为空、personKey 和出借人未变、没有增加或撤销会话。
+   - `src/components/SessionNames.test.ts` 用真实 personKey 计算覆盖 Access 资料刷新前后的两条本人消息：单聊和群聊均不显示自己的旧名字或新名字，仍显示他人的名字和自己的登录名 @提及。`ChatView.tsx` / `GroupView.tsx` 的比较逻辑无需修改。`server/feishu-names.e2e.test.ts` 的历史 sender 和 reactor 预期同步恢复成按会话 id 计算的 key，交协调者验证真实 index 路径。
+2. **修复 e2e 返回类型**：`server/feishu-names.e2e.test.ts` 的 `api` 辅助函数明确标注 `Promise<any>`，按要求修复在 `unknown` 上取属性的问题。本轮没有运行类型检查，因此不据此声称全仓类型检查通过。
+3. **恢复本机 requester 回退**：`server/index.ts` 的 `personNameIn` 找不到发言会话时返回 `cfg.profile?.name?.trim() || undefined`；无 profile 时，调用处继续使用 `the user`。
+4. **按页 / 窗口 / AI 上下文建立一次会话索引**：`server/person-name.ts` 用 `sessionsByPerson` 取代逐条线性匹配，索引同时保留当前 key 和原会话 id key。`server/index.ts` 的 `userNameFor` 在生成解析函数时建立索引；`server/host/message-pages.ts` 每次分页或定位窗口调用一次解析器工厂，整页复用同一索引；非分页消息也复用该路径。Team Cloud 继续不改写历史 sender。`server/host/message-pages.test.ts` 新增完整列表、尾页、向前分页和定位窗口测试，验证每次仅创建一份会话快照、下次请求读取最新姓名、sender.id 和磁盘来源消息不变。`server/person-name.test.ts` 更新索引、Access 邮箱回退和去重测试，保留未知发言者不使用设备标签的断言。
+5. **丢弃超长邮箱**：`server/access-claims.ts` 新增共享的 `cleanAccessEmail`，`server/cf-access.ts` 读取 JWT 和 registry 的签发 / 刷新入口共同使用。超过 320 字符直接丢弃，不截断成另一个邮箱；规范化后的值也检查上限。`server/access-claims.test.ts` 验证 320 / 321 边界、有 sub 时仍能保留身份、无 sub 时不把超长邮箱当 identity；`server/sessions.test.ts` 验证签发和刷新后重载不会因超长邮箱丢失会话。
+6. **撤回无意义换行**：`server/index.ts` 的 `configForAccess` 中 profile 三元表达式恢复为 main 的单行格式。
+
+第 2 轮的 Cookie 复用、身份去重、Team Cloud 历史保护、会话 key 别名匹配、AI 姓名回退、当前登录名 @提及、兼容枚举、码点清洗、无 shared 字段和只读资料行为均保留。
+
+### 验证
+
+按要求一次只跑一个文件，使用：
+
+```sh
+PATH=/opt/node24/bin:$PATH NODE_OPTIONS=--max-old-space-size=2048 pnpm exec vitest run <文件> --maxWorkers=1 --configLoader runner
+```
+
+| 文件 | 结果 |
+| --- | --- |
+| `server/person-name.test.ts` | 5 / 5 通过 |
+| `server/access-claims.test.ts` | 4 / 4 通过 |
+| `server/cf-access.test.ts` | 18 / 18 通过 |
+| `server/sessions.test.ts` | 68 / 68 通过 |
+| `server/host/message-pages.test.ts` | 7 / 7 通过 |
+| `src/lib/session.test.ts` | 19 / 19 通过 |
+| `src/components/SessionNames.test.ts` | 2 / 2 通过 |
+| `src/components/ProfileSettings.test.ts` | 8 / 8 通过 |
+
+合计 8 个文件、131 项测试通过。`person-name.test.ts` 在索引替换的最后清理后再次运行通过。`git diff --check` 通过。
+
+未运行 e2e 文件、`pnpm typecheck`、`tsc`、`pnpm lint` 或完整 `pnpm test`。测试使用临时目录 / 内存 HTTP fixture 和组件渲染，没有连接或修改用户的 live app / 数据。
+
+### 需要协调者处理
+
+1. 在沙箱外启动隔离 fixture，运行 `server/feishu-names.e2e.test.ts`，确认真实 index 下的历史姓名、Team Cloud 不改写、AI 引用姓名和 Access reactor 等于原会话 key。按本轮要求，沙箱内没有尝试运行该文件。
+2. 在外部执行 typecheck 和 lint，确认 e2e 的四处类型报错及本轮改动均通过仓库检查。
+3. 当前 worktree 仍缺少 `docs/verification/README.md`；请恢复 / 提供文档并完成其中的隔离服务器验证流程。本轮仅报告上述单元 / 组件测试结果，不宣称完整服务器验证已完成。
+
+未创建 Git 提交，未增加依赖，未修改 `electron/`、`mobile/`、`.github/`；原有未跟踪的 `r3.md` 保持不动。

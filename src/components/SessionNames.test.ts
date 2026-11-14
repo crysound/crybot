@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { Bot, Group, InstanceInfo, Message } from "@/state/store";
+import { personKey } from "../../server/person-key.ts";
 
 const fixture = vi.hoisted(() => ({ reactor: "p_me", displayName: "张三" }));
 vi.mock("@/state/store", async (importOriginal) => {
@@ -27,8 +28,10 @@ vi.mock("./ChatMarkdown", () => ({ ChatMarkdown: ({ mentionPerson }: { mentionPe
 
 const { ChatView } = await import("./ChatView");
 const { Transcript } = await import("./GroupView");
+const accessSession = { id: "access-session", accessEmail: "zhang@example.test", displayName: "张三" };
 const messages: Message[] = [
-  { id: "mine", role: "user", kind: "text", at: 1, text: "My words", sender: { id: "p_me", name: "Own sender name" } },
+  { id: "mine", role: "user", kind: "text", at: 1, text: "My words", sender: { id: personKey({ id: accessSession.id }), name: "Own sender name" } },
+  { id: "mine-refreshed", role: "user", kind: "text", at: 2, text: "My new words", sender: { id: personKey(accessSession), name: "张三" } },
   { id: "other", role: "user", kind: "text", at: 2, text: "Other words", sender: { id: "p_other", name: "Alex" } },
   { id: "reply", role: "bot", kind: "text", at: 3, text: "@张三 hello", from: { botId: "bot", name: "Sample", color: "blue" } },
 ];
@@ -42,7 +45,7 @@ const group: Group = {
   bulletin: "", unread: false, createdAt: 1, messages,
 };
 
-beforeEach(() => { vi.stubGlobal("window", {}); fixture.reactor = "p_me"; });
+beforeEach(() => { vi.stubGlobal("window", {}); fixture.reactor = personKey(accessSession); });
 afterEach(() => vi.unstubAllGlobals());
 
 it.each(["chat", "room"])("uses the login name for self mentions and shows only other speakers in %s", (view) => {
@@ -54,6 +57,7 @@ it.each(["chat", "room"])("uses the login name for self mentions and shows only 
   expect(shared).not.toContain('data-mention-name="Local profile"');
   expect(shared).toContain(">Alex<");
   expect(shared).not.toContain(">Own sender name<");
+  expect(shared).not.toContain(">张三<");
   fixture.reactor = "user";
   expect(render()).not.toContain(">Alex<");
 });

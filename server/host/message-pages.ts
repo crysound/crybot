@@ -34,8 +34,9 @@ export function pageMessage(message: Message, senderName?: (sender: { id?: strin
 }
 
 /** A conversation's messages one page at a time (newest first when `before` is absent), and the page around one message. */
-export function messagePages(store: Pick<Store, "messagesFor" | "messagesTail" | "activeLeaf">, senderName?: (sender: { id?: string; name: string }) => string) {
+export function messagePages(store: Pick<Store, "messagesFor" | "messagesTail" | "activeLeaf">, senderNames?: () => (sender: { id?: string; name: string }) => string) {
   function messagePage(threadId: string, limit: number | undefined, before?: string | null) {
+    const senderName = senderNames?.();
     if (limit === undefined) {
       return { messages: store.messagesFor(threadId).map((message) => senderName && message.sender
         ? { ...message, sender: { ...message.sender, name: senderName(message.sender) } } : message), activeLeafId: store.activeLeaf(threadId) };
@@ -56,6 +57,7 @@ export function messagePages(store: Pick<Store, "messagesFor" | "messagesTail" |
   }
 
   function messageWindow(threadId: string, messageId: string, limit: number) {
+    const senderName = senderNames?.();
     const all = store.messagesFor(threadId);
     const index = all.findIndex((message) => message.id === messageId);
     if (index < 0) return null;

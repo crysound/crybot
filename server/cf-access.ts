@@ -3,10 +3,10 @@ import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
 import { bearerToken, labelFromUserAgent, parseCookies, requestOrigin, serializeSessionCookie } from "./request-auth.ts";
 import { cookieMaxAgeSeconds, type SessionRegistry } from "./sessions.ts";
 
-import { cleanIdentityClaim } from "./access-claims.ts";
+import { cleanAccessEmail, cleanIdentityClaim } from "./access-claims.ts";
 
 export function cfAccessIdentityClaims(payload: { sub?: unknown; email?: unknown; name?: unknown; custom?: unknown }): { identity?: string; email?: string; displayName?: string } {
-  const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : undefined;
+  const email = cleanAccessEmail(payload.email);
   const custom = payload.custom && typeof payload.custom === "object" ? payload.custom as { name?: unknown } : undefined;
   const displayName = cleanIdentityClaim(custom?.name, 64) ?? cleanIdentityClaim(payload.name, 64);
   const identity = cleanIdentityClaim(payload.sub, 320) ?? email;
@@ -46,12 +46,12 @@ export function createCfAccess(env: NodeJS.ProcessEnv = process.env, keySet?: JW
     if (!claims.identity) return 401;
     if (existing && existing.accessIdentity !== claims.identity) sessions.revoke(existing.id);
     if (existing?.accessIdentity === claims.identity && usingCookie) {
-      sessions.refreshAccessDetails(existing.id, { email: claims.email, displayName: claims.displayName });
+      sessions.refreshAccessDetails(existing.id, { accessEmail: claims.email, displayName: claims.displayName });
       return null;
     }
     if (!allow.includes("*") && (!claims.email || !allow.includes(claims.email))) return 403;
     // Access authorizes the local owner; email membership belongs to the separate email sign-in authority.
-    const issued = sessions.issueAccess(claims.identity, labelFromUserAgent(req.headers["user-agent"]), { email: claims.email, displayName: claims.displayName });
+    const issued = sessions.issueAccess(claims.identity, labelFromUserAgent(req.headers["user-agent"]), { accessEmail: claims.email, displayName: claims.displayName });
     res.appendHeader("set-cookie", serializeSessionCookie(cookieName, issued.token, {
       secure: requestOrigin(req)?.startsWith("https://") === true,
       maxAgeSeconds: cookieMaxAgeSeconds(issued.session),

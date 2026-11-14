@@ -11,7 +11,7 @@ import type { Message } from "./store.ts";
 it.each([false, true])("serves historical names through index without changing Team Cloud history (team=%s)", async (team) => {
   const env: NodeJS.ProcessEnv = {};
   const fixture = await launchRestartableServer({ env });
-  const api = async (path: string, token?: string, body?: unknown) => {
+  const api = async (path: string, token?: string, body?: unknown): Promise<any> => {
     const response = await fetch(`${fixture.url}${path}`, {
       method: body === undefined ? "GET" : "POST",
       headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
@@ -29,12 +29,12 @@ it.each([false, true])("serves historical names through index without changing T
     const sessions = new SessionRegistry({ file: join(fixture.dataDir, "sessions.json") });
     const first = sessions.issueAccess("zhang", "Chrome on Mac");
     const oldKey = personKey({ id: first.session.id });
-    sessions.refreshAccessDetails(first.session.id, { email: "zhang@example.test", displayName: "张三" });
-    const second = sessions.issueAccess("alex", "Safari on iPhone", { email: "alex@example.test", displayName: "Alex" });
+    sessions.refreshAccessDetails(first.session.id, { accessEmail: "zhang@example.test", displayName: "张三" });
+    const second = sessions.issueAccess("alex", "Safari on iPhone", { accessEmail: "alex@example.test", displayName: "Alex" });
     sessions.close();
     const rows: Message[] = [
       { id: "old-key", role: "user", kind: "text", at: Date.now(), text: "First speaker", sender: { id: oldKey, name: "Chrome on Mac" } },
-      { id: "current-key", role: "user", kind: "text", at: Date.now() + 1, text: "Second speaker", sender: { id: personKey({ id: second.session.id, email: "alex@example.test" }), name: "Safari on iPhone" } },
+      { id: "current-key", role: "user", kind: "text", at: Date.now() + 1, text: "Second speaker", sender: { id: personKey({ id: second.session.id }), name: "Safari on iPhone" } },
       { id: "unknown-key", role: "user", kind: "text", at: Date.now() + 2, text: "Unknown speaker", sender: { id: personKey({ id: "gone" }), name: "Safari on iPhone" } },
     ];
     const database = new DatabaseSync(join(fixture.dataDir, "messages.db"));
@@ -66,7 +66,7 @@ it.each([false, true])("serves historical names through index without changing T
       stored.close();
     }
     if (team) return;
-    expect((await api("/api/auth/session", first.token)).reactor).toBe(personKey({ id: first.session.id, email: "zhang@example.test" }));
+    expect((await api("/api/auth/session", first.token)).reactor).toBe(personKey({ id: first.session.id }));
     const dumpFile = join(fixture.dataDir, "fake-claude-dump.json");
     for (const [replyToId, expectedName] of [["old-key", "张三"], ["current-key", "Alex"], ["unknown-key", "Local profile"]]) {
       rmSync(dumpFile, { force: true });

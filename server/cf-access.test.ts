@@ -9,6 +9,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createCfAccess } from "./cf-access.ts";
 import { SessionRegistry, SESSION_TTL_MS } from "./sessions.ts";
 import { resolveRequestAuth } from "./request-auth.ts";
+import { lendingPersonKey, OWN_SERVER_LENDER, personKey } from "./person-key.ts";
 import { appendUpgradeCookies, createUpgrades } from "./routes/upgrades.ts";
 
 const env = { CRYBOT_CF_ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com", CRYBOT_CF_ACCESS_AUD: "first, second", CRYBOT_CF_ACCESS_ALLOW: "owner@example.com" };
@@ -76,9 +77,9 @@ describe("Cloudflare Access", () => {
   it("stores the OIDC name from custom or top-level claims and refreshes it", async () => {
     const f = await fixture();
     const first = await f.get({ "cf-access-jwt-assertion": await jwt({ customName: " 张三 ", name: "Ignored" }) });
-    expect((await first.json()).session).toMatchObject({ email: "owner@example.com", displayName: "张三" });
+    expect((await first.json()).session).toMatchObject({ accessEmail: "owner@example.com", displayName: "张三" });
     const second = await f.get({ "cf-access-jwt-assertion": await jwt({ name: "Alex" }) });
-    expect((await second.json()).session).toMatchObject({ email: "owner@example.com", displayName: "Alex" });
+    expect((await second.json()).session).toMatchObject({ accessEmail: "owner@example.com", displayName: "Alex" });
   });
   it("refreshes the cookie's session after restarts without issuing or evicting sessions", async () => {
     const f = await fixture({ ...env, CRYBOT_CF_ACCESS_ALLOW: "*" });
@@ -91,12 +92,16 @@ describe("Cloudflare Access", () => {
       const response = await f.get({ cookie, "cf-access-jwt-assertion": await jwt({ customName: `Alex ${i}`, email: "ALEX@EXAMPLE.TEST" }) });
       expect(response.status).toBe(200);
       expect(response.headers["set-cookie"]).toBeUndefined();
-      expect((await response.json()).session).toMatchObject({ id, displayName: `Alex ${i}`, email: "alex@example.test" });
+      const refreshed = (await response.json()).session;
+      expect(refreshed).toMatchObject({ id, displayName: `Alex ${i}`, accessEmail: "alex@example.test" });
+      expect(refreshed.email).toBeUndefined();
+      expect(personKey(refreshed)).toBe(personKey({ id }));
+      expect(lendingPersonKey(refreshed, { admin: null })).toBe(OWN_SERVER_LENDER);
       expect(f.sessions.list()).toHaveLength(2);
       expect(f.sessions.authenticate(other.token)?.id).toBe(other.session.id);
     }
     f.restart();
-    expect(f.sessions.authenticate(cookie.split("=")[1])).toMatchObject({ id, displayName: "Alex 5", email: "alex@example.test" });
+    expect(f.sessions.authenticate(cookie.split("=")[1])).toMatchObject({ id, displayName: "Alex 5", accessEmail: "alex@example.test" });
     expect(f.sessions.list()).toHaveLength(2);
   });
   it("issues an owner cookie, reuses it, and caches the JWKS", async () => {
@@ -109,7 +114,8 @@ describe("Cloudflare Access", () => {
     expect(Number(/Max-Age=(\d+)/.exec(cookie)?.[1])).toBeGreaterThanOrEqual(SESSION_TTL_MS / 1000 - 1);
     const auth = await response.json();
     expect(auth.session.scopes).toEqual(["admin", "client"]);
-    expect(auth.session.email).toBe("owner@example.com");
+    expect(auth.session.email).toBeUndefined();
+    expect(auth.session.accessEmail).toBe("owner@example.com");
     expect((await f.get({ cookie })).status).toBe(200);
     expect((await f.get({ cookie, "cf-access-jwt-assertion": "bad" })).status).toBe(200);
     expect(f.issue).toHaveBeenCalledTimes(1);
