@@ -1,8 +1,7 @@
 import type { CloudBackend } from "../shared/wire.ts";
+import { cloudKindOf } from "../shared/cloud-backend.ts";
 
-export function cloudKindOf(bot: { cloudBackend?: CloudBackend }, teamComputer = false): CloudBackend {
-  return teamComputer ? "box" : bot.cloudBackend ?? "instabox";
-}
+export { cloudKindOf };
 
 export const CLOUD_BACKEND_CHANGE_ERROR = "stop the active turn before changing the cloud backend";
 export const BOAT_ACCOUNT_RESOURCES_ERROR =

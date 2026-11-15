@@ -5,14 +5,16 @@ import { PASS } from "./table.ts";
 
 afterEach(() => vi.unstubAllEnvs());
 
-const bots = [
-  { id: "ada", name: "Ada", section: "Research", computer: "cloud" as const },
+const bots: Parameters<typeof mapComputers>[0]["bots"] = [
+  { id: "ada", name: "Ada", section: "Research", computer: "cloud" as const, cloudBackend: "box" as const },
   { id: "ben", name: "Ben", section: "Research" },
   { id: "cy", name: "Cy", section: "Design" },
   { id: "dee", name: "Dee", section: "Design", computer: "cloud" as const, cloudBackend: "vps" as const },
-  { id: "eve", name: "Eve", section: "Design", computer: "cloud" as const, hidden: true },
+  { id: "eve", name: "Eve", section: "Design", computer: "cloud" as const, cloudBackend: "box" as const, hidden: true },
   { id: "fay", name: "Fay", section: "Ops" },
-  { id: "gus", name: "Gus", section: "Ops", computer: "off" as const },
+  { id: "gus", name: "Gus", section: "Ops", computer: "off" as const, cloudBackend: "box" as const },
+  { id: "instabox-explicit", name: "Explicit InstaBox", section: "Research", computer: "cloud", cloudBackend: "instabox" },
+  { id: "instabox-default", name: "Default InstaBox", section: "Research", computer: "cloud" },
 ];
 const teamComputers = [
   { id: "11111111-1111-4111-8111-111111111111", name: "Design desktop", section: "Design" },
@@ -28,6 +30,16 @@ describe("map computers", () => {
       { id: "gus", kind: "bot", name: "Gus", botIds: ["gus"], state: "asleep" },
       { id: "computer_11111111-1111-4111-8111-111111111111", kind: "team", name: "Design desktop", section: "Design", botIds: ["cy"], state: "off" },
     ]);
+  });
+
+  it.each([undefined, "instabox", "vps"] as const)("excludes %s own computers even with an existing Boat machine", (cloudBackend) => {
+    const ownBots = (["cloud", "off", undefined] as const).map((computer, index) => ({
+      id: `bot-${index}`, name: `Bot ${index}`, computer, cloudBackend,
+    }));
+    expect(mapComputers({
+      bots: ownBots, teamComputers: [],
+      machine: (owner) => ({ owner, boxId: "fixture-box", state: "running" }), working: () => false,
+    })).toEqual([]);
   });
 
   it("reads the have list and sends a turn frame only to a caller without any frame", () => {
