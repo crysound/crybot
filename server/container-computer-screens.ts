@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import type { CommandRunner, ContainerRuntimeStatus, Runtime } from "./container-computer.ts";
 import { augmentedPath, resolveCliSpawn } from "./env-path.ts";
-import { CONTAINER, CUA_EXECUTABLE, DISPLAY, isScreenTarget, screenDisplay, screenUid, screenUser, type LocalVmTarget } from "./container-targets.ts";
+import { CONTAINER, CUA_EXECUTABLE, DISPLAY, isScreenTarget, screenDisplay, screenXauthority, screenUid, screenUser, type LocalVmTarget } from "./container-targets.ts";
 import { rootContainerExecArgs, SCREENS_SUPERVISOR_CONFIG, validateScreenPackages } from "./container-screens.ts";
 
 export function cuaExecArgs(
@@ -47,6 +47,7 @@ export function screenIdentityArgs(
   const env = {
     HOME: `/home/${screenUser(n)}`,
     DISPLAY: screenDisplay(n),
+    XAUTHORITY: screenXauthority(n),
     XDG_RUNTIME_DIR: `/run/user/${screenUid(n)}`,
     TMPDIR: `/run/user/${screenUid(n)}/tmp`,
     CUA_DRIVER_INSTALL_CHANNEL: "python_package",
@@ -61,6 +62,7 @@ export function screenIdentityArgs(
     ...Object.entries(env).flatMap(([key, value]) => ["-e", `${key}=${value}`]),
     target.containerName,
     "env", "-u", "VNC_PW", "prlimit", "--nproc=1500", "--",
+    "/usr/local/libexec/crybot/screen-program",
     "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
     ...args,
   ];
@@ -112,12 +114,28 @@ export function createContainerScreens({ sh, containerRuntimeStatus }: {
 }) {
   async function stopScreen(runtime: Runtime, target: LocalVmTarget, runner: CommandRunner = sh): Promise<void> {
     if (!isScreenTarget(target)) throw new Error("stopScreen requires a screen target");
+    let stopError: unknown;
+    let cleanupError: unknown;
+    let stopFailed = false;
+    let cleanupFailed = false;
     try {
       await runner(runtime, rootContainerExecArgs(target.containerName, ["supervisorctl", "-c", SCREENS_SUPERVISOR_CONFIG, "stop", `screen-s${target.screen}:*`]), 30_000);
-    } finally {
+    } catch (error) {
+      stopFailed = true;
+      stopError = error;
+    }
+    try {
       await runner(runtime, rootContainerExecArgs(target.containerName, ["sh", "-c",
         `setpriv --reuid=${screenUid(target.screen)} --regid=${screenUid(target.screen)} --clear-groups pkill -KILL -u ${screenUser(target.screen)} || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }`]), 30_000);
+    } catch (error) {
+      cleanupFailed = true;
+      cleanupError = error;
     }
+    if (stopFailed && cleanupFailed) {
+      throw new AggregateError([stopError, cleanupError], `stopScreen failed: supervisor stop: ${String(stopError)}; process cleanup: ${String(cleanupError)}`, { cause: stopError });
+    }
+    if (stopFailed) throw stopError;
+    if (cleanupFailed) throw cleanupError;
   }
 
   async function screenStates(runtime: Runtime, containerName: string, runner: CommandRunner = sh): Promise<Record<number, ContainerScreenState>> {

@@ -1,0 +1,312 @@
+$ crybot-link-deps
+linked 73 entries
+
+Verification guide: docs/verification/README.md is absent. Tests use server/testing/setup.ts throwaway homes and existing isolated fixtures.
+
+$ pnpm exec vitest run server/feishu-cli/wrapper.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  43 passed (43)
+   Start at  05:46:06
+   Duration  2.70s (transform 1.58s, setup 1.98s, import 101ms, tests 364ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/turn.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  37 passed (37)
+   Start at  05:46:31
+   Duration  2.19s (transform 1.29s, setup 1.23s, import 416ms, tests 365ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/protocol.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:46:34
+   Duration  1.44s (transform 984ms, setup 1.24s, import 24ms, tests 7ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/broker.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  05:46:36
+   Duration  1.56s (transform 1.00s, setup 1.24s, import 36ms, tests 107ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/config.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  05:46:38
+   Duration  1.66s (transform 1.13s, setup 1.21s, import 242ms, tests 62ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/wrapper.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  43 passed (43)
+   Start at  05:46:40
+   Duration  1.77s (transform 997ms, setup 1.25s, import 41ms, tests 302ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/wrapper.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  43 passed (43)
+   Start at  05:46:43
+   Duration  1.80s (transform 1.06s, setup 1.28s, import 47ms, tests 298ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/wrapper.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  43 passed (43)
+   Start at  05:46:45
+   Duration  1.63s (transform 937ms, setup 1.16s, import 45ms, tests 268ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/socket.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:46:47
+   Duration  1.61s (transform 1.09s, setup 1.32s, import 35ms, tests 67ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/socket.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:46:50
+   Duration  1.93s (transform 1.33s, setup 1.61s, import 37ms, tests 88ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/socket.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:46:52
+   Duration  1.86s (transform 1.25s, setup 1.52s, import 50ms, tests 109ms, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/claude.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:46:55
+   Duration  6.19s (transform 2.74s, setup 1.62s, import 1.78s, tests 2.60s, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/claude.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:47:02
+   Duration  6.10s (transform 2.72s, setup 1.54s, import 1.81s, tests 2.54s, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/claude.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:47:08
+   Duration  5.79s (transform 2.50s, setup 1.37s, import 1.74s, tests 2.50s, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/server.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 1 skipped (2)
+   Start at  05:47:15
+   Duration  11.24s (transform 2.14s, setup 1.38s, import 1.76s, tests 7.92s, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/server.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 1 skipped (2)
+   Start at  05:47:27
+   Duration  8.31s (transform 2.10s, setup 1.37s, import 1.35s, tests 5.40s, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec vitest run server/feishu-cli/server.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 1 skipped (2)
+   Start at  05:47:36
+   Duration  8.12s (transform 2.01s, setup 1.29s, import 1.36s, tests 5.31s, environment 0ms)
+
+
+exit_code=0
+
+$ pnpm exec tsc --noEmit -p .
+
+exit_code=0
+
+$ pnpm exec tsc --noEmit -p tsconfig.server.json
+server/sessions.test.ts(79,38): error TS2741: Property 'label' is missing in type '{ code: string; source: string; browser: boolean; }' but required in type '{ code: string; label: string; source: string; fallbackLabel?: string | undefined; attemptId?: string | undefined; browser?: boolean | undefined; }'.
+
+exit_code=1
+
+$ pnpm exec oxlint --deny-warnings server/feishu-cli/wrapper.ts server/feishu-cli/protocol.ts server/feishu-cli/wrapper.test.ts server/feishu-cli/protocol.test.ts
+
+exit_code=0
+
+Server e2e skip diagnosis: default realpath(tmpdir())=/data/tmp, outside required /tmp. detectBox for host and service returned bwrap=/usr/bin/bwrap, reason=null, socat=null. Rerun with TMPDIR=TMP=TEMP=/tmp to exercise both sandbox scenarios.
+
+$ TMPDIR=/tmp TMP=/tmp TEMP=/tmp pnpm exec vitest run server/feishu-cli/server.e2e.test.ts --maxWorkers=1 --reporter=verbose (run 1/3)
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/feishu-cli/server.e2e.test.ts > uses authenticated identity with sandbox=false and never publishes turn tokens 5288ms
+ ✓ server/feishu-cli/server.e2e.test.ts > uses authenticated identity with sandbox=true and never publishes turn tokens 7224ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:48:26
+   Duration  15.43s (transform 2.09s, setup 1.45s, import 1.29s, tests 12.51s, environment 0ms)
+
+
+exit_code=0
+
+$ TMPDIR=/tmp TMP=/tmp TEMP=/tmp pnpm exec vitest run server/feishu-cli/server.e2e.test.ts --maxWorkers=1 --reporter=verbose (run 2/3)
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/feishu-cli/server.e2e.test.ts > uses authenticated identity with sandbox=false and never publishes turn tokens 4981ms
+ ✓ server/feishu-cli/server.e2e.test.ts > uses authenticated identity with sandbox=true and never publishes turn tokens 5428ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:48:42
+   Duration  12.63s (transform 1.55s, setup 1.04s, import 1.03s, tests 10.41s, environment 0ms)
+
+
+exit_code=0
+
+$ TMPDIR=/tmp TMP=/tmp TEMP=/tmp pnpm exec vitest run server/feishu-cli/server.e2e.test.ts --maxWorkers=1 --reporter=verbose (run 3/3)
+
+ RUN  v4.1.11 /data/home/codex-t-1247-broker-msg-clean-748a3aacf2e4
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/feishu-cli/server.e2e.test.ts > uses authenticated identity with sandbox=false and never publishes turn tokens 4702ms
+ ✓ server/feishu-cli/server.e2e.test.ts > uses authenticated identity with sandbox=true and never publishes turn tokens 6568ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:48:56
+   Duration  13.45s (transform 1.50s, setup 1.03s, import 1.00s, tests 11.27s, environment 0ms)
+
+
+exit_code=0
+
+$ git diff --check
+
+exit_code=0
+
+$ git diff --exit-code -- server/sessions.ts server/sessions.test.ts
+
+exit_code=0
+
+$ git status --short --untracked-files=all
+ M server/feishu-cli/protocol.test.ts
+ M server/feishu-cli/protocol.ts
+ M server/feishu-cli/wrapper.test.ts
+ M server/feishu-cli/wrapper.ts
+?? docs/tasks/T-1200/T-1247-broker-msg-clean/report.md
+?? docs/tasks/T-1200/T-1247-broker-msg-clean/verification.txt
+
+exit_code=0

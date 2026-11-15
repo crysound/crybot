@@ -1,13 +1,16 @@
 import { spawn } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { delimiter, join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { distrustHomePrograms } from "./bot-box/program-trust.ts";
+import { augmentedPath, resetPathCacheForTests, restrictServerProcessPath } from "./env-path.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 import {
   assertSafeCliArgv,
   cliVersionReader,
+  cliIsolationReason,
   describeSpawnFailure,
   estimatedWindowsCommandLineChars,
   execCli,
@@ -147,4 +150,61 @@ describe("CLI version probes", () => {
     expect(read(null, "2.1.302")).toEqual({ version: "2.1.302" });
     expect(read(late.err, late.stdout)).toEqual({ version: "2.1.302" });
   }, hostTimeout(20_000));
+});
+
+
+describe.skipIf(process.platform === "win32")("CLI versions with isolation", () => {
+  afterEach(() => {
+    distrustHomePrograms(null);
+    resetPathCacheForTests();
+    vi.unstubAllEnvs();
+  });
+
+  function fixture() {
+    const home = homedir();
+    const bin = join(home, "custom-engine-bin"), safe = join(home, ".crybot", "bin");
+    const marker = join(home, "cli-ran");
+    mkdirSync(bin, { recursive: true });
+    mkdirSync(safe, { recursive: true });
+    const cli = "cry-isolation-cli";
+    const source = `#!/bin/sh\necho ran > "${marker}"\necho 1.2.3\n`;
+    writeFileSync(join(bin, cli), source, { mode: 0o755 });
+    vi.stubEnv("PATH", [bin, safe, process.env.PATH].join(delimiter));
+    return { home, bin, safe, marker, cli, source };
+  }
+
+  it("explains a filtered CLI after boot rewrites PATH without running it", async () => {
+    const { home, bin, cli, marker } = fixture();
+    distrustHomePrograms(home, [join(home, ".crybot")]);
+    restrictServerProcessPath();
+    expect(augmentedPath().split(delimiter)).not.toContain(bin);
+    const result = await new Promise<{ reason: string } | { version: string }>((resolve) => {
+      execCli(cli, ["--version"], { env: { ...process.env, PATH: augmentedPath() } }, (err, stdout) => resolve(cliVersionReader(cli)(err, stdout)));
+    });
+    expect(result).toEqual({ reason: `\`${cli}\` was found at ${join(bin, cli)}, in a directory agents can write. While isolation is enabled, the server will not run it. Install it in a location agents cannot write.` });
+    expect(existsSync(marker)).toBe(false);
+  });
+
+  it("does not blame isolation with a trusted copy, a missing program, or isolation off", () => {
+    const { home, safe, cli, source } = fixture();
+    expect(cliIsolationReason(cli)).toBeNull();
+    distrustHomePrograms(home, [join(home, ".crybot")]);
+    expect(cliIsolationReason("cry-never-installed")).toBeNull();
+    writeFileSync(join(safe, cli), source, { mode: 0o755 });
+    expect(cliIsolationReason(cli)).toBeNull();
+    const missing = Object.assign(new Error("missing"), { code: "ENOENT" });
+    expect(cliVersionReader("cry-never-installed")(missing, "")).toEqual({ reason: "`cry-never-installed` CLI not found" });
+  });
+
+  it("explains an explicit blocked path and clears a previously successful version", async () => {
+    const { home, bin, cli, marker } = fixture();
+    const full = join(bin, cli);
+    const read = cliVersionReader(full);
+    expect(read(null, "1.2.3")).toEqual({ version: "1.2.3" });
+    distrustHomePrograms(home, [join(home, ".crybot")]);
+    const result = await new Promise<ReturnType<typeof read>>((resolve) => execCli(full, ["--version"], {}, (err, stdout) => resolve(read(err, stdout))));
+    expect(result).toEqual({ reason: expect.stringContaining("agents cannot write") });
+    expect(read(null, "")).toHaveProperty("reason");
+    expect(existsSync(marker)).toBe(false);
+  });
 });

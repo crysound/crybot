@@ -1,6 +1,6 @@
-// Teardown primitives for suites that spawn a real process against a throwaway home.
 import type { ChildProcess } from "node:child_process";
-import { rmSync } from "node:fs";
+import { chmodSync, lstatSync, readdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
 
 export interface WaitForExitOptions {
   /** Sent immediately. Omit for a child the caller has already signalled. */
@@ -9,8 +9,7 @@ export interface WaitForExitOptions {
   graceMs?: number;
 }
 
-/** End a child and wait for `close`: kill() does not wait, and deleting its home mid-write fails on
- * Linux with EACCES/ENOTEMPTY. A SIGKILL after `graceMs` is not an exit either. */
+/** Node kill() only sends a signal; close follows process exit and stdio closure. */
 export function waitForExit(
   child: ChildProcess | undefined,
   options: WaitForExitOptions | number = {},
@@ -43,8 +42,21 @@ export function waitForExit(
   });
 }
 
-/** A just-killed child lets go of its files a beat later, and rmSync's maxRetries misses EACCES/EPERM on
- * the directory itself: retry briefly, then report the failure. */
+function makeDirectoriesRemovable(dir: string): void {
+  let info;
+  try { info = lstatSync(dir); } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+    throw error;
+  }
+  if (!info.isDirectory()) return;
+  if ((info.mode & 0o700) !== 0o700) {
+    try { chmodSync(dir, info.mode | 0o700); } catch (cause) {
+      throw new Error(`Cannot repair test directory ${dir}: mode=${(info.mode & 0o777).toString(8)} uid=${info.uid} gid=${info.gid}`, { cause });
+    }
+  }
+  for (const entry of readdirSync(dir)) makeDirectoriesRemovable(join(dir, entry));
+}
+
 export async function removeTempDirStrict(dir: string): Promise<void> {
   let lastError: unknown;
   for (let i = 0; i < 20; i++) {
@@ -53,6 +65,7 @@ export async function removeTempDirStrict(dir: string): Promise<void> {
       return;
     } catch (error) {
       lastError = error;
+      if (["EACCES", "EPERM"].includes((error as NodeJS.ErrnoException).code ?? "")) makeDirectoriesRemovable(dir);
       await new Promise((r) => setTimeout(r, 100));
     }
   }

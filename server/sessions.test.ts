@@ -24,7 +24,7 @@ import {
   cookieMaxAgeSeconds,
   daysMs,
 } from "./sessions.ts";
-import { lendingPersonKey, OWN_SERVER_LENDER, personKey } from "./person-key.ts";
+import { lendingPersonKey, OWN_SERVER_LENDER, personKey, relayedPersonKey } from "./person-key.ts";
 import { userError } from "./user-errors.ts";
 import { feishuLoginConfig, revalidateFeishuDeviceSessions } from "./feishu-login.ts";
 
@@ -39,6 +39,97 @@ beforeEach(() => {
   registry = new SessionRegistry({ file: file(), now: () => clock });
 });
 afterEach(() => { vi.restoreAllMocks(); rmSync(dir, { recursive: true, force: true }); });
+
+describe("Feishu identity for a person", () => {
+  const email = "ada@example.test";
+  const person = personKey({ id: "", email });
+  beforeEach(() => {
+    registry.close();
+    registry = new SessionRegistry({ file: file(), now: () => clock, emailScopes: () => ["admin", "client"] });
+  });
+  function feishuSession(unionId = "test_union") {
+    const issued = registry.issueDevice(`feishu:${unionId}`, "Feishu", { scopes: ["client"], maxAgeDays: 1 });
+    const session = registry.authenticate(issued.token)!;
+    // Production Feishu sessions have no email; injecting one exercises defense in depth against identity collisions.
+    session.email = email;
+    return session;
+  }
+
+  it("returns the union ID when all sessions for the email are Feishu sessions", () => {
+    feishuSession();
+    feishuSession();
+    registry.issue({ label: "Another person", scopes: ["client"], email: "other@example.test" });
+    expect(registry.feishuUnionIdForPerson(person)).toBe("test_union");
+  });
+
+  it.each([false, true])("denies an email shared with an ordinary session (ordinary first: %s)", ordinaryFirst => {
+    if (!ordinaryFirst) feishuSession();
+    const ordinary = registry.issue({ label: "Email login", scopes: ["client"], email });
+    if (ordinaryFirst) feishuSession();
+    expect(personKey(ordinary.session)).toBe(person);
+    expect(registry.authenticate(ordinary.token)).not.toBeNull();
+    expect(registry.feishuUnionIdForPerson(person)).toBeUndefined();
+    expect(registry.feishuUnionIdForPerson(relayedPersonKey({ email: " Ada@Example.Test " }))).toBeUndefined();
+  });
+
+  it.each(["token", "owner"] as const)("denies an email shared with a non-Feishu %s session", kind => {
+    feishuSession();
+    const pairing = registry.openPairing({ scopes: ["client"], ...(kind === "token"
+      ? { tokenTtlMs: 60_000 } : { browser: true, owner: email }) });
+    const issued = registry.exchange({ code: pairing.credential, label: "Non-Feishu session", source: "fixture", browser: kind === "owner" });
+    expect(issued.ok).toBe(true);
+    if (!issued.ok) throw new Error("Pairing failed");
+    const session = registry.authenticate(issued.token)!;
+    session.email = email;
+    expect(session[kind]).toBe(kind === "token" ? true : email);
+    expect(registry.feishuUnionIdForPerson(person)).toBeUndefined();
+    expect(registry.feishuUnionIdForPerson(relayedPersonKey({ email }))).toBeUndefined();
+  });
+
+  it.each(["token", "owner"] as const)("does not take a union ID from a Feishu %s session", kind => {
+    const record = feishuSession();
+    if (kind === "token") record.token = true;
+    else record.owner = email;
+    expect(registry.feishuUnionIdForPerson(person)).toBeUndefined();
+  });
+
+  it("denies an email shared with a different access identity", () => {
+    feishuSession();
+    const other = registry.issueDevice("other:identity", "Other login", { scopes: ["client"], maxAgeDays: 1 });
+    registry.authenticate(other.token)!.email = email;
+    expect(registry.feishuUnionIdForPerson(person)).toBeUndefined();
+  });
+
+  it("ignores an expired ordinary session for the same email", () => {
+    const ordinary = registry.issue({ label: "Email login", scopes: ["client"], email });
+    clock = ordinary.session.expiresAt - 1;
+    feishuSession();
+    expect(registry.feishuUnionIdForPerson(person)).toBeUndefined();
+    clock++;
+    expect(registry.feishuUnionIdForPerson(person)).toBe("test_union");
+  });
+
+  it("ignores an ordinary session denied by the admin-only policy", () => {
+    feishuSession().scopes = ["admin", "client"];
+    const ordinary = registry.issue({ label: "Email login", scopes: ["client"], email });
+    expect(registry.feishuUnionIdForPerson(person)).toBeUndefined();
+    registry.requireAdmin(userError("serverError.cloud.personal"));
+    expect(registry.authenticate(ordinary.token)).toBeNull();
+    expect(registry.feishuUnionIdForPerson(person)).toBe("test_union");
+  });
+
+  it("does not take a union ID from a Feishu session denied by the admin-only policy", () => {
+    feishuSession();
+    registry.requireAdmin(userError("serverError.cloud.personal"));
+    expect(registry.feishuUnionIdForPerson(person)).toBeUndefined();
+  });
+
+  it("denies multiple different Feishu union IDs for the same email", () => {
+    feishuSession();
+    feishuSession("other_union");
+    expect(registry.feishuUnionIdForPerson(person)).toBeUndefined();
+  });
+});
 
 describe("the native-app encoding of a pairing window", () => {
   it("redeems the same window as the typed code, and consumes it", () => {

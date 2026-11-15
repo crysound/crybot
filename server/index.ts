@@ -755,7 +755,15 @@ if (CLOUD_HOME) {
 }
 holdIncludedServices(CLOUD_ENV);
 for (const key of CLOUD_HOME_SECRET_KEYS) delete process.env[key];
-await startBotBoxAtBoot({ dataDir: DATA_DIR, port: PORT });
+await startBotBoxAtBoot({
+  dataDir: DATA_DIR, port: PORT,
+  configuredClis: () => Object.values(providerConfigs()).flatMap((entry) => {
+    if (entry.enabled === false) return [];
+    const defaults = BUILT_IN_DRIVERS.find((driver) => driver.driverKind === entry.driver)?.defaultConfig();
+    const cli = (entry.config as { cli?: unknown } | undefined)?.cli ?? (defaults as { cli?: unknown } | undefined)?.cli;
+    return typeof cli === "string" && cli ? [cli] : [];
+  }),
+});
 feishuCliUser(process.env, console.warn);
 if (CLOUD_HOME && Object.keys(CLOUD_SECRETS).length === 0) {
   console.warn("cloud home: its secrets came in this process's environment, which anything running as the same user can read in /proc; start it with cloud-home-start");

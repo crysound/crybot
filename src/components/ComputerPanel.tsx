@@ -342,10 +342,9 @@ export function ComputerPanel({
   if (lastVmScreenTarget.current.botId !== bot.id || lastVmScreenTarget.current.computer !== bot.computer) {
     lastVmScreenTarget.current = { botId: bot.id, computer: bot.computer, target: null };
   }
-  const vmSupported = Boolean(
-    selectedInstance?.snapshot.state === "available" &&
-      selectedInstance.capabilities?.computerMcp,
-  );
+  const vmSupported = Boolean(selectedInstance?.capabilities?.computerMcp);
+  const engineUnavailable = selectedInstance !== undefined && selectedInstance.snapshot.state !== "available";
+  const engineReason = selectedInstance?.snapshot.reason?.trim().replace(/[.。\s]+$/, "");
   const cloudSupported = canWorkOnCloud(cloudEngineOf(selectedInstance));
   const botRoutines = state.routines
     .filter((routine) => routine.botId === bot.id)
@@ -395,6 +394,11 @@ export function ComputerPanel({
       return;
     }
     if (bot.computer === "vm") {
+      if (engineUnavailable) {
+        setError(new LocalizedPanelError("computer.err.engineUnavailable", engineReason, "computer.err.engineUnknown"));
+        setPhase("vm-unavailable");
+        return;
+      }
       if (!vmSupported) {
         setError(new LocalizedPanelError("computer.err.vmEngine"));
         setPhase("vm-unavailable");
@@ -591,6 +595,8 @@ export function ComputerPanel({
     providerSupportsLocal,
     selectedInstance?.driverKind,
     vmSupported,
+    engineUnavailable,
+    engineReason,
     cloudSupported,
     providerLock,
     state.config?.vps?.sshAlias,
@@ -1406,7 +1412,14 @@ export function ComputerPanel({
                 <p className="text-[12px]">{t(vmStatus?.stop_reason === "idle" ? "vm.stopped.idle" : "vm.stopped.detail")}</p>
               )}
               {phase === "vm-unavailable" && (
-                canWakeVm ? (
+                engineUnavailable ? (
+                  <button
+                    onClick={() => dispatch({ type: "toggleAppSettings", open: true, section: "engines" })}
+                    className="mt-1 rounded-lg bg-control px-3 py-1.5 text-[12px] text-ink hover:bg-raised-hover"
+                  >
+                    {t("computer.checkEngineSettings")}
+                  </button>
+                ) : canWakeVm ? (
                   <button
                     onClick={() => void runVmAction("vm-start")}
                     disabled={pending !== null}
