@@ -1,0 +1,146 @@
+Round 11 — isolated fixtures, no live application/data, no git commit.
+$ crybot-link-deps
+crybot-link-deps: linked 73 entries from /opt/crybot-deps/node_modules into /data/home/codex-t-1228-wiring-660e5070f365/node_modules
+exit 0
+$ node --version
+v24.22.3
+exit 0
+$ cat docs/verification/README.md
+cat: docs/verification/README.md: No such file or directory
+exit 1
+
+Preliminary lazy-container checks before extending cancellation coverage:
+$ pnpm exec vitest run server/lazy-container-mcp.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-660e5070f365
+
+
+ Test Files  1 passed (1)
+      Tests  28 passed (28)
+   Start at  03:03:01
+   Duration  2.06s (transform 1.05s, setup 1.15s, import 278ms, tests 434ms, environment 0ms)
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screen-runtime.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-660e5070f365
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  03:03:20
+   Duration  3.05s (transform 2.11s, setup 971ms, import 1.69s, tests 263ms, environment 0ms)
+
+exit 0
+
+$ pnpm exec vitest run server/lazy-container-mcp.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-660e5070f365
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  03:04:01
+   Duration  1.97s (transform 1.14s, setup 1.10s, import 323ms, tests 386ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/computer-call-gate.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-660e5070f365
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  03:04:04
+   Duration  1.66s (transform 1.13s, setup 1.07s, import 355ms, tests 92ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/auto-vm-claims.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-660e5070f365
+
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  03:04:06
+   Duration  1.37s (transform 942ms, setup 1.18s, import 27ms, tests 13ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-resume.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-660e5070f365
+
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  03:04:08
+   Duration  2.40s (transform 1.74s, setup 1.20s, import 1.02s, tests 21ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+
+exit 0
+
+$ pnpm exec oxlint --deny-warnings server/lazy-container-mcp.ts server/lazy-container-mcp.test.ts server/local-vm-screen-runtime.test.ts server/computer-control-client.ts server/testing/local-vm-screens-hooks.mjs
+
+exit 0
+
+Isolated hook smoke script (no TCP, no Docker, no fixed sleep):
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import os
+import subprocess
+with TemporaryDirectory(prefix='cry-round11-hooks-') as fixture:
+    state = Path(fixture) / 'vm.json'
+    state.write_text('{}')
+    env = dict(os.environ, CRYBOT_TEST_VM_STATE=str(state))
+    ready = Path(str(state) + '.ready-at-2')
+    cmd = ['node', 'server/testing/local-vm-screens-hooks.mjs', '--fake-docker', 'exec', 'fixture', 'status', '--socket', '/run/user/61002/crybot-cua.sock']
+    for case, ready_at, expected in [('missing', None, 0), ('future', '9999999999999', 1), ('elapsed', '0', 0)]:
+        if ready_at is not None:
+            ready.write_text(ready_at)
+        result = subprocess.run(cmd, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(f'{case}: exit={result.returncode}, stdout={result.stdout!r}, stderr={result.stderr!r}')
+        assert result.returncode == expected
+        if expected == 0:
+            assert result.stdout == '{}'
+        else:
+            assert result.stderr == 'screen socket is still starting\n'
+print('PASS: missing ready-at file is ready; future and elapsed deadlines retain their behavior.')
+
+$ python3 /tmp/crybot-round11-hook-check.py
+missing: exit=0, stdout='{}', stderr=''
+future: exit=1, stdout='', stderr='screen socket is still starting\n'
+elapsed: exit=0, stdout='{}', stderr=''
+PASS: missing ready-at file is ready; future and elapsed deadlines retain their behavior.
+
+exit 0
+
+SKIPPED (sandbox cannot listen on TCP; host/Actions must verify):
+server/local-vm-screens.e2e.test.ts
+server/computer-control-client.test.ts
+server/drivers/chat-mcp-lazy-container.test.ts
+
+$ git diff --check
+
+exit 0
+
+$ git status --short
+ M docs/tasks/T-1200/T-1228-wiring/report.md
+ M server/computer-control-client.ts
+ M server/lazy-container-mcp.test.ts
+ M server/lazy-container-mcp.ts
+ M server/local-vm-screen-runtime.test.ts
+ M server/testing/local-vm-screens-hooks.mjs
+?? docs/tasks/T-1200/T-1228-wiring/round11-verification.txt
+
+exit 0

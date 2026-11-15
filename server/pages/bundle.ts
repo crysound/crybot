@@ -260,21 +260,21 @@ export function skippedNote(skipped: readonly SkippedFile[]): string {
 }
 
 /** The bot's own folders for a turn, and its Local VM's workspace on this computer when it has one. */
-export type BotFolders = () => Promise<{ roots: readonly string[]; vmWorkspace: string | null; access?: ScreenFileAccess }>;
+export type BotFolders = () => Promise<{ roots: readonly string[]; vmWorkspace: string | null; vmGuestRoot?: string; access?: ScreenFileAccess }>;
 
 /** A chat page's bundle, videos included: readPageBundle within a bot's own folders; a path inside its Local VM's workspace means the same file here. */
 export async function readBotPageBundle(requested: string, folders: BotFolders, access?: ScreenFileAccess): Promise<PageBundle> {
-  const { roots, vmWorkspace, access: folderAccess } = await folders();
+  const { roots, vmWorkspace, vmGuestRoot, access: folderAccess } = await folders();
   access ??= folderAccess;
-  const path = !access && vmWorkspace ? guestWorkspaceToHost(requested, VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
+  const path = !access && vmWorkspace ? guestWorkspaceToHost(requested, vmGuestRoot ?? VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
   return readPageBundle(path, vmWorkspace ? [vmWorkspace, ...roots] : roots, undefined, { videos: true, vmWorkspace }, access);
 }
 
 /** A file inside a bot's own folders (or its Local VM's workspace), by the same rules as a page: the `extract` tool's. */
 export async function botFileSource(requested: string, folders: BotFolders, access?: ScreenFileAccess): Promise<string> {
-  const { roots, vmWorkspace, access: folderAccess } = await folders();
+  const { roots, vmWorkspace, vmGuestRoot, access: folderAccess } = await folders();
   access ??= folderAccess;
-  const path = !access && vmWorkspace ? guestWorkspaceToHost(requested, VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
+  const path = !access && vmWorkspace ? guestWorkspaceToHost(requested, vmGuestRoot ?? VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
   return pageSource(path, vmWorkspace ? [vmWorkspace, ...roots] : roots, access, vmWorkspace);
 }
 

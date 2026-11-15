@@ -86,6 +86,7 @@ export function createIsland({ platform = process.platform, BrowserWindow, scree
   handle("ready", () => payload());
   handle("action", async action => {
     if (!action || typeof action.type !== "string") return;
+    const wasExpanded = ["list", "chat"].includes(state.mode);
     if (action.type === "select" && state.mode === "list") {
       await data.select(action.botId);
       act(action);
@@ -93,7 +94,7 @@ export function createIsland({ platform = process.platform, BrowserWindow, scree
       if (action.type === "back") data.clearChat();
       act(action);
     }
-    if (!closed && win && ["list", "chat"].includes(state.mode)) { win.setFocusable(true); win.showInactive(); win.focus(); }
+    if (!closed && win && !wasExpanded && ["list", "chat"].includes(state.mode)) { win.setFocusable(true); win.showInactive(); win.focus(); }
   });
   handle("send", (revision, text) => data.send(revision, text));
   handle("respond", (revision, requestId, behavior) => data.respond(revision, requestId, behavior));

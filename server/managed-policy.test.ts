@@ -136,7 +136,7 @@ describe("organisation desktop policy overlay", () => {
 describe("claim-time computer refusal in bindTurnComputer", () => {
   const source = readFileSync(new URL("./index.ts", import.meta.url), "utf8").replace(/\r\n/g, "\n");
   const start = source.indexOf("\nasync function bindTurnComputer(");
-  const guardEnd = source.indexOf("  const active = () =>", start);
+  const guardEnd = source.indexOf("  await waitForComputer(", start);
   const guard = source.slice(start + 1, guardEnd) + "  return \"claimed\";\n}";
   const refusalStart = source.indexOf("\nfunction computerPlaceRefusal(");
   const refusal = source.slice(refusalStart + 1, source.indexOf("\n}\n", refusalStart) + 3);

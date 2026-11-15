@@ -42,7 +42,7 @@ beforeAll(async () => {
   writeFileSync(join(ui, "index.html"), "<title>Isolated resume fixture</title>");
   writeFileSync(join(ui, "assets", "test.css"), "body{}");
   save({ containers: ["shared"], stopped: ["shared"], startDelayMs: 5000 });
-  writeFileSync(join(data, "config.json"), JSON.stringify({ localVm: { mode: "shared" }, instances: { claude: {
+  writeFileSync(join(data, "config.json"), JSON.stringify({ localVm: { mode: "shared", screens: 1 }, instances: { claude: {
     driver: "claudeAgent", config: { cli: join(root, "server/testing/fake-claude-cli.ts") },
     environment: { FAKE_CLAUDE_MODE: "slow", FAKE_CLAUDE_DUMP: dumpFile, FAKE_CLAUDE_SLOW_FINISH_GATE: finishFile },
   } } }));
