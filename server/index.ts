@@ -132,10 +132,10 @@ import { boatCreateRecoverySnapshot } from "./boat-create-idempotency.ts";
 import { boatDeletionSnapshot } from "./boat-delete-journal.ts";
 import { liveDecisionRefusal } from "../shared/live-approval.ts"; import type { PersonWaitKind } from "../shared/person-wait.ts";
 import { cloudKindOf, cloudPolicyKindOf, vpsLeftBehindNotice } from "./cloud-backend.ts";
-import { createInstaboxRequest } from "./instabox/client.ts";
+import { createInstaboxWiring } from "./instabox/wiring.ts";
 import { instaboxConfigured } from "./instabox/key.ts";
 import type { InstaboxMachines } from "./instabox/machine.ts";
-import { createInstaboxMachineCache, instaboxComputerAction, instaboxFailureResponse, instaboxStatus, requireInstabox, withInstaboxBackendPower } from "./instabox/power.ts";
+import { instaboxComputerAction, instaboxFailureResponse, instaboxStatus, requireInstabox, withInstaboxBackendPower } from "./instabox/power.ts";
 import * as composio from "./composio.ts";
 import { appSandboxRule, connectorCallFromFrame, connectorRefusalText, connectorScopeRefusalText, connectorUnrecognizedText, evaluateConnectorTools } from "./connector-verdict.ts";
 import { signInCardText } from "./connector-card-text.ts";
@@ -4621,11 +4621,14 @@ function audienceChanged(): void {
 // Before any revocation callback: Cloud boot can revoke sessions before routes are registered.
 const upgrades = createUpgrades();
 const phoneScreen = createPhoneScreenRoutes({ upgrades, hold: phoneHold, enabled: usbPhoneTakeoverOn, live: (auth) => auth.kind === "loopback" || sessions.isLive(auth.session.id), dataDir: DATA_DIR });
+const instaboxWiring = createInstaboxWiring({ cfg: () => cfg, claim: claimBotComputerLifecycle, inUse: id => managedBoatOwners().some(owner => owner.botId === id && owner.inUse), eligible: id => { const bot = store.bot(id); return !!bot && !inheritedTeamComputer(bot) && cloudKindOf(bot) === "instabox"; } });
 const desktopViewer = createDesktopViewer({
+  allowInsecureLoopbackUpstream: instaboxWiring.allowInsecureLoopbackUpstream,
   upgrades,
   target: (id) => {
     if (id.startsWith("vps/")) {
       const botId = id.slice(4);
+      const instabox = instaboxWiring.target(botId); if (instabox) return instabox;
       if (store.bot(botId)?.cloudBackend !== "vps") return;
       return { key: id, resolve: async () => {
         const connection = vps.vpsDesktopConnection(botId);
@@ -5627,9 +5630,7 @@ const computerPreviews = createComputerPreviews();
 const vpsJoinRequests = new Map<string, Promise<void>>();
 const orphanBoatLifecycleBusyIds = new Set<string>();
 const boatInventoryRequestsBusyIds = new Set<string>();
-const cachedInstaboxMachines = createInstaboxMachineCache(key => createInstaboxRequest(key,
-  /^http:\/\/127\.0\.0\.1:[1-9]\d{0,4}$/.test(process.env.CRYBOT_TEST_INSTABOX_API ?? "") ? process.env.CRYBOT_TEST_INSTABOX_API : undefined));
-function instaboxMachinesFor(cfg: AppConfig): InstaboxMachines | null { return cachedInstaboxMachines(cfg); }
+function instaboxMachinesFor(_cfg: AppConfig): InstaboxMachines | null { return instaboxWiring.machines(); }
 type RemoteComputerProvider = "box" | "vps";
 const computerProviderConfigTransitions = new Set<RemoteComputerProvider>();
 const localVmIdleMs = () => localVmIdleTimeoutMinutes(cfg) * 60_000;
@@ -8210,7 +8211,9 @@ async function beginTurn(
           computerKind = "box";
         }
         if (!teamComputer && cloudBackend === "instabox" && wants === "cloud") {
-          await requireInstabox(instaboxMachinesFor(cfg)).ensureRunning(bot.id);
+          await bindTurnComputer(resourceOwner, `computer:box-bot:${bot.id}`, true);
+          const machine = await requireInstabox(instaboxMachinesFor(cfg)).ensureRunning(bot.id);
+          integrations.localComputer = cloudComputerTools(bot.id, resourceOwner, `instabox/${machine.id}`); computerKind = "box";
         }
         if (!teamComputer && cloudBackend === "box" && boat.boatOffered(cfg) && wants === "cloud") {
           integrations.localComputer = mountBotBoat(bot, resourceOwner, {
@@ -10071,7 +10074,9 @@ async function runClaimedGroupMemberTurn(
     }
     if (!roomTeamComputer && roomPlan.computer === "cloud") {
       if (turnProvider(readyBot) === "instabox") {
-        await requireInstabox(instaboxMachinesFor(cfg)).ensureRunning(readyBot.id);
+        await bindTurnComputer(resourceOwner, `computer:box-bot:${readyBot.id}`, true);
+        const machine = await requireInstabox(instaboxMachinesFor(cfg)).ensureRunning(readyBot.id);
+        integrations.localComputer = cloudComputerTools(readyBot.id, resourceOwner, `instabox/${machine.id}`); roomComputerKind = "box";
       } else if (turnProvider(readyBot) === "vps") {
         vpsThreadStarted(readyBot.id, threadId);
         roomVpsBotId = readyBot.id;
@@ -12451,7 +12456,7 @@ ROUTES.push(createStatusRoutes({
   browserEngineInstallError: { set: (error) => { browserEngineInstallError = error; } },
 }));
 
-ROUTES.push(desktopViewer.route, phoneScreen.route);
+ROUTES.push(instaboxWiring.routes, desktopViewer.route, phoneScreen.route);
 ROUTES.push(createBrowserViewerRoutes({
   upgrades, viewers: browserLive, dataDir: DATA_DIR, person: (auth) => (auth.kind === "session" ? actorKey(auth) : "local-owner"),
   audience: (auth, threadId) => teamHost.viewerBrowserAudience({ threadId, sees: (id) => visibleTo(viewerFor(auth)).thread(id), person: auth.kind === "session" ? actorKey(auth) : null }),
@@ -13183,7 +13188,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         const abort = new AbortController();
         res.once("close", () => { if (!res.writableEnded) abort.abort(); });
         return json(res, 200, { result: await cloudComputerRpc(body, {
-          cfg, signal: abort.signal, folder: () => messageFileRootsForThread(internalCapability.botId, internalCapability.threadId)[0],
+          cfg, instabox: instaboxWiring.tools(internalCapability.boxId), signal: abort.signal, folder: () => messageFileRootsForThread(internalCapability.botId, internalCapability.threadId)[0],
           boxId: () => internalCapability.boxId ?? claimedBoatId(internalCapability),
           gate: () => computerCallGate(internalCapability, abort.signal),
           assertActive: requireActiveInternalCapability, recovery: boatRecovery,

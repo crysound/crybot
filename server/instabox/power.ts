@@ -1,3 +1,5 @@
+import { runInstaboxComputerTool } from "./computer-tools.ts";
+import { desktopViewerUrl } from "../routes/desktop-viewer.ts";
 import type { AppConfig } from "../config.ts";
 import type { RouteHandler } from "../routes/table.ts";
 import type { BotRecord } from "../store.ts";
@@ -58,8 +60,17 @@ export async function instaboxComputerAction(machines: InstaboxMachines | null, 
     if (template !== undefined && template !== "linux" && template !== "android") {
       throw new InstaboxUserError(400, "serverError.instabox.template");
     }
-    return { machine: await service.ensureRunning(botId, template === undefined ? undefined : { template }) };
+    return { ready: true, machine: await service.ensureRunning(botId, template === undefined ? undefined : { template }) };
   }
+  if (action === "screenshot") {
+    const machine = await service.find(botId);
+    if (machine?.state !== "running") throw new InstaboxUserError(409, "serverError.instabox.unavailable");
+    const result = await runInstaboxComputerTool(service, machine.id, "screenshot", {}, AbortSignal.timeout(90_000));
+    const image = result.content.find(part => part.type === "image");
+    if (!image || image.type !== "image") throw new InstaboxUserError(502, "serverError.instabox.unavailable");
+    return { png: image.data, format: "jpeg" };
+  }
+  if (action === "join") { await service.ensureRunning(botId); return { joinUrl: desktopViewerUrl(`vps/${botId}`) }; }
   if (action === "sleep") { await service.suspend(botId); return { ok: true }; }
   if (action === "remove") { await service.remove(botId); return { ok: true }; }
   throw new InstaboxUserError(501, "serverError.instabox.unavailable");

@@ -34,7 +34,7 @@ describe("InstaBox snapshots", () => {
     expect(host.textContent).toContain("No snapshots yet");
     fixture.api.mockResolvedValueOnce({ snapshot }).mockResolvedValueOnce({ snapshots: [snapshot] });
     await click("Save a snapshot");
-    expect(fixture.api).toHaveBeenCalledWith("/api/bots/bot-one/instabox/snapshots", { method: "POST", body: "{}" });
+    expect(fixture.api).toHaveBeenCalledWith("/api/bots/bot-one/instabox/snapshots", { timeoutMs: 720_000, method: "POST", body: "{}" });
     expect(host.textContent).toContain(snapshot.name);
     expect(host.textContent).not.toContain("No snapshots yet");
   });
@@ -50,7 +50,7 @@ describe("InstaBox snapshots", () => {
     expect(fixture.api).toHaveBeenCalledTimes(1);
     await click(label);
     await click(label, document.querySelector('[role="alertdialog"]')!);
-    expect(fixture.api).toHaveBeenCalledWith(`/api/bots/bot-one/instabox/snapshots/snapshot-one${label === "Delete" ? "" : "/restore"}`, { method: label === "Delete" ? "DELETE" : "POST" });
+    expect(fixture.api).toHaveBeenCalledWith(`/api/bots/bot-one/instabox/snapshots/snapshot-one${label === "Delete" ? "" : "/restore"}`, { timeoutMs: 720_000, method: label === "Delete" ? "DELETE" : "POST" });
     expect(document.querySelector('[role="alertdialog"]')).toBeNull();
     expect(fixture.api).toHaveBeenCalledTimes(3);
   });

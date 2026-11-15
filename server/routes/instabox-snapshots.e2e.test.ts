@@ -27,6 +27,7 @@ beforeEach(async () => {
     machines: () => configured ? { ensureRunning } as unknown as InstaboxMachines : null,
     machineIdFor: async () => machineId,
     botExists: (id) => id === botId,
+    claim: () => () => {},
   });
   const configRoute = createConfigRoutes({ cfg: { instabox: { apiKey: "fixture-only-key" } }, configStatus: () => ({ instabox: { apiKey: "never-return-this", last4: "this" } }), configForAccess: (status: unknown) => status } as unknown as ConfigRouteDeps);
   server = createServer(async (req, res) => {
@@ -50,13 +51,13 @@ const send = (path = basePath, method = "GET", body?: unknown, headers?: Record<
   method, headers: { origin: base, "content-type": "application/json", ...headers },
   ...(body === undefined ? {} : { body: JSON.stringify(body) }),
 });
-const ownSnapshot = () => fake.snapshots.set("own", { id: "own", name: "crybot-bot-snapshot-backup", state: "ready" });
+const ownSnapshot = () => fake.snapshots.set("own", { id: "own", name: "crybot-bot-snapshot-backup", status: "ready", sourceMachineId: "machine-one" });
 
 describe("isolated InstaBox snapshot HTTP routes", () => {
   it("lists only owned snapshots by metadata or prefix and never relays metadata", async () => {
     ownSnapshot();
-    fake.snapshots.set("meta", { id: "meta", name: "backup", state: "ready", metadata: { app: "crybot", botId } });
-    fake.snapshots.set("other", { id: "other", name: "crybot-bot-snapshot-spoof", state: "ready", metadata: { botId: "other-bot" } });
+    fake.snapshots.set("meta", { id: "meta", name: "backup", status: "ready", sourceMachineId: "machine-one", metadata: { app: "crybot", botId } });
+    fake.snapshots.set("other", { id: "other", name: "crybot-bot-snapshot-spoof", status: "ready", sourceMachineId: "machine-one", metadata: { botId: "other-bot" } });
     const response = await send();
     expect(response.status).toBe(200);
     const body = await response.json() as { snapshots: Array<{ id: string }> };
@@ -78,6 +79,8 @@ describe("isolated InstaBox snapshot HTTP routes", () => {
       expect(snapshot.name.startsWith("crybot-bot-snapshot-")).toBe(true);
     }
     expect(names[0]).not.toBe(names[1]);
+    expect(fake.calls.some(call => call.path.startsWith("/v1/operations/"))).toBe(true);
+    expect(fake.calls.some(call => call.method === "GET" && call.path === "/v1/snapshots")).toBe(true);
     expect((await send(`${basePath}/${ids[0]}/restore`, "POST")).status).toBe(200);
     expect(ensureRunning).toHaveBeenCalledWith(botId);
     const restore = fake.calls.find((call) => call.path.endsWith("/restore"));
@@ -99,7 +102,7 @@ describe("isolated InstaBox snapshot HTTP routes", () => {
   });
 
   it.each(["DELETE", "POST"])("refuses another bot's snapshot before %s", async (method) => {
-    fake.snapshots.set("other", { id: "other", name: "crybot-other-bot-backup", state: "ready", metadata: { botId: "other-bot" } });
+    fake.snapshots.set("other", { id: "other", name: "crybot-other-bot-backup", status: "ready", sourceMachineId: "machine-one", metadata: { botId: "other-bot" } });
     const response = await send(`${basePath}/other${method === "POST" ? "/restore" : ""}`, method);
     expect(response.status).toBe(403);
     expect(fake.calls).toHaveLength(1);

@@ -19,10 +19,11 @@ function errorCode(value: unknown, apiKey?: string): string {
     ? value : "request_failed";
 }
 
-export function createInstaboxRequest(apiKey: string, baseUrl = "https://api.instabox.sh"): InstaboxRequest {
+export function createInstaboxRequest(apiKey: string, baseUrl = "https://api.instabox.sh", requestTimeoutMs = 650_000, signal?: AbortSignal): InstaboxRequest {
   if (!apiKey || /[^\x21-\x7e]/.test(apiKey)) throw new Error("Invalid InstaBox API key");
   const origin = new URL(baseUrl);
   const request: InstaboxRequest = async (method, path, opts = {}) => {
+    signal?.throwIfAborted();
     const url = new URL(path, origin);
     if (url.origin !== origin.origin || url.username || url.password) throw new Error("Invalid InstaBox API path");
     for (const [name, value] of Object.entries(opts.query ?? {})) url.searchParams.set(name, value);
@@ -39,7 +40,7 @@ export function createInstaboxRequest(apiKey: string, baseUrl = "https://api.ins
     }
     let response: Response;
     try {
-      response = await fetch(url, { method: method.toUpperCase(), headers, ...(body === undefined ? {} : { body }), redirect: "error", signal: AbortSignal.timeout(650_000) });
+      response = await fetch(url, { method: method.toUpperCase(), headers, ...(body === undefined ? {} : { body }), redirect: "error", signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(requestTimeoutMs)]) : AbortSignal.timeout(requestTimeoutMs) });
     } catch {
       throw new InstaboxError(0, "network_error");
     }

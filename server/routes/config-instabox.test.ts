@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { loadConfig, saveConfig } from "../config.ts";
 import { keyStatus, withoutKeyHints } from "../key-hint.ts";
-import type { RequestAuth } from "../request-auth.ts";
-import { createConfigRoutes, type ConfigRouteDeps, type ConfigStatus } from "./config.ts";
+import { createConfigRoutes, type ConfigRouteDeps } from "./config.ts";
 import type { RouteContext } from "./table.ts";
 
 beforeEach(() => vi.stubEnv("INSTABOX_API_KEY", ""));
@@ -18,7 +17,7 @@ function fixture(reported?: unknown) {
     providerConfigs: () => ({}), registry: { forgetSnapshots: vi.fn() }, lendingEnabled: () => true,
     revokeEngineCapabilities: vi.fn(), broadcast,
     configStatus: () => ({ instabox: reported ?? { ...keyStatus(cfg.instabox?.apiKey), fromEnv: false } }),
-    configForAccess: (status: ConfigStatus, auth: RequestAuth) => auth.scopes.includes("admin") ? status : withoutKeyHints(status),
+    configForAccess: (status: Parameters<ConfigRouteDeps["configForAccess"]>[0], auth: Parameters<ConfigRouteDeps["configForAccess"]>[1]) => auth.scopes.includes("admin") ? status : withoutKeyHints(status),
   } as unknown as ConfigRouteDeps);
   return { cfg, broadcast, request: async (method = "GET", body?: unknown, admin = true) => {
     let response!: { status: number; body: Record<string, unknown> };
