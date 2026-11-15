@@ -25,7 +25,7 @@ Error: EACCES, Permission denied: '/tmp/cry-steer-B1lmzw'
 ## 范围与约束
 - 只改相关测试文件、`server/testing/*`、定位到的产品文件和本任务报告；不改 `.github/workflows/`、不改 file-size ratchet 数字、不改其他用例断言。
 - 不要 git 提交，不联网，不装依赖。
-- 开工先在 worktree 根目录准备依赖（本机：若 `node_modules` 不存在，链到 `/root/workspace/crybot/node_modules`；InstaBox 上运行 `crybot-link-deps`）。没有 systemd 的环境去掉 `systemd-run` 前缀；一次只跑一个测试文件。
+- 开工先在 worktree 根目录准备依赖（本机：若 `node_modules` 不存在，链到 `/root/workspace/crybot/node_modules`；上运行 依赖准备脚本）。没有 systemd 的环境去掉 `systemd-run` 前缀；一次只跑一个测试文件。
 
 ## 验收
 - 逐个跑并贴结尾输出：`server/cloud-guest-shell.e2e.test.ts`、`server/steer-e2e.test.ts`（沙箱禁止监听端口跑不了就写明）、新增/改动的单测文件；可行的话各重复跑 3 次。

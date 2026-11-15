@@ -2831,7 +2831,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     expect(order.map((e) => e.type)).toEqual(["turn.completed", "turn.started"]);
   });
 
-  it.skipIf(process.platform === "win32")("waits for a live turn's process tree before disposing", async () => {
+  it.skipIf(process.platform === "win32")("waits for a live turn's process before disposing", async () => {
     const dump = join(scratch, "dispose-dump.json");
     process.env.FAKE_CLAUDE_DUMP = dump;
     await create("hang", {}, { permissionMode: "bypassPermissions" });

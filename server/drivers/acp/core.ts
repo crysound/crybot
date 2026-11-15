@@ -584,7 +584,6 @@ export function createAcpDriver(support: AcpSupport): ProviderDriver<AcpConfig> 
       };
 
       const hosts = new Set<AcpHost>();
-      // Between turns nothing is brokered; the agent must never block on an unanswered request.
       const refuse = (msg: any, send: (obj: unknown) => void) => {
         const question = questionRequestFor(support.questionRequests, msg.method);
         send(msg.method === "session/request_permission"
@@ -1688,19 +1687,15 @@ export function createAcpDriver(support: AcpSupport): ProviderDriver<AcpConfig> 
           disposing = true;
           await deviceSignIn?.dispose();
           const disposingSessions = Array.from(sessions);
-          const children = new Set([
-            ...disposingSessions.map(([, session]) => session.host.child),
-            ...[...retiring.values()].flatMap((group) => [...group]),
-          ]);
+          const children = new Set([...hosts].map((host) => host.child));
+          for (const group of retiring.values()) for (const child of group) children.add(child);
           for (const { stop } of active.values()) stop();
           for (const [threadId, session] of disposingSessions) {
             closeSession(threadId, "dispose");
             settle(threadId, session, true, "cancelled");
           }
-          for (const [threadId, children] of retiring) {
-            for (const child of children) void retireChild(threadId, child);
-          }
           await Promise.all([...children].map((child) => killCliTree(child)));
+          retiring.clear();
           listeners.clear();
         },
       };

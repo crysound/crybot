@@ -1,0 +1,454 @@
+T-1240 round 2: final verification
+All test files run sequentially against isolated fixtures.
+
+$ pnpm exec vitest run server/cloud-guest-shell.e2e.test.ts  [round 1; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  04:45:55
+   Duration  26.55s (transform 941ms, setup 821ms, import 382ms, tests 25.20s, environment 0ms)
+
+
+$ pnpm exec vitest run server/cloud-guest-shell.e2e.test.ts  [round 2; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  04:46:22
+   Duration  29.83s (transform 1.31s, setup 1.18s, import 499ms, tests 27.99s, environment 0ms)
+
+
+$ pnpm exec vitest run server/cloud-guest-shell.e2e.test.ts  [round 3; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  04:46:53
+   Duration  28.39s (transform 1.06s, setup 981ms, import 370ms, tests 26.88s, environment 0ms)
+
+
+$ pnpm exec vitest run server/steer-e2e.test.ts  [round 1; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  04:47:22
+   Duration  23.02s (transform 893ms, setup 1.08s, import 79ms, tests 21.73s, environment 0ms)
+
+
+$ pnpm exec vitest run server/steer-e2e.test.ts  [round 2; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  04:47:45
+   Duration  22.12s (transform 721ms, setup 888ms, import 53ms, tests 21.05s, environment 0ms)
+
+
+$ pnpm exec vitest run server/steer-e2e.test.ts  [round 3; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  04:48:08
+   Duration  24.36s (transform 784ms, setup 963ms, import 60ms, tests 23.20s, environment 0ms)
+
+
+$ pnpm exec vitest run server/room-roots.e2e.test.ts  [round 1; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  14 passed | 1 skipped (15)
+   Start at  04:36:24
+   Duration  67.21s (transform 1.05s, setup 749ms, import 705ms, tests 65.64s, environment 0ms)
+
+
+$ pnpm exec vitest run server/room-roots.e2e.test.ts  [round 2; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  14 passed | 1 skipped (15)
+   Start at  04:37:32
+   Duration  61.34s (transform 1.06s, setup 698ms, import 697ms, tests 59.82s, environment 0ms)
+
+
+$ pnpm exec vitest run server/room-roots.e2e.test.ts  [round 3; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  14 passed | 1 skipped (15)
+   Start at  04:38:34
+   Duration  67.96s (transform 992ms, setup 682ms, import 628ms, tests 66.52s, environment 0ms)
+
+
+$ pnpm exec vitest run server/group-local-vm.e2e.test.ts  [round 1; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  45 passed | 2 skipped (47)
+   Start at  04:39:42
+   Duration  122.45s (transform 927ms, setup 806ms, import 382ms, tests 121.14s, environment 0ms)
+
+
+$ pnpm exec vitest run server/group-local-vm.e2e.test.ts  [round 2; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  45 passed | 2 skipped (47)
+   Start at  04:41:45
+   Duration  122.39s (transform 817ms, setup 688ms, import 370ms, tests 121.22s, environment 0ms)
+
+
+$ pnpm exec vitest run server/group-local-vm.e2e.test.ts  [round 3; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  45 passed | 2 skipped (47)
+   Start at  04:43:48
+   Duration  126.36s (transform 1.15s, setup 959ms, import 522ms, tests 124.73s, environment 0ms)
+
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts  [round 1; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  04:48:33
+   Duration  1.69s (transform 906ms, setup 1.17s, import 11ms, tests 354ms, environment 0ms)
+
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts  [round 2; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  04:48:35
+   Duration  1.49s (transform 968ms, setup 1.21s, import 14ms, tests 97ms, environment 0ms)
+
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts  [round 3; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  04:48:37
+   Duration  1.33s (transform 825ms, setup 1.07s, import 9ms, tests 86ms, environment 0ms)
+
+
+$ pnpm exec vitest run server/drivers/claude.test.ts  [round 1; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  257 passed | 1 skipped (258)
+   Start at  04:48:39
+   Duration  97.83s (transform 2.05s, setup 1.16s, import 1.44s, tests 95.05s, environment 0ms)
+
+
+$ pnpm exec vitest run server/drivers/claude.test.ts  [round 2; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  257 passed | 1 skipped (258)
+   Start at  04:50:18
+   Duration  99.19s (transform 2.04s, setup 1.12s, import 1.47s, tests 96.44s, environment 0ms)
+
+
+$ pnpm exec vitest run server/drivers/claude.test.ts  [round 3; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  257 passed | 1 skipped (258)
+   Start at  04:51:58
+   Duration  98.27s (transform 1.96s, setup 1.12s, import 1.36s, tests 95.62s, environment 0ms)
+
+
+$ pnpm exec vitest run server/drivers/acp/acp.test.ts  [round 1; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  214 passed (214)
+   Start at  04:53:37
+   Duration  44.94s (transform 2.61s, setup 1.25s, import 2.04s, tests 41.51s, environment 0ms)
+
+
+$ pnpm exec vitest run server/drivers/acp/acp.test.ts  [round 2; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  214 passed (214)
+   Start at  04:54:22
+   Duration  42.38s (transform 1.91s, setup 935ms, import 1.51s, tests 39.80s, environment 0ms)
+
+
+$ pnpm exec vitest run server/drivers/acp/acp.test.ts  [round 3; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  214 passed (214)
+   Start at  04:55:05
+   Duration  44.75s (transform 2.65s, setup 1.31s, import 2.05s, tests 41.25s, environment 0ms)
+
+
+$ pnpm exec vitest run server/runtime/runtime.test.ts  [exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  65 passed (65)
+   Start at  04:35:51
+   Duration  1.28s (transform 698ms, setup 769ms, import 140ms, tests 256ms, environment 0ms)
+
+
+$ pnpm exec vitest run server/testing/cleanup.test.ts  [exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  04:35:50
+   Duration  1.04s (transform 558ms, setup 720ms, import 8ms, tests 206ms, environment 0ms)
+
+
+$ pnpm exec vitest run server/kill-tree-linux.test.ts  [exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  04:56:13
+   Duration  3.49s (transform 1.03s, setup 1.12s, import 207ms, tests 2.01s, environment 0ms)
+
+
+$ pnpm exec tsc -p tsconfig.server.json --pretty false  [exit 0]
+(no output)
+
+$ pnpm exec oxlint --deny-warnings server/cloud-guest-shell.e2e.test.ts server/drivers/acp/acp.test.ts server/drivers/acp/core.ts server/drivers/claude.test.ts server/drivers/claude.ts server/runtime/runtime.test.ts server/runtime/runtime.ts server/testing/cleanup.ts server/testing/cleanup.test.ts  [exit 0]
+(no output)
+
+$ git diff --check  [exit 0]
+(no output)
+
+$ node scripts/public-scan/scan.mjs --base origin/main  [exit 2]
+Public scan error: invalid base, configuration, repository, or unparsed diff.
+
+
+$ node /tmp/t1240-scan-worktree.mjs  [exit 0]
+[]
+Working tree public scan: 0 findings
+
+
+Repository references:
+["log","-1","--oneline"] "b27bf86 InstaBox task baseline\n"
+["branch","-a"] "* master\n"
+["remote","-v"] ""
+
+$ node /tmp/t1240-permissions.mjs
+Injected fixture, not a captured CI directory: /data/tmp/cry-steer-permissions-0zaXHb/.crybot/task-workspaces/bot/thread/residual
+{ mode: '500', uid: 1000, gid: 1000, caller: 1000 }
+Original strict cleanup: EACCES, Permission denied: '/data/tmp/cry-steer-permissions-0zaXHb'
+Fixed strict cleanup: directory exists = false
+
+Permission reproduction script:
+import { chmodSync, mkdirSync, mkdtempSync, statSync, writeFileSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { removeTempDirStrict as before } from './t1240-cleanup-before.ts';
+const { removeTempDirStrict: after } = await import(process.cwd() + '/server/testing/cleanup.ts');
+const fixture = mkdtempSync(join(tmpdir(), 'cry-steer-permissions-'));
+const residual = join(fixture, '.crybot', 'task-workspaces', 'bot', 'thread', 'residual');
+mkdirSync(residual, { recursive: true });
+writeFileSync(join(residual, 'unfinished'), 'injected residual');
+chmodSync(residual, 0o500);
+const info = statSync(residual);
+console.log('Injected fixture, not a captured CI directory:', residual);
+console.log({ mode: (info.mode & 0o777).toString(8), uid: info.uid, gid: info.gid, caller: process.getuid() });
+try { await before(fixture); throw new Error('expected original cleanup to fail'); }
+catch (error) { if (error.code !== 'EACCES') throw error; console.log('Original strict cleanup:', error.message); }
+await after(fixture);
+console.log('Fixed strict cleanup: directory exists =', existsSync(fixture));
+
+Probe metadata from the real fixture; argv abbreviated to invocation flags:
+{"pid": 29571, "ppid": 29426, "serverPid": 29426, "cloudParent": true, "box": true, "argv": ["--help"]}
+{"pid": 29632, "ppid": 29426, "serverPid": 29426, "cloudParent": true, "box": true, "argv": ["-p", "--model", "claude-haiku-5-5", "--output-format", "text", "--settings", "{\"alwaysThinkingEnabled\":false,\"disableAllHooks\":true}"]}
+{"pid": 9, "ppid": 2, "serverPid": 29426, "cloudParent": false, "box": true, "argv": ["-p", "--output-format", "stream-json", "--input-format", "stream-json", "--verbose", "--include-partial-messages"]}
+Before fix: $ pnpm exec vitest run server/room-roots.e2e.test.ts  [exit 1; error excerpts without comparison annotation, and tail; full output: /tmp/t1240-room-before.txt]
+AssertionError: expected undefined to be 'C-RERUN'
+AssertionError: expected 'completed' to be 'failed'
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 12 passed | 1 skipped (15)
+   Start at  04:29:19
+   Duration  122.72s (transform 1.11s, setup 839ms, import 700ms, tests 121.04s, environment 0ms)
+
+Before fix: $ pnpm exec vitest run server/cloud-guest-shell.e2e.test.ts -t 'no engine a bot runs'  [exit 1; error excerpts without comparison annotation, and tail; full output: /tmp/t1240-probe-before.txt]
+AssertionError: expected 'PATH=./node_modules/.bin:/data/home/c…' not to contain 'CRYBOT_CLOUD_MACHINE_ID='
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 11 skipped (12)
+   Start at  04:31:39
+   Duration  4.93s (transform 1.01s, setup 912ms, import 376ms, tests 3.51s, environment 0ms)
+
+Before fix: $ pnpm exec vitest run server/group-local-vm.e2e.test.ts -t 'says which limit stopped a rerun room turn'  [exit 1; error excerpts without comparison annotation, and tail; full output: /tmp/t1240-group-before.txt]
+Error: Fixture wait expired: false
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 46 skipped (47)
+   Start at  04:33:45
+   Duration  24.14s (transform 1.25s, setup 1.23s, import 474ms, tests 22.25s, environment 0ms)
+
+Diagnostic only: removed both dispose waits temporarily; original cleanup; permission inspection.
+$ pnpm exec vitest run server/steer-e2e.test.ts --silent=false  [round 1; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  04:34:24
+   Duration  21.58s (transform 659ms, setup 801ms, import 54ms, tests 20.60s, environment 0ms)
+
+
+Diagnostic only: removed both dispose waits temporarily; original cleanup; permission inspection.
+$ pnpm exec vitest run server/steer-e2e.test.ts --silent=false  [round 2; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  04:34:46
+   Duration  20.98s (transform 712ms, setup 873ms, import 50ms, tests 19.94s, environment 0ms)
+
+
+Diagnostic only: removed both dispose waits temporarily; original cleanup; permission inspection.
+$ pnpm exec vitest run server/steer-e2e.test.ts --silent=false  [round 3; exit 0]
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  04:35:07
+   Duration  24.25s (transform 740ms, setup 898ms, import 59ms, tests 23.15s, environment 0ms)
+
+
+Direct selected probe, unfiltered round 3 (failed):
+{
+  "argv": [
+    "-p",
+    "--model",
+    "claude-haiku-5-5",
+    "--output-format",
+    "json",
+    "--settings",
+    "{\"alwaysThinkingEnabled\":false,\"disableAllHooks\":true}",
+    "--tools",
+    "",
+    "--no-session-persistence",
+    "--strict-mcp-config",
+    "--setting-sources",
+    "project"
+  ],
+  "pid": 121327,
+  "ppid": 121114,
+  "serverPid": 121114,
+  "cloudParent": true,
+  "box": true
+}
+Diagnostic: unfiltered probe, selected argv/PID saved; round 1.
+$ pnpm exec vitest run server/cloud-guest-shell.e2e.test.ts -t 'no engine a bot runs'
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 11 skipped (12)
+   Start at  04:56:39
+   Duration  4.29s (transform 1.18s, setup 1.10s, import 416ms, tests 2.64s, environment 0ms)
+
+Diagnostic: unfiltered probe, selected argv/PID saved; round 2.
+$ pnpm exec vitest run server/cloud-guest-shell.e2e.test.ts -t 'no engine a bot runs'
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 11 skipped (12)
+   Start at  04:56:44
+   Duration  4.27s (transform 1.04s, setup 923ms, import 418ms, tests 2.78s, environment 0ms)
+
+Diagnostic: unfiltered probe, selected argv/PID saved; round 3.
+$ pnpm exec vitest run server/cloud-guest-shell.e2e.test.ts -t 'no engine a bot runs'
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 11 skipped (12)
+   Start at  04:56:49
+   Duration  3.93s (transform 1.05s, setup 958ms, import 393ms, tests 2.43s, environment 0ms)
+
+Restored final filter:
+$ pnpm exec vitest run server/cloud-guest-shell.e2e.test.ts -t 'no engine a bot runs'
+
+ RUN  v4.1.11 /data/home/codex-t-1240-flaky-ci-6de1f3b1aab8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 11 skipped (12)
+   Start at  04:57:23
+   Duration  4.46s (transform 1.27s, setup 1.16s, import 458ms, tests 2.69s, environment 0ms)
+
+
+Working tree public-scan helper:
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+const { scanDiff } = await import(process.cwd() + '/scripts/public-scan/scan.mjs');
+let diff = execFileSync('git', ['diff', '--unified=0', '--no-ext-diff', '--no-textconv', 'HEAD'], { encoding: 'utf8' });
+const files = execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
+for (const file of files) {
+  const lines = readFileSync(file, 'utf8').split('\n');
+  if (lines.at(-1) === '') lines.pop();
+  diff += `diff --git a/${file} b/${file}\nnew file mode 100644\n--- /dev/null\n+++ b/${file}\n@@ -0,0 +1,${lines.length} @@\n${lines.map(line => '+' + line).join('\n')}\n`;
+}
+const findings = scanDiff(diff, file => readFileSync(file));
+console.log(JSON.stringify(findings, null, 2));
+console.log(`Working tree public scan: ${findings.length} findings`);
+process.exitCode = findings.length ? 1 : 0;

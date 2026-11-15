@@ -2238,7 +2238,7 @@ describe("ACP turns (fake CLI)", () => {
       .toEqual([expect.objectContaining({ threadId: "t-dispose-partial", stopReason: "cancelled" })]);
   });
 
-  it("waits for a live turn's process tree before disposing", async () => {
+  it("waits for a live turn's process before disposing", async () => {
     const dump = join(scratch, "dispose-dump.json");
     await create(SelectModelDriver, "hang", { FAKE_ACP_DUMP: dump });
     const turn = await instance.adapter.sendTurn({ threadId: "t-dispose-live", text: "go" });
