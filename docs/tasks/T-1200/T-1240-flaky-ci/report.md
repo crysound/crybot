@@ -5,7 +5,7 @@
 
 # 改了什么
 
-- 用认证后的 `/api/health` 的 `body.box` 判定 bot box，保留原有环境断言。
+- 用认证后的 `/api/health` 的 返回体里的 `box` 字段 判定 bot box，保留原有环境断言。
 - Claude 和 ACP dispose 收集活动/retiring CLI，并等待 `killCliTree` 完成后再返回；新增 Claude、ACP 活跃 turn 回归测试。
 
 # 跑过的命令和输出结尾

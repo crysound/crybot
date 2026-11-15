@@ -30,5 +30,5 @@ Error: EACCES, Permission denied: '/tmp/cry-steer-B1lmzw'
 ## 验收
 - 逐个跑并贴结尾输出：`server/cloud-guest-shell.e2e.test.ts`、`server/steer-e2e.test.ts`（沙箱禁止监听端口跑不了就写明）、新增/改动的单测文件；可行的话各重复跑 3 次。
 - `pnpm exec tsc -p tsconfig.server.json`、改动文件 `pnpm exec oxlint --deny-warnings <文件>`、`git diff --check` 通过。
-- 报告 `report.md` 只写：根因（文件:行）、改了什么、跑过的命令和真实输出结尾几行。
+- 任务报告只写：根因（文件:行）、改了什么、跑过的命令和真实输出结尾几行。
 - 最终以 GitHub Actions vitest 各分片转绿为准（协调者推分支开草稿 PR 核对）。
