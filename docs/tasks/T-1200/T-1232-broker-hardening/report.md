@@ -65,3 +65,37 @@ npx vitest run --configLoader runner --maxWorkers=2 server/feishu-cli/socket.e2e
 ```
 
 本轮没有 Actions 结果，不声明完整服务或真实对话端到端验收通过。
+
+## 第 3 轮（2026-11-15）
+
+改了什么（本轮实际修改文件；未提交 git）：
+
+- `server/feishu-cli/wrapper.ts`：提供共用授权 URL 选择函数；先移除 `BrokerAuthorizationError.message` 末尾附带的 URL，再清洗消息、附上可信链接；新增零宽与双向控制符清洗。
+- `server/feishu-cli/turn.ts`：调用共用函数，选中的链接使用 `URL.href` 规范化。
+- `server/feishu-cli/wrapper.test.ts`：区分配置与 broker 链接，覆盖异源、同源、非法/缺失配置、非 ASCII URL、空消息和全部指定零宽/双向控制符。
+- `server/feishu-cli/turn.test.ts`：补充同 origin 的非 ASCII broker 链接规范化断言。
+- `server/sessions.test.ts`：只添加纵深防御注释，测试逻辑未改。
+- `docs/tasks/T-1200/T-1232-broker-hardening/report.md`：追加本轮报告。
+- `docs/tasks/T-1200/T-1232-broker-hardening/verification-r3.txt`：保存验证命令、完整输出、退出码及环境探测结果。
+
+为什么：包装器刷新令牌失败时也必须遵守「配置有效且 origin 一致才采用 broker 链接，否则回退配置，配置无效不给链接」，防止异源授权链接进入智能体上下文。URL 规范化及控制符清洗减少文本伪装。会话测试通过修改 `authenticate()` 返回记录的 email 构造身份碰撞，是纵深防御；线上飞书会话不带 email。
+
+测试命令与结果（均逐文件、单 worker；全部退出码 0）：
+
+| 命令 | 结果 |
+| --- | --- |
+| 依赖准备脚本 | 链接 73 项预装依赖 |
+| `pnpm exec vitest run --maxWorkers=1 server/feishu-cli/wrapper.test.ts` | 33 passed |
+| `pnpm exec vitest run --maxWorkers=1 server/feishu-cli/turn.test.ts` | 37 passed |
+| `pnpm exec vitest run --maxWorkers=1 server/sessions.test.ts` | 87 passed |
+| `pnpm exec vitest run --maxWorkers=1 server/feishu-cli/broker.test.ts` | 29 passed |
+| `pnpm exec vitest run --maxWorkers=1 server/feishu-cli/config.test.ts` | 18 passed |
+| `pnpm exec vitest run --maxWorkers=1 server/feishu-cli/protocol.test.ts` | 1 passed |
+| `pnpm exec vitest run --maxWorkers=1 server/feishu-cli/socket.e2e.test.ts` | 连跑 3 次，每次 2 passed |
+| `pnpm exec vitest run --maxWorkers=1 server/feishu-cli/claude.e2e.test.ts` | 连跑 3 次，每次 1 passed |
+| `TMPDIR=/tmp TMP=/tmp TEMP=/tmp pnpm exec vitest run --maxWorkers=1 server/feishu-cli/server.e2e.test.ts` | 连跑 3 次，每次 2 passed，无跳过 |
+| `pnpm exec tsc --noEmit -p .` | 通过 |
+| `pnpm exec oxlint --deny-warnings server/feishu-cli/wrapper.ts server/feishu-cli/wrapper.test.ts server/feishu-cli/turn.ts server/feishu-cli/turn.test.ts server/sessions.test.ts` | 通过 |
+| `git diff --check` | 通过 |
+
+完整服务 e2e 初次使用默认 `/data/tmp`，三次均为 1 passed / 1 skipped；现有测试要求沙箱场景的临时目录位于 `/tmp`，因此设置上述环境变量重跑，两个场景均连续三次通过。TCP、Unix socket 和 bwrap 可用，无遗留未运行项。`docs/verification/README.md` 在当前检出缺失；测试使用现有临时 HOME、假 CLI/broker，完整服务 e2e 实际启动并关闭 `launchRestartableServer` 隔离 fixture，未使用用户 live app 或数据。完整输出见同目录 `verification-r3.txt`。

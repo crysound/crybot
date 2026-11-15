@@ -168,12 +168,15 @@ it.each([
   expect(access.prompt()).not.toContain("other.invalid");
 });
 
-it("accepts the broker link with the same normalized origin", async () => {
+it.each([
+  ["https://example.invalid/authorize?state=fixture", "https://example.invalid/authorize?state=fixture"],
+  ["https://EXAMPLE.invalid:443/授权?state=中文", "https://example.invalid/%E6%8E%88%E6%9D%83?state=%E4%B8%AD%E6%96%87"],
+])("accepts and normalizes the broker link with the same origin: %s", async (brokerUrl, expected) => {
   env.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://EXAMPLE.invalid:443/configured-authorize";
-  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", "https://example.invalid/authorize?state=fixture"));
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", brokerUrl));
   const access = feishuCliAccess("test_union", env, "zh-CN")!;
   await access.environment();
-  expect(access.prompt()).toBe("飞书暂不可用。 请在回复中告诉用户去此链接重新授权：https://example.invalid/authorize?state=fixture");
+  expect(access.prompt()).toBe(`飞书暂不可用。 请在回复中告诉用户去此链接重新授权：${expected}`);
 });
 
 it.each([

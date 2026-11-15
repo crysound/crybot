@@ -1,20 +1,12 @@
 import { provenRequestPerson } from "../shared-computers.ts";
 import { feishuCliUser } from "./config.ts";
 import { brokerToken, BrokerAuthorizationError } from "./protocol.ts";
-import { cleanFeishuEnvironment } from "./wrapper.ts";
+import { cleanFeishuEnvironment, feishuAuthorizationUrl } from "./wrapper.ts";
 
 export interface FeishuCliAccess {
   environment(): Promise<NodeJS.ProcessEnv>;
   prompt(): string;
   maySteer(person: string | undefined): boolean;
-}
-
-function validAuthorizationUrl(value: string | undefined): value is string {
-  if (!value || value.length > 2048 || /\s/u.test(value) || [...value].some(character => {
-    const code = character.codePointAt(0)!;
-    return code <= 0x1f || code === 0x7f;
-  })) return false;
-  try { return new URL(value).protocol === "https:"; } catch { return false; }
 }
 
 export function directFeishuCliAccess(
@@ -50,12 +42,8 @@ export function feishuCliAccess(unionId: string | undefined, env: NodeJS.Process
         };
       } catch (error) {
         unavailable = language.startsWith("zh") ? "飞书暂不可用。" : "Feishu is temporarily unavailable.";
-        const configuredUrl = env.CRYBOT_FEISHU_AUTHORIZATION_URL;
-        let authorizationUrl = validAuthorizationUrl(configuredUrl) ? configuredUrl : undefined;
-        if (authorizationUrl && error instanceof BrokerAuthorizationError && validAuthorizationUrl(error.authorizationUrl) &&
-          new URL(error.authorizationUrl).origin === new URL(authorizationUrl).origin) {
-          authorizationUrl = error.authorizationUrl;
-        }
+        const authorizationUrl = feishuAuthorizationUrl(env.CRYBOT_FEISHU_AUTHORIZATION_URL,
+          error instanceof BrokerAuthorizationError ? error.authorizationUrl : undefined);
         if (authorizationUrl) {
           unavailable += language.startsWith("zh")
             ? ` 请在回复中告诉用户去此链接重新授权：${authorizationUrl}`

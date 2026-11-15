@@ -79,18 +79,35 @@ it("does not let leading global options bypass the update refusal", async () => 
   expect(brokerToken).not.toHaveBeenCalled();
 });
 
-it("reports authorization details and fails without running the CLI when refresh is denied", async () => {
+it.each([
+  ["https://good.example/authorize", "https://evil.example/phish", "https://good.example/authorize"],
+  ["https://good.example/authorize", "https://good.example/reauthorize?state=fixture", "https://good.example/reauthorize?state=fixture"],
+  ["https://GOOD.example:443/authorize", "https://good.example/授权?state=中文", "https://good.example/%E6%8E%88%E6%9D%83?state=%E4%B8%AD%E6%96%87"],
+  ["https://good.example/authorize", "https://good.example:8443/phish", "https://good.example/authorize"],
+  ["https://good.example/authorize", "http://good.example/phish", "https://good.example/authorize"],
+  ["https://good.example/authorize", "https://good.example/reauthorize\nfixture", "https://good.example/authorize"],
+  ["https://good.example/authorize", undefined, "https://good.example/authorize"],
+  [undefined, "https://evil.example/phish", undefined],
+  ["not a URL", "https://evil.example/phish", undefined],
+  ["http://good.example/authorize", "https://evil.example/phish", undefined],
+  ["https://good.example/authorize\nfixture", "https://evil.example/phish", undefined],
+  ["https://good.example/authorize\u001b", "https://evil.example/phish", undefined],
+  [`https://good.example/${"x".repeat(2048)}`, "https://evil.example/phish", undefined],
+])("reports only a trusted authorization link when refresh is denied (%#)", async (configured, broker, expected) => {
   environment.CRYBOT_FEISHU_EXPIRES_AT = "1";
   environment.CRYBOT_FEISHU_BROKER_SOCKET = "/fixture/token.sock";
-  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", "https://example.invalid/authorize"));
+  environment.CRYBOT_FEISHU_AUTHORIZATION_URL = configured;
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", broker));
   expect(await runLarkCli(["calendar", "list"], environment)).toBe(1);
-  expect(error).toHaveBeenCalledWith("请重新授权 https://example.invalid/authorize");
+  expect(error.mock.calls).toEqual([[expected ? `请重新授权 ${expected}` : "请重新授权"]]);
+  expect(JSON.stringify(error.mock.calls)).not.toContain("evil.example");
   expect(JSON.stringify(error.mock.calls)).not.toContain(environment.CRYBOT_FEISHU_USER_TOKEN);
   await expect(readFile(environment.FIXTURE_DUMP!)).rejects.toMatchObject({ code: "ENOENT" });
 });
 
 it.each([
   ["\u001b[31m失败\r\n\t 请重试\u0000\u007f\u0080\u0085\u009f", "[31m失败 请重试"],
+  ["请\u200b\u200c\u200d\u200e\u200f重新\u202a\u202b\u202c\u202d\u202e授权\u2066\u2067\u2068\u2069", "请重新授权"],
   ["\u001b[31m失败\n" + "文".repeat(400), "[31m失败 " + "文".repeat(292) + "…"],
   ["文".repeat(300), "文".repeat(300)],
   ["文".repeat(301), "文".repeat(299) + "…"],
@@ -110,4 +127,13 @@ it.each([
     return code <= 0x1f || (code >= 0x7f && code <= 0x9f);
   })).toBe(false);
   await expect(readFile(environment.FIXTURE_DUMP!)).rejects.toMatchObject({ code: "ENOENT" });
+});
+
+it("keeps an empty broker message separate from an untrusted authorization link", async () => {
+  environment.CRYBOT_FEISHU_EXPIRES_AT = "1";
+  environment.CRYBOT_FEISHU_BROKER_SOCKET = "/fixture/token.sock";
+  environment.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://good.example/authorize";
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("", "https://evil.example/phish"));
+  expect(await runLarkCli(["calendar", "list"], environment)).toBe(1);
+  expect(error.mock.calls).toEqual([["飞书代领服务不可用 https://good.example/authorize"]]);
 });

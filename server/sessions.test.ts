@@ -50,6 +50,7 @@ describe("Feishu identity for a person", () => {
   function feishuSession(unionId = "test_union") {
     const issued = registry.issueDevice(`feishu:${unionId}`, "Feishu", { scopes: ["client"], maxAgeDays: 1 });
     const session = registry.authenticate(issued.token)!;
+    // Production Feishu sessions have no email; injecting one exercises defense in depth against identity collisions.
     session.email = email;
     return session;
   }
