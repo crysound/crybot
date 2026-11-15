@@ -182,6 +182,7 @@ test('linux-test isolates all Swift caches and propagates test failures without 
     assert.ok(call.args[call.args.indexOf(flag) + 1].startsWith(`${dir}/mobile/ios/.linux-`), flag);
   }
   assert.equal(call.args[call.args.indexOf('--package-path') + 1], `${dir}/mobile/ios/Packages/CryKit`);
+  assert.equal(call.args[call.args.indexOf('--build-system') + 1], 'native');
   assert.ok(!call.args.includes('--filter'));
   assert.ok(!call.args.includes('--skip'));
 });

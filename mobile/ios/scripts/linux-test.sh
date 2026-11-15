@@ -17,6 +17,7 @@ linux_setup() {
     --config-path "$linux_cache/config"
     --security-path "$linux_cache/security"
     --disable-sandbox
+    --build-system native
   )
 }
 

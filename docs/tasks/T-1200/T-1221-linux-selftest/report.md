@@ -1045,3 +1045,9 @@ Added: 0
 Removed: 0
 Metadata changed: 0
 ```
+
+## 协调者补改（第 2 轮之后）
+
+- Actions 上 Swift 6.4.2 复验：新构建系统下 `out/Products/Debug-linux-x86_64/Modules/CryCore.swiftmodule` 既不是文件也不是目录，只兼容目录形式不够。
+- 改为在共享参数里固定 `--build-system native`（Swift 6.3.3 已支持该参数，默认值即 native），两个版本走同一种产物布局；目录形式兼容保留。测试补断言 `--build-system native`。
+- 本机 6.3.3 复跑：`linux-test.sh` 退出 0、`linux-check.sh` 0 失败、Node 脚本测试 38/38 通过。6.4.2 以 Actions 结果为准。 <!-- public-scan: allow domain -->
