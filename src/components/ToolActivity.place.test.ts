@@ -14,3 +14,15 @@ describe("tool chip place icon", () => {
     expect(shell).not.toContain('data-testid="tool-place"');
   });
 });
+
+
+it.each([
+  ["shared", 4, "Shared computer"],
+  ["shared", 1, "Private desktop"],
+  ["per-bot", 4, "Private desktop"],
+] as const)("names the VM icon for %s / %s screens", (mode, screens, label) => {
+  const html = renderToStaticMarkup(createElement(ToolActivity, {
+    tool: { name: "screenshot", ok: true }, place: "vm", config: { localVm: { mode, screens, maxInstances: 1 } },
+  }));
+  expect(html).toContain(`aria-label="${label}"`);
+});

@@ -1,16 +1,17 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import type { AppState, Bot, InstanceInfo, Message } from "@/state/store";
 
-vi.hoisted(() => {
+const fixture = vi.hoisted(() => {
   vi.stubGlobal("window", {});
   vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {} });
+  return { config: null as AppState["config"] };
 });
 vi.mock("@/state/store", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/state/store")>();
   return { ...original, useStore: () => ({
-    state: { ...original.initialState, instances: [{ instanceId: "test", driverKind: "codex", displayName: "Test" } as InstanceInfo] },
+    state: { ...original.initialState, config: fixture.config, instances: [{ instanceId: "test", driverKind: "codex", displayName: "Test" } as InstanceInfo] },
     dispatch: vi.fn(),
   }) };
 });
@@ -24,6 +25,7 @@ vi.mock("./ModelPicker", () => ({ ModelPicker: () => null }));
 const { ChatView } = await import("./ChatView");
 const { initialState, reducer } = await import("@/state/store");
 afterAll(() => vi.unstubAllGlobals());
+afterEach(() => { fixture.config = null; });
 
 const IMAGE = 'src="/api/threads/t1/messages/shot/image"';
 const greeting: Message = { id: "hi", role: "bot", kind: "text", text: "Hello", at: 1 };
@@ -61,4 +63,18 @@ describe("ChatView screenshot", () => {
     const markup = render(bot([greeting, { id: "shot", role: "bot", kind: "screen", at: 2, parentId: "hi" } as Message]));
     expect(markup).not.toContain("/messages/shot/image");
   });
+});
+
+
+it.each([
+  ["shared", 4, "Shared computer"],
+  ["shared", 1, "Private desktop"],
+  ["per-bot", 4, "Private desktop"],
+] as const)("passes the VM name to transcript tool icons for %s / %s", (mode, screens, label) => {
+  fixture.config = { features: { showToolCalls: true }, localVm: { mode, screens, maxInstances: 1 } } as AppState["config"];
+  const markup = render({ ...bot([greeting, {
+    id: "tool", parentId: "hi", role: "bot", kind: "activity", at: 2, tool: { name: "screenshot", ok: true },
+  }]), computer: "vm" });
+  expect(markup).toContain('data-testid="tool-place"');
+  expect(markup).toContain(`aria-label="${label}"`);
 });

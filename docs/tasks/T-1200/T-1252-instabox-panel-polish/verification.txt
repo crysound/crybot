@@ -11534,3 +11534,233 @@ server/instabox/machines.ts
 server/instabox/snapshot-wiring.ts
 server/instabox/wiring.ts
 Current file list matches git status (8 files; 0 untracked). No git commit was created.
+
+
+Round 12
+
+$ crybot-link-deps
+PASS; exit 0
+
+$ grep -rn '^<<<<<<<\|^>>>>>>>' shared src server
+PASS: no conflict markers; exit 1
+
+$ pnpm exec tsc -p tsconfig.server.json
+PASS; exit 0
+
+$ pnpm exec tsc -b --pretty false
+PASS; exit 0
+
+$ pnpm exec oxlint --deny-warnings shared/place-view.ts src/components/ComputerPanel.tsx src/components/WorksOnGrid.tsx src/components/bot-panel/ComputerTab.tsx src/locales/source-hashes.json
+PASS; exit 0
+
+$ PATH=/opt/node24/bin:$PATH node scripts/generate-locale.mjs zh --check
+FAIL: this baseline does not support a locale argument with --check; exit 1
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  1 passed (1); exit 0
+
+$ pnpm exec vitest run server/instabox/client.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  6 passed (6); exit 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  29 passed (29); exit 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  29 passed (29); exit 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  29 passed (29); exit 0
+
+$ PATH=/opt/node24/bin:$PATH node scripts/generate-locale.mjs --check
+PASS: 2 language catalogs valid; 10644 English strings; zh 8447/10644; exit 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  15 passed (15); exit 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  15 passed (15); exit 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  15 passed (15); exit 0
+
+$ pnpm exec vitest run server/instabox/deletion.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  7 passed (7); exit 0
+
+$ pnpm exec vitest run server/instabox/deletion.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  7 passed (7); exit 0
+
+$ pnpm exec vitest run server/instabox/deletion.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  7 passed (7); exit 0
+
+$ pnpm exec vitest run server/instabox/key.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  4 passed (4); exit 0
+
+$ pnpm exec vitest run server/instabox/machine-records.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  16 passed (16); exit 0
+
+$ pnpm exec vitest run server/instabox/machines.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  25 passed (25); exit 0
+
+$ pnpm exec vitest run server/instabox/persistence.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  1 passed (1); exit 0
+
+$ pnpm exec vitest run server/instabox/power.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  10 passed (10); exit 0
+
+$ pnpm exec vitest run server/instabox/preview.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  3 passed (3); exit 0
+
+$ pnpm exec vitest run server/instabox/preview.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  3 passed (3); exit 0
+
+$ pnpm exec vitest run server/instabox/preview.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  3 passed (3); exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  10 passed (10); exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  10 passed (10); exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  10 passed (10); exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  6 passed (6); exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  6 passed (6); exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  6 passed (6); exit 0
+
+$ CRYBOT_CDP_CHROME=/tmp/t1252-r12/chrome pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  32 passed (32); exit 0
+
+$ CRYBOT_CDP_CHROME=/tmp/t1252-r12/chrome pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  32 passed (32); exit 0
+
+$ CRYBOT_CDP_CHROME=/tmp/t1252-r12/chrome pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  32 passed (32); exit 0
+
+$ pnpm exec vitest run server/instabox/vnc.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  2 passed (2); exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  8 passed (8); exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  8 passed (8); exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  8 passed (8); exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  4 passed (4); exit 0
+
+$ pnpm exec vitest run server/place-view.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  7 passed (7); exit 0
+
+$ pnpm exec vitest run server/place-view.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  7 passed (7); exit 0
+
+$ pnpm exec vitest run server/place-view.e2e.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  7 passed (7); exit 0
+
+$ pnpm exec vitest run shared/place-view.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  20 passed (20); exit 0
+
+$ pnpm exec vitest run src/components/BotSettingsDialog.simple.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  106 passed (106); exit 0
+
+$ pnpm exec vitest run src/components/CloudBackendPicker.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  10 passed (10); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.android.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  7 passed (7); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.browser.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  7 passed (7); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.engine.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  18 passed (18); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.focus.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  12 passed (12); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.i18n.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  3 passed (3); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.instabox.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  2 passed (2); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.lazy.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  9 passed (9); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.live.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  5 passed (5); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.simple.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  46 passed (46); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.tabs.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  11 passed (11); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.takeover.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  51 passed (51); exit 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  5 passed (5); exit 0
+
+$ pnpm exec vitest run src/components/FailedTurnRow.place.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  16 passed (16); exit 0
+
+$ pnpm exec vitest run src/components/LocalComputerSection.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  54 passed (54); exit 0
+
+$ pnpm exec vitest run src/components/PlaceChip.dom.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  1 passed (1); exit 0
+
+$ pnpm exec vitest run src/components/PlaceChip.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  23 passed (23); exit 0
+
+$ pnpm exec vitest run src/components/RoomHeader.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  11 passed (11); exit 0
+
+$ pnpm exec vitest run src/components/ToolActivity.place.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  4 passed (4); exit 0
+
+$ pnpm exec vitest run src/components/bot-settings/AccessSection.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  26 passed (26); exit 0
+
+$ pnpm exec vitest run src/components/instabox-panel.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  6 passed (6); exit 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.focus.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  4 passed (4); exit 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.open.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  11 passed (11); exit 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.screen.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  17 passed (17); exit 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  6 passed (6); exit 0
+
+$ pnpm exec vitest run src/lib/place.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  10 passed (10); exit 0
+
+$ pnpm exec vitest run src/locales/no-retired-provider-visible.test.ts --maxWorkers=1
+Test Files  1 passed (1); Tests  2 passed (2); exit 0
+
+Vitest summary: 47 files; 65 invocations; 923 passing test executions; 0 failures; 0 skips. All 9 E2E groups passed three consecutive runs.
+
+$ grep -rn '^<<<<<<<\|^>>>>>>>' shared src server
+PASS: no conflict markers; exit 1
+
+$ rg -n '^(<<<<<<< |=======$|>>>>>>> )' --glob '!.git/**'
+PASS: no conflict markers in repository files; exit 1
+
+$ git diff --check
+PASS; exit 0

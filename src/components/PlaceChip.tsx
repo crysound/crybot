@@ -63,7 +63,7 @@ export function usePlaceMenuItem({ bot, task, disabled = false, onPin }: {
   return {
     key: "place",
     label: t("computer.worksOn"),
-    subtitle: t(placeLabelKey(effective)),
+    subtitle: t(placeLabelKey(effective, state.config)),
     icon: <PlaceIcon place={effective} size={16} aria-hidden="true" />,
     disabled: disabled || off,
     onSelect: () => {},
@@ -71,7 +71,7 @@ export function usePlaceMenuItem({ bot, task, disabled = false, onPin }: {
       {
         key: "place:follow",
         label: followsAuto ? t("place.auto") : t("place.followBot"),
-        note: followsAuto ? t("place.autoDetail") : t("place.followBotDetail", { place: t(placeLabelKey(botDefault)) }),
+        note: followsAuto ? t("place.autoDetail") : t("place.followBotDetail", { place: t(placeLabelKey(botDefault, state.config)) }),
         icon: <PlaceIcon place={botDefault} size={16} aria-hidden="true" />,
         active: !pinned,
         trailing: !pinned ? check : undefined,
@@ -81,7 +81,7 @@ export function usePlaceMenuItem({ bot, task, disabled = false, onPin }: {
         const { view, reachable, policy } = places[place];
         return {
           key: `place:${place}`,
-          label: t(placeLabelKey(place)),
+          label: t(placeLabelKey(place, state.config)),
           note: !policy ? t("place.unavailable") : placeHasIssue(view) ? view.short : t(place === "vm" ? vmDescriptionKey(state.config) : DESCRIPTION[place]),
           icon: <PlaceIcon place={place} size={16} aria-hidden="true" />,
           active: pin === place,
@@ -116,7 +116,7 @@ export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
   const pin = hideCloud && personPin(task) === "cloud" ? undefined : personPin(task);
   const pinned = Boolean(pin);
   const off = effective === "off";
-  const label = t(placeLabelKey(effective));
+  const label = t(placeLabelKey(effective, state.config));
   const showLive = live && effective !== "off" && effective !== "auto";
   const title = off ? t("place.offHint") : disabled ? t("place.busy") : pinned ? t("place.pinnedHere") : t("place.fromBot");
 
@@ -168,7 +168,7 @@ export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
               <span className="min-w-0 flex-1">
                 <span className="block text-[14px] leading-[18px] text-ink">{followsAuto ? t("place.auto") : t("place.followBot")}</span>
                 <span className="block text-[12px] leading-4 text-ink-secondary">
-                  {followsAuto ? t("place.autoDetail") : t("place.followBotDetail", { place: t(placeLabelKey(botDefault)) })}
+                  {followsAuto ? t("place.autoDetail") : t("place.followBotDetail", { place: t(placeLabelKey(botDefault, state.config)) })}
                 </span>
               </span>
               {!pinned && <Check size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />}
@@ -190,7 +190,7 @@ export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
                 >
                   <PlaceIcon place={place} size={16} className="mt-px shrink-0 text-ink-secondary" aria-hidden="true" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[14px] leading-[18px] text-ink">{t(placeLabelKey(place))}</span>
+                    <span className="block text-[14px] leading-[18px] text-ink">{t(placeLabelKey(place, state.config))}</span>
                     <span className="block text-[12px] leading-4 text-ink-secondary">{detail}</span>
                   </span>
                   {selected && <Check size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />}

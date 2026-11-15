@@ -10,7 +10,7 @@ import { effectivePlace, placeLabelKey } from "@/lib/place";
 import { openRoomPanel } from "@/lib/room-panel";
 import { chosenResponder, responderChoice, responderTitle } from "@/lib/room-responder";
 import { roomSpeakerIds } from "@/lib/room-threads";
-import { useStore, type Bot, type Group } from "@/state/store";
+import { useStore, type Bot, type ConfigStatus, type Group } from "@/state/store";
 import { BotAvatar } from "./Avatar";
 import { RoomContextBadge } from "./ContextWarning";
 import { ConversationTurnLimit } from "./ConversationTurnLimit";
@@ -60,7 +60,7 @@ export function DefaultResponderSelect({ group, members }: { group: Group; membe
   );
 }
 
-function memberBots(group: Group, members: Bot[]) {
+function memberBots(group: Group, members: Bot[], config: ConfigStatus | null) {
   const contextWarnings = roomContextWarnings(group, members);
   const speakersElsewhere = new Set(roomSpeakerIds(group).filter((id) => id !== group.busyBotId));
   return members.map((b) => {
@@ -108,7 +108,7 @@ function memberBots(group: Group, members: Bot[]) {
             <span
               className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full border border-app bg-accent text-white"
               role="img"
-              aria-label={t("place.chipAria", { place: t(placeLabelKey(effective)) })}
+              aria-label={t("place.chipAria", { place: t(placeLabelKey(effective, config)) })}
             >
               <PlaceIcon place={effective} size={9} strokeWidth={2.5} aria-hidden="true" />
             </span>
@@ -147,7 +147,8 @@ export function RoomHeader({
   membersTriggerRef: RefObject<HTMLButtonElement | null>;
 }) {
   const { dragProps: headerDragProps, noDragStyle: headerNoDragStyle } = useCaptionChrome();
-  const faces = memberBots(group, members);
+  const { state } = useStore();
+  const faces = memberBots(group, members, state.config);
   const membersLabel = members.length === 1
     ? t("room.members.ariaOne")
     : t("room.members.ariaMany", { count: members.length });

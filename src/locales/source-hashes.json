@@ -8015,7 +8015,12 @@
       "botAccess.cloud.retired": "6bb65a679ca9ff4bbcbcff49ea8b08af4b9fcf87583e0649235b94b250fca19b",
       "botAccess.cloud.switchInstabox": "1454656d4ad7cf8c29f1e5a42a1ed13ced682ad474920addb9a084725ea7a675",
       "computer.instabox.snapshots.machineBusy": "4ffc14569f3584499144695031c4fb5dadeb96a434a1f8a80b6e9ba24ea8cbc4",
-      "computer.instabox.snapshots.refreshError": "108620ab2291981865928be93e32bf3e6e6144a5ebac88acd3d4b2ecf61a17f9"
+      "computer.instabox.snapshots.refreshError": "108620ab2291981865928be93e32bf3e6e6144a5ebac88acd3d4b2ecf61a17f9",
+      "vm.dest.shared": "ed16499ddaa145e26723f3b113f56ca6723e923fbe512fce579e365190b690d2",
+      "place.view.vmScreen.short": "cff7cd0bc8dff65582be394cdfb17c0236c9be05e23b6ff97184c8d8d5c3a4da",
+      "place.view.vmScreen.line": "d9676ec40ec0ce02cbf63df1adfb80c009857cc264fbc9c5689c1394fcabd8d4",
+      "place.view.vmScreenCannot.line": "0fdbebf5d34e847a0d29e628c0b2c7fba01759fc248f285ad3dfc52863b2b0ec",
+      "place.action.openSharedVmSettings": "ad0307120d91c3a717825ee7cfe0df61d1975419505e164e825ac777ecaa0ee8"
     }
   }
 }

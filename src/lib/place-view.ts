@@ -7,6 +7,7 @@ import { browserAvailable, builtInBrowserEnabled, type FeatureFlagConfig } from 
 import { writeComputerPanelView } from "@/lib/computer-panel-view";
 import { useAdvancedMode } from "@/lib/interface-mode";
 import { pageOnRemoteServer } from "@/lib/local-computer";
+import { usesSharedVmScreens, vmLabelKey } from "@/lib/place";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { openBotSettings } from "@/components/bot-panel/panel-link";
 import type { Action, Bot, ConfigStatus, InstanceInfo } from "@/state/store";
@@ -56,7 +57,7 @@ export function placeFacts(input: {
   bot: Pick<Bot, "name" | "modelSelection" | "toolScope" | "cloudBackend">;
   place: PlaceFacts["place"];
   seat: PlaceSeat;
-  config: (FeatureFlagConfig & Pick<ConfigStatus, "box" | "instabox" | "providerLock">) | null | undefined;
+  config: (FeatureFlagConfig & Pick<ConfigStatus, "box" | "instabox" | "providerLock"> & Partial<Pick<ConfigStatus, "localVm">>) | null | undefined;
   instances: InstanceInfo[];
   local?: PlaceFacts["local"];
   computer?: PlaceFacts["computer"];
@@ -66,6 +67,7 @@ export function placeFacts(input: {
   const instance = input.instances.find((candidate) => candidate.instanceId === bot.modelSelection.instanceId);
   return {
     place: input.place,
+    sharedVmScreen: usesSharedVmScreens(config),
     providerLock: config?.providerLock,
     server: seat.server,
     bot: bot.name,
@@ -182,7 +184,7 @@ export const SIMPLE_PLACE_LABEL = {
   off: "vm.dest.off",
 } as const satisfies Record<string, LocaleKey>;
 
-export function worksOnSimpleLabel(computer: Bot["computer"], platform: DesktopCapabilities["host"]["platform"]): string {
+export function worksOnSimpleLabel(computer: Bot["computer"], platform: DesktopCapabilities["host"]["platform"], config?: Partial<Pick<ConfigStatus, "localVm">> | null): string {
   if (computer === "local") return t(platform === "darwin" ? "computer.simple.dest.thisMac" : "computer.simple.dest.thisPc");
-  return t(SIMPLE_PLACE_LABEL[computer ?? "auto"]);
+  return t(computer === "vm" ? vmLabelKey(config) : SIMPLE_PLACE_LABEL[computer ?? "auto"]);
 }

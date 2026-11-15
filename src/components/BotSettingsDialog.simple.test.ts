@@ -2,6 +2,7 @@ import { Children, createElement, isValidElement, type ReactElement, type ReactN
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setLocale } from "@/lib/i18n";
 import type { Routine } from "@/lib/routines";
 import type { MemoryDoc } from "@/lib/memory";
 import type { Bot, BotSettingsSection, InstanceInfo } from "@/state/store";
@@ -999,6 +1000,29 @@ describe("the Where it works page", () => {
       ["vm", "Private desktop", false, false],
     ]);
     expect(where(makeBot()).html).toContain('role="radiogroup"');
+  });
+
+  it.each([
+    ["shared", 4, true],
+    ["shared", 1, false],
+    ["shared", undefined, false],
+    ["per-bot", 4, false],
+  ] as const)("names the VM in the choices, summary and live location for %s / %s", (mode, screens, shared) => {
+    fixture.storeState = { ...fixture.storeState, config: { localVm: { mode, screens, maxInstances: 1 } } };
+    try {
+      for (const locale of ["en", "zh"] as const) {
+        setLocale(locale);
+        const label = locale === "zh" ? shared ? "共用电脑" : "私有桌面" : shared ? "Shared computer" : "Private desktop";
+        const bot = makeBot({ computer: "vm" });
+        expect(find(where(bot), "data-panel-choice", "vm").props.title).toBe(label);
+        expect(find(computer(bot), "data-panel-page", "where").props.value).toBe(label);
+        const liveBot = makeBot({ computer: "cloud", tasks: [{ threadId: "thread-scout", title: "Main", surface: "vm" }] as Bot["tasks"] });
+        expect(where(liveBot).html).toContain(label);
+        expect(find(computer(liveBot), "data-panel-page", "where").props.hint).toContain(label);
+      }
+    } finally {
+      setLocale("en");
+    }
   });
 
   it("saves each place through the bot patch, and sends nothing for the place already chosen", () => {

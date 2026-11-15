@@ -2,6 +2,17 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import environments from "./environments.cjs";
 
+const loginHostPattern = /^\.?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\.(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?))*$/;
+
+export function loginHostMatches(hostname, entry) {
+  if (typeof hostname !== "string" || typeof entry !== "string") return false;
+  const host = hostname.toLowerCase();
+  const rule = entry.toLowerCase();
+  if (!rule.startsWith(".")) return host === rule;
+  const suffix = rule.slice(1);
+  return Boolean(suffix) && (host === suffix || host.endsWith(`.${suffix}`));
+}
+
 function secureBuildUrl(value) {
   if (typeof value !== "string") return null;
   try {
@@ -17,7 +28,7 @@ export function readDesktopBuildConfig(resourcesPath) {
     const defaultServerUrl = environments.normalizeOrigin(secureBuildUrl(config.defaultServerUrl));
     return {
       defaultServerUrl,
-      loginHosts: Array.isArray(config.loginHosts) ? config.loginHosts.filter(host => typeof host === "string") : [],
+      loginHosts: Array.isArray(config.loginHosts) ? config.loginHosts.filter(host => typeof host === "string" && loginHostPattern.test(host)) : [],
       updateFeedUrl: secureBuildUrl(config.updateFeedUrl),
       providerLock: config.providerLock === true,
       remoteOnly: config.remoteOnly === true && Boolean(defaultServerUrl),
@@ -43,6 +54,6 @@ export function loginNavigationAllowed(target, remote, loginHosts, { popup = fal
   try {
     const url = new URL(target);
     if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) return false;
-    return (!popup && (remoteOnly ? url.origin === remote.origin : url.hostname === new URL(remote.origin).hostname)) || loginHosts.includes(url.hostname);
+    return (!popup && (remoteOnly ? url.origin === remote.origin : url.hostname === new URL(remote.origin).hostname)) || loginHosts.some(entry => loginHostMatches(url.hostname, entry));
   } catch { return false; }
 }

@@ -22,6 +22,7 @@ import { Select } from "./Select";
 import { cn } from "@/lib/cn";
 import { localizeComputerProblem } from "@/lib/computer-messages";
 import { computerInventoryRequest, jsonPostRequest, type ComputerApiRequest } from "@/lib/computer-requests";
+import { vmLabelKey } from "@/lib/place";
 import { useStore } from "@/state/store";
 import { VpsComputersCard } from "./VpsComputersCard"; import { KeysLink } from "./keys/KeysLink";
 import { LocalVmScreenSetting, LocalVmScreens, saveScreens } from "./LocalVmScreens";
@@ -129,14 +130,20 @@ interface VpsComputerInventoryPayload {
   instances: VpsComputerInventoryInstance[];
 }
 
-const destinationLabelKeys: Record<LocalVmInventoryInstance["destination"], LocaleKey> = {
+const destinationLabelKeys: Record<Exclude<LocalVmInventoryInstance["destination"], "vm">, LocaleKey> = {
   auto: "vm.dest.auto",
   cloud: "place.cloud",
-  vm: "vm.dest.vm",
   local: "vm.dest.local",
   browser: "vm.dest.browser",
   off: "vm.dest.off",
 };
+
+function destinationLabelKey(
+  destination: LocalVmInventoryInstance["destination"],
+  config: Parameters<typeof vmLabelKey>[0],
+): LocaleKey {
+  return destination === "vm" ? vmLabelKey(config) : destinationLabelKeys[destination];
+}
 
 export type ComputerStateKind =
   | "unmanaged"
@@ -481,6 +488,7 @@ export function LocalVmInventoryCard({
   unavailableReason,
   onRefresh,
   onDelete,
+  config,
 }: {
   instances: LocalVmInventoryInstance[];
   maxInstances: number;
@@ -490,7 +498,10 @@ export function LocalVmInventoryCard({
   unavailableReason: string | null;
   onRefresh: () => void;
   onDelete: (instance: LocalVmInventoryInstance) => void;
+  config?: Parameters<typeof vmLabelKey>[0];
 }) {
+  const storeConfig = useStore().state.config;
+  const destinationConfig = config ?? storeConfig;
   return (
     <Card
       title={t("vm.perBot.title")}
@@ -571,7 +582,7 @@ export function LocalVmInventoryCard({
                   </span>
                 </div>
                 <div className="mt-1 text-[12px] text-ink-secondary">
-                  {t("vm.perBot.destination", { destination: t(destinationLabelKeys[instance.destination]) })}
+                  {t("vm.perBot.destination", { destination: t(destinationLabelKey(instance.destination, destinationConfig)) })}
                 </div>
                 {!managed && (
                   <div className="mt-1 text-[12px] text-warning">
@@ -1165,6 +1176,7 @@ export function LocalComputerSection({ privateOnly = false }: { privateOnly?: bo
           unavailableReason={inventoryUnavailableReason}
           onRefresh={() => setInventoryRefreshKey((key) => key + 1)}
           onDelete={(instance) => void deletePerBotVm(instance)}
+          config={config}
         />
       )}
 

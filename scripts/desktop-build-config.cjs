@@ -1,6 +1,8 @@
 const { mkdirSync, writeFileSync } = require("node:fs");
 const { dirname } = require("node:path");
 
+const loginHostPattern = /^\.?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\.(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?))*$/;
+
 function webUrl(value, name) {
   if (!value?.trim()) return null;
   const url = new URL(value.trim());
@@ -13,7 +15,7 @@ function desktopBuildConfig(env = process.env) {
   if (server && server.pathname !== "/") throw new Error("CRYBOT_DEFAULT_SERVER_URL must be a server origin");
   const feed = webUrl(env.CRYBOT_UPDATE_FEED_URL, "CRYBOT_UPDATE_FEED_URL");
   const loginHosts = [...new Set((env.CRYBOT_LOGIN_HOSTS ?? "").split(",").map(value => value.trim().toLowerCase()).filter(Boolean))];
-  if (loginHosts.some(host => !/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(host))) throw new Error("CRYBOT_LOGIN_HOSTS must contain exact hostnames, without schemes, ports or wildcards");
+  if (loginHosts.some(host => !loginHostPattern.test(host))) throw new Error("CRYBOT_LOGIN_HOSTS must contain hostnames, optionally prefixed with '.', without schemes, ports or wildcards");
   return { defaultServerUrl: server?.origin ?? null, loginHosts, updateFeedUrl: feed?.href ?? null, providerLock: env.CRYBOT_PROVIDER_LOCK === "1", remoteOnly: env.CRYBOT_DESKTOP_REMOTE_ONLY === "1" && Boolean(server) };
 }
 

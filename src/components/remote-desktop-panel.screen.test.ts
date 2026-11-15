@@ -3,7 +3,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setLocale } from "@/lib/i18n";
-import type { Bot } from "@/state/store";
+import type { Bot, ConfigStatus } from "@/state/store";
 
 const fixture = vi.hoisted(() => ({ status: vi.fn(), assign: vi.fn(), openDesktop: vi.fn() }));
 vi.mock("./computer-takeover", () => ({ openProviderDesktop: fixture.openDesktop }));
@@ -51,8 +51,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const open = () => act(async () => root!.render(createElement(BotEditorStore, { value: {
-  state: initialState,
+const open = (localVm?: ConfigStatus["localVm"]) => act(async () => root!.render(createElement(BotEditorStore, { value: {
+  state: localVm ? { ...initialState, config: { ...initialState.config!, box: { configured: false }, localVm } } : initialState,
   dispatch: vi.fn(), flushBotPatches: async () => null, refreshInstances: async () => {}, refreshModels: async () => {},
 }, children: createElement(RemoteDesktopPanel, { bot }) })));
 const advance = (milliseconds: number) => act(async () => vi.advanceTimersByTimeAsync(milliseconds));
@@ -229,4 +229,17 @@ it("keeps the assignment visible until the viewer opens and offers retry when op
   await act(async () => retry!.click());
   expect(fixture.openDesktop).toHaveBeenCalledTimes(2);
   expect(host.querySelector('[role="status"]')).toBeNull();
+});
+
+
+it.each([
+  ["shared", 4, "共用电脑"], ["shared", 1, "私有桌面"], ["per-bot", 4, "私有桌面"],
+] as const)("labels an unassigned %s desktop with %s screens", async (mode, screens, title) => {
+  await open({ mode, screens, maxInstances: 1 });
+  expect(host.textContent).toContain(title);
+  expect(host.textContent!.split("这个智能体目前没有分配屏幕。")).toHaveLength(2);
+  fixture.status.mockResolvedValue({ screen: null, queue_position: 2 });
+  await advance(4000);
+  expect(host.textContent!.split("正在排队，第 2 位")).toHaveLength(2);
+  expect(host.textContent).not.toContain("这个智能体目前没有分配屏幕。");
 });

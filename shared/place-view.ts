@@ -79,6 +79,8 @@ export type ServerKind = "my-cloud" | "mac" | "pc" | "linux" | "remote";
 export interface PlaceFacts {
   /** The place to describe: Auto, Off, or one of the four places. */
   place: Place | "auto" | "off";
+  /** The local desktop is one of multiple screens in a shared computer. */
+  sharedVmScreen?: boolean;
   server: ServerKind;
   bot: string;
   /** Desktop only: signed in to a paid Cry Bot Cloud plan (the desktop bridge). */
@@ -175,6 +177,10 @@ export const PLACE_EN = {
   "place.view.local.line": "Uses your screen, mouse, and keyboard.",
   "place.view.localUnavailable.short": "Can't use it yet",
   "place.view.localUnavailable.line": "{reason}",
+  "place.action.openSharedVmSettings": "Shared computer settings",
+  "place.view.vmScreen.short": "A screen in a shared computer",
+  "place.view.vmScreen.line": "A screen assigned to this bot in a shared computer, separate from your own screen.",
+  "place.view.vmScreenCannot.line": "{model} can't use a shared computer. Choose a model that supports computer use.",
   "place.view.vm.short": "Separate from your screen",
   "place.view.vm.line": "A private Linux desktop on this device, separate from your own screen.",
   "place.view.vmCannot.short": "Not with this model",
@@ -398,6 +404,8 @@ function templateParams(params: PlaceParams, locale: string): Record<string, str
 }
 
 export interface PlaceContext {
+  /** Describe the local desktop as a screen in a shared computer. */
+  sharedVmScreen?: boolean;
   server?: ServerKind;
   backend?: PlaceFacts["backend"];
   role: "admin" | "user";
@@ -414,8 +422,9 @@ export function placeViewOf(state: PlaceState, params: PlaceParams, context: Pla
   const translate = context.translate ?? english;
   const safeParams = params.words === undefined ? params : { ...params, words: params.words.replace(/\bboat\b/gi, "cloud service") };
   const values = templateParams(safeParams, context.locale ?? "en");
-  const segment = STATE[state].key;
-  let line = translate(lineKey(state, params, context.server, context.backend), values);
+  const sharedVm = context.sharedVmScreen && (state === "vm" || state === "vm-cannot");
+  const segment = sharedVm && state === "vm" ? "vmScreen" : STATE[state].key;
+  let line = translate(sharedVm ? state === "vm" ? "place.view.vmScreen.line" : "place.view.vmScreenCannot.line" : lineKey(state, params, context.server, context.backend), values);
   let action: PlaceActionId | null = context.source && PASSING.has(state) ? sourceAction(context.source, state) : STATE[state].action;
   // A failed row never offers what only the panel can do on the spot.
   if (context.source && (action === "start" || action === "wake" || action === "watch")) action = null;
@@ -432,7 +441,7 @@ export function placeViewOf(state: PlaceState, params: PlaceParams, context: Pla
   const label = !action ? null
     : action === "clear-pin" && context.mode === "simple" && context.worksOnLabel
       ? translate("place.action.usePlace", { place: context.worksOnLabel })
-      : translate(ACTION_KEY[action], values);
+      : translate(action === "open-vm-settings" && context.sharedVmScreen ? "place.action.openSharedVmSettings" : ACTION_KEY[action], values);
   return {
     state,
     params: safeParams,
@@ -445,7 +454,7 @@ export function placeViewOf(state: PlaceState, params: PlaceParams, context: Pla
 /** The view of a place from its facts. */
 export function placeView(facts: PlaceFacts, options: { translate?: PlaceTranslate; locale?: string } = {}): PlaceView {
   const { state, params } = placeState(facts);
-  return placeViewOf(state, params, { server: facts.providerLock && facts.server === "my-cloud" ? "linux" : facts.server, backend: facts.backend, role: facts.role, mode: facts.mode, ...options });
+  return placeViewOf(state, params, { server: facts.providerLock && facts.server === "my-cloud" ? "linux" : facts.server, backend: facts.backend, role: facts.role, mode: facts.mode, sharedVmScreen: facts.sharedVmScreen, ...options });
 }
 
 /** A stored failed-turn row, worded for this reader. */

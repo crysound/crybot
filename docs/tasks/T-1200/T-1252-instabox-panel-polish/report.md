@@ -166,3 +166,24 @@ zh/en 中仍含 `Boat` 的位置只有 `boatOffer.*`、`keys.boat.*`、`place.ac
 - pnpm exec tsc -p tsconfig.server.json、pnpm exec tsc -b --pretty false、6 个改动 TS 文件的 pnpm exec oxlint --deny-warnings、git diff --check：通过。
 - 保留原有 4 项 Linux 平台限定跳过，无新增跳过；VNC 每轮 32 项全部执行通过。初次新增 e2e 的夹具准备被环境密钥保护返回 409，调整为先保存配置密钥、再启用环境密钥后连续三轮通过。
 - 指定验证 README 和 server/bot-delete 路径在本基线不存在，删除生命周期使用现有删除相关 e2e 验证；全部服务端验证使用临时目录和假服务的隔离 fixture。完整脱敏输出见同目录 verification.txt。
+
+## 第 12 轮
+
+改了什么与为什么（本轮 7 个文件）：
+
+- shared/place-view.ts：第一处同时保留旧提供方名称过滤、专属文案和共用屏幕文案；第二处同时传入 backend 与 sharedVmScreen，避免任一侧上下文丢失。
+- src/components/ComputerPanel.tsx：工作位置名称传入当前配置，支持共用电脑叫法；保留云端桌面的通用名称，provider lock 不将其改成 VPS。保留已合入的未分配提示去重和按钮间距。
+- src/components/WorksOnGrid.tsx：vm 标题和描述都按当前配置选择；保留 T-1252 的云端选项过滤，不因 provider lock 将云端桌面限定为 VPS。
+- src/components/bot-panel/ComputerTab.tsx：工作位置名称传入当前配置，保留浏览器名称逻辑和云端通用名称。
+- src/locales/source-hashes.json：合并双方新增键，逐项确认哈希对应当前英文源；没有整体重写。
+- docs/tasks/T-1200/T-1252-instabox-panel-polish/report.md、docs/tasks/T-1200/T-1252-instabox-panel-polish/verification.txt：追加冲突处理说明、验证命令及结果摘要。
+
+入口基线已包含冲突标记，Git 显示干净且没有进行中的合并；本轮只编辑冲突文件和上述记录，没有提交、中止或重置。Boat 隐藏、默认 、provider lock 只拦 box、快照和删除保护均保留。
+
+测试命令与结果摘要：
+
+- pnpm exec vitest run <文件> --maxWorkers=1：逐文件运行 47 个文件、65 次，共 923 项测试执行通过，0 失败、0 跳过。包含指定的 T-1266 测试、ComputerPanel／WorksOnGrid／ComputerTab／place-view 相关测试及 server/instabox 下全部 16 个文件；9 组 e2e 均连续 3 次通过，VNC 浏览器用例每次 32 项全部执行。
+- pnpm exec tsc -p tsconfig.server.json、pnpm exec tsc -b --pretty false、冲突文件 pnpm exec oxlint --deny-warnings：通过。
+- PATH=/opt/node24/bin:$PATH node scripts/generate-locale.mjs zh --check：当前脚本不支持语言参数与 --check 组合，返回用法错误；改用支持的 PATH=/opt/node24/bin:$PATH node scripts/generate-locale.mjs --check，通过中英文目录及源哈希检查。未修改脚本。
+- 指定验证 README 缺失；全部服务测试通过现有临时目录、假服务及隔离 fixture 执行。完整命令和汇总结果追加在同目录 verification.txt。
+- grep -rn 冲突标记扫描 shared／src／server 无输出；全仓冲突标记扫描与 git diff --check 通过。最终 git status 为上述 7 个修改文件，无新增文件，未提交。

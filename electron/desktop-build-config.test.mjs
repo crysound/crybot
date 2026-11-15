@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 import builderConfig from "../electron-builder.config.cjs";
 import build from "../scripts/desktop-build-config.cjs";
-import { defaultServerEnvironment, localServerEnvironment, loginNavigationAllowed, readDesktopBuildConfig } from "./desktop-build-config.mjs";
+import { defaultServerEnvironment, localServerEnvironment, loginHostMatches, loginNavigationAllowed, readDesktopBuildConfig } from "./desktop-build-config.mjs";
 import environments from "./environments.cjs";
 import { createEnvironmentsFile } from "./environments-file.mjs";
 import * as fs from "node:fs";
@@ -48,18 +48,22 @@ it("writes and reads build resources, selects the default once and preserves the
   expect(defaultServerEnvironment(local, { defaultServerUrl: null }, false, () => "unused")).toBe(local);
   expect(readDesktopBuildConfig(temporary()).updateFeedUrl).toBeNull();
 });
-it("keeps server and exact login hosts inside the window without extending IPC authority", () => {
+it("keeps the server and exact or suffix login hosts inside the window without extending IPC authority", () => {
   const state = defaultServerEnvironment({ environments: [], activeId: "local" }, { defaultServerUrl: "https://example.com" }, false, () => "remote");
   const remote = environments.activeRemote(state);
-  const hosts = ["example.cloudflareaccess.com", "login.example.com"];
-  for (const url of ["https://example.com/chat", "https://example.cloudflareaccess.com/login", "https://login.example.com/oauth"]) expect(loginNavigationAllowed(url, remote, hosts)).toBe(true);
-  for (const url of ["https://outside.example.com", "https://login.example.com.evil.example.com", "https://example.com@outside.example.com", "javascript:alert(1)", "file:///tmp/example"]) expect(loginNavigationAllowed(url, remote, hosts)).toBe(false);
+  const hosts = [".example.test", "login.example.com"];
+  for (const url of ["https://example.com/chat", "https://example.test/login", "https://a.b.example.test/oauth", "https://login.example.com/oauth"]) expect(loginNavigationAllowed(url, remote, hosts)).toBe(true);
+  for (const url of ["https://outside.example.com", "https://evilexample.test", "https://login.example.com.evil.example.com", "https://example.com@outside.example.com", "https://user:pass@example.test", "javascript:alert(1)", "file:///tmp/example"]) expect(loginNavigationAllowed(url, remote, hosts)).toBe(false);
+  expect(loginHostMatches("example.test", ".example.test")).toBe(true);
+  expect(loginHostMatches("a.b.example.test", ".example.test")).toBe(true);
+  expect(loginHostMatches("evilexample.test", ".example.test")).toBe(false);
   expect(loginNavigationAllowed("https://login.example.com", null, hosts)).toBe(false);
   const frame = { url: "https://login.example.com" }, contents = { mainFrame: frame };
   expect(environments.workspaceSenderAllowed({ sender: contents, senderFrame: frame }, contents, state, "http://localhost")).toBe(false);
 });
 it("rejects malformed build URLs and login hosts", () => {
-  for (const input of [{ CRYBOT_DEFAULT_SERVER_URL: "https://example.com/path" }, { CRYBOT_DEFAULT_SERVER_URL: "file:///tmp/example" }, { CRYBOT_UPDATE_FEED_URL: "https://user:password@example.com" }, { CRYBOT_LOGIN_HOSTS: "*.example.com" }]) expect(() => build.desktopBuildConfig(input)).toThrow();
+  for (const input of [{ CRYBOT_DEFAULT_SERVER_URL: "https://example.com/path" }, { CRYBOT_DEFAULT_SERVER_URL: "file:///tmp/example" }, { CRYBOT_UPDATE_FEED_URL: "https://user:password@example.com" }, { CRYBOT_LOGIN_HOSTS: "*.example.com" }, { CRYBOT_LOGIN_HOSTS: "." }, { CRYBOT_LOGIN_HOSTS: ".example.com/path" }, { CRYBOT_LOGIN_HOSTS: ".example..com" }, { CRYBOT_LOGIN_HOSTS: ".-example.com" }]) expect(() => build.desktopBuildConfig(input)).toThrow();
+  expect(build.desktopBuildConfig({ CRYBOT_LOGIN_HOSTS: ".example.test,login.example.com" }).loginHosts).toEqual([".example.test", "login.example.com"]);
 });
 
 it.each(["CRYBOT_DEFAULT_SERVER_URL", "CRYBOT_UPDATE_FEED_URL"])("requires HTTPS except loopback for %s, at build and resource loading", name => {

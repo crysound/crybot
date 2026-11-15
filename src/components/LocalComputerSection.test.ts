@@ -178,6 +178,30 @@ describe("Local VM inventory UI", () => {
     expect(markup).not.toMatch(/viewer_url|workspace_path|password=/);
   });
 
+  it.each([
+    [{ localVm: { mode: "shared", screens: 2, maxInstances: 4 } }, "共用电脑"],
+    [{ localVm: { mode: "per-bot", screens: 2, maxInstances: 4 } }, "私有桌面"],
+  ] as const)("uses the configured label for a VM destination: %j", (config, label) => {
+    setLocale("zh");
+    storeFixture.config = config;
+    try {
+      const markup = renderToStaticMarkup(createElement(LocalVmInventoryCard, {
+        instances: [{ ...cloudVm, destination: "vm" }],
+        maxInstances: 4,
+        loading: false,
+        deletingBotId: null,
+        error: null,
+        unavailableReason: null,
+        onRefresh: vi.fn(),
+        onDelete: vi.fn(),
+      }));
+
+      expect(markup).toContain(`当前目的地：${label}`);
+    } finally {
+      storeFixture.config = null;
+    }
+  });
+
   it("keeps state labels honest", () => {
     expect(localVmInventoryState(cloudVm)).toBe("Running");
     expect(localVmInventoryState({ ...cloudVm, ready: false })).toBe("Needs attention");

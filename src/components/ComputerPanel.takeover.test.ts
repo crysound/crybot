@@ -5,10 +5,11 @@ import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/state/api";
-import { t } from "@/lib/i18n";
+import { setLocale, t } from "@/lib/i18n";
 import type { Action, AppState, Bot, InstanceInfo } from "@/state/store";
 
 const fixture = vi.hoisted(() => ({
+  advanced: false,
   vm: {} as Record<string, unknown>,
   vmRequests: [] as string[],
   vmForegroundRequests: 0,
@@ -54,7 +55,7 @@ vi.mock("./DesktopCapabilities", async (importOriginal) => ({
     },
   }),
 }));
-vi.mock("@/lib/interface-mode", () => ({ useAdvancedMode: () => false, setAdvancedMode: () => {} }));
+vi.mock("@/lib/interface-mode", () => ({ useAdvancedMode: () => fixture.advanced, setAdvancedMode: () => {} }));
 vi.mock("./CloudScreenPreview", () => ({
   CloudScreenPreview: ({ onOpen }: { onOpen: () => void }) => createElement("button", { "data-preview": "", onClick: onOpen }, "preview"),
 }));
@@ -203,6 +204,8 @@ beforeEach(() => {
     setItem: (key: string, value: string) => void saved.set(key, value),
     removeItem: (key: string) => void saved.delete(key),
   });
+  fixture.advanced = false;
+  setLocale("en");
   fixture.vm = {};
   fixture.vmRequests = [];
   fixture.vmForegroundRequests = 0;
@@ -235,6 +238,7 @@ beforeEach(() => {
   }));
 });
 afterEach(() => {
+  setLocale("en");
   root?.unmount();
   root = null;
   document.body.innerHTML = "";
@@ -758,4 +762,55 @@ it.each([
   await settle();
   expect(resolved).not.toHaveBeenCalled();
   expect(fixture.controls).toHaveLength(taking ? 1 : 0);
+});
+
+
+it.each(["en", "zh"] as const)("shows one unassigned or queued message in %s", async locale => {
+  vi.useFakeTimers();
+  setLocale(locale);
+  fixture.vm = { mode: "shared", screen: null };
+  state.config = { ...state.config!, localVm: { mode: "shared", screens: 4, maxInstances: 1 } };
+  await open(makeBot({ computer: "vm" }));
+  expect(document.body.textContent!.split(t("vm.screens.unassignedBot"))).toHaveLength(2);
+  const assignment = document.querySelector('[role="status"]')!.parentElement!;
+  expect(assignment.classList.contains("mb-3")).toBe(true);
+  fixture.assignment = { screen: null, queue_position: 2 };
+  await press(t("vm.screens.assignNow"));
+  expect(document.body.textContent!.split(t("vm.screens.queued", { position: 2 }))).toHaveLength(2);
+  expect(document.body.textContent).toContain(t("vm.screens.queueDetail"));
+  expect(document.body.textContent).not.toContain(t("vm.screens.unassignedBot"));
+  fixture.vm = { statusError: "Assignment unavailable" };
+  await vi.advanceTimersByTimeAsync(2000);
+  await settle();
+  expect(assignment.querySelector('[role="alert"]')?.textContent).toBe("Assignment unavailable");
+  expect(assignment.classList.contains("mb-3")).toBe(true);
+});
+
+it.each([
+  ["shared", 4, true], ["shared", 1, false], ["shared", undefined, false], ["per-bot", 4, false],
+] as const)("uses the correct VM title and footer for %s with %s screens", async (mode, screens, shared) => {
+  vi.useFakeTimers();
+  fixture.vm = { mode, screen: null };
+  state.config = { ...state.config!, localVm: { mode, screens, maxInstances: 1 } };
+  await open(makeBot({ computer: "vm" }));
+  for (const locale of ["en", "zh"] as const) {
+    setLocale(locale);
+    for (const advanced of [false, true]) {
+      fixture.advanced = advanced;
+      draw();
+      await settle();
+      const selected = [...document.querySelectorAll('button[aria-pressed="true"]')];
+      expect(selected.some(node => node.textContent?.includes(t(shared ? "vm.dest.shared" : "vm.dest.vm")))).toBe(true);
+      expect(document.querySelector('[data-testid="place-line"]')?.textContent).toContain(t(shared ? "place.view.vmScreen.line" : "place.view.vm.line"));
+      if (shared) expect(document.body.textContent).not.toContain(t("vm.dest.vm"));
+    }
+  }
+});
+
+it("uses the shared title when a ready VM response omits its screen number", async () => {
+  vi.useFakeTimers();
+  state.config = { ...state.config!, localVm: { mode: "shared", screens: 4, maxInstances: 1 } };
+  await open(makeBot({ computer: "vm" }));
+  expect(document.body.textContent).toContain("Shared computer");
+  expect(document.body.textContent).not.toContain("Private desktop");
 });

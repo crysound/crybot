@@ -86,6 +86,19 @@ describe("the room header in Simple mode", () => {
     expect(markup).not.toContain(BULLETIN);
   });
 
+  it.each([
+    ["shared", 4, "Shared computer"],
+    ["shared", 1, "Private desktop"],
+    ["per-bot", 4, "Private desktop"],
+  ] as const)("names a working member's VM for %s / %s", (mode, screens, label) => {
+    fixture.state = {
+      bots: bots.map(bot => ({ ...bot, computer: "vm" })),
+      config: { localVm: { mode, screens, maxInstances: 1 } } as AppState["config"],
+    };
+    const markup = header(view(room({ busyBotId: "bot-0" })));
+    expect(markup).toContain(`aria-label="Where this conversation works: ${label}"`);
+  });
+
   it("draws no +N while every member has a face", () => {
     const head = header(view(room({ memberIds: ["bot-0", "bot-1", "bot-2"] })));
     expect(head.match(/title="(?:Desk Manager|Vendor Bench|Job Board Sourcer)"/g)).toHaveLength(3);
