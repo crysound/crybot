@@ -35,6 +35,7 @@ import { DECIDER_KEY_ERROR, deciderIncludedHere, deciderPatchKey, deciderSavePat
 import type { ProviderRegistry } from "../harness/registry.ts";
 import { HOSTED_PROVIDER_SETTINGS_ERROR } from "../hosted-models.ts";
 import { forgetKey } from "../key-rejections.ts";
+import { keyHint } from "../key-hint.ts";
 import type { ComputerIdleTimer } from "../computer-idle.ts";
 import { PROVIDER_KEY_KINDS } from "../provider-key-check.ts";
 import type { SessionRegistry } from "../sessions.ts";
@@ -123,9 +124,17 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
     closeBrowser, browserEngineSwitched, sharedComputers, sharedComputerControl, hostedModels, cloudHome: CLOUD_HOME, sharedMembership, lendingEnabled, providerConfigs,
     localVmIdleMs, localVmIdles, localVmActiveThreads, localVmLifecycleBusy, localVmImageBusy, localVmModeChangeBusy, localVmModeChanging,
     providerConfigBusy, computerProviderConfigTransitions, managedBoatOwners, providerOperationConflict,
-    perBotLocalVmCountForModeChange, checkedModelSelection, policyModelRefusal, browserSessionSpec, configStatus,
+    perBotLocalVmCountForModeChange, checkedModelSelection, policyModelRefusal, browserSessionSpec,
     configForAccess, resyncOpenCodeProviderKeys, revokeEngineCapabilities, reloadProviders, broadcast, drainQueuedSends, ownProfile, ownHints, postiz,
   } = deps;
+  const configStatus = () => {
+    const status = deps.configStatus(), reported = status.instabox;
+    const fromEnv = !!process.env.INSTABOX_API_KEY?.trim(), key = process.env.INSTABOX_API_KEY?.trim() || cfg.instabox?.apiKey?.trim();
+    const hint = keyHint(key);
+    const safeHint = reported && typeof reported === "object" && "configured" in reported && reported.configured === true
+      && "last4" in reported && reported.last4 === hint.last4 ? hint : {};
+    return { ...status, instabox: { configured: !!key, fromEnv, ...safeHint } };
+  };
   return async ({ req, res, url, path, method, auth, json, readBody }) => {
     // API keys are never echoed back: booleans only.
     if (method === "GET" && path === "/api/config") {
