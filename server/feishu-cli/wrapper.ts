@@ -1,6 +1,24 @@
 import { spawn } from "node:child_process";
 import { dirname, isAbsolute, join } from "node:path";
-import { brokerToken, needsToken, validToken } from "./protocol.ts";
+import { BrokerAuthorizationError, brokerToken, needsToken, validToken } from "./protocol.ts";
+
+function parseAuthorizationUrl(value: string | undefined): URL | undefined {
+  if (!value || value.length > 2048 || /\s/u.test(value) || [...value].some(character => {
+    const code = character.codePointAt(0)!;
+    return code <= 0x1f || code === 0x7f;
+  })) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url : undefined;
+  } catch { return undefined; }
+}
+
+export function feishuAuthorizationUrl(configured: string | undefined, broker?: string): string | undefined {
+  const configuredUrl = parseAuthorizationUrl(configured);
+  if (!configuredUrl) return undefined;
+  const brokerUrl = parseAuthorizationUrl(broker);
+  return (brokerUrl?.origin === configuredUrl.origin ? brokerUrl : configuredUrl).href;
+}
 
 export function cleanFeishuEnvironment(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   return Object.fromEntries(Object.entries(source).filter(([key]) => !/^(LARKSUITE_CLI_|MEEGLE_|CRYBOT_FEISHU_)/i.test(key)));
@@ -11,6 +29,21 @@ export function cliInvocation(executable: string, args: string[], platform = pro
     return { command: process.execPath, args: [join(dirname(executable), "node_modules", "@larksuite", "cli", "scripts", "run.js"), ...args] };
   }
   return { command: executable, args };
+}
+
+function brokerErrorMessage(error: unknown): string {
+  const rawMessage = error instanceof BrokerAuthorizationError && error.authorizationUrl
+    ? error.message.slice(0, -error.authorizationUrl.length)
+    : error instanceof Error ? error.message : "";
+  const message = [...rawMessage].map(character => {
+    const code = character.codePointAt(0)!;
+    if (/\s/u.test(character) || code === 0x85) return " ";
+    return code <= 0x1f || (code >= 0x7f && code <= 0x9f) ||
+      (code >= 0x200b && code <= 0x200f) || (code >= 0x202a && code <= 0x202e) ||
+      (code >= 0x2066 && code <= 0x2069) ? "" : character;
+  }).join("").replace(/ +/g, " ").trim();
+  const characters = [...message];
+  return characters.length > 300 ? characters.slice(0, 299).join("") + "…" : message || "飞书代领服务不可用";
 }
 
 export async function runLarkCli(args: string[], source: NodeJS.ProcessEnv = process.env): Promise<number> {
@@ -29,7 +62,12 @@ export async function runLarkCli(args: string[], source: NodeJS.ProcessEnv = pro
     if (!validToken(token) || needsToken(token)) {
       if (!source.CRYBOT_FEISHU_BROKER_SOCKET) { console.error("飞书令牌已失效，请重新发起对话"); return 1; }
       try { token = await brokerToken(source.CRYBOT_FEISHU_BROKER_SOCKET); }
-      catch (error) { console.error(error instanceof Error ? error.message : "飞书代领服务不可用"); return 1; }
+      catch (error) {
+        const authorizationUrl = error instanceof BrokerAuthorizationError
+          ? feishuAuthorizationUrl(source.CRYBOT_FEISHU_AUTHORIZATION_URL, error.authorizationUrl) : undefined;
+        console.error([brokerErrorMessage(error), authorizationUrl].filter(Boolean).join(" "));
+        return 1;
+      }
     }
     if (command === "auth") {
       if (args[1] === "status") { console.log(JSON.stringify({ authorized: true, identity: "user" })); return 0; }

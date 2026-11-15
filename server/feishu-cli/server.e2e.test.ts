@@ -67,6 +67,7 @@ it.for([false, true])("uses authenticated identity with sandbox=%s and never pub
       CRYBOT_BOT_BOX: boxed ? "on" : "off",
       ...(boxed ? { PATH: serviceBoxEnv.PATH, TMPDIR: serviceTmp, TMP: serviceTmp, TEMP: serviceTmp } : {}),
       CRYBOT_FEISHU_CLI_USERS: "test_union", CRYBOT_FEISHU_BROKER_SOCKET: socket,
+      CRYBOT_FEISHU_AUTHORIZATION_URL: "https://example.invalid/configured-authorize",
       CRYBOT_FEISHU_APP_ID: "fixture-login-app", CRYBOT_FEISHU_APP_SECRET: "fixture-login-secret",
       CRYBOT_FEISHU_TENANTS: "test_tenant", CRYBOT_FEISHU_ALLOW: "test_union,other_union", CRYBOT_FEISHU_ADMINS: "test_union,other_union",
     } });

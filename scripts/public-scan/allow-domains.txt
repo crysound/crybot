@@ -23,3 +23,4 @@ r2.md # 返工说明文件名，不是域名。
 usercustomize.py # Python 启动钩子文件名，不是域名。
 linux-test.sh # 脚本文件名，不是域名。
 r3.md # 返工说明文件名，不是域名。
+instabox.sh # InstaBox 云电脑公共 API（第三方公开服务）。

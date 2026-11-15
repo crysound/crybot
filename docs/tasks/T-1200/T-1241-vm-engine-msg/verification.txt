@@ -1,0 +1,243 @@
+第 1 轮命令与最终结果摘要
+
+$ crybot-link-deps
+通过：链接 73 项依赖。
+
+$ pnpm exec vitest run server/bot-box/boot.test.ts
+覆盖被过滤、受信任替代、未安装、隔离关闭四种启动情况。
+
+$ pnpm exec vitest run server/bot-box/engine-availability.e2e.test.ts
+真实隔离服务验证默认/自定义 CLI 的 snapshot、警告及未执行。
+
+$ pnpm exec vitest run server/procs.test.ts
+覆盖隔离 reason、可信替代、真实缺失、绝对路径及旧版本缓存。
+
+$ pnpm exec vitest run src/components/ComputerPanel.engine.test.ts
+覆盖中英文提示、恢复、设置跳转及例行任务默认运行位置。
+
+$ pnpm exec vitest run src/lib/i18n.test.ts
+用临时完整语言包验证完整性，避免假定其他语言永远全部翻译。
+
+$ pnpm exec vitest run server/boot-readiness.e2e.test.ts
+4 通过 (4)；连续 3 次通过
+
+$ pnpm exec vitest run server/bot-box/boot.test.ts
+4 通过 (4)
+
+$ pnpm exec vitest run server/bot-box/engine-availability.e2e.test.ts
+1 通过 (1)；连续 3 次通过
+
+$ pnpm exec vitest run server/bot-box/program-trust.test.ts
+5 通过 (5)
+
+$ pnpm exec vitest run server/bot-box/self-check.linux.test.ts
+1 失败 / 1 通过 (2)
+
+$ pnpm exec vitest run server/cli-probe-env.test.ts
+2 通过 (2)
+
+$ pnpm exec vitest run server/cli-probe.test.ts
+1 通过 (1)
+
+$ pnpm exec vitest run server/drivers/claude-box.test.ts
+3 通过 (3)
+
+$ pnpm exec vitest run server/drivers/claude-keepwarm-box.test.ts
+5 通过 (5)
+
+$ pnpm exec vitest run server/drivers/claude.test.ts
+256 通过 / 1 跳过 (257)
+
+$ pnpm exec vitest run server/env-path.mac-runtimes.test.ts
+2 通过 (2)
+
+$ pnpm exec vitest run server/env-path.test.ts
+23 通过 / 17 跳过 (40)
+
+$ pnpm exec vitest run server/procs-windows-stop.test.ts
+2 通过 (2)
+
+$ pnpm exec vitest run server/procs.test.ts
+15 通过 (15)
+
+$ pnpm exec vitest run server/verification-fixture.e2e.test.ts
+2 通过 (2)；连续 3 次通过
+
+$ pnpm exec vitest run src/components/ComputerPanel.android.test.ts
+7 通过 (7)
+
+$ pnpm exec vitest run src/components/ComputerPanel.browser.test.ts
+7 通过 (7)
+
+$ pnpm exec vitest run src/components/ComputerPanel.engine.test.ts
+8 通过 (8)
+
+$ pnpm exec vitest run src/components/ComputerPanel.focus.test.ts
+12 通过 (12)
+
+$ pnpm exec vitest run src/components/ComputerPanel.i18n.test.ts
+3 通过 (3)
+
+$ pnpm exec vitest run src/components/ComputerPanel.lazy.test.ts
+9 通过 (9)
+
+$ pnpm exec vitest run src/components/ComputerPanel.live.test.ts
+5 通过 (5)
+
+$ pnpm exec vitest run src/components/ComputerPanel.simple.test.ts
+43 通过 (43)
+
+$ pnpm exec vitest run src/components/ComputerPanel.tabs.test.ts
+11 通过 (11)
+
+$ pnpm exec vitest run src/components/ComputerPanel.takeover.test.ts
+29 通过 (29)
+
+$ pnpm exec vitest run src/components/ComputerPanel.test.ts
+5 通过 (5)
+
+$ pnpm exec vitest run src/lib/computer-messages.test.ts
+1 通过 (1)
+
+$ pnpm exec vitest run src/lib/i18n.test.ts
+39 通过 (39)
+
+$ pnpm exec tsc -p tsconfig.server.json
+通过。
+
+$ pnpm exec tsc -p tsconfig.json
+通过。
+
+$ pnpm exec oxlint --deny-warnings server/bot-box/boot.ts server/env-path.ts server/index.ts server/procs.test.ts server/procs.ts src/components/ComputerPanel.tsx src/lib/i18n.test.ts src/locales/en.json src/locales/zh.json server/bot-box/boot.test.ts server/bot-box/engine-availability.e2e.test.ts src/components/ComputerPanel.engine.test.ts
+通过。
+
+$ git diff --check
+通过。
+
+$ pnpm exec vitest run server/bot-box/self-check.linux.test.ts（未修改基线复核）
+1 通过 / 1 失败；沙箱到公网探测目标的连接超时。
+
+$ pnpm exec vitest run server/verification-fixture.e2e.test.ts（未修改基线复核）
+1 通过 / 1 失败；Node 同目录预装 CLI 被 fixture 发现。
+
+$ pnpm exec vitest run server/verification-fixture.e2e.test.ts（Node 复制至临时空目录，PATH 首位使用该目录）
+2 通过 / 0 失败；连续 3 次通过。
+
+第 2 轮命令与结果摘要
+
+$ crybot-link-deps
+通过：链接 73 项依赖。
+
+$ pnpm exec vitest run server/bot-box/boot.test.ts
+Test Files  1 passed (1)；Tests  5 passed (5)
+
+$ pnpm exec vitest run src/components/ComputerPanel.engine.test.ts
+Test Files  1 passed (1)；Tests  18 passed (18)
+
+$ pnpm exec vitest run server/bot-box/engine-availability.e2e.test.ts
+Test Files  1 passed (1)；Tests  1 passed (1)（第 1 次）
+
+$ pnpm exec vitest run server/bot-box/engine-availability.e2e.test.ts
+Test Files  1 passed (1)；Tests  1 passed (1)（第 2 次）
+
+$ pnpm exec vitest run server/bot-box/engine-availability.e2e.test.ts
+Test Files  1 passed (1)；Tests  1 passed (1)（第 3 次）
+
+$ pnpm exec vitest run server/boot-readiness.e2e.test.ts
+Test Files  1 passed (1)；Tests  4 passed (4)（第 1 次）
+
+$ pnpm exec vitest run server/boot-readiness.e2e.test.ts
+Test Files  1 passed (1)；Tests  4 passed (4)（第 2 次）
+
+$ pnpm exec vitest run server/boot-readiness.e2e.test.ts
+Test Files  1 passed (1)；Tests  4 passed (4)（第 3 次）
+
+$ pnpm exec vitest run server/verification-fixture.e2e.test.ts
+Test Files  1 passed (1)；Tests  2 passed (2)（第 1 次；同一 Node 二进制置于临时空目录并加入 PATH 首位）
+
+$ pnpm exec vitest run server/verification-fixture.e2e.test.ts
+Test Files  1 passed (1)；Tests  2 passed (2)（第 2 次；同一 Node 二进制置于临时空目录并加入 PATH 首位）
+
+$ pnpm exec vitest run server/verification-fixture.e2e.test.ts
+Test Files  1 passed (1)；Tests  2 passed (2)（第 3 次；同一 Node 二进制置于临时空目录并加入 PATH 首位）
+
+$ pnpm exec vitest run server/hosted-models.test.ts
+Test Files  1 passed (1)；Tests  8 passed (8)
+
+$ pnpm exec vitest run server/provider-lock.test.ts
+Test Files  1 passed (1)；Tests  11 passed (11)
+
+$ pnpm exec vitest run server/procs.test.ts
+Test Files  1 passed (1)；Tests  15 passed (15)
+
+$ pnpm exec vitest run server/bot-box/program-trust.test.ts
+Test Files  1 passed (1)；Tests  5 passed (5)
+
+$ pnpm exec vitest run src/components/ComputerPanel.android.test.ts
+Test Files  1 passed (1)；Tests  7 passed (7)
+
+$ pnpm exec vitest run src/components/ComputerPanel.browser.test.ts
+Test Files  1 passed (1)；Tests  7 passed (7)
+
+$ pnpm exec vitest run src/components/ComputerPanel.focus.test.ts
+Test Files  1 passed (1)；Tests  12 passed (12)
+
+$ pnpm exec vitest run src/components/ComputerPanel.i18n.test.ts
+Test Files  1 passed (1)；Tests  3 passed (3)
+
+$ pnpm exec vitest run src/components/ComputerPanel.lazy.test.ts
+Test Files  1 passed (1)；Tests  9 passed (9)
+
+$ pnpm exec vitest run src/components/ComputerPanel.live.test.ts
+Test Files  1 passed (1)；Tests  5 passed (5)
+
+$ pnpm exec vitest run src/components/ComputerPanel.simple.test.ts
+Test Files  1 passed (1)；Tests  43 passed (43)
+
+$ pnpm exec vitest run src/components/ComputerPanel.tabs.test.ts
+Test Files  1 passed (1)；Tests  11 passed (11)
+
+$ pnpm exec vitest run src/components/ComputerPanel.takeover.test.ts
+Test Files  1 passed (1)；Tests  29 passed (29)
+
+$ pnpm exec vitest run src/components/ComputerPanel.test.ts
+Test Files  1 passed (1)；Tests  5 passed (5)
+
+$ pnpm exec vitest run src/lib/computer-messages.test.ts
+Test Files  1 passed (1)；Tests  1 passed (1)
+
+$ pnpm exec vitest run src/lib/i18n.test.ts
+Test Files  1 passed (1)；Tests  39 passed (39)
+
+$ pnpm exec tsc -p tsconfig.server.json
+通过；0 错误。
+
+$ pnpm exec tsc -p tsconfig.json
+通过；0 错误。
+
+$ pnpm exec oxlint --deny-warnings server/bot-box/boot.test.ts server/bot-box/boot.ts server/bot-box/engine-availability.e2e.test.ts server/index.ts src/components/ComputerPanel.engine.test.ts src/components/ComputerPanel.tsx
+通过；0 错误、0 警告。
+
+$ git diff --check
+失败：1 处报告末尾空行；报告完成后复查。
+
+$ git diff --check
+通过：0 处空白错误。
+
+$ node --input-type=module <<'JS'
+import { execFileSync, spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { scanDiff } from './scripts/public-scan/scan.mjs';
+const options = { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 };
+const diffs = [execFileSync('git', ['diff', 'HEAD', '--unified=0', '--no-ext-diff', '--no-textconv', '--text'], options)];
+const untracked = execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], options).split('\0').filter(Boolean);
+for (const file of untracked) {
+  const result = spawnSync('git', ['diff', '--no-index', '--unified=0', '--no-ext-diff', '--no-textconv', '--text', '--', '/dev/null', file], options);
+  if (result.status !== 0 && result.status !== 1) throw new Error('Untracked diff failed');
+  diffs.push(result.stdout);
+}
+const findings = diffs.flatMap(diff => scanDiff(diff, file => readFileSync(file)));
+console.log(JSON.stringify({ findings, untrackedFiles: untracked.length, denylist: process.env.PUBLIC_SCAN_DENYLIST_KEY ? 'enabled' : 'skipped (no key)' }));
+process.exitCode = findings.length ? 1 : 0;
+JS
+通过：本轮全部 8 个改动文件，0 命中；已纳入未跟踪文件枚举（当前 0 个）；未配置 denylist 密钥，该项跳过。
