@@ -22,7 +22,7 @@ const { AppPreviewPanel } = await import("./AppPreviewPanel");
 const { SiteFrame } = await import("./SiteFrame");
 const { SiteThumb } = await import("./SiteThumb");
 
-const SITE = "https://bright-bakery.netlify.app/";
+const SITE = "https://bright-bakery.example.test/";
 const source = (file: string) => readFileSync(resolve(process.cwd(), file), "utf8");
 let root: Root;
 let host: HTMLElement;
@@ -75,7 +75,7 @@ describe("the sandbox a published site runs in", () => {
   it("never frames the app's own origin or anything that is not a plain web address", async () => {
     const own = window.location.origin;
     for (const url of [`${own}/`, `${own}/api/bots`, "javascript:alert(document.cookie)", "data:text/html,<script>parent.cry</script>", "file:///etc/passwd", "blob:https://x.test/1",
-      "about:srcdoc", "crybot://bot/pepper", "https://user:pw@bright-bakery.netlify.app/", "not a url", ""]) {
+      "about:srcdoc", "crybot://bot/pepper", "https://user:pw@bright-bakery.example.test/", "not a url", ""]) {
       expect(showable(url, own), url).toBe(false);
       await frame({ url });
       expect(host.querySelector("iframe"), url).toBeNull();
@@ -106,7 +106,16 @@ describe("the sandbox a published site runs in", () => {
     expect(preferences).toContain("contextIsolation: true");
     for (const opening of ["nodeIntegrationInSubFrames", "webviewTag", "nodeIntegration: true", "contextIsolation: false", "webSecurity: false", "allowRunningInsecureContent"]) expect(main, opening).not.toContain(opening);
     expect(main).toMatch(/will-frame-navigate[\s\S]{0,700}target === rendererOrigin\(\) \|\| allowedOrigins\(environmentsState, rendererOrigin\(\)\)\.has\(target\)[\s\S]{0,80}preventDefault/);
-    expect(main).toMatch(/setWindowOpenHandler\(\(\{ url \}\) => \{[\s\S]{0,300}return \{ action: "deny" \};/);
+    expect(main).toMatch(/import \{ attachLoginNavigation \} from "\.\/login-navigation\.mjs"/);
+    expect(main).toMatch(/^  attachLoginNavigation\(\{\s*win,/m);
+    const navigation = source("electron/login-navigation.mjs");
+    const handlers = [...navigation.matchAll(/^  win\.webContents\.setWindowOpenHandler\(\(\{ url \}\) => \{([\s\S]*?)^  \}\);/gm)];
+    expect(handlers).toHaveLength(1);
+    const handler = handlers[0][1];
+    expect(handler).toMatch(/return \{ action: "deny" \};\s*$/);
+    for (const returned of handler.match(/\breturn\b[^;]*;/g) ?? []) {
+      expect(returned).toMatch(/^return \{ action: "deny" \};$/);
+    }
   });
 
   it("is the rule the app's pinned web pages already use", () => {
@@ -142,7 +151,7 @@ describe("a site that can't be shown in the preview", () => {
     expect(host.querySelector("iframe")).toBeNull();
     expect(host.querySelector("[data-app-preview-fallback]")).not.toBeNull();
 
-    await act(async () => root.render(createElement(SiteFrame, { url: "https://other-site.netlify.app/", title: "Other", attempt: 0 })));
+    await act(async () => root.render(createElement(SiteFrame, { url: "https://other-site.example.test/", title: "Other", attempt: 0 })));
     act(() => { host.querySelector("iframe")!.dispatchEvent(new Event("load")); });
     await act(async () => { vi.advanceTimersByTime(10_500); });
     expect(host.querySelector("iframe")).not.toBeNull();
@@ -177,7 +186,7 @@ describe("the preview beside the chat", () => {
     const aside = host.querySelector("aside")!;
     expect(aside.getAttribute("aria-label")).toBe("Preview of Bakery order page");
     expect(aside.querySelector("h2")?.textContent).toBe("Bakery order page");
-    expect(aside.textContent).toContain("bright-bakery.netlify.app");
+    expect(aside.textContent).toContain("bright-bakery.example.test");
     const first = host.querySelector("iframe")!;
     press("Reload");
     expect(host.querySelector("iframe")).not.toBe(first);

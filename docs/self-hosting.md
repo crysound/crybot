@@ -16,7 +16,7 @@ export CRYBOT_CF_ACCESS_ALLOW='*'
 
 ## 手机 App 登录接力
 
-iOS / 安卓构建配置了 `CRYBOT_LOGIN_HOSTS` 时，去往登录主机的导航会改用系统认证会话或系统浏览器访问服务器的 `/auth/app-handoff?state=...&pk=...`。服务器地址有子路径时，在子路径后追加 `/auth/app-handoff`（例如 `https://crybot.example/sub/` → `https://crybot.example/sub/auth/app-handoff`）。飞书等身份源授权完成后，接力页显示「在 Cry Bot App 中登录」、当前账号的 JWT email 和确认提示，不会自动跳转。只有刚刚在 Cry Bot App 内点过登录，才应亲手点击「返回 Cry Bot」，通过已配置的回跳链接（默认 `crybot://auth`）返回 App；否则直接关闭页面。App 校验一次性 state 并解密，将 Access JWT 写入内嵌网页的 Secure、HttpOnly Cookie 后重新加载服务器。未配置登录主机时保持原有行为。
+iOS / 安卓构建配置了 `CRYBOT_LOGIN_HOSTS` 时，去往登录主机的导航会改用系统认证会话或系统浏览器访问服务器的 `/auth/app-handoff?state=...&pk=...`。服务器地址有子路径时，在子路径后追加 `/auth/app-handoff`（例如 `https://example.com/sub/` → `https://example.com/sub/auth/app-handoff`）。飞书等身份源授权完成后，接力页显示「在 Cry Bot App 中登录」、当前账号的 JWT email 和确认提示，不会自动跳转。只有刚刚在 Cry Bot App 内点过登录，才应亲手点击「返回 Cry Bot」，通过已配置的回跳链接（默认 `crybot://auth`）返回 App；否则直接关闭页面。App 校验一次性 state 并解密，将 Access JWT 写入内嵌网页的 Secure、HttpOnly Cookie 后重新加载服务器。未配置登录主机时保持原有行为。
 
 **未启用回跳链接时的残余风险：** v1 加密协议能防住被动截获回跳的 App 读取 JWT，但不能防住同机恶意 App 主动发起接力：恶意 App 可以注册同一自定义 scheme，自带密钥对和公钥打开接力页，借用系统浏览器里已有的 Access 登录；如果用户确认回跳，恶意 App 就能用自己的私钥解出 JWT。未启用下述回跳链接时，只能靠用户确认这一步缓解，风险与接力协议 v1 的人工确认模式相同。
 
@@ -26,7 +26,7 @@ iOS / 安卓构建配置了 `CRYBOT_LOGIN_HOSTS` 时，去往登录主机的导�
 
 建议启用 iOS Universal Links / 安卓 App Links。系统根据回跳主机上的验证文件，仅将链接交给对应团队和 bundle ID、或包名和签名证书的 App。服务端一旦配置有效 `CRYBOT_APP_LINK_ORIGIN`，按钮就只输出 HTTPS 回跳，忽略 `CRYBOT_APP_SCHEME`，不再提供自定义 scheme 回跳。两端 App 同步启用链接模式后忽略 `crybot://auth`；同机恶意 App 自带公钥主动发起接力，也只能把密文送到我们的 App，并被不匹配的 state 丢弃，从而消除这一主动接力窃取 JWT 的风险。人工确认、账号提示和加密协议 v1 保持不变。
 
-**必须用不同的主机名。** 例如接力页在 `https://crybot.example`，回跳 origin 用 `https://crybot-app.example`，部署方将两个主机指向同一个服务进程。iOS Safari 点击同一域名的 Universal Link 会继续留在网页，因此不能只换路径或端口。回跳主机需要有效的公开 HTTPS 证书，且在 Cloudflare Access 之外可直接访问；在反向代理/隧道上只放行以下三个路径，其余路径拒绝访问，不要把 `/auth/app-handoff` 或服务 API 暴露到回跳主机：
+**必须用不同的主机名。** 例如接力页在 `https://example.com`，回跳 origin 用 `https://example.test`，部署方将两个主机指向同一个服务进程。iOS Safari 点击同一域名的 Universal Link 会继续留在网页，因此不能只换路径或端口。回跳主机需要有效的公开 HTTPS 证书，且在 Cloudflare Access 之外可直接访问；在反向代理/隧道上只放行以下三个路径，其余路径拒绝访问，不要把 `/auth/app-handoff` 或服务 API 暴露到回跳主机：
 
 - `/.well-known/apple-app-site-association`
 - `/.well-known/assetlinks.json`
@@ -40,14 +40,14 @@ iOS / 安卓构建配置了 `CRYBOT_LOGIN_HOSTS` 时，去往登录主机的导�
 
 | 环境变量 | 配置格式 |
 | --- | --- |
-| `CRYBOT_APP_LINK_ORIGIN` | 如 `https://crybot-app.example`，可有末尾单个 `/`，不要带端口，不能有路径、查询、片段或用户信息；解析后的 origin 必须等于去掉末尾 `/` 的原值。非法值按未配置处理，启动时警告一次。为兼容已有配置，合法的非 443 端口 origin 仍保留原处理行为，但启动时警告关联验证需要默认 443 端口。 |
+| `CRYBOT_APP_LINK_ORIGIN` | 如 `https://example.test`，可有末尾单个 `/`，不要带端口，不能有路径、查询、片段或用户信息；解析后的 origin 必须等于去掉末尾 `/` 的原值。非法值按未配置处理，启动时警告一次。为兼容已有配置，合法的非 443 端口 origin 仍保留原处理行为，但启动时警告关联验证需要默认 443 端口。 |
 | `CRYBOT_APPLE_APP_IDS` | 逗号分隔的 `<团队ID>.<bundle id>`，如 `ABCDE12345.com.example.app`；每项匹配 `^[A-Z0-9]{10}\.[A-Za-z0-9.-]+$`，非法项丢弃，无有效项则 AASA 返回 404。 |
 | `CRYBOT_ANDROID_PACKAGE` | 实际发行包名，如 `com.example.app`，须匹配 `^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$`。 |
 | `CRYBOT_ANDROID_CERT_SHA256` | 逗号分隔的签名证书 SHA-256 指纹（32 字节），支持小写或连续 64 位十六进制，规范化为大写冒号格式；非法项丢弃。包名无效或没有有效指纹时 assetlinks 返回 404。 |
 
-iOS 构建设置 `CRYBOT_APP_LINK_HOST=crybot-app.example`（只填主机名，不含协议、端口或路径），并设置 `CRYBOT_IOS_ENTITLEMENTS=CryBot/CryBot-AppLinks.entitlements`。在 Apple Developer 为实际 App ID 开启 Associated Domains 能力，更新描述文件，使签名含 `applinks:crybot-app.example` 和 `webcredentials:crybot-app.example`。默认 entitlements 设置为空，不为原有描述文件增加能力。iOS 17.4 及以上用 HTTPS callback 的系统认证会话，iOS 16.0–17.3 交给 Safari，经 Universal Link 返回；部署目标仍为 iOS 16.0。
+iOS 构建设置 `CRYBOT_APP_LINK_HOST=example.test`（只填主机名，不含协议、端口或路径），并设置 `CRYBOT_IOS_ENTITLEMENTS=CryBot/CryBot-AppLinks.entitlements`。在 Apple Developer 为实际 App ID 开启 Associated Domains 能力，更新描述文件，使签名含 `applinks:example.test` 和 `webcredentials:example.test`。默认 entitlements 设置为空，不为原有描述文件增加能力。iOS 17.4 及以上用 HTTPS callback 的系统认证会话，iOS 16.0–17.3 交给 Safari，经 Universal Link 返回；部署目标仍为 iOS 16.0。
 
-安卓用 Gradle 属性或构建环境变量设置 `CRYBOT_APP_LINK_HOST=crybot-app.example`。它启用独立的、带 `autoVerify` 的 activity alias；不配时 alias 为 disabled，验证主机占位为 `invalid.invalid`。用 `keytool -list -v -keystore <签名库> -alias <签名别名>` 查看 SHA-256，或用 `apksigner verify --print-certs <发行包.apk>` 查看实际 APK 的签名证书摘要；若使用商店代签，应填安装包实际使用的 App signing 证书，而非上传证书。轮换证书可同时发布多个指纹。
+安卓用 Gradle 属性或构建环境变量设置 `CRYBOT_APP_LINK_HOST=example.test`。它启用独立的、带 `autoVerify` 的 activity alias；不配时 alias 为 disabled，验证主机占位为 `invalid.invalid`。用 `keytool -list -v -keystore <签名库> -alias <签名别名>` 查看 SHA-256，或用 `apksigner verify --print-certs <发行包.apk>` 查看实际 APK 的签名证书摘要；若使用商店代签，应填安装包实际使用的 App signing 证书，而非上传证书。轮换证书可同时发布多个指纹。
 
 服务端 origin、App 构建主机、签名身份和验证文件需一起部署；只配置服务端而未正确签名/配置 App 会落到说明页。上线前用签名安装包在真机检查系统关联验证、Safari 跨主机回跳、旧版 iOS 浏览器回跳、安卓冷启动/热启动及错误 state 后的合法回跳。
 
@@ -77,7 +77,7 @@ export CRYBOT_DESKTOP_UPDATES_DIR=/srv/crybot/desktop-updates
 
 ```sh
 export CRYBOT_DEFAULT_SERVER_URL=https://example.com
-export CRYBOT_LOGIN_HOSTS=example.cloudflareaccess.com,login.example.com
+export CRYBOT_LOGIN_HOSTS=.example.test,login.example.com
 export CRYBOT_UPDATE_FEED_URL=https://example.com/desktop-updates/
 pnpm package:mac
 # 或 pnpm package:win
@@ -87,7 +87,7 @@ pnpm package:mac
 
 首次启动且没有 `environments.json` 时，默认服务器作为当前远程环境保存，主窗口直接加载该地址，由 Access 在窗口内完成登录。之后保存的环境选择优先；仍可从服务器设置切回本机或其他服务器。远程接口请求使用窗口的默认 Electron session cookie，不需要配对令牌。
 
-`LOGIN_HOSTS` 为逗号分隔的精确主机名，不带协议、端口、路径或通配符。填写 Access 域名及身份提供方在登录过程中实际跳转的主机。服务器主机自动允许；名单外 HTTP(S) 链接交给系统浏览器。登录主机不会因此获得 Cry Bot 页面专属的本机 IPC 权限。
+`CRYBOT_LOGIN_HOSTS` 为逗号分隔的主机匹配项，不带协议、端口、路径或用户信息。不以 `.` 开头的项精确匹配主机名；以 `.` 开头的项匹配该域本身及其所有子域，例如 `.example.test` 匹配 `example.test` 和 `a.b.example.test`，但不匹配 `evilexample.test`。导航只允许 `http` 和 `https`，带用户名或密码的地址一律不放行。服务器主机自动允许。登录过程中若跳到名单外的地址，应用内提示「登录跳到了未允许的网址」，不打开系统浏览器，日志只记录主机名；登录完成后，普通外链仍用系统浏览器打开。登录页面在单独的登录窗口中打开，该窗口不带 preload；回到服务器后登录窗口关闭，主窗口刷新。登录主机不会因此获得 Cry Bot 页面专属的本机 IPC 权限。
 
 更新源只使用指定的 generic HTTP(S) 地址。没有 `UPDATE_FEED_URL` 时不产生 publish 配置，运行时不加载更新器、不轮询，也不显示更新错误。更改更新源需要重新构建应用。
 
@@ -107,7 +107,7 @@ node scripts/smoke-selfhost-login.mjs
 
 Set `CRYBOT_PROVIDER_LOCK=1` on the server and restart to show only configured Claude custom endpoints, all named **Cry Bot**. Built-in providers, additional provider controls, hidden providers, and the AI key section are omitted; other service settings remain available. Endpoints without a custom icon use the Cry Bot mark. Only the owner or an admin can see endpoint addresses in `/api/instances`.
 
-Configure a Claude endpoint with the existing settings form (for example, `https://gateway.example`). If none exists, the locked provider list is empty and Settings → AI shows that form. On startup, references to missing providers in bots, tasks, routines, defaults, and backup models move to the first endpoint; no migration runs without an endpoint. Model IDs are preserved, so configure models supported by the endpoint. Existing provider configurations are retained: unset the variable or use `0` and restart to restore the normal provider list; migrated references are not rolled back.
+Configure a Claude endpoint with the existing settings form (for example, `https://example.com`). If none exists, the locked provider list is empty and Settings → AI shows that form. On startup, references to missing providers in bots, tasks, routines, defaults, and backup models move to the first endpoint; no migration runs without an endpoint. Model IDs are preserved, so configure models supported by the endpoint. Existing provider configurations are retained: unset the variable or use `0` and restart to restore the normal provider list; migrated references are not rolled back.
 
 Provider lock and hosted model policy (`CRYBOT_HOSTED_MODELS` / `CRYBOT_HOSTED_MODEL_TOKEN`) cannot be enabled together. The presence of either hosted model variable counts as enabling hosted policy, including on a Cloud home. The server refuses to start with both configured; disable one before restarting. Existing Boat computers can still be put to sleep or reclaimed during cleanup while provider lock is enabled.
 
@@ -115,6 +115,6 @@ For desktop builds, set the same variable to `1` when building. The generated `d
 
 ### Desktop builds that only connect to your server
 
-Set `CRYBOT_DESKTOP_REMOTE_ONLY=1` together with `CRYBOT_DEFAULT_SERVER_URL=https://gateway.example` when building the desktop app. The generated `desktop-config.json` enables `remoteOnly` only when a valid default server URL is present. The release workflow reads the repository variable `CRYBOT_DESKTOP_REMOTE_ONLY`. It is off by default; without it, existing desktop environment choices and startup behavior are unchanged.
+Set `CRYBOT_DESKTOP_REMOTE_ONLY=1` together with `CRYBOT_DEFAULT_SERVER_URL=https://example.com` when building the desktop app. The generated `desktop-config.json` enables `remoteOnly` only when a valid default server URL is present. The release workflow reads the repository variable `CRYBOT_DESKTOP_REMOTE_ONLY`. It is off by default; without it, existing desktop environment choices and startup behavior are unchanged.
 
-With `remoteOnly` enabled, every launch selects the default server, including installations with an existing `environments.json`. Saved environments are retained, but environment switching, local mode, and adding other servers are hidden. Failed connections show a retry page; retry and Reload open the configured server without selecting local mode. Set `CRYBOT_LOGIN_HOSTS` to the exact login hostnames that must open within the window; their login pages do not receive local IPC privileges. The local background service still runs for desktop computer control, IPC, and updater idle checks, but its interface is never shown in the main window.
+With `remoteOnly` enabled, every launch selects the default server, including installations with an existing `environments.json`. Saved environments are retained, but environment switching, local mode, and adding other servers are hidden. Failed connections show a retry page; retry and Reload open the configured server without selecting local mode. Set `CRYBOT_LOGIN_HOSTS` to login hosts that must open within the window. An item beginning with `.` matches that domain and all of its subdomains; other items match one hostname exactly. Only `http` and `https` URLs without a username or password are allowed. Login pages use a separate window without the desktop preload. During login, a redirect to an unlisted address stays in the app, shows an in-app notice, and logs only the hostname; after login, ordinary external links open in the system browser. When the page returns to the server, the login window closes and the main window reloads. The local background service still runs for desktop computer control, IPC, and updater idle checks, but its interface is never shown in the main window.

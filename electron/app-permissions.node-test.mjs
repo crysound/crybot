@@ -99,8 +99,10 @@ test("both external-link entry points use the policy and IPC retains the local-o
   const main = readFileSync(new URL("./main.mjs", import.meta.url), "utf8");
   assert.match(main, /ipcMain\.handle\("desktop:open-external", localOnly\("desktop:open-external"/);
   assert.match(main, /shell\.openExternal\(externalLinkUrl\(rawUrl\)\)/);
-  assert.match(main, /const external = externalLinkUrl\(url\);/);
-  assert.match(main, /shell\.openExternal\(external\)/);
+  const navigation = readFileSync(new URL("./login-navigation.mjs", import.meta.url), "utf8");
+  assert.match(main, /attachLoginNavigation\(\{/);
+  assert.match(navigation, /const external = externalLinkUrl\(url\);/);
+  assert.match(navigation, /shell\.openExternal\(external\)/);
   assert.doesNotMatch(main, /shell\.openExternal\(externalWebUrl\(/);
 });
 
