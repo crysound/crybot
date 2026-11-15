@@ -140,8 +140,7 @@ import { isBotTextRow, joinedCorners, needsStamp, quietRow, simpleRowLayout, SIM
 
 interface ChatRows {
   botId: string; threadId: string; botName: string; botColor: Bot["color"]; voiceId?: string;
-  tts: ConfigStatus["tts"]; localVoice: boolean;
-  localVm?: ConfigStatus["localVm"];
+  tts: ConfigStatus["tts"]; localVoice: boolean; localVm?: ConfigStatus["localVm"];
   hasMore: boolean; bots: readonly Bot[];
   mentionPeers: readonly MentionPeer[]; mentionPerson: { profileName?: string };
   /** A shared workspace's viewer key: another person's line carries their name. */
