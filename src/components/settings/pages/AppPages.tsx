@@ -21,6 +21,7 @@ import { SettingRow, SettingsGroup, SettingsLinkRow, SettingsRows, Switch } from
 import { SkinPicker } from "../../SkinPicker";
 import { TalkShortcutRow } from "../../TalkShortcutRow";
 import { useSkinChoice, ThemeRow } from "../../ThemeRow";
+import { IslandSettings } from "../../IslandSettings";
 import { WindowFrameRow } from "../../WindowFrameRow";
 import { resolveSkin, SKINS } from "@/lib/skins";
 import { versionLine } from "../settings-context";
@@ -172,6 +173,7 @@ export function AppearancePage() {
       <SettingsRows>
         <ChromeRailRow />
         <WindowFrameRow />
+        <IslandSettings />
         {ctx.advanced && <ShowThreadsRow />}
         {ctx.advanced && <SidebarToolsLayoutRow />}
         {ctx.advanced && <PinnedCirclesRow />}

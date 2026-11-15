@@ -357,6 +357,10 @@ const __APP_VERSION__: string;
       openExternal?(url: string): Promise<boolean>;
       /** Recolor the native window chrome for a skin; absent on older builds. */
       applySkin?(skin: string): Promise<boolean>;
+      islandSettings?: {
+        state(): Promise<import("../../shared/island").IslandSettings>;
+        set(value: Partial<import("../../shared/island").IslandSettings>): Promise<import("../../shared/island").IslandSettings>;
+      };
       /** The window's own frame, this desktop's choice (Settings → Appearance). Absent on an older app. */
       windowFrame?: {
         state(): Promise<import("../../electron/desktop-prefs.mjs").WindowFrameState>;

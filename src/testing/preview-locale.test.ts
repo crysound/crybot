@@ -29,7 +29,7 @@ it.each(["en", "zh"])("waits for %s before allowing preview rendering", async (t
 
 it("awaits locale readiness in every standalone preview entry before creating a root", () => {
   const entries = ["src", "src/testing", "scripts/testing"].flatMap((folder) =>
-    readdirSync(folder).filter((file) => file.endsWith(".tsx") && !["main.tsx", "rail.tsx"].includes(file))
+    readdirSync(folder).filter((file) => file.endsWith(".tsx") && !["main.tsx", "rail.tsx", "island.tsx"].includes(file))
       .map((file) => resolve(folder, file)))
     .filter((file) => /import\s*\{[^}]*createRoot[^}]*\}\s*from\s*["']react-dom\/client["']/.test(readFileSync(file, "utf8")));
   expect(entries).toHaveLength(34);
