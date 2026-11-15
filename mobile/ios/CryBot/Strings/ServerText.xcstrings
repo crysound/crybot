@@ -9231,6 +9231,29 @@
         }
       }
     },
+    "serverError.secret.saving": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This credential is being saved."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta credencial está sendo salva."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此凭据正在保存中。"
+          }
+        }
+      }
+    },
     "serverError.secret.savingFromPhone": {
       "extractionState": "manual",
       "localizations": {
@@ -9250,6 +9273,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "這個機密目前正從手機儲存中"
+          }
+        }
+      }
+    },
+    "serverError.secret.screenUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This bot no longer has access to the screen for this credential. Ask it to request the credential again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este bot não tem mais acesso à tela destinada a esta credencial. Peça a ele que solicite a credencial novamente."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此机器人已无法访问接收该凭据的屏幕。请让机器人重新请求凭据。"
           }
         }
       }

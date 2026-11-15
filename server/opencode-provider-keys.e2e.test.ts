@@ -86,6 +86,20 @@ const providerStarts = () => readdirSync(home).filter((name) => /^opencode\.json
 type ProviderEnvironment = { startId: string; startedAt: number; pid: number; env: Record<string, string> };
 const providerEnvironment = (file: string) => JSON.parse(readFileSync(file, "utf8")) as ProviderEnvironment;
 
+async function waitForProviderStartsToSettle(): Promise<void> {
+  let count = providerStarts().filter((name) => written(join(home, name))).length;
+  let stableSince = Date.now();
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline && Date.now() - stableSince < 1_000) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const next = providerStarts().filter((name) => written(join(home, name))).length;
+    if (next !== count) {
+      count = next;
+      stableSince = Date.now();
+    }
+  }
+}
+
 async function nextProviderEnvironment(startedAfter: number, before: string[] = []) {
   let records: ProviderEnvironment[] = [];
   await expect.poll(() => {
@@ -189,6 +203,8 @@ it("saves keys for any OpenCode provider on a Cloud, shows only their names, and
     expect(initialEnv.env.OPENAI_API_KEY).toBeUndefined();
   }
 
+  await api("GET", "/api/instances?fresh=1");
+  await waitForProviderStartsToSettle();
   const beforeSave = providerStarts();
   rmSync(dump, { force: true });
   const saved = await api("PUT", "/api/config", { opencodeGo: { providerKeys: { VENICE_API_KEY: VENICE, ANTHROPIC_API_KEY: OWNER_ANTHROPIC } } });

@@ -139,6 +139,8 @@ export const USER_ERROR = {
   "serverError.install.downloadDoesNotStart": "{name} was downloaded, but it doesn't start on this computer ({failure}). Nothing was installed.",
   "serverError.secret.missing": "no such credential request",
   "serverError.secret.settingsCard": "this card saves a key in Settings",
+  "serverError.secret.screenUnavailable": "This bot no longer has access to the screen for this credential. Ask it to request the credential again.",
+  "serverError.secret.saving": "This credential is being saved.",
   "serverError.secret.savingFromPhone": "this secret is currently being saved from a phone",
   "serverError.secret.declined": "this request was declined",
   "serverError.secret.replaced": "this request was replaced by a newer one",

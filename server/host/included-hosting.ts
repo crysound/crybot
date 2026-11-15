@@ -1,3 +1,4 @@
+import { screenFilePath, type ScreenFileAccess } from "../screen-files.ts";
 // The client of the plan's included app hosting: a Cloud home asks the Admin's relay to publish a bot's site on
 // CryBot's hosting account, a number of apps per plan, so the person needs no hosting account of their own.
 //
@@ -212,7 +213,8 @@ export function createIncludedHosting(deps: IncludedHostingDeps) {
 
     /** Security: an app's key is the bot and the project folder it is published from, so a record a bot wrote anywhere
      * can only ever name the app of the folder it sits in, never another bot's or another folder's. */
-    async keyFor(botId: string, projectFolder: string): Promise<string> {
+    async keyFor(botId: string, projectFolder: string, access?: ScreenFileAccess): Promise<string> {
+      if (access) return `app-${createHash("sha256").update(`${botId}\n${screenFilePath(access, projectFolder)}`).digest("hex").slice(0, 32)}`;
       const [folder, data] = await Promise.all([realpath(projectFolder), realpath(deps.dataDir).catch(() => deps.dataDir)]);
       const inside = relative(data, folder);
       const place = inside && !inside.startsWith(`..${sep}`) && inside !== ".." && !isAbsolute(inside) ? inside.split(sep).join("/") : folder;
