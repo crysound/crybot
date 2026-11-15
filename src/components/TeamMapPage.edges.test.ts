@@ -61,3 +61,19 @@ it("hides retired team cloud management while keeping Local VM setup", () => {
   expect(markup).not.toContain("InstaBox");
   expect(markup).toContain(t("canvas.localVm"));
 });
+
+it.each([
+  { cloudBackend: undefined, computer: "cloud", expected: false },
+  { cloudBackend: "instabox", computer: "cloud", expected: false },
+  { cloudBackend: "vps", computer: "cloud", expected: false },
+  { cloudBackend: "box", computer: "cloud", expected: true },
+  { cloudBackend: "box", computer: "off", expected: false },
+  { cloudBackend: "box", computer: undefined, expected: false },
+  { cloudBackend: "box", computer: "cloud", hidden: true, expected: false },
+] as const)("defaults computer display to $expected for $cloudBackend / $computer / hidden=$hidden", ({ expected, ...settings }) => {
+  fixture.bots = [bot("map-fixture", settings)];
+  const container = document.createElement("div");
+  container.innerHTML = renderToStaticMarkup(createElement(TeamMapPage));
+  const toggle = [...container.querySelectorAll("button")].find((button) => button.title === t("canvas.showComputersHint"));
+  expect(toggle?.getAttribute("aria-pressed")).toBe(String(expected));
+});

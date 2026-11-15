@@ -3,6 +3,7 @@ import * as boat from "../boat.ts";
 import { boatHealth } from "../boat-health.ts";
 import type { ComputerControl } from "../computer-control.ts";
 import type { MapComputer, MapComputersPayload } from "../../shared/map-computer.ts";
+import { cloudKindOf } from "../../shared/cloud-backend.ts";
 import { createComputerFrames, mapComputerState, type ComputerFrames, type FrameMachine } from "../computer-frames.ts";
 import type { AppConfig } from "../config.ts";
 import { latestTurnFrame } from "../screen-frame-source.ts";
@@ -41,7 +42,7 @@ export function mapComputers(input: {
   const sharedBy = (computer: (typeof teams)[number]) => bots.filter((bot) =>
     bot.computer === undefined && bot.cloudBackend !== "vps" && sectionKey(bot.section) === computer.section);
   const usesTeam = new Set(teams.flatMap((computer) => sharedBy(computer).map((bot) => bot.id)));
-  const own = bots.filter((bot) => bot.cloudBackend !== "vps" && (bot.computer === "cloud" || (!usesTeam.has(bot.id) && input.machine(bot.id) !== undefined)));
+  const own = bots.filter((bot) => cloudKindOf(bot) === "box" && (bot.computer === "cloud" || (!usesTeam.has(bot.id) && input.machine(bot.id) !== undefined)));
   return [
     ...own.map((bot) => ({
       id: bot.id, kind: "bot" as const, name: bot.name, botIds: [bot.id],
