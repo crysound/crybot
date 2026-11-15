@@ -57,7 +57,7 @@ const include = [
 export default defineConfig({
   plugins: [react(), tailwindcss(), railPage(), localeBundles()],
   build: {
-    rollupOptions: { input: { index: page("./index.html"), rail: page("./rail.html") }, output: { manualChunks: frontendChunk } },
+    rollupOptions: { input: { index: page("./index.html"), rail: page("./rail.html"), island: page("./island.html") }, output: { manualChunks: frontendChunk } },
   },
   define: {
     __APP_VERSION__: JSON.stringify(version),

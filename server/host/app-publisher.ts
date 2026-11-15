@@ -1,3 +1,5 @@
+import { resolveScreenOrHost } from "../screen-host-files.ts";
+import { screenFilePath, snapshotScreenFiles, removeScreenFile, type ScreenFileAccess } from "../screen-files.ts";
 // Publishes a folder a bot built to the plan's included app hosting, for the bot's publish_app tool: the server reads
 // the folder, sends it through the relay, waits for it to be live and leaves the record the Published apps page lists.
 //
@@ -7,7 +9,7 @@
 // token stays in included-hosting.ts: nothing here sees it, so no answer or record can carry it.
 import { createHash, randomBytes } from "node:crypto";
 import { lstat, readdir, realpath, rename, stat, unlink, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 
 import { canonicalRoots, containedBy, readContained } from "../pages/bundle.ts";
 import { inSecretFolder, SECRET_FILE_REFUSAL } from "../secret-folder.ts";
@@ -54,15 +56,28 @@ export interface AppFile { path: string; data: Buffer; sha1: string }
 const MAX_DEPTH = 24;
 
 /** Every publishable plain file under `folder`, with the ones left out. Paths are relative to it, with `/` between parts. */
-export async function collectAppFiles(folder: string, limits: HostingAllowance["limits"]): Promise<{ files: AppFile[]; bytes: number; skipped: string[] }> {
+export async function collectAppFiles(folder: string, limits: HostingAllowance["limits"], access?: ScreenFileAccess): Promise<{ files: AppFile[]; bytes: number; skipped: string[] }> {
   // Each file is checked to be inside this folder by its resolved path, so the folder is compared in the same form.
-  const dir = await realpath(folder);
+  const dir = access ? screenFilePath(access, folder) : await realpath(folder);
+  if (access) {
+    try {
+      access = await snapshotScreenFiles(access, dir, (entry) => publishable(entry.path) && !/[\p{Cc}\\]/u.test(entry.path)
+        && entry.path.length <= 512 && entry.path.split("/").length <= MAX_DEPTH + 1,
+      { bytes: limits.maxBytes, files: limits.maxFiles, fileBytes: limits.maxFileBytes });
+    } catch (error) {
+      if ((error as { status?: number }).status === 413) throw new HostingRefusal("too_large", "The app exceeds the file size or count limit.", true);
+      throw error;
+    }
+  }
+  const paths = access ? posix : { join, relative, sep };
   const files: AppFile[] = [], skipped: string[] = [];
   let listed = 0;
   const walk = async (folder: string, depth: number): Promise<void> => {
-    for (const name of (await readdir(folder)).sort()) {
-      const full = join(folder, name), path = relative(dir, full).split(sep).join("/");
-      const info = await lstat(full);
+    for (const name of (await (access ? access.list(folder) : readdir(folder))).sort()) {
+      const full = paths.join(folder, name), path = paths.relative(dir, full).split(paths.sep).join("/");
+      const remote = access ? await access.stat(full).catch(() => null) : null;
+      const info = access ? remote && { size: remote.size, isFile: () => remote.isFile, isDirectory: () => !remote.isFile, isSymbolicLink: () => false } : await lstat(full);
+      if (!info) { skipped.push(path); continue; }
       const needs = needsOwnNetlify(path);
       if (needs && !info.isSymbolicLink()) throw new HostingRefusal("needs_own_netlify", `This app uses ${needs}, which included hosting doesn't do: it publishes plain static files only. ${OWN_NETLIFY}`, true);
       if (info.isSymbolicLink() || !publishable(path) || /[\p{Cc}\\]/u.test(name) || path.length > 512 || inSecretFolder(full)) { skipped.push(path); continue; }
@@ -78,8 +93,9 @@ export async function collectAppFiles(folder: string, limits: HostingAllowance["
       if (files.length >= limits.maxFiles) throw new HostingRefusal("too_large", `The folder has more than ${limits.maxFiles} files, the most included hosting takes. Publish a smaller folder. ${OWN_NETLIFY}`, true);
       listed += info.size;
       if (listed > limits.maxBytes) throw new HostingRefusal("too_large", `The folder is larger than ${megabytes(limits.maxBytes)}, the most included hosting takes. ${OWN_NETLIFY}`, true);
-      const data = await readContained(full, dir).catch(() => null);
+      const data = await (access ? access.readFile(full, Math.min(limits.maxFileBytes, limits.maxBytes - (listed - info.size))) : readContained(full, dir)).catch(() => null);
       if (!data) { skipped.push(path); continue; }
+      if (access) listed += data.length - info.size;
       files.push({ path, data, sha1: createHash("sha1").update(data).digest("hex") });
     }
   };
@@ -92,8 +108,19 @@ const iso = (at: number) => new Date(at).toISOString();
 const wait = (ms: number) => new Promise((done) => setTimeout(done, ms));
 
 /** The folder at `requested` (absolute, or relative to one of the bot's folders), canonical, inside those folders. */
-async function locateFolder(requested: string, roots: readonly string[], what: string): Promise<string> {
+async function locateFolder(requested: string, roots: readonly string[], what: string, access?: ScreenFileAccess, vmWorkspace?: string | null): Promise<string> {
+  const resolved = await resolveScreenOrHost(requested, roots, access, vmWorkspace);
+  requested = resolved.path; roots = resolved.roots; access = resolved.access;
   const trimmed = requested.trim();
+  if (access) {
+    let target: string;
+    try { target = screenFilePath(access, trimmed); }
+    catch { throw new HostingRefusal("failed", "Only a folder inside your own working folder can be published."); }
+    if (inSecretFolder(target)) throw new HostingRefusal("failed", SECRET_FILE_REFUSAL);
+    const info = await access.stat(target);
+    if (!info || info.isFile) throw new HostingRefusal("failed", `${what} must be a folder in your working folder.`);
+    return target;
+  }
   if (!trimmed) throw new HostingRefusal("failed", `${what} is required: a folder in your working folder.`);
   const allowed = await canonicalRoots(roots);
   const candidates = isAbsolute(trimmed) ? [resolve(trimmed)] : allowed.map((root) => resolve(root, trimmed));
@@ -125,6 +152,8 @@ export interface AppPublisherDeps {
 }
 
 export interface AppPublishInput {
+  vmWorkspace?: string | null;
+  access?: ScreenFileAccess;
   botId: string;
   /** The bot's own folders for this turn. */
   roots: readonly string[];
@@ -162,7 +191,8 @@ export function createAppPublisher(deps: AppPublisherDeps) {
     }
   }
 
-  async function writeRecord(project: string, record: Record<string, unknown>): Promise<void> {
+  async function writeRecord(project: string, record: Record<string, unknown>, access?: ScreenFileAccess): Promise<void> {
+    if (access) { await access.writeFile(posix.join(project, SITE_FILE), Buffer.from(`${JSON.stringify(record, null, 2)}\n`), 0o644); return; }
     // Written beside and renamed over: a record a bot swapped for a link is replaced, never written through.
     if (await realpath(project).catch(() => null) !== project) return;
     const temp = join(project, `${SITE_FILE}.${randomBytes(6).toString("hex")}.tmp`);
@@ -174,9 +204,9 @@ export function createAppPublisher(deps: AppPublisherDeps) {
     }
   }
 
-  async function forgetRecord(project: string): Promise<void> {
-    const file = join(project, SITE_FILE);
-    if ((await readSite(file, deps.env))?.hosting === "included") await unlink(file).catch(() => {});
+  async function forgetRecord(project: string, access?: ScreenFileAccess): Promise<void> {
+    const file = (access ? posix : { join }).join(project, SITE_FILE);
+    if ((await readSite(file, deps.env, access))?.hosting === "included") await (access ? removeScreenFile(access, file) : unlink(file)).catch(() => {});
   }
 
   /** The turn's folders with the bot's shared one first, so a relative path names the same folder in every conversation. */
@@ -191,10 +221,10 @@ export function createAppPublisher(deps: AppPublisherDeps) {
   }
 
   async function place(input: AppPublishInput): Promise<{ dir: string; project: string; key: string }> {
-    const dir = await locateFolder(input.path, folders(input), "path");
-    const project = input.project?.trim() ? await locateFolder(input.project, folders(input), "project") : dir;
+    const dir = await locateFolder(input.path, folders(input), "path", input.access, input.vmWorkspace);
+    const project = input.project?.trim() ? await locateFolder(input.project, folders(input), "project", input.access, input.vmWorkspace) : dir;
     if (!containedBy(project, dir)) throw new HostingRefusal("failed", "path must be the project folder or a folder inside it (for example project \"shop\" and path \"shop/dist\").");
-    return { dir, project, key: await hosting.keyFor(input.botId, project) };
+    return { dir, project, key: await hosting.keyFor(input.botId, project, input.access) };
   }
 
   const refused = (error: unknown): AppPublishAnswer => {
@@ -212,7 +242,7 @@ export function createAppPublisher(deps: AppPublisherDeps) {
       createdAt: iso(app.createdAt ?? now()),
     };
     if (app.state !== "ready" || !app.url) {
-      await writeRecord(project, { ...base, ...(app.publishedAt ? { publishedAt: iso(app.publishedAt) } : {}), deployState: app.state });
+      await writeRecord(project, { ...base, ...(app.publishedAt ? { publishedAt: iso(app.publishedAt) } : {}), deployState: app.state }, input.access);
       return { url: app.url, state: app.state, live: false };
     }
     const opened = app.visibility === "private" ? await hosting.makePublic(app.key) ?? app : app;
@@ -220,7 +250,7 @@ export function createAppPublisher(deps: AppPublisherDeps) {
     await writeRecord(project, {
       ...base, publishedAt: iso(firstLook ? now() : app.publishedAt ?? now()), deployState: "ready",
       ...(link.liveStatus === 200 ? { access: "public" } : link.liveStatus === 401 ? { access: "private" } : {}),
-    });
+    }, input.access);
     return { url: opened.url ?? app.url, state: "ready", ...link };
   }
 
@@ -230,13 +260,14 @@ export function createAppPublisher(deps: AppPublisherDeps) {
       try {
         const title = oneLine(input.title ?? "", 120);
         if (!title) throw new HostingRefusal("failed", "title is required: what the app is, in a few words.");
+        input = { ...input, ...await resolveScreenOrHost(input.path, input.roots, input.access, input.vmWorkspace) };
         const { dir, project, key } = await place(input);
-        const existing = await readSite(join(project, SITE_FILE), deps.env);
+        const existing = await readSite((input.access ? posix : { join }).join(project, SITE_FILE), deps.env, input.access);
         if (existing && !existing.hosting) {
           throw new HostingRefusal("failed", `This project is already published on the person's own Netlify account (${existing.url}). Keep updating it there with deploy.mjs, so its link stays the same.`);
         }
         const before = await hosting.list(turn.signal);
-        const { files, bytes, skipped } = await collectAppFiles(dir, before.allowance.limits);
+        const { files, bytes, skipped } = await collectAppFiles(dir, before.allowance.limits, input.access);
         if (!files.some((file) => file.path === "index.html")) throw new HostingRefusal("failed", `${input.path.trim()} has no index.html at its top. Publish the built output folder.`);
         turn.assertActive?.();
 
@@ -288,14 +319,16 @@ export function createAppPublisher(deps: AppPublisherDeps) {
         const included = { ...said(allowance), limits: `${megabytes(allowance.limits.maxBytes)} and ${allowance.limits.maxFiles} files an app, ${megabytes(allowance.limits.maxFileBytes)} a file` };
         const folder = input.project?.trim() || input.path?.trim();
         if (!folder) {
-          const found = await findNetlifySites(folders(input), { home: deps.home, env: deps.env }).catch(() => []);
-          const projects = found.map((site) => ({ title: site.title, folder: dirname(site.file), ...(site.url ? { url: site.url } : {}), on: site.hosting ? "included hosting" : "the person's own Netlify" }));
+          const found = await findNetlifySites(folders(input), { home: deps.home, env: deps.env, ...(input.access ? { access: input.access } : {}) }).catch(() => []);
+          const projects = found.map((site) => ({ title: site.title, folder: (input.access ? posix.dirname : dirname)(site.file), ...(site.url ? { url: site.url } : {}), on: site.hosting ? "included hosting" : "the person's own Netlify" }));
           return { status: 200, body: { ok: true, ...included, projects } };
         }
-        const project = await locateFolder(folder, folders(input), "path");
-        const key = await hosting.keyFor(input.botId, project);
+        const resolved = await resolveScreenOrHost(folder, input.roots, input.access, input.vmWorkspace);
+        input = { ...input, ...resolved };
+        const project = await locateFolder(resolved.path, folders(input), "path", input.access, input.vmWorkspace);
+        const key = await hosting.keyFor(input.botId, project, input.access);
         const app = await hosting.app(key);
-        const existing = await readSite(join(project, SITE_FILE), deps.env);
+        const existing = await readSite((input.access ? posix : { join }).join(project, SITE_FILE), deps.env, input.access);
         const outcome = await settle(app, project, { ...input, path: folder }, existing, false);
         return { status: 200, body: { ok: true, title: app.title, ...outcome, ...(app.state === "taken_down" ? { message: "This app was taken down by Cry Bot. Its link no longer works." } : {}), ...included } };
       } catch (error) {
@@ -306,14 +339,16 @@ export function createAppPublisher(deps: AppPublisherDeps) {
     /** Deletes the app published from this folder: its link stops working and its place in the plan is free. */
     async remove(input: Omit<AppPublishInput, "title">): Promise<AppPublishAnswer> {
       try {
-        const project = await locateFolder(input.project?.trim() || input.path, folders(input), "path");
-        const key = await hosting.keyFor(input.botId, project);
+        const resolved = await resolveScreenOrHost(input.project?.trim() || input.path, input.roots, input.access, input.vmWorkspace);
+        input = { ...input, ...resolved };
+        const project = await locateFolder(resolved.path, folders(input), "path", input.access, input.vmWorkspace);
+        const key = await hosting.keyFor(input.botId, project, input.access);
         const app = await hosting.app(key).catch(async (error: unknown) => {
-          if (error instanceof HostingRefusal && error.code === "not_found") await forgetRecord(project);
+          if (error instanceof HostingRefusal && error.code === "not_found") await forgetRecord(project, input.access);
           throw error;
         });
         await hosting.remove(key);
-        await forgetRecord(project);
+        await forgetRecord(project, input.access);
         const { allowance } = await hosting.list().catch(() => ({ allowance: null }));
         return { status: 200, body: { ok: true, deleted: true, title: app.title, url: app.url, message: "The app was deleted and its link no longer works. Your files stay.", ...(allowance ? said(allowance) : {}) } };
       } catch (error) {

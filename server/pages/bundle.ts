@@ -1,11 +1,13 @@
+import { resolveScreenOrHost } from "../screen-host-files.ts";
 // A page's files, read from inside the bot's own folders only: the path is resolved and every file re-checked with
 // realpath containment, symlinks out of the folder are skipped, and hidden files and folders (.git, .env) never go.
 // Everything left out is named to the bot, except the secret folder, which a page never mentions.
 import { type FileHandle, lstat, open, readdir, readlink, realpath, stat } from "node:fs/promises";
-import { basename, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, extname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { PAGE_FILE_EXTENSIONS, PAGE_MAX_BYTES, PAGE_MAX_FILES } from "../../shared/published-page.ts";
 import { guestWorkspaceToHost } from "../bot-attachment.ts";
 import { VM_WORKSPACE_GUEST } from "../container-computer.ts";
+import { screenFilePath, snapshotScreenFiles, type ScreenFileEntry, type ScreenFileAccess } from "../screen-files.ts";
 import { inSecretFolder, SECRET_FILE_REFUSAL } from "../secret-folder.ts";
 
 export interface PageFile {
@@ -75,8 +77,18 @@ export async function canonicalRoots(roots: readonly string[]): Promise<string[]
 }
 
 /** The file or folder at `requested` (absolute, or relative to one of `roots`) and the root holding it. */
-async function locate(requested: string, roots: readonly string[], exactRoots = false): Promise<{ target: string; root: string }> {
+async function locate(requested: string, roots: readonly string[], exactRoots = false, access?: ScreenFileAccess, vmWorkspace?: string | null): Promise<{ target: string; root: string; access?: ScreenFileAccess }> {
+  const resolved = await resolveScreenOrHost(requested, roots, access, vmWorkspace);
+  requested = resolved.path; roots = resolved.roots; access = resolved.access;
   const trimmed = requested.trim();
+  if (access) {
+    let target: string;
+    try { target = screenFilePath(access, trimmed); }
+    catch { throw new PageBundleError("Only files in your working folder can be published. Save the page there first.", 403); }
+    if (inSecretFolder(target)) throw new PageBundleError(SECRET_FILE_REFUSAL, 403);
+    if (!await access.stat(target)) throw new PageBundleError(`Nothing was found at ${trimmed}.`, 404);
+    return { target, root: target, access };
+  }
   if (!trimmed) throw new PageBundleError("path is required: the .html file or the folder to publish.");
   // Exact roots are taken as written (already canonical): a root swapped for a link leaves its target outside them.
   const allowed = exactRoots ? [...roots] : await canonicalRoots(roots);
@@ -99,8 +111,8 @@ async function locate(requested: string, roots: readonly string[], exactRoots = 
 }
 
 /** The canonical file or folder `requested` names inside `roots`: the key a page is remembered by. */
-export async function pageSource(requested: string, roots: readonly string[]): Promise<string> {
-  return (await locate(requested, roots)).target;
+export async function pageSource(requested: string, roots: readonly string[], access?: ScreenFileAccess, vmWorkspace?: string | null): Promise<string> {
+  return (await locate(requested, roots, false, access, vmWorkspace)).target;
 }
 
 /** Whether a live page's folder is still one the bot may read: false once the bot is gone (no roots) or the folder is
@@ -136,27 +148,42 @@ export async function readContained(real: string, root: string): Promise<Buffer 
 }
 
 /** The page at `requested`: one .html file (published as index.html), or a folder with index.html at its top. */
-export async function readPageBundle(requested: string, roots: readonly string[], limits = { bytes: PAGE_MAX_BYTES, files: PAGE_MAX_FILES }, options: { videos?: boolean; exactRoots?: boolean } = {}): Promise<PageBundle> {
-  const { target, root } = await locate(requested, roots, options.exactRoots);
-  const info = await stat(target);
+export async function readPageBundle(requested: string, roots: readonly string[], limits = { bytes: PAGE_MAX_BYTES, files: PAGE_MAX_FILES }, options: { videos?: boolean; exactRoots?: boolean; vmWorkspace?: string | null } = {}, access?: ScreenFileAccess): Promise<PageBundle> {
+  const located = await locate(requested, roots, options.exactRoots, access, options.vmWorkspace);
+  const { target, root } = located;
+  access = located.access;
+  if (access) {
+    try { access = await snapshotScreenFiles(access, target, (entry) => pageTreeFile(entry, options.videos), { ...limits, fileBytes: limits.bytes }); }
+    catch (error) { if ((error as { status?: number }).status === 413) throw new PageBundleError("The page exceeds the file size or count limit.", 413); throw error; }
+  }
+  const inspect = async (path: string) => {
+    if (!access) return stat(path);
+    const info = await access.stat(path);
+    if (!info) throw new PageBundleError(`Nothing was found at ${path}.`, 404);
+    return { size: info.size, isFile: () => info.isFile, isDirectory: () => !info.isFile, isSymbolicLink: () => false };
+  };
+  const info = await inspect(target);
   if (info.isFile()) {
     if (!isHtml(target)) throw new PageBundleError("A single file must be an .html page. For anything else, publish a folder with an index.html.");
     if (info.size > limits.bytes) throw new PageBundleError(`The page is ${info.size} bytes; a page can be at most ${limits.bytes}.`, 413);
-    const data = await readContained(target, root);
+    const data = access ? await access.readFile(target, limits.bytes) : await readContained(target, root);
     if (!data) throw new PageBundleError("The page moved while it was being read. Publish it again.");
     return { source: target, files: [{ path: "index.html", data }], bytes: data.byteLength, skipped: [] };
   }
   if (!info.isDirectory()) throw new PageBundleError("Publish an .html file or a folder.");
+  const paths = access ? posix : { join, relative, sep };
   const files: PageFile[] = [], skipped: SkippedFile[] = [], videos: Record<string, PageVideo> = {};
   let bytes = 0;
   const walk = async (folder: string, depth: number): Promise<void> => {
-    for (const name of (await readdir(folder)).sort()) {
-      const full = join(folder, name);
+    for (const name of (await (access ? access.list(folder) : readdir(folder))).sort()) {
+      const full = paths.join(folder, name);
       if (inSecretFolder(full)) continue;
-      const own = await lstat(full), path = relative(target, full).split(sep).join("/");
+      const path = paths.relative(target, full).split(paths.sep).join("/");
+      const own = access ? await inspect(full).catch(() => null) : await lstat(full);
+      if (!own) { skipped.push({ path, why: "link" }); continue; }
       if (name.startsWith(".")) { skipped.push({ path: own.isDirectory() ? `${path}/` : path, why: "hidden" }); continue; }
       // Every entry is resolved, not only links: a folder on the way swapped for a link while it is read resolves outside.
-      const real = await realpath(full).catch(() => null);
+      const real = access ? full : await realpath(full).catch(() => null);
       if (!real || !containedBy(root, real) || inSecretFolder(real)) { skipped.push({ path, why: "link" }); continue; }
       const entry = own.isSymbolicLink() ? await stat(real) : own;
       if (entry.isDirectory()) {
@@ -168,7 +195,7 @@ export async function readPageBundle(requested: string, roots: readonly string[]
       if (!entry.isFile()) continue;
       if (!carried(name, options.videos)) { skipped.push({ path, why: isVideo(name) ? "video" : "type" }); continue; }
       if (!pageName(name)) { skipped.push({ path, why: "name" }); continue; }
-      if (isVideo(name)) {
+      if (isVideo(name) && !access) {
         if (files.length + Object.keys(videos).length >= limits.files) throw new PageBundleError(`The folder has more than ${limits.files} files a page can hold. Publish a smaller folder.`, 413);
         const identity = await stat(real, { bigint: true });
         videos[path] = { file: real, bytes: Number(identity.size), dev: String(identity.dev), ino: String(identity.ino), mtimeNs: String(identity.mtimeNs) };
@@ -177,8 +204,9 @@ export async function readPageBundle(requested: string, roots: readonly string[]
       if (files.length >= limits.files) throw new PageBundleError(`The folder has more than ${limits.files} files a page can hold. Publish a smaller folder.`, 413);
       bytes += entry.size;
       if (bytes > limits.bytes) throw new PageBundleError(`The folder's files come to more than ${limits.bytes} bytes, a page's limit. Make the images smaller or leave some out.`, 413);
-      const data = await readContained(real, root);
+      const data = access ? await access.readFile(real, limits.bytes - (bytes - entry.size)) : await readContained(real, root);
       if (!data) { skipped.push({ path, why: "link" }); continue; }
+      if (access) bytes += data.length - entry.size;
       files.push({ path, data });
     }
   };
@@ -187,6 +215,14 @@ export async function readPageBundle(requested: string, roots: readonly string[]
     throw new PageBundleError(`${basename(target)} has no index.html at its top. Name the main page index.html, then publish again.`);
   }
   return { source: target, files, bytes, skipped, ...(options.videos ? { videos } : {}) };
+}
+
+function pageTreeFile(entry: ScreenFileEntry, videos?: boolean): boolean {
+  if (entry.type !== "file") return false;
+  if (!entry.path) return true;
+  const parts = entry.path.split("/"), name = parts.pop()!;
+  return parts.length <= 9 && parts.every((part) => pageName(part) && !SKIPPED_FOLDERS.has(part))
+    && pageName(name) && carried(name, videos) && !inSecretFolder(entry.path);
 }
 
 const NOTE_GROUPS = 4, NOTE_PATHS = 3;
@@ -224,27 +260,38 @@ export function skippedNote(skipped: readonly SkippedFile[]): string {
 }
 
 /** The bot's own folders for a turn, and its Local VM's workspace on this computer when it has one. */
-export type BotFolders = () => Promise<{ roots: readonly string[]; vmWorkspace: string | null }>;
+export type BotFolders = () => Promise<{ roots: readonly string[]; vmWorkspace: string | null; vmGuestRoot?: string; access?: ScreenFileAccess }>;
 
 /** A chat page's bundle, videos included: readPageBundle within a bot's own folders; a path inside its Local VM's workspace means the same file here. */
-export async function readBotPageBundle(requested: string, folders: BotFolders): Promise<PageBundle> {
-  const { roots, vmWorkspace } = await folders();
-  const path = vmWorkspace ? guestWorkspaceToHost(requested, VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
-  return readPageBundle(path, vmWorkspace ? [vmWorkspace, ...roots] : roots, undefined, { videos: true });
+export async function readBotPageBundle(requested: string, folders: BotFolders, access?: ScreenFileAccess): Promise<PageBundle> {
+  const { roots, vmWorkspace, vmGuestRoot, access: folderAccess } = await folders();
+  access ??= folderAccess;
+  const path = !access && vmWorkspace ? guestWorkspaceToHost(requested, vmGuestRoot ?? VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
+  return readPageBundle(path, vmWorkspace ? [vmWorkspace, ...roots] : roots, undefined, { videos: true, vmWorkspace }, access);
 }
 
 /** A file inside a bot's own folders (or its Local VM's workspace), by the same rules as a page: the `extract` tool's. */
-export async function botFileSource(requested: string, folders: BotFolders): Promise<string> {
-  const { roots, vmWorkspace } = await folders();
-  const path = vmWorkspace ? guestWorkspaceToHost(requested, VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
-  return pageSource(path, vmWorkspace ? [vmWorkspace, ...roots] : roots);
+export async function botFileSource(requested: string, folders: BotFolders, access?: ScreenFileAccess): Promise<string> {
+  const { roots, vmWorkspace, vmGuestRoot, access: folderAccess } = await folders();
+  access ??= folderAccess;
+  const path = !access && vmWorkspace ? guestWorkspaceToHost(requested, vmGuestRoot ?? VM_WORKSPACE_GUEST, vmWorkspace) ?? requested : requested;
+  return pageSource(path, vmWorkspace ? [vmWorkspace, ...roots] : roots, access, vmWorkspace);
 }
 
 /** A cheap fingerprint of a page's file or folder, by the same walk and filters as readPageBundle (hidden, secret, badly
  * named, unservable and linked-out files left out): each file's path, size and modified time. null when it is gone or no
  * longer at that real path. Videos count only with `videos`, as only a chat page carries them. A live page re-reads its
  * folder only when this changes. */
-export async function pageSignature(source: string, options: { videos?: boolean } = {}, limit = PAGE_MAX_FILES * 4): Promise<string | null> {
+export async function pageSignature(source: string, options: { videos?: boolean } = {}, limit = PAGE_MAX_FILES * 4, access?: ScreenFileAccess): Promise<string | null> {
+  if (access) {
+    try {
+      const target = screenFilePath(access, source);
+      if (!access.tree) return null;
+      const entries = await access.tree(target);
+      return entries.filter((entry) => pageTreeFile(entry, options.videos)).slice(0, limit)
+        .map((entry) => `${entry.path}:${entry.size}:${entry.mtimeMs}`).join("\n");
+    } catch { return null; }
+  }
   // A folder swapped for a link to somewhere else is not the folder the page was read from.
   if (await realpath(source).catch(() => null) !== source) return null;
   const info = await stat(source).catch(() => null);

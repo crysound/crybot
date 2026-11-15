@@ -115,3 +115,99 @@ it("refuses a user request to create a team computer while locked", async () => 
   expect(result.status).toBe(409);
   expect(provision).not.toHaveBeenCalled();
 });
+
+describe("shared screen routes", () => {
+  async function setup(assigned: number | null = 2, multi = true) {
+    const container = await import("../container-computer.ts");
+    const { z } = await import("zod");
+    vi.spyOn(container, "containerComputerStatus").mockResolvedValue({
+      ready: true, managed: true, container: "running", network: "loopback", imageMatches: true,
+      viewer_url: "http://127.0.0.1:6080/vnc.html#password=container-only", viewer_port: 6080,
+    } as never);
+    vi.spyOn(container, "containerComputerAction").mockResolvedValue({ ready: true, runtime: "docker", container: "running" } as never);
+    const screenshot = vi.spyOn(container, "containerComputerScreenshot").mockResolvedValue("fixture-image");
+    const bot = { id: "screen-bot", threadId: "screen-thread", name: "Screen bot" } as BotRecord;
+    const beat = vi.fn(() => true);
+    const touch = vi.fn();
+    const handler = createComputerRoutes({
+      cfg: { localVm: { mode: "shared", screens: multi ? 4 : 1 } }, store: { bot: () => bot },
+      computerPreviewBot: () => bot, computerPreviewSurface: async () => "vm",
+      localVmTargetForStatus: () => multi ? container.sharedScreenTarget(assigned ?? 2) : container.SHARED_LOCAL_VM_TARGET,
+      localVmLeaseKey: () => `desktop:local/shared-s${assigned}`,
+      controlLeaseIdSchema: z.string().min(16), computerControl: { beat },
+      localVmContainerBusy: () => true, localVmImageBusy: { get: () => false }, localVmModeChangeBusy: { get: () => false },
+      localVmLifecycleBusy: new Set(), localVmLeaseFor: () => ({ current: () => null }), localVmActiveThreads: new Map(),
+      localVmSeen: new Set(), localVmIdleFor: () => ({ touch, cancel: vi.fn() }), localVmIdleMs: () => 600000,
+      screens: { enabled: () => multi, payload: () => ({ layout: multi ? "multi" : "single" }), assigned: () => assigned, ready: (n: number) => n === assigned, password: () => "screen-password", touch },
+      localVmPayload: async () => ({ screens: { layout: "multi", screens: 4, slots: [], queue: [] } }),
+      routines: () => null,
+    } as unknown as ComputerRouteDeps);
+    const request = async (path: string, method = "POST", scopes = ["admin"], remote = false) => {
+      let result: { status: number; body: any } | undefined;
+      const url = new URL(path, "http://localhost");
+      await handler({
+        req: { headers: { "content-type": "application/json" } }, res: { setHeader() {} },
+        url, path: url.pathname, method,
+        auth: remote ? { kind: "session", via: "bearer", session: {}, scopes } : { kind: "loopback", scopes },
+        json: (_res: unknown, status: number, body: unknown) => { result = { status, body }; }, readBody: async () => ({}),
+      } as unknown as RouteContext);
+      return result!;
+    };
+    return { request, beat, touch, screenshot };
+  }
+
+  it("returns the shared screen list without credentials", async () => {
+    const { request } = await setup();
+    const result = await request("/api/local-computer", "GET");
+    expect(result.body.screens.layout).toBe("multi");
+    expect(JSON.stringify(result.body)).not.toContain("password");
+  });
+  it("requires an assigned screen for bot status and joins", async () => {
+    const { request, beat } = await setup(null);
+    for (const [path, method] of [["/api/bots/screen-bot/local-computer", "GET"], ["/api/bots/screen-bot/local-computer/join", "POST"]]) {
+      expect(await request(path!, method)).toMatchObject({ status: 409, body: { error: "screen_not_assigned" } });
+    }
+    expect(beat).not.toHaveBeenCalled();
+  });
+  it("joins only the assigned screen with the screen password and direct token path", async () => {
+    const { request, beat, touch } = await setup();
+    const path = "/api/bots/screen-bot/local-computer/join?controlLeaseId=fixture-screen-lease";
+    const direct = await request(path);
+    expect(direct.status).toBe(200);
+    const hash = new URLSearchParams(new URL(direct.body.joinUrl).hash.slice(1));
+    expect(hash.get("password")).toBe("screen-password");
+    expect(hash.get("path")).toBe("websockify?token=s2");
+    expect(beat).toHaveBeenCalledWith("desktop:local/shared-s2", "fixture-screen-lease");
+    const phone = await request(path, "POST", ["admin"], true);
+    expect(phone.body).toMatchObject({ password: "screen-password", socketPath: expect.stringContaining("local/shared-s2/websockify?") });
+    expect(touch).not.toHaveBeenCalled();
+  });
+  it("limits explicit screen joins to admins and screenshots to ready screens", async () => {
+    const { request, screenshot, touch } = await setup();
+    expect((await request("/api/local-computer/screens/2/join", "POST", ["client"])).status).toBe(403);
+    expect((await request("/api/local-computer/screens/1/screenshot")).status).toBe(409);
+    expect((await request("/api/local-computer/screens/2/screenshot")).body.image).toBe("fixture-image");
+    expect(screenshot).toHaveBeenCalledWith(undefined, undefined, expect.objectContaining({ screen: 2 }));
+    const joined = await request("/api/local-computer/screens/2/join");
+    expect(joined.body.socketPath).toBe("api/desktop-viewer/local/shared-s2/websockify");
+    expect(touch).not.toHaveBeenCalled();
+  });
+  it.each([false, true])("renews screenshot and bot join activity only in single-screen mode (multi=%s)", async multi => {
+    const { request, touch } = await setup(2, multi);
+    const paths = [
+      multi ? "/api/local-computer/screens/2/screenshot" : "/api/local-computer/screenshot",
+      "/api/bots/screen-bot/local-computer/screenshot",
+      "/api/bots/screen-bot/local-computer/join?controlLeaseId=fixture-screen-lease",
+    ];
+    for (const path of paths) {
+      touch.mockClear();
+      for (let poll = 0; poll < 3; poll++) expect((await request(path)).status).toBe(200);
+      expect(touch).toHaveBeenCalledTimes(multi ? 0 : 3);
+    }
+  });
+  it.each([false, true])("applies the container-wide busy refusal only in multi-screen mode (%s)", async multi => {
+    const { request } = await setup(2, multi);
+    expect((await request("/api/local-computer/start")).status).toBe(multi ? 409 : 200);
+  });
+
+});

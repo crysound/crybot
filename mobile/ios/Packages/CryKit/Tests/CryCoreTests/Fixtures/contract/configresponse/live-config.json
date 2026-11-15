@@ -124,7 +124,8 @@
     "idleTimeoutMinutes": 480,
     "maxInstances": 2,
     "mode": "shared",
-    "preserveInstalledApps": false
+    "preserveInstalledApps": false,
+    "screens": 4
   },
   "managedPolicy": null,
   "mcp": {

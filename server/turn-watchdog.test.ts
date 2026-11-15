@@ -7,6 +7,7 @@ import { chatNotice, failedNoticeTool } from "./chat-notices.ts";
 import type { ProviderAdapter, RuntimeEvent } from "./contracts.ts";
 import { EngineMemory } from "./engine-memory.ts";
 import type { Message } from "./store.ts";
+import { COMPUTER_WAIT_MAX_MS } from "./turn-computer-wait.ts";
 import { TurnStops, stoppedTurnOutcome } from "./turn-outcome.ts";
 import { engineCommandCpuMs, engineProcessGone, stallLimitMs, stallNotice, stuckCommand, TurnWatchdog, type TurnWatchdogOptions, type WatchedTurn } from "./turn-watchdog.ts";
 
@@ -523,7 +524,7 @@ describe("the stall handler", () => {
     const context = vm.createContext({
       process: { env },
       RoomTurnStallRegistry: class { stall() {} },
-      TurnStops, stoppedTurnOutcome, reportsToRequester: () => true, stallLimitMs,
+      COMPUTER_WAIT_MAX_MS, TurnStops, stoppedTurnOutcome, reportsToRequester: () => true, stallLimitMs,
       TurnWatchdog: class { options: unknown; constructor(options: { onStall: (turn: WatchedTurn) => void }) { this.options = options; } },
       store: { messagesFor: () => messages, activePath: () => messages, appendMessage() {} },
       turnResourceOwners: new Map(), directTurnGenerationByThread: new Map([["t1", "gen-1"]]), directRequestOwners: new Map(),

@@ -2,24 +2,28 @@
 // them by itself: prepare the new image once, then recreate each old desktop while nothing uses it, keeping its durable folder
 // and website sign-ins. Until then the bot's own place is unavailable: a turn never moves its work to this computer instead.
 import {
-  containerRuntimeStatus,
+  containerRuntimeStatus, containerTargetOf, sh,
   localVmWorkspaceExists,
   perBotLocalVmTarget,
   poolLocalVmTarget,
   SHARED_LOCAL_VM_TARGET,
-  type ContainerComputerStatus,
+  type ContainerComputerStatus, type CommandRunner,
   type LocalVmTarget,
 } from "./container-computer.ts";
 import { discoverExistingPerBotLocalVms, discoverExistingPoolLocalVms, shouldArmLocalVmIdle, type LocalVmInventoryBot } from "./local-vm-inventory.ts";
+import { rootContainerExecArgs } from "./container-screens.ts";
 import { keepFirefoxProfileBeforeRemove, keepInstalledAppsBeforeRemove } from "./local-vm-profiles.ts";
 
 export type LocalVmUpdateNeed = "image" | "recreate";
 
 /** A desktop CryBot made, or a durable folder left by one, that this release cannot run without updating. */
-export function localVmUpdateNeed(status: ContainerComputerStatus, workspaceExists: boolean): LocalVmUpdateNeed | null {
+export function localVmUpdateNeed(status: ContainerComputerStatus, workspaceExists: boolean, layout?: "single" | "multi"): LocalVmUpdateNeed | null {
   if (!status.runtime || !status.daemonUp) return null;
   if (status.container === "missing") return workspaceExists && !status.image && status.create_supported ? "image" : null;
-  if (!status.managed || status.imageMatches) return null;
+  if (!status.managed) return null;
+  if (status.runtime === "container" || status.screens_fallback) layout = "single";
+  if (layout && (status.screens_layout ?? "single") !== layout) return status.image ? "recreate" : "image";
+  if (status.imageMatches) return null;
   return status.image ? "recreate" : "image";
 }
 
@@ -56,6 +60,9 @@ type BusyFlag = { get(): boolean; set(busy: boolean): void };
 
 export interface LocalVmUpdaterDeps {
   status(target: LocalVmTarget): Promise<ContainerComputerStatus>;
+  layout?(target: LocalVmTarget): "single" | "multi";
+  beforeRecreate?(target: LocalVmTarget): Promise<void>;
+  migrate?(target: LocalVmTarget, status: ContainerComputerStatus): Promise<void>;
   act(action: "pull" | "stop" | "remove" | "run", target: LocalVmTarget): Promise<ContainerComputerStatus>;
   imageBusy: BusyFlag;
   provisionBusy: BusyFlag;
@@ -101,9 +108,10 @@ export function createLocalVmUpdater(deps: LocalVmUpdaterDeps) {
 
   /** Records what a status probe saw; true while the desktop waits for, or is in the middle of, its update. */
   function observe(target: LocalVmTarget, status: ContainerComputerStatus | null | undefined): boolean {
+    target = containerTargetOf(target);
     const entry = entries.get(target.key);
     if (!status) return Boolean(entry);
-    if (localVmUpdateNeed(status, workspaceExists(target))) {
+    if (localVmUpdateNeed(status, workspaceExists(target), deps.layout?.(target))) {
       fine.delete(target.key);
       if (!entry) entries.set(target.key, { target, failure: null, failedAt: 0, run: null });
       return true;
@@ -135,7 +143,7 @@ export function createLocalVmUpdater(deps: LocalVmUpdaterDeps) {
 
   async function recreate(target: LocalVmTarget): Promise<void> {
     let status = await deps.status(target);
-    if (!localVmUpdateNeed(status, workspaceExists(target))) return;
+    if (!localVmUpdateNeed(status, workspaceExists(target), deps.layout?.(target))) return;
     if (!status.image) {
       status = await prepareImage(target);
       if (!status.image) throw new Error(status.problem ?? "the new desktop image could not be prepared");
@@ -148,11 +156,14 @@ export function createLocalVmUpdater(deps: LocalVmUpdaterDeps) {
     if (perBot) deps.provisionBusy.set(true);
     try {
       status = await deps.status(target);
-      if (status.container === "missing" || !status.managed || status.imageMatches) return;
+      if (!localVmUpdateNeed(status, workspaceExists(target), deps.layout?.(target))) return;
+      await deps.beforeRecreate?.(target);
+      if (status.container === "running" && status.imageMatches) status = await deps.act("stop", target);
       await keepSignIns(target, status, () => deps.act("stop", target));
       await keepApps(target, { ...status, container: "stopped" }, () => deps.act("stop", target));
       await deps.act("remove", target);
       status = await deps.act("run", target);
+      await deps.migrate?.(target, status);
     } finally {
       if (perBot) deps.provisionBusy.set(false);
       deps.lifecycleBusy.delete(target.key);
@@ -162,6 +173,7 @@ export function createLocalVmUpdater(deps: LocalVmUpdaterDeps) {
 
   /** Starts the update, or joins the one running. A failed update is kept as such: the desktop is never deleted on a failure. */
   function update(target: LocalVmTarget): Promise<void> {
+    target = containerTargetOf(target);
     let entry = entries.get(target.key);
     if (!entry) {
       entry = { target, failure: null, failedAt: 0, run: null };
@@ -187,9 +199,10 @@ export function createLocalVmUpdater(deps: LocalVmUpdaterDeps) {
 
   return {
     observe,
-    pending: (target: LocalVmTarget) => entries.has(target.key),
+    pending: (target: LocalVmTarget) => entries.has(containerTargetOf(target).key),
     /** For a turn that will not wait: starts the update in the background and returns what to tell the bot. */
     kick(target: LocalVmTarget): string {
+      target = containerTargetOf(target);
       const entry = entries.get(target.key);
       if (due(entry)) void update(target);
       return localVmUpdateNote(entry?.failure ?? null);
@@ -197,12 +210,13 @@ export function createLocalVmUpdater(deps: LocalVmUpdaterDeps) {
     /** Settings shows the update, which is then under way, rather than the old desktop's problem. */
     describe(target: LocalVmTarget, status: ContainerComputerStatus): ContainerComputerStatus {
       if (!observe(target, status)) return status;
-      const entry = entries.get(target.key);
+      const entry = entries.get(containerTargetOf(target).key);
       if (due(entry)) void update(target);
       return { ...status, problem: entry?.failure ? `This desktop could not be updated automatically: ${entry.failure}` : LOCAL_VM_UPDATING_PROBLEM };
     },
     /** A turn that needs this desktop waits out its update, with one plain line in its thread. Throws when it cannot. */
     async waitFor(target: LocalVmTarget, hooks: WaitHooks): Promise<void> {
+      target = containerTargetOf(target);
       if (!entries.has(target.key) && !fine.has(target.key)) observe(target, await deps.status(target).catch(() => null));
       if (!entries.has(target.key)) return;
       hooks.announce(LOCAL_VM_UPDATING);
@@ -237,7 +251,7 @@ export async function recoverLocalVms(input: {
   armIdle(target: LocalVmTarget): void;
 }): Promise<void> {
   const settle = async (targets: LocalVmTarget[]) => {
-    const statuses = await Promise.all(targets.map((target) => input.status(target)));
+    const statuses = await Promise.all(targets.map((target) => input.status(target).catch(() => null)));
     targets.forEach((target, index) => {
       input.note(target, statuses[index]);
       if (shouldArmLocalVmIdle(statuses[index])) input.armIdle(target);
@@ -254,4 +268,39 @@ export async function recoverLocalVms(input: {
     ? await discoverExistingPoolLocalVms(input.seats, runtime.runtime).catch(() => [])
     : (await discoverExistingPerBotLocalVms(input.bots, runtime.runtime).catch(() => [])).map(({ target }) => target);
   await settle(existing);
+}
+
+const screenProfileMigrations = new Map<string, Promise<void>>();
+
+export async function migrateScreenBrowserProfiles(target: LocalVmTarget, status: ContainerComputerStatus, runner: CommandRunner = sh): Promise<void> {
+  if (target.key !== "shared" || status.screens_layout !== "multi" || !status.runtime || status.container !== "running") return;
+  const key = `${status.runtime}:${target.containerName}`;
+  const existing = screenProfileMigrations.get(key);
+  if (existing) return existing;
+  const migration = runner(status.runtime, rootContainerExecArgs(target.containerName, ["sh", "-c", `set -eu
+marker=/run/crybot/screens/browser-profiles-migrated
+[ ! -e "$marker" ] || exit 0
+attempt=0
+until id crybot-s1 >/dev/null 2>&1 && [ -s /run/crybot/supervisord.pid ]; do
+  attempt=$((attempt + 1))
+  [ "$attempt" -lt 90 ] || exit 1
+  sleep 1
+done
+source=/home/cua/workspace/.browser-profiles
+destination=/home/cua/workspace/screens/s1/.browser-profiles
+[ ! -L "$destination" ] && [ ! -L "$source" ] || exit 1
+if [ -d "$source" ] && [ ! -e "$destination" ]; then
+  staging=/home/cua/workspace/screens/s1/.browser-profiles-migrating
+  rm -rf "$staging"
+  cp -a "$source" "$staging"
+  chown -hR crybot-s1:crybot-s1 "$staging"
+  mv "$staging" "$destination"
+fi
+if [ -d "$destination/mozilla" ] && [ ! -e /home/crybot-s1/.mozilla ] && [ ! -L /home/crybot-s1/.mozilla ]; then
+  ln -s "$destination/mozilla" /home/crybot-s1/.mozilla
+  chown -h crybot-s1:crybot-s1 /home/crybot-s1/.mozilla
+fi
+touch "$marker"`]), 120_000).then(() => {}).finally(() => { screenProfileMigrations.delete(key); });
+  screenProfileMigrations.set(key, migration);
+  await migration;
 }

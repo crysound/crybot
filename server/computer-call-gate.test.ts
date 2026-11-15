@@ -17,6 +17,36 @@ function fixture() {
 }
 afterEach(() => vi.useRealTimers());
 
+it.each([true, false])("marks only readiness checks as pending when a Local VM claim outlasts the gate (readinessOnly: %s)", async readinessOnly => {
+  vi.useFakeTimers();
+  const { deps, slot } = fixture();
+  const gate = createComputerCallGate({ ...deps, waitMs: 500 });
+  const pending = gate(owner, undefined, undefined, readinessOnly);
+  await vi.advanceTimersByTimeAsync(500);
+  const state = await pending;
+  expect(state.held).toBe(true);
+  expect(state.readinessPending).toBe(readinessOnly ? true : undefined);
+  expect(slot.claim).toHaveBeenCalledOnce();
+  await vi.advanceTimersByTimeAsync(6500);
+  expect(await gate(owner, undefined, undefined, readinessOnly)).toEqual({ held: false, helpOpen: false });
+});
+
+it("returns a startup failure after a pending readiness check without making it retryable", async () => {
+  vi.useFakeTimers();
+  const { deps, slot } = fixture();
+  slot.claim = vi.fn(() => new Promise<void>((_, reject) => setTimeout(() => reject(new Error("screen startup failed")), 700)));
+  const gate = createComputerCallGate({ ...deps, waitMs: 500 });
+  const first = gate(owner, undefined, undefined, true);
+  await vi.advanceTimersByTimeAsync(500);
+  expect(await first).toHaveProperty("readinessPending", true);
+  const second = gate(owner, undefined, undefined, true);
+  await vi.advanceTimersByTimeAsync(200);
+  const result = await second;
+  expect(result).toMatchObject({ held: true, blockedReason: expect.stringContaining("screen startup failed") });
+  expect(result).not.toHaveProperty("readinessPending");
+  expect(slot.claim).toHaveBeenCalledOnce();
+});
+
 it.each([undefined, "This Cloud's cloud computer hours for this month are used up; they reset on 1 December."])("preserves a cloud start refusal when rejection ends the turn (limit: %s)", async limit => {
   const { slot, claims, gate, deps } = fixture();
   Object.assign(slot, { localVm: false, label: "the cloud computer", limit,

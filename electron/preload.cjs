@@ -75,7 +75,7 @@ function railKeepsItsSize() {
 if (typeof window !== "undefined") {
   for (const type of ["resize", "DOMContentLoaded"]) window.addEventListener(type, () => { leaveRailRoom(); railKeepsItsSize(); });
 }
-const REMOTE_SAFE = new Set(["platform", "app", "getCapabilities", "onCapabilitiesChanged", "applySkin", "setUnreadCount", "permStatus", "workspaces", "rail", "accountSheet", "cloudSendPage", "desktopNotices", "desktopNotifications", "desktopLanguage", "windowControls", "onOpenAppSettings", "windowFrame", "softwareRendering", "appUpdate"]);
+const REMOTE_SAFE = new Set(["platform", "app", "getCapabilities", "onCapabilitiesChanged", "applySkin", "setUnreadCount", "permStatus", "workspaces", "rail", "accountSheet", "cloudSendPage", "desktopNotices", "desktopNotifications", "desktopLanguage", "windowControls", "onOpenAppSettings", "windowFrame", "islandSettings", "softwareRendering", "appUpdate"]);
 /** My Cloud's own page once it is the person's home (main checks the sender again): it is this app's page then. */
 const HOME_PAGE = ["home", "onChatLink", "onPackageInstall", "exportDiagnostics", "openLogsFolder", "openAtLogin", "callActive"];
 function updaterOffered() {
@@ -223,6 +223,11 @@ const bridge = {
         return () => ipcRenderer.removeListener("rail:framed", handler);
       },
     } : {}),
+  },
+  islandSettings: {
+    state: () => ipcRenderer.invoke("island-settings:state"),
+    set: value => isLocalPage || navigator.userActivation?.isActive === true
+      ? ipcRenderer.invoke("island-settings:set", value) : Promise.reject(new Error("Choose an island setting.")),
   },
   // The window's own frame, this desktop's choice for every page of its window; a server's page changes it only from the
   // person's click.

@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { BOX_ENV_NAMES, BOX_ENV_NEVER, BOX_ENV_CRYBOT_NAMES, BOX_ENV_CRYBOT_PREFIXES, boxEnvironment, boxEnvironmentAllows, instanceEnvNames } from "./env.ts";
+import { stripControlPlaneEnv } from "../credential-env.ts";
 
 /** Every other `CRYBOT_` name the server's code knows: kept on the server unless explicitly granted to one spawn. A name
  * ending in `_` is a family (`CRYBOT_CLOUD_*`). */
@@ -56,7 +57,7 @@ const SERVER_ONLY_CRYBOT: ReadonlySet<string> = new Set([
   "CRYBOT_POSTIZ_CLOUD_URL", "CRYBOT_PROCESS_ID", "CRYBOT_PROVIDER_LOCK", "CRYBOT_PUBLIC_IPV4", "CRYBOT_PUBLIC_URL", "CRYBOT_QUOTA_SWITCH",
   "CRYBOT_REPLAY_TOOL_HISTORY", "CRYBOT_ROOM_SESSIONS", "CRYBOT_SAFETY_FLOOR", "CRYBOT_SERVER_COMPILE_CACHE", "CRYBOT_SERVER_NAME",
   "CRYBOT_SERVER_UPDATE_DIR",
-  "CRYBOT_SESSION_IDLE_MIN_MS", "CRYBOT_SESSION_IDLE_MS", "CRYBOT_SESSION_MAX_DAYS", "CRYBOT_SESSION_TTL_DAYS",
+  "CRYBOT_SCREEN_IDLE_MS", "CRYBOT_SESSION_IDLE_MIN_MS", "CRYBOT_SESSION_IDLE_MS", "CRYBOT_SESSION_MAX_DAYS", "CRYBOT_SESSION_TTL_DAYS",
   "CRYBOT_SHARED_WORKSPACE_FULL_ACCESS", "CRYBOT_SIGNIN_EMAILS", "CRYBOT_SIGNIN_MEMBER_EMAILS", "CRYBOT_SIGNIN_SMTP_FROM",
   "CRYBOT_SIGNIN_SMTP_URL", "CRYBOT_SKILLS_DIR", "CRYBOT_SMOKE_BUNDLED_CUA", "CRYBOT_SMOKE_CUA", "CRYBOT_SMOKE_KEEP_OPEN",
   "CRYBOT_SMOKE_TEST", "CRYBOT_SSE_HEARTBEAT_MS", "CRYBOT_STATIC_DIR", "CRYBOT_SYNC_ROOT", "CRYBOT_TAILNET_ADDRESSES", "CRYBOT_TAILNET_NAME", "CRYBOT_TAILNET_SERVED", "CRYBOT_TEAM_AWAY_WINDOW_MS",
@@ -108,6 +109,23 @@ describe("the box's environment allow-list", () => {
     ]);
   });
 
+  it("passes a saved provider key while stripping inherited Feishu credentials", () => {
+    const saved = {
+      VENICE_API_KEY: "saved-venice",
+      ANTHROPIC_API_KEY: "saved-anthropic",
+    };
+    const environment: Record<string, string | undefined> = {
+      ...saved,
+      CRYBOT_FEISHU_USER_TOKEN: "inherited-token",
+      LARKSUITE_CLI_USER_ACCESS_TOKEN: "inherited-cli-token",
+      MEEGLE_TOKEN: "inherited-meegle-token",
+    };
+    stripControlPlaneEnv(environment);
+    const allow = new Set(instanceEnvNames(saved, environment));
+    expect(allow).toEqual(new Set(["VENICE_API_KEY", "ANTHROPIC_API_KEY"]));
+    expect(boxEnvironment(environment, new Set(), allow)).toEqual(saved);
+  });
+
   it("a denied name loses even against an allowing list or prefix, and the never-list beats everything", () => {
     expect(boxEnvironmentAllows("CRYBOT_COMMS_TOKEN")).toBe(true);
     expect(boxEnvironmentAllows("CRYBOT_COMMS_TOKEN", new Set(["CRYBOT_COMMS_TOKEN"]))).toBe(false);
@@ -135,7 +153,7 @@ describe("the box's environment allow-list", () => {
   });
 
   it("preserves the lazy container proxy's activation and tool scope", () => {
-    const env = { CRYBOT_CONTAINER_LAZY: "1", CRYBOT_CONTAINER_TOOL_SCOPE: JSON.stringify({ browser: false }) };
+    const env = { CRYBOT_CONTAINER_LAZY: "1", CRYBOT_CONTAINER_DYNAMIC_SCREEN: "1", CRYBOT_CONTAINER_TOOL_SCOPE: JSON.stringify({ browser: false }) };
     expect(boxEnvironment(env)).toEqual(env);
   });
 

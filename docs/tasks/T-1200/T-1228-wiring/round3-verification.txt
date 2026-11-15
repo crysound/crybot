@@ -1,0 +1,565 @@
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+ ❯ server/local-vm-screens.e2e.test.ts (12 tests | 12 failed) 25ms
+     × 1: assigns two agents different resources, exec users, displays and sockets 7ms
+     × 2: queues the fifth agent with position 1 and acquires a screen automatically 2ms
+     × 3: taking and handing back one screen leaves the other agent and its hold alone 1ms
+     × 4: screens=1 keeps the original resource, MCP socket, viewer and control key 2ms
+     × 5: retires only the idle screen, preserves affinity and starts container idle only after all screens stop 1ms
+     × Auto text completes without claiming or queueing when 0 screens are busy 1ms
+     × Auto text completes without claiming or queueing when 4 screens are busy 2ms
+     × Auto text proceeds without a computer while the multi-screen desktop update is pending 1ms
+     × an Auto routine never creates a missing multi-screen VM (imageMissing=false) 1ms
+     × an Auto routine never creates a missing multi-screen VM (imageMissing=true) 1ms
+     × Auto binds its MCP to the assigned screen only on its first tool call 1ms
+     × automatically resumes a parked fifth turn after an idle screen is released 1ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 12 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > 1: assigns two agents different resources, exec users, displays and sockets
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:117:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/12]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > 2: queues the fifth agent with position 1 and acquires a screen automatically
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:148:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/12]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > 3: taking and handing back one screen leaves the other agent and its hold alone
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:162:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/12]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > 4: screens=1 keeps the original resource, MCP socket, viewer and control key
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:178:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/12]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > 5: retires only the idle screen, preserves affinity and starts container idle only after all screens stop
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:201:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/12]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > Auto text completes without claiming or queueing when 0 screens are busy
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > Auto text completes without claiming or queueing when 4 screens are busy
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:221:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/12]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > Auto text proceeds without a computer while the multi-screen desktop update is pending
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:239:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/12]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > an Auto routine never creates a missing multi-screen VM (imageMissing=false)
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > an Auto routine never creates a missing multi-screen VM (imageMissing=true)
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:252:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/12]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > Auto binds its MCP to the assigned screen only on its first tool call
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:266:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/12]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > automatically resumes a parked fifth turn after an idle screen is released
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:280:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/12]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  12 failed (12)
+   Start at  21:40:07
+   Duration  1.47s (transform 961ms, setup 993ms, import 272ms, tests 25ms, environment 0ms)
+
+
+exit 1
+
+$ pnpm exec vitest run server/group-local-vm.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+ ❯ server/group-local-vm.e2e.test.ts (47 tests | 47 skipped) 30022ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/group-local-vm.e2e.test.ts [ server/group-local-vm.e2e.test.ts ]
+Error: Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".
+ ❯ server/group-local-vm.e2e.test.ts:70:1
+     68|   Boolean);
+     69|
+     70| beforeAll(async () => {
+       | ^
+     71|   fixtureHome = mkdtempSync(join(tmpdir(), "cry-group-vm-"));
+     72|   stateFile = join(fixtureHome, "vm.json");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+Error: listen EPERM: operation not permitted 127.0.0.1
+ ❯ Server.setupListenHandle [as _listen2] node:net:2368:21
+ ❯ listenInCluster node:net:2499:12
+ ❯ node:net:2728:7
+ ❯ processTicksAndRejections node:internal/process/task_queues:90:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'EPERM', errno: -1, syscall: 'listen', address: '127.0.0.1' }
+This error originated in "server/group-local-vm.e2e.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 failed (1)
+      Tests  47 skipped (47)
+     Errors  1 error
+   Start at  21:40:09
+   Duration  31.13s (transform 773ms, setup 620ms, import 378ms, tests 30.02s, environment 0ms)
+
+
+exit 1
+
+$ pnpm exec vitest run server/desktop-updates.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+ ❯ server/desktop-updates.e2e.test.ts (7 tests | 7 failed) 21ms
+     × gives an Auto chat no computer and a plain note, updates the desktop by itself keeping sign-ins, then uses it 7ms
+     × holds a turn whose place is the Local VM until its desktop is updated, then gives it that desktop 2ms
+     × runs an unattended routine on the updated desktop instead of this computer 2ms
+     × keeps the old desktop, and keeps the bot off this computer, when its sign-ins cannot be copied 2ms
+     × copies the sign-ins out before a person deletes an old desktop 1ms
+     × never lands an Auto chat on this computer while its desktop on 'the default VPS' runs an older version 2ms
+     × never lands an Auto chat on this computer while its desktop on 'its own VPS' runs an older version 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/desktop-updates.e2e.test.ts > a bot's old desktop after an app update > gives an Auto chat no computer and a plain note, updates the desktop by itself keeping sign-ins, then uses it
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ start server/desktop-updates.e2e.test.ts:106:18
+ ❯ server/desktop-updates.e2e.test.ts:182:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  server/desktop-updates.e2e.test.ts > a bot's old desktop after an app update > holds a turn whose place is the Local VM until its desktop is updated, then gives it that desktop
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ start server/desktop-updates.e2e.test.ts:106:18
+ ❯ server/desktop-updates.e2e.test.ts:219:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  server/desktop-updates.e2e.test.ts > a bot's old desktop after an app update > runs an unattended routine on the updated desktop instead of this computer
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ start server/desktop-updates.e2e.test.ts:106:18
+ ❯ server/desktop-updates.e2e.test.ts:236:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  server/desktop-updates.e2e.test.ts > a bot's old desktop after an app update > keeps the old desktop, and keeps the bot off this computer, when its sign-ins cannot be copied
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ start server/desktop-updates.e2e.test.ts:106:18
+ ❯ server/desktop-updates.e2e.test.ts:257:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  server/desktop-updates.e2e.test.ts > a bot's old desktop after an app update > copies the sign-ins out before a person deletes an old desktop
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ start server/desktop-updates.e2e.test.ts:106:18
+ ❯ server/desktop-updates.e2e.test.ts:272:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  server/desktop-updates.e2e.test.ts > a bot's old desktop after an app update > never lands an Auto chat on this computer while its desktop on 'the default VPS' runs an older version
+ FAIL  server/desktop-updates.e2e.test.ts > a bot's old desktop after an app update > never lands an Auto chat on this computer while its desktop on 'its own VPS' runs an older version
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ start server/desktop-updates.e2e.test.ts:106:18
+ ❯ server/desktop-updates.e2e.test.ts:288:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed (7)
+   Start at  21:40:40
+   Duration  1.32s (transform 913ms, setup 746ms, import 432ms, tests 21ms, environment 0ms)
+
+
+exit 1
+
+$ pnpm exec vitest run server/openai-compat-vm.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+ ❯ server/openai-compat-vm.e2e.test.ts (4 tests | 4 skipped) 30013ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/openai-compat-vm.e2e.test.ts [ server/openai-compat-vm.e2e.test.ts ]
+Error: Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".
+ ❯ server/openai-compat-vm.e2e.test.ts:90:1
+     88| const idle = (botId: string) => until(() => api("GET", "/api/bots?mess…
+     89|
+     90| beforeAll(async () => {
+       | ^
+     91|   fixtureHome = mkdtempSync(join(tmpdir(), "cry-openai-vm-"));
+     92|   stateFile = join(fixtureHome, "vm.json");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+Error: listen EPERM: operation not permitted 127.0.0.1
+ ❯ Server.setupListenHandle [as _listen2] node:net:2368:21
+ ❯ listenInCluster node:net:2499:12
+ ❯ node:net:2728:7
+ ❯ processTicksAndRejections node:internal/process/task_queues:90:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'EPERM', errno: -1, syscall: 'listen', address: '127.0.0.1' }
+This error originated in "server/openai-compat-vm.e2e.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 skipped (4)
+     Errors  1 error
+   Start at  21:40:42
+   Duration  30.95s (transform 618ms, setup 744ms, import 69ms, tests 30.01s, environment 0ms)
+
+
+exit 1
+
+$ pnpm exec vitest run server/local-vm-startup.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  21:41:14
+   Duration  1.12s (transform 717ms, setup 915ms, import 13ms, tests 57ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/routes/config-screens.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  21:41:15
+   Duration  2.58s (transform 1.87s, setup 857ms, import 1.54s, tests 41ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screen-runtime.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  21:41:18
+   Duration  2.55s (transform 1.85s, setup 889ms, import 1.47s, tests 55ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/routes/computers.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  21:41:21
+   Duration  2.44s (transform 1.81s, setup 809ms, import 1.48s, tests 21ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/desktop-updates.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  21:41:24
+   Duration  1.57s (transform 877ms, setup 915ms, import 230ms, tests 291ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/lazy-container-mcp.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  21:41:26
+   Duration  1.64s (transform 913ms, setup 919ms, import 258ms, tests 347ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/host/shared-vm-control.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  101 passed (101)
+   Start at  21:41:29
+   Duration  1.21s (transform 820ms, setup 841ms, import 224ms, tests 22ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run src/components/LocalVmScreens.test.tsx
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  21:41:30
+   Duration  2.23s (transform 753ms, setup 817ms, import 227ms, tests 605ms, environment 449ms)
+
+
+exit 0
+
+$ pnpm exec vitest run src/components/LocalComputerSection.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  52 passed (52)
+   Start at  21:41:33
+   Duration  2.09s (transform 1.08s, setup 748ms, import 694ms, tests 369ms, environment 159ms)
+
+
+exit 0
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  21:41:36
+   Duration  1.24s (transform 777ms, setup 987ms, import 13ms, tests 93ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/bot-box/env.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  21:41:38
+   Duration  1.24s (transform 797ms, setup 1.00s, import 27ms, tests 50ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-recovery.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  21:41:39
+   Duration  1.42s (transform 978ms, setup 1.04s, import 230ms, tests 6ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/testing/fixture-source.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-55bbd97a5dde
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  21:41:41
+   Duration  1.00s (transform 668ms, setup 851ms, import 17ms, tests 5ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+
+exit 0
+
+$ pnpm exec tsc -p tsconfig.json
+
+exit 0
+
+$ pnpm exec oxlint --deny-warnings server/desktop-updates.e2e.test.ts server/desktop-updates.ts server/index.ts server/local-vm-recovery.test.ts server/local-vm-screens.e2e.test.ts server/local-vm-startup.test.ts server/local-vm-startup.ts server/routes/computers.test.ts server/routes/computers.ts server/testing/fixture-source.test.ts server/testing/fixture-source.ts server/testing/local-vm-screens-hooks.mjs
+
+exit 0
+
+$ node --check server/testing/local-vm-screens-hooks.mjs
+
+exit 0
+
+$ git diff --check
+
+exit 0
+
