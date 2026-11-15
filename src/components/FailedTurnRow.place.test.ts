@@ -88,6 +88,17 @@ describe("J11: a failed place's row", () => {
     expect(show(pinned).buttons[0]).toContain("Clear this conversation&#x27;s place");
   });
 
+  it.each([
+    ["shared", 4, "Shared computer"],
+    ["shared", 1, "Private desktop"],
+    ["per-bot", 4, "Private desktop"],
+  ] as const)("names the bot's VM in the pin recovery action for %s / %s", (mode, screens, label) => {
+    fixture.config = { localVm: { mode, screens, maxInstances: 1 } };
+    fixture.bots[0]!.computer = "vm";
+    const pinned = stored({ state: "cc-no-start", params: { bot: "Scout" }, source: "pin" });
+    expect(show(pinned).buttons[0]).toContain(`Use ${label}`);
+  });
+
   it("gives a User no button that changes a setting, and says who can", () => {
     fixture.ownerOrAdmin = false;
     const { html, buttons } = show(stored(hours), vi.fn());

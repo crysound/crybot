@@ -1676,7 +1676,7 @@ export function ComputerPanel({
           <WorksOnGrid options={placeOptions} onSelect={selectPlace} />
           {livePin && (
             <p className="mt-2 text-[12px] leading-5 text-ink-secondary" data-testid="place-pinned-note">
-              {t("place.pinnedNote", { place: t(placeLabelKey(livePin)) })}
+              {t("place.pinnedNote", { place: t(placeLabelKey(livePin, state.config)) })}
             </p>
           )}
           <div className="mt-3 border-t border-hairline/40 pt-3 text-[12px] leading-5 text-ink-secondary" aria-live="polite" data-testid="place-line">
@@ -1734,7 +1734,7 @@ export function ComputerPanel({
               <div className="mt-2 flex items-center gap-2">
                 <p className="min-w-0 flex-1 text-[12px] leading-5 text-ink-secondary" data-testid="place-pinned-note">
                   {t("place.pinnedNoteSimple", {
-                    place: placeOptions.find(({ mode }) => mode === heldPin)?.simpleLabel ?? t(placeLabelKey(heldPin)),
+                    place: placeOptions.find(({ mode }) => mode === heldPin)?.simpleLabel ?? t(placeLabelKey(heldPin, state.config)),
                   })}
                 </p>
                 <button
@@ -1746,7 +1746,7 @@ export function ComputerPanel({
                   data-testid="place-unpin"
                 >
                   {t("place.unpinSimple", {
-                    place: placeOptions.find(({ selected }) => selected)?.simpleLabel ?? t(placeLabelKey(profileBot.computer ?? "auto")),
+                    place: placeOptions.find(({ selected }) => selected)?.simpleLabel ?? t(placeLabelKey(profileBot.computer ?? "auto", state.config)),
                   })}
                 </button>
               </div>

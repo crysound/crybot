@@ -1,6 +1,7 @@
 import { createElement, type ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import { setLocale, t } from "@/lib/i18n";
 import type { Bot, InstanceInfo } from "@/state/store";
 
 vi.stubGlobal("window", {});
@@ -252,4 +253,35 @@ it.each([
   const { t } = await import("@/lib/i18n");
   const choice = worksOnChoices({ localVm: { mode, screens, maxInstances: 1 } }, {} as DesktopCapabilities).find(([place]) => place === "vm")!;
   expect(t(choice[2])).toBe(description);
+});
+
+
+describe("VM names in desktop and phone place menus", () => {
+  afterEach(() => { fixture.config = null; fixture.menuOpen = false; setLocale("en"); });
+
+  it.each([
+    ["shared", 4, true],
+    ["shared", 1, false],
+    ["shared", undefined, false],
+    ["per-bot", 4, false],
+  ] as const)("uses the configured name for %s / %s screens", (mode, screens, shared) => {
+    fixture.config = { localVm: { mode, screens, maxInstances: 1 } };
+    fixture.menuOpen = true;
+    const vmBot = { ...bot, computer: "vm" as const };
+    for (const locale of ["en", "zh"] as const) {
+      setLocale(locale);
+      const label = locale === "zh" ? shared ? "共用电脑" : "私有桌面" : shared ? "Shared computer" : "Private desktop";
+      const html = renderToStaticMarkup(createElement(PlaceChip, { bot: vmBot, live: false, onPin: vi.fn() }));
+      expect(html).toContain(`aria-label="${t("place.chipAria", { place: label })}"`);
+      expect(html).toContain(t("place.followBotDetail", { place: label }));
+      expect(html.split('role="menuitemradio"').slice(2).some(row => row.includes(`>${label}</span>`))).toBe(true);
+      if (shared) expect(html).not.toMatch(/私有桌面|Private desktop/);
+      let item: ReturnType<typeof usePlaceMenuItem> | undefined;
+      function Menu() { item = usePlaceMenuItem({ bot: vmBot, onPin: vi.fn() }); return null; }
+      renderToStaticMarkup(createElement(Menu));
+      expect(item!.subtitle).toBe(label);
+      expect(item!.submenu!.find(row => row.key === "place:vm")!.label).toBe(label);
+      expect(item!.submenu!.find(row => row.key === "place:follow")!.note).toBe(t("place.followBotDetail", { place: label }));
+    }
+  });
 });

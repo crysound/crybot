@@ -38,7 +38,8 @@ export function vmDescriptionKey(config: Partial<Pick<ConfigStatus, "localVm">> 
     ? "computer.dest.vmScreenDesc" : "computer.dest.vmDesc";
 }
 
-export function placeLabelKey(place: EffectivePlace): LocaleKey {
+export function placeLabelKey(place: EffectivePlace, config?: Partial<Pick<ConfigStatus, "localVm">> | null): LocaleKey {
+  if (place === "vm") return vmLabelKey(config);
   return `place.${place}` as LocaleKey;
 }
 
