@@ -73,4 +73,24 @@
 
 - `pnpm exec vitest run <文件> --maxWorkers=1`：22 个文件逐个通过，含 `server/instabox/` 全部、`server/index.test.ts`、快照路由、Boat/env 与行数门禁；7 个 e2e 文件及桌面代理 HTTP 测试均连续 3 次通过，VNC 设置 `CRYBOT_CDP_CHROME=/usr/bin/chromium`，浏览器用例实际执行。
 - `pnpm exec tsc -p tsconfig.server.json`、`pnpm exec tsc -p tsconfig.json`、改动文件 `pnpm exec oxlint --deny-warnings`、`git diff --check`：全部通过。
-- 验证 README 缺失；全部服务验证使用隔离 fixture。完整脱敏输出（含假后端修正前失败）见 [verification.txt](verification.txt)。
+- 验证 README 缺失；全部服务验证使用隔离 fixture。完整脱敏输出见 [verification.txt](verification.txt)。
+
+## 第 3 轮
+
+改了什么（未提交）：
+
+```text
+ M docs/tasks/T-1200/T-1246-instabox-wiring/report.md
+ M docs/tasks/T-1200/T-1246-instabox-wiring/verification.txt
+ M server/instabox/wiring-backends-fixture.ts
+ M server/instabox/wiring.test.ts
+ M server/instabox/wiring.ts
+```
+
+为什么：假后端输出改用 cloud desktop 的统一词汇；`CRYBOT_TEST_INSTABOX_API` 现在仅在测试环境开关启用时生效，生产进程忽略它，并新增了回归单测。
+
+测试命令与结果摘要：
+
+- `src/locales/vocabulary.test.ts` 通过 6 项；`server/instabox/` 下全部测试逐文件执行，147 项通过、1 项既有跳过；wiring e2e 连续 3 次通过（每次 6 项）。
+- `pnpm exec tsc -p tsconfig.server.json`、改动文件 `pnpm exec oxlint --deny-warnings`、`git diff --check`：通过。
+- 验证使用隔离 fixture；仓库未提供 `docs/verification/README.md`。完整输出见 [verification.txt](verification.txt)。

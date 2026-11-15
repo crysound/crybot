@@ -1,4 +1,5 @@
 import type { AppConfig } from "../config.ts";
+import { sealedFixture } from "../env-path.ts";
 import type { DesktopTarget } from "../routes/desktop-viewer.ts";
 import { createSnapshotWiring } from "./snapshot-wiring.ts";
 import { createInstaboxRequest } from "./client.ts";
@@ -9,7 +10,8 @@ import { requireInstabox } from "./power.ts";
 import { instaboxDesktopTarget } from "./vnc.ts";
 
 export function createInstaboxWiring(deps: { cfg(): AppConfig; eligible(botId: string): boolean; claim(botId: string, allowPreview?: boolean): () => void; inUse(botId: string): boolean; snapshotTimeoutMs?: number }) {
-  const fixtureApi = process.env.CRYBOT_TEST_INSTABOX_API;
+  const testEnvironment = process.env.NODE_ENV === "test" || process.env.VITEST === "true" || sealedFixture();
+  const fixtureApi = testEnvironment ? process.env.CRYBOT_TEST_INSTABOX_API : undefined;
   const fixture = /^http:\/\/127\.0\.0\.1:[1-9]\d{0,4}$/.test(fixtureApi ?? "");
   let cached: { key: string; machines: InstaboxMachines; request: InstaboxRequest } | undefined;
   const current = new Map<string, string>();

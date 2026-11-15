@@ -22,7 +22,7 @@ export async function wiringBackendsFixture() {
     }
     if (path === "/sandboxes") return reply({ sandboxes: rows });
     if (path.endsWith("/desktop")) return reply({ desktopUrl: "https://desktop.fixture.invalid" });
-    if (path.endsWith("/commands")) return reply({ exitCode: 0, stdout: "Boat fixture completed", stderr: "" });
+    if (path.endsWith("/commands")) return reply({ exitCode: 0, stdout: "box fixture completed", stderr: "" });
     const row = rows.find(row => path === `/sandboxes/${row.id}`);
     if (row) { if (body.name) row.name = body.name; return reply({ sandbox: row }); }
     reply({});
