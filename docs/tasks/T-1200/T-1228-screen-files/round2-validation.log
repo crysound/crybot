@@ -1,0 +1,344 @@
+$ pnpm exec vitest run server/screen-files.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed | 1 skipped (14)
+   Start at  20:43:14
+   Duration  8.48s (transform 2.29s, setup 1.53s, import 429ms, tests 6.35s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/bot-attachment.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  20:43:24
+   Duration  2.52s (transform 1.26s, setup 1.38s, import 256ms, tests 709ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/routes/app-hosting.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  20:43:27
+   Duration  5.02s (transform 2.41s, setup 1.46s, import 1.51s, tests 1.85s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/routes/published-pages.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ server/routes/published-pages.test.ts (11 tests | 2 failed) 2189ms
+   × stops a screen page after reassignment (liveAccess provided: false) 551ms
+   × stops a screen page after reassignment (liveAccess provided: true) 516ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/routes/published-pages.test.ts > stops a screen page after reassignment (liveAccess provided: false)
+ FAIL  server/routes/published-pages.test.ts > stops a screen page after reassignment (liveAccess provided: true)
+AssertionError: expected undefined to be false // Object-is equality
+
+- Expected:
+false
+
++ Received:
+undefined
+
+ ❯ server/routes/published-pages.test.ts:152:37
+    150|     expect(publish).toHaveBeenCalledTimes(1);
+    151|     expect((await f.calls()).length).toBe(calls);
+    152|     expect(store.get(pageId)?.live).toBe(false);
+       |                                     ^
+    153|   } finally { await f.cleanup(); }
+    154| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 9 passed (11)
+   Start at  20:43:33
+   Duration  6.77s (transform 3.53s, setup 1.69s, import 2.71s, tests 2.19s, environment 0ms)
+
+
+Exit: 1
+
+$ pnpm exec vitest run server/pages/bundle.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  20:43:41
+   Duration  4.97s (transform 2.73s, setup 2.55s, import 942ms, tests 1.15s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/host/secret-cards.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  41 passed (41)
+   Start at  20:43:47
+   Duration  5.24s (transform 3.45s, setup 1.62s, import 2.80s, tests 552ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/secret-vault.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  20:43:53
+   Duration  2.57s (transform 1.85s, setup 1.48s, import 866ms, tests 33ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/routes/secret-cards.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  20:43:56
+   Duration  3.65s (transform 2.76s, setup 1.44s, import 2.02s, tests 12ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/local-vm-browser-profiles.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ server/local-vm-browser-profiles.test.ts (12 tests | 5 failed) 130ms
+     × moves a first-run Firefox profile into the workspace and points ~/.mozilla at it 10ms
+     × keeps a user-installed desktop app across a new VM image 5ms
+     × keeps a durable profile over the image's empty one and clears the old desktop's Firefox locks 6ms
+     × keeps live browser locks across a Cua driver restart until the PID 1 start time changes 4ms
+     × keeps live browser locks across a Cua driver restart until the boot ID changes 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/local-vm-browser-profiles.test.ts > the image's start-up script keeps Firefox's profile in the workspace > moves a first-run Firefox profile into the workspace and points ~/.mozilla at it
+Error: spawnSync /bin/sh EPERM
+ ❯ prepareScript server/local-vm-browser-profiles.test.ts:37:3
+     35|   const printf = dockerfile.slice(start + "RUN ".length, end).replaceA…
+     36|     .replaceAll("/proc/sys/kernel/random/boot_id", bootId).replaceAll(…
+     37|   execFileSync("/bin/sh", ["-c", `${printf} > '${script}'`]);
+       |   ^
+     38|   return script;
+     39| }
+ ❯ server/local-vm-browser-profiles.test.ts:51:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  server/local-vm-browser-profiles.test.ts > the image's start-up script keeps Firefox's profile in the workspace > keeps a user-installed desktop app across a new VM image
+Error: spawnSync /bin/sh EPERM
+ ❯ prepareScript server/local-vm-browser-profiles.test.ts:37:3
+     35|   const printf = dockerfile.slice(start + "RUN ".length, end).replaceA…
+     36|     .replaceAll("/proc/sys/kernel/random/boot_id", bootId).replaceAll(…
+     37|   execFileSync("/bin/sh", ["-c", `${printf} > '${script}'`]);
+       |   ^
+     38|   return script;
+     39| }
+ ❯ server/local-vm-browser-profiles.test.ts:68:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  server/local-vm-browser-profiles.test.ts > the image's start-up script keeps Firefox's profile in the workspace > keeps a durable profile over the image's empty one and clears the old desktop's Firefox locks
+Error: spawnSync /bin/sh EPERM
+ ❯ prepareScript server/local-vm-browser-profiles.test.ts:37:3
+     35|   const printf = dockerfile.slice(start + "RUN ".length, end).replaceA…
+     36|     .replaceAll("/proc/sys/kernel/random/boot_id", bootId).replaceAll(…
+     37|   execFileSync("/bin/sh", ["-c", `${printf} > '${script}'`]);
+       |   ^
+     38|   return script;
+     39| }
+ ❯ server/local-vm-browser-profiles.test.ts:85:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  server/local-vm-browser-profiles.test.ts > the image's start-up script keeps Firefox's profile in the workspace > keeps live browser locks across a Cua driver restart until the PID 1 start time changes
+ FAIL  server/local-vm-browser-profiles.test.ts > the image's start-up script keeps Firefox's profile in the workspace > keeps live browser locks across a Cua driver restart until the boot ID changes
+Error: spawnSync /bin/sh EPERM
+ ❯ prepareScript server/local-vm-browser-profiles.test.ts:37:3
+     35|   const printf = dockerfile.slice(start + "RUN ".length, end).replaceA…
+     36|     .replaceAll("/proc/sys/kernel/random/boot_id", bootId).replaceAll(…
+     37|   execFileSync("/bin/sh", ["-c", `${printf} > '${script}'`]);
+       |   ^
+     38|   return script;
+     39| }
+ ❯ server/local-vm-browser-profiles.test.ts:100:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 7 passed (12)
+   Start at  20:44:00
+   Duration  2.39s (transform 1.67s, setup 1.63s, import 430ms, tests 130ms, environment 0ms)
+
+
+Exit: 1
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  20:44:04
+   Duration  2.51s (transform 1.28s, setup 1.58s, import 17ms, tests 702ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/bot-box/env.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  20:44:07
+   Duration  2.13s (transform 1.38s, setup 1.68s, import 61ms, tests 158ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/pages/published-pages.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  42 passed (42)
+   Start at  20:44:10
+   Duration  5.27s (transform 3.30s, setup 1.79s, import 2.34s, tests 951ms, environment 0ms)
+
+
+Exit: 0
+
+Additional host/app-publisher.test.ts attempt interrupted: its beforeEach starts a TCP server, which this sandbox forbids. Run in Actions.
+
+$ pnpm exec vitest run server/screen-files.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed | 1 skipped (14)
+   Start at  20:45:26
+   Duration  8.52s (transform 2.21s, setup 1.45s, import 347ms, tests 6.55s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/bot-attachment.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  20:45:35
+   Duration  2.77s (transform 1.47s, setup 1.53s, import 343ms, tests 728ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/routes/published-pages.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  20:45:38
+   Duration  5.07s (transform 2.37s, setup 1.35s, import 1.56s, tests 1.97s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+
+Exit: 0
+
+$ pnpm exec tsc -b
+
+Exit: 0
+
+$ pnpm exec vitest run server/screen-files.test.ts --reporter=verbose
+
+ RUN  v4.1.11 <worktree>
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/screen-files.test.ts > screen file access > keeps every legacy guest mapping unchanged 9ms
+ ✓ server/screen-files.test.ts > screen file access > refuses s1 paths and traversal before invoking the runtime 11ms
+ ✓ server/screen-files.test.ts > screen file access > reads binary private files, bounds reads, lists and reports missing files 307ms
+ ✓ server/screen-files.test.ts > screen file access > rejects symlink escapes in parent directories, final files and the screen root 279ms
+ ✓ server/screen-files.test.ts > screen file access > writes with the screen identity, private mode and stdin; replaces links without modifying their targets 253ms
+ ✓ server/screen-files.test.ts > screen file access > rescues only the selected screen's Firefox profile with screen-owned writes 994ms
+ ✓ server/screen-files.test.ts > seeds only s1 from legacy browser files and never replaces existing screen sign-ins 526ms
+ ✓ server/screen-files.test.ts > expires screen secret files through the same screen identity 1054ms
+ ↓ server/screen-files.test.ts > crosses foreign-owned 0711 parents as an unprivileged uid and keeps directory modes 1ms [Linux root is required to run setpriv with another uid.]
+ ✓ server/screen-files.test.ts > maps only the current screen's HOME workspace alias 113ms
+ ✓ server/screen-files.test.ts > rescues applications symlinks verbatim with a constant number of exec calls 716ms
+ ✓ server/screen-files.test.ts > rescues chrome symlinks verbatim with a constant number of exec calls 1175ms
+ ✓ server/screen-files.test.ts > refuses stopped screen preservation before invoking stop or the runtime 12ms
+ ✓ server/screen-files.test.ts > uses constant exec counts for app collection, page bundles and metadata-only signatures 1064ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed | 1 skipped (14)
+   Start at  20:46:42
+   Duration  8.50s (transform 2.14s, setup 1.42s, import 366ms, tests 6.52s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+
+Exit: 0
+
+$ pnpm exec oxlint --deny-warnings server/screen-files.ts server/screen-files-script.ts server/screen-profile-files.ts server/screen-host-files.ts server/pages/bundle.ts server/pages/publisher.ts server/host/app-publisher.ts server/host/secret-cards.ts server/local-vm-profiles.ts server/bot-attachment.ts server/screen-files.test.ts server/bot-attachment.test.ts server/pages/bundle.test.ts server/routes/app-hosting.test.ts server/routes/published-pages.test.ts server/host/secret-cards.test.ts
+
+Exit: 0
+
+$ pnpm lint
+
+> crybot@1.0.3 lint <worktree>
+> oxlint --deny-warnings .
+
+scripts/public-scan/scan.mjs:297:87: warning eslint(no-control-regex): Unexpected control characters help: Avoid matching control characters in regular expressions. If intentional, disable this rule for the expression.
+server/lazy-container-mcp.ts:122:54: warning unicorn(no-useless-spread): `Promise.allSettled` accepts an iterable, so it's unnecessary to convert the iterable to an array. help: Consider removing the spread operator.
+ ELIFECYCLE  Command failed with exit code 1.
+
+Exit: 1（仅允许的两条基线告警）
+
+$ git diff --check
+Exit: 0

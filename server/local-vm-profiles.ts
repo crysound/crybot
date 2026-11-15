@@ -1,3 +1,7 @@
+import { isScreenTarget } from "./container-targets.ts";
+import type { ScreenFileAccess } from "./screen-files.ts";
+import { rescueScreenBrowserProfiles, rescueScreenProfile } from "./screen-profile-files.ts";
+export { migrateLegacyBrowserProfilesToScreen } from "./screen-profile-files.ts";
 // Website sign-ins in the Local VM live in its browsers' profiles. Chrome and Chromium have always kept theirs in the durable
 // workspace; Firefox, the image's own browser, kept its profile in the container (/home/cua/.mozilla) until image layer 6.
 // Before such a desktop is removed, its Firefox profile is copied into the workspace, where the new image points ~/.mozilla.
@@ -10,6 +14,8 @@ import { promisify } from "node:util";
 import { shellQuote } from "./browser/chrome/wrapper.ts";
 import type { ContainerComputerStatus, LocalVmTarget } from "./container-computer.ts";
 import { augmentedPath, resolveCliSpawn } from "./env-path.ts";
+
+export const SCREEN_RESCUE_REQUIRES_RUNNING = "Screen profile preservation requires the container to be running.";
 
 const run = promisify(execFile);
 const PROFILE_IN_CONTAINER = "/home/cua/.mozilla";
@@ -36,9 +42,8 @@ async function isEmptyDirectory(path: string): Promise<boolean> {
   }
 }
 
-/** Works on a stopped container. "kept": the workspace already has a Firefox profile, which is never overwritten.
- * Any copy failure other than "no profile there" throws, so the caller keeps the old desktop rather than lose sign-ins. */
-export async function rescueFirefoxProfile(runtime: string, target: LocalVmTarget): Promise<"rescued" | "kept" | "none"> {
+export async function rescueFirefoxProfile(runtime: string, target: LocalVmTarget, access?: ScreenFileAccess): Promise<"rescued" | "kept" | "none"> {
+  if (isScreenTarget(target)) return rescueScreenBrowserProfiles(runtime, target, access);
   const profiles = join(target.workspaceDir, ".browser-profiles");
   const durable = join(profiles, "mozilla");
   await mkdir(profiles, { recursive: true, mode: 0o700 });
@@ -73,15 +78,18 @@ export async function keepFirefoxProfileBeforeRemove(
   target: LocalVmTarget,
   status: Pick<ContainerComputerStatus, "runtime" | "container" | "managed" | "imageMatches">,
   stop: () => Promise<unknown>,
+  access?: ScreenFileAccess,
 ): Promise<"rescued" | "kept" | "none"> {
-  if (!status.runtime || status.container === "missing" || !status.managed || status.imageMatches) return "none";
+  if (!status.runtime || status.container === "missing" || !status.managed || (status.imageMatches && !isScreenTarget(target))) return "none";
+  if (isScreenTarget(target) && status.container !== "running") throw new Error(SCREEN_RESCUE_REQUIRES_RUNNING);
   if (status.container === "running") await stop();
-  return rescueFirefoxProfile(status.runtime, target).catch((error: unknown) => { throw withOwnershipStep(error, target.workspaceDir); });
+  return rescueFirefoxProfile(status.runtime, target, access).catch((error: unknown) => { throw withOwnershipStep(error, target.workspaceDir); });
 }
 
 /** User-installed desktop applications conventionally live in ~/.local. Rescue that directory before replacing a legacy
  * Local VM, but never overwrite an application area the durable folder already owns. */
-export async function rescueInstalledApps(runtime: string, target: LocalVmTarget): Promise<"rescued" | "kept" | "none"> {
+export async function rescueInstalledApps(runtime: string, target: LocalVmTarget, access?: ScreenFileAccess): Promise<"rescued" | "kept" | "none"> {
+  if (isScreenTarget(target)) return rescueScreenProfile(runtime, target, ".local", ".desktop-apps/local", access);
   const apps = join(target.workspaceDir, ".desktop-apps");
   const durable = join(apps, "local");
   await mkdir(apps, { recursive: true, mode: 0o700 });
@@ -118,8 +126,10 @@ export async function keepInstalledAppsBeforeRemove(
   target: LocalVmTarget,
   status: Pick<ContainerComputerStatus, "runtime" | "container" | "managed" | "imageMatches">,
   stop: () => Promise<unknown>,
+  access?: ScreenFileAccess,
 ): Promise<"rescued" | "kept" | "none"> {
-  if (!status.runtime || status.container === "missing" || !status.managed || status.imageMatches) return "none";
+  if (!status.runtime || status.container === "missing" || !status.managed || (status.imageMatches && !isScreenTarget(target))) return "none";
+  if (isScreenTarget(target) && status.container !== "running") throw new Error(SCREEN_RESCUE_REQUIRES_RUNNING);
   if (status.container === "running") await stop();
-  return rescueInstalledApps(status.runtime, target).catch((error: unknown) => { throw withOwnershipStep(error, target.workspaceDir); });
+  return rescueInstalledApps(status.runtime, target, access).catch((error: unknown) => { throw withOwnershipStep(error, target.workspaceDir); });
 }

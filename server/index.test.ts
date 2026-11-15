@@ -10804,58 +10804,61 @@ describe("harness HTTP API", () => {
     const before = await api("GET", "/api/config");
     expect(before.body.localVm).toEqual({ mode: "shared", screens: 4, maxInstances: 2, idleTimeoutMinutes: 480, preserveInstalledApps: false });
 
-    expect((await api("PATCH", "/api/config", { localVm: { screens: 1 } })).status).toBe(200);
+    try {
+      expect((await api("PATCH", "/api/config", { localVm: { screens: 1 } })).status).toBe(200);
 
-    const shared = await api("GET", `/api/bots/${first.id}/local-computer`);
-    expect(shared.status).toBe(200);
-    expect(shared.body).toMatchObject({ mode: "shared", target_key: "shared" });
+      const shared = await api("GET", `/api/bots/${first.id}/local-computer`);
+      expect(shared.status).toBe(200);
+      expect(shared.body).toMatchObject({ mode: "shared", target_key: "shared" });
 
-    const saved = await api("PATCH", "/api/config", {
-      localVm: { mode: "per-bot", maxInstances: 5 },
-    });
-    expect(saved.status).toBe(200);
-    expect(saved.body.localVm).toEqual({ mode: "per-bot", screens: 1, maxInstances: 5, idleTimeoutMinutes: 480, preserveInstalledApps: false });
+      const saved = await api("PATCH", "/api/config", {
+        localVm: { mode: "per-bot", maxInstances: 5 },
+      });
+      expect(saved.status).toBe(200);
+      expect(saved.body.localVm).toEqual({ mode: "per-bot", screens: 1, maxInstances: 5, idleTimeoutMinutes: 480, preserveInstalledApps: false });
 
-    const [firstStatus, secondStatus] = await Promise.all([
-      api("GET", `/api/bots/${first.id}/local-computer`),
-      api("GET", `/api/bots/${second.id}/local-computer`),
-    ]);
-    expect(firstStatus.body).toMatchObject({ mode: "per-bot", max_instances: 5 });
-    expect(secondStatus.body).toMatchObject({ mode: "per-bot", max_instances: 5 });
-    expect(firstStatus.body.target_key).not.toBe(secondStatus.body.target_key);
-    expect(firstStatus.body.container_name).not.toBe(secondStatus.body.container_name);
-    expect(firstStatus.body.workspace_path).not.toBe(secondStatus.body.workspace_path);
-
-    const inventory = await fetch(`${BASE}/api/local-computer/instances`);
-    expect(inventory.status).toBe(200);
-    expect(inventory.headers.get("cache-control")).toBe("private, no-store");
-    const inventoryBody = await inventory.json() as any;
-    expect(inventoryBody).toMatchObject({
-      maxInstances: 5,
-      instances: expect.any(Array),
-      available: expect.any(Boolean),
-    });
-    for (const instance of inventoryBody.instances) {
-      expect(Object.keys(instance).sort()).toEqual([
-        "botId",
-        "container",
-        "destination",
-        "inUse",
-        "managed",
-        "name",
-        "problem",
-        "ready",
+      const [firstStatus, secondStatus] = await Promise.all([
+        api("GET", `/api/bots/${first.id}/local-computer`),
+        api("GET", `/api/bots/${second.id}/local-computer`),
       ]);
+      expect(firstStatus.body).toMatchObject({ mode: "per-bot", max_instances: 5 });
+      expect(secondStatus.body).toMatchObject({ mode: "per-bot", max_instances: 5 });
+      expect(firstStatus.body.target_key).not.toBe(secondStatus.body.target_key);
+      expect(firstStatus.body.container_name).not.toBe(secondStatus.body.container_name);
+      expect(firstStatus.body.workspace_path).not.toBe(secondStatus.body.workspace_path);
+
+      const inventory = await fetch(`${BASE}/api/local-computer/instances`);
+      expect(inventory.status).toBe(200);
+      expect(inventory.headers.get("cache-control")).toBe("private, no-store");
+      const inventoryBody = await inventory.json() as any;
+      expect(inventoryBody).toMatchObject({
+        maxInstances: 5,
+        instances: expect.any(Array),
+        available: expect.any(Boolean),
+      });
+      for (const instance of inventoryBody.instances) {
+        expect(Object.keys(instance).sort()).toEqual([
+          "botId",
+          "container",
+          "destination",
+          "inUse",
+          "managed",
+          "name",
+          "problem",
+          "ready",
+        ]);
+      }
+      expect(JSON.stringify(inventoryBody)).not.toMatch(/viewer_url|workspace_path|container_name|target_key/);
+
+      const invalid = await api("PATCH", "/api/config", { localVm: { maxInstances: 9 } });
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.error).toContain("localVm.maxInstances");
+
+      const disk = JSON.parse(readFileSync(join(home, ".crybot", "config.json"), "utf8"));
+      expect(disk.localVm).toEqual({ mode: "per-bot", screens: 1, maxInstances: 5, idleTimeoutMinutes: 480, preserveInstalledApps: false });
+    } finally {
+      await api("PATCH", "/api/config", { localVm: { mode: "shared", screens: 4, maxInstances: 2 } });
     }
-    expect(JSON.stringify(inventoryBody)).not.toMatch(/viewer_url|workspace_path|container_name|target_key/);
-
-    const invalid = await api("PATCH", "/api/config", { localVm: { maxInstances: 9 } });
-    expect(invalid.status).toBe(400);
-    expect(invalid.body.error).toContain("localVm.maxInstances");
-
-    const disk = JSON.parse(readFileSync(join(home, ".crybot", "config.json"), "utf8"));
-    expect(disk.localVm).toEqual({ mode: "per-bot", maxInstances: 5, idleTimeoutMinutes: 480, preserveInstalledApps: false });
-    await api("PATCH", "/api/config", { localVm: { mode: "shared", screens: 4, maxInstances: 2 } });
   });
 
   it("validates, persists and applies the Local VM idle timeout in shared and per-bot modes", async () => {

@@ -296,52 +296,85 @@ public-scan 的另外 37 项均由既有测试辅助函数以 `spawn blocked` �
 
 group-local-vm E2E 已尝试启动独立 fixture，但沙箱禁止监听 TCP，beforeAll 超时，未完成场景验证；以 Actions 或复审员在可监听端口主机上的结果为准，本轮未获取 Actions 结果。`server/index.ts` 为 15398 行，低于 ratchet 上限 15515，未改上限。
 
-## 第 8 轮：全量 CI 失败复核
+## 第 8 轮：全量 CI 失败复核（第 9 轮校正记录）
 
-日期：2026-11-14。本轮先运行 依赖准备脚本（`linked 73 entries`），未提交、暂存或推送 git。依照沙箱约束没有使用 systemd；每次只运行一个 Vitest 文件。`docs/verification/README.md` 在当前检出仍不存在，无法执行其中未提供的步骤。
+原记录遗漏了单屏 fixture 和源码抽取测试的调整，“只改四个文件”的结论撤回。第 6–8 轮代码已由协调者提交；本沙箱只有一个包含合并冲突的压平基线提交，无法取出各轮原始 diff。以下记录可从交付快照核实的修复落点，不把历史记录中的测试执行清单当作改动文件清单，也不声称能还原第 6、7、8 轮的逐提交归属。
 
-### 修复
-
-1. `createSharedVmControl().armed()` 在没有多屏依赖时明确按 `false` 处理，避免把缺失依赖泄漏成 `undefined`，同时保留共享多屏的授权门禁。
-2. 多屏状态查询在机器人尚未分配屏幕时恢复 `409 { error: "screen_not_assigned" }`。这项检查阻止未分配机器人读取或操作屏幕状态，保持屏之间的隔离；没有删除检查或放宽目标校验。
-3. 共享模式未提供 `screens` 时的配置断言改为规格要求的默认 4 屏。`local-vm-settings.ts` 的默认值未改动。
-4. `server/index.test.ts` 中两个只验证旧共享单屏兼容端点的场景，在请求前显式设置 `screens: 1`，清理时恢复 `screens: 4`。这些测试验证的是单屏兼容路径；多屏未分配屏幕的 409 行为由路由测试覆盖。
-
-### 验证输出
-
-可执行的相关单测和静态检查如下：
-
-| 命令 | 输出 |
+| 文件 | 修复落点与根因 |
 | --- | --- |
-| `server/host/shared-vm-control.test.ts` | `Test Files 1 passed; Tests 101 passed` |
-| `server/routes/computers.test.ts` | `Test Files 1 passed; Tests 14 passed` |
-| `server/local-vm-screen-runtime.test.ts` | `Test Files 1 passed; Tests 13 passed` |
-| `server/parked-local-vm-wiring.test.ts` | `Test Files 1 passed; Tests 2 passed` |
-| `server/turn-watchdog.test.ts` | `Test Files 1 passed; Tests 37 passed` |
-| `server/managed-policy.test.ts` | `Test Files 1 passed; Tests 20 passed` |
-| `src/locales/server-lines.test.ts` | `Test Files 1 passed; Tests 8 passed` |
-| `scripts/testing/file-size-ratchet.test.ts` | `Test Files 1 passed; Tests 1 passed` |
-| `pnpm exec tsc -p tsconfig.server.json --pretty false` | exit 0，无诊断 |
-| `pnpm exec oxlint --deny-warnings server/config.test.ts server/host/shared-vm-control.ts server/index.test.ts server/routes/computers.ts` | exit 0 |
-| `git diff --check` | exit 0 |
+| `server/host/shared-vm-control.ts` | `armed()` 用 `deps.multiScreen?.() === true` 判定多屏，避免可选依赖缺失时布尔结果变成 `undefined`。 |
+| `server/config.test.ts` | 配置输出期望包含共享模式默认的 `screens: 4`；根因是默认屏数契约已经变化，不能把生产默认值改回 1。 |
+| `server/index.test.ts` | 模式切换和 idle timeout 两个单屏兼容场景显式设置 `screens: 1`，并更新配置响应期望。前者测旧共享目标到 per-bot 隔离目标的切换，后者测两种模式的 idle timeout；它们均未执行多屏认领，故使用单屏。模式切换的磁盘期望和失败清理仍有遗漏，由第 9 轮补齐。 |
+| `evals/runners/local-vm-world.ts` | Local VM world 的隔离配置显式设 `screens: 1`。这些场景使用既有 `group-local-vm-hooks.mjs` 和共享 VM 资源来测懒认领、争用与排队；fixture 没有建多屏运行态，继承默认 4 屏会导致电脑挂载缺失。 |
+| `server/local-vm-resume.fixture.test.ts` | 隔离配置显式设 `screens: 1`。这些用例测共享 VM 的唤醒、失败提示和恢复时序，并用 shared 容器状态模拟，不是屏池分配测试。 |
+| `server/surface-pins.e2e.test.ts` | 隔离配置显式设 `screens: 1`。这些用例测任务的执行位置 pin、重启恢复和云电脑/本机 VM 切换，断言依赖旧共享 VM 资源和工作区租约，不能让默认多屏改变 fixture 的对象。 |
+| `server/managed-policy.test.ts` | 从 `index.ts` 抽取 `bindTurnComputer` 的策略 guard 时，以 `await waitForComputer(` 为截断位置，并抽取 `computerPlaceRefusal`。根因是等待逻辑拆分后，旧源码边界会把无关模块内容带入动态函数，触发 `Unexpected token 'export'`。 |
+| `server/turn-watchdog.test.ts` | 把从 `turn-computer-wait.ts` 导入的 `COMPUTER_WAIT_MAX_MS` 注入执行抽取代码的 VM context。根因是常量提取为模块依赖后，动态测试环境未提供该依赖。 |
+| `server/index.ts` | 多屏共享容器状态响应清空容器级 `viewer_url`，同时曾强制 `status.ready = false`。后者不是必要修复，会把容器就绪状态错误地变成“未就绪”；第 9 轮撤回这一赋值，保留按屏观看。 |
 
-`server/config.test.ts` 为 253 项通过、3 项失败；3 项均在测试本身启动 Node 子进程时收到沙箱 `spawnSync /usr/local/bin/node EPERM`，不是配置断言失败。`server/index.ts` 当前 15406 行，低于 15515 的 ratchet 上限。
+旧说明中“默认 4 屏下预览不能返回 409”作废。执行规格明确规定：未分配屏的机器人查询 `/api/bots/:id/local-computer` 返回 `409 screen_not_assigned`。这不是本轮要修掉的错误，也不能列作新修复；第 9 轮未改生产路由或规格。工具权限预览用例的单屏设置及理由见下节。
 
-按要求逐个尝试本轮失败清单中的文件，实际输出摘要如下。所有涉及 fixture 监听的文件都未完成服务行为验收：
+第 8 轮原记录中的验证结果属于历史记录，不作为第 9 轮验收：shared-vm-control 101、computers 14、screen-runtime 13、parked wiring 2、turn-watchdog 37、managed-policy 20、server-lines 8、file-size-ratchet 1 项通过；config 253 项通过、3 项被 Node 子进程 `EPERM` 阻断；服务 fixture 受 TCP 监听限制未完成。该轮未获取 Actions 结果。本次没有把“跑过测试”改写成“修改过该测试文件”。
 
-| 文件 | 实际输出 |
+## 第 9 轮：语义合并与复审修改
+
+日期：2026-11-15。开工执行 依赖准备脚本，输出 `linked 73 entries`；Node `v24.22.3`。所有 Vitest 文件逐个串行运行，没有 systemd 或 Docker。验证只使用隔离服务 fixture、临时目录和假容器运行时，没有操作用户 live app 或数据。`AGENTS.md` 引用的 `docs/verification/README.md` 仍不存在，无法声称执行了该文档中未提供的步骤。未提交、暂存或推送 git。
+
+### 实际改动文件及根因
+
+| 文件 | 改了什么、为什么 |
 | --- | --- |
-| `evals/evals.test.ts` | 6 个场景在 `freePortBlock` 报 `no free port block for offsets 0,1 in 19600..22600`，其余 1 个非端口场景通过 |
-| `server/cloud-lending-browser.e2e.test.ts` | 10 项跳过；fixture 报 `no free port block for offsets 0,1` |
-| `server/computer-take-control.e2e.test.ts` | fixture 监听报 `listen EPERM: operation not permitted 127.0.0.1`，hook 超时 |
-| `server/index.test.ts` | `338 skipped`；beforeAll hook 超时并报 `listen EPERM: operation not permitted 127.0.0.1` |
-| `server/local-vm-resume.fixture.test.ts` | `7 skipped`；报 `no free port block for offsets 0,1 in 19600..22600` |
-| `server/local-vm-screens.e2e.test.ts` | 12 项均在 `no free port block for offsets 0,1` 失败 |
-| `server/managed-policy.test.ts` | 20 项通过 |
-| `server/opencode-provider-keys.e2e.test.ts` | 2 项跳过；监听报 `listen EPERM` |
-| `server/surface-pins.e2e.test.ts` | `11 skipped`；beforeAll hook 超时，未处理的监听错误为 `listen EPERM: operation not permitted 127.0.0.1` |
-| `server/tool-scope.e2e.test.ts` | 9 项均报 `no free port block for offsets 0,1 in 19600..22600` |
-| `src/locales/server-lines.test.ts` | 8 项通过 |
-| `server/turn-watchdog.test.ts` | 37 项通过 |
+| `server/host/secret-cards.ts` | 合并 E 的 `localVmWorkspace` 和 F 的屏访问器/错误处理导入；保留非屏目标的宿主与显示路径计算，以及 F 对屏密钥投递的归属检查。屏目标不能在访问器缺失时退回宿主投递，否则屏重分配后可能写给新占用者；因此保留 `screenUnavailable` 拒绝，移除冲突留下的无效 screen 分支。 |
+| `server/pages/bundle.ts` | `BotFolders` 同时保留 `vmGuestRoot` 和 `access`。`readBotPageBundle`、`botFileSource` 优先使用显式访问器或 folders 的访问器，不先映射屏路径；无访问器时才按 `vmGuestRoot ?? VM_WORKSPACE_GUEST` 映射。修复两边接口能力互相覆盖的问题，并保留 F 的 VM 宿主目录排除参数。 |
+| `server/routes/app-hosting.ts` | 合并两字段和访问器优先级；publish/status/delete 的 `path`、`project` 都只有在无访问器时才作宿主映射。访问器和 `vmWorkspace` 继续传给 publisher，避免以宿主身份处理屏文件。 |
+| `server/routes/published-pages.ts` | 发布和按路径撤销均保留 `vmGuestRoot` 映射回退，同时让访问器优先处理原始路径。若发布和撤销走不同映射，会无法识别同一个来源。 |
+| `server/routes/published-pages.test.ts` | 合并测试辅助函数的两个字段，保留 E 的宿主映射测试与 F 的发布、刷新、撤销及屏重分配测试；增加真实屏根/用户工作区别名的发布和撤销覆盖，访问器场景同时提供 `vmGuestRoot`，防止合并后错误优先映射。 |
+| `server/pages/bundle.test.ts` | 增加无访问器时的旧默认根、屏根和用户别名映射用例；显式/随 folders 提供访问器时，用真实隔离屏文件 fixture 验证打包和 extract 来源均经访问器解析，防止只保留一边能力。 |
+| `server/routes/app-hosting.test.ts` | 补无访问器时 path/project 的屏根映射回归；加强访问器用例，同时传屏工作区别名、`vmGuestRoot` 和 project，检查 publish/status/delete 都原样转交。 |
+| `server/index.test.ts` | 模式切换用例的磁盘配置期望补 `screens: 1`；配置恢复放进 `finally`，从第一次修改屏数起保护。根因是 screens 会随 per-bot 配置持久化，而旧断言失败会阻止末尾恢复，污染后续 idle timeout 用例。 |
+| `server/tool-scope.e2e.test.ts` | 只在 corrupt persisted selection 的 preview 分支，通过隔离 API 显式设置并断言 `screens: 1` 成功。此处验证损坏的工具权限配置不妨碍预览及 thread 校验，机器人没有认领屏；单屏避免触发与该用例目的无关、且符合规格的 `screen_not_assigned`。该 fixture 每个参数场景独立启动并在 finally 关闭。 |
+| `server/index.ts` | 撤回共享多屏容器状态中的 `status.ready = false`；继续清空容器级观看地址。根因是容器就绪状态被错误覆盖，设置页会一直显示未就绪、步骤 4 不完成。 |
+| `docs/tasks/T-1200/T-1228-wiring/report.md` | 校正第 8 轮记录、逐处解释单屏 fixture 设置，追加本轮文件清单和实际验证结果。 |
+| `docs/tasks/T-1200/T-1228-wiring/round9-verification.txt` | 保存本轮逐文件测试和静态检查的命令、完整输出、退出码，供协调者复跑比对。 |
 
-本沙箱禁止 TCP 监听且限制子进程，故端口型 E2E 不能据此判定实现失败或通过；须由 Actions 在可监听端口的主机复跑。工作区最终只有本轮四个代码/测试文件的未提交改动：`server/config.test.ts`、`server/host/shared-vm-control.ts`、`server/index.test.ts`、`server/routes/computers.ts`。
+核实 F 的现有访问器：`screenFilePath()` 只把当前屏的 `/home/crybot-sN/workspace` 转换为该屏的规范根；其他屏别名和越界路径被拒绝。现有 screen-files 别名测试、本轮 bundle 的访问器测试均通过。没有修改 `server/screen-files.ts`。
+
+### 本轮验收输出
+
+完整输出见 [round9-verification.txt](round9-verification.txt)。以下每个文件实际单独执行 `pnpm exec vitest run <文件>`：
+
+| 文件 | 实际输出摘要 | 退出码 |
+| --- | --- | ---: |
+| `server/index.test.ts` | `Test Files 1 failed; Tests 338 skipped; Errors 1 error`；`listen EPERM: operation not permitted 127.0.0.1`，beforeAll 30 秒超时 | 1 |
+| `server/tool-scope.e2e.test.ts` | `Test Files 1 failed; Tests 9 failed`；全部在 fixture 的 `no free port block for offsets 0,1 in 19600..22600` 阻断 | 1 |
+| `server/host/secret-cards.test.ts` | `Test Files 1 passed; Tests 51 passed` | 0 |
+| `server/pages/bundle.test.ts` | `Test Files 1 passed; Tests 13 passed` | 0 |
+| `server/routes/app-hosting.test.ts` | `Test Files 1 passed; Tests 9 passed` | 0 |
+| `server/routes/published-pages.test.ts` | `Test Files 1 passed; Tests 14 passed` | 0 |
+| `server/screen-files.test.ts` | `Test Files 1 passed; Tests 13 passed, 1 skipped` | 0 |
+| `server/parked-local-vm-wiring.test.ts` | `Test Files 1 passed; Tests 2 passed` | 0 |
+| `server/local-vm-screen-runtime.test.ts` | `Test Files 1 passed; Tests 13 passed` | 0 |
+| `scripts/testing/file-size-ratchet.test.ts` | `Test Files 1 passed; Tests 1 passed` | 0 |
+| `scripts/testing/lazy-server-modules.test.ts` | `Test Files 1 failed; Tests 1 failed`；`spawnSync git EPERM`，未执行到模块导入断言 | 1 |
+| `server/local-vm-screens.e2e.test.ts` | `Test Files 1 failed; Tests 12 failed`；全部在 `no free port block for offsets 0,1` 阻断 | 1 |
+| `server/cloud-lending-browser.e2e.test.ts` | `Test Files 1 failed; Tests 10 skipped`；beforeAll 在 `no free port block for offsets 0,1` 阻断 | 1 |
+
+8 个文件完成运行，116 项通过；screen-files 的 1 项既有 UID 隔离测试因当前非 root 而跳过（需要 Linux root 执行 setpriv），不是本轮新增跳过。四个端口型测试文件未完成行为验收，lazy-server-modules 未完成断言，均须在主机或 Actions 复跑；本轮未获取 Actions 结果，不能据此确认整服务无回归。真实 Docker/UID 权限隔离也不能由假运行时测试代替。
+
+```text
+$ pnpm exec tsc -p tsconfig.server.json
+exit 0（无诊断）
+
+$ pnpm exec oxlint --deny-warnings server/host/secret-cards.ts server/index.test.ts server/index.ts server/pages/bundle.test.ts server/pages/bundle.ts server/routes/app-hosting.test.ts server/routes/app-hosting.ts server/routes/published-pages.test.ts server/routes/published-pages.ts server/tool-scope.e2e.test.ts
+exit 0（无诊断）
+
+$ git diff --check
+exit 0
+
+$ wc -l server/index.ts
+15406 server/index.ts
+```
+
+补充只读检查：在 shell 中先运行 `git ls-files server shared`，再由 Node 读取文件并使用 lazy-server-modules 测试的同一导入正则，扫描 1549 个非测试 TS 文件，结果 `staticImports: []`。这仅补充静态证据，不将被 EPERM 阻断的原测试记为通过。
+
+全工作区扫描没有合并冲突块；第三方许可证中的既有等号分隔线不属于冲突标记，未改许可证。未修改 ratchet 上限。

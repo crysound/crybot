@@ -1,0 +1,244 @@
+$ crybot-link-deps
+crybot-link-deps: linked 73 entries from /opt/crybot-deps/node_modules into <worktree>/node_modules
+Exit: 0
+
+$ pnpm exec vitest run server/screen-profile-files.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  27 passed (27)
+   Start at  22:15:14
+   Duration  7.14s (transform 954ms, setup 1.12s, import 166ms, tests 5.66s, environment 0ms)
+
+Exit: 0
+
+$ pnpm exec vitest run server/host/secret-cards.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ server/host/secret-cards.test.ts (50 tests | 2 failed) 606ms
+     × leaves the team's secret of the same name as it was, which every other chat still gets 7ms
+   × refuses saved file delivery after the card's screen is reassigned 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/host/secret-cards.test.ts > on a Team Cloud, a secret typed into a card in a member's private chat > leaves the team's secret of the same name as it was, which every other chat still gets
+AssertionError: expected 'sk_test_fake-team' to be 'sk_test_fake-ada-own-1' // Object-is equality
+
+Expected: "sk_test_fake-ada-own-1"
+Received: "sk_test_fake-team"
+
+ ❯ server/host/secret-cards.test.ts:236:115
+    234|     one.cards.saveCustomSecret("ledger", "ada-chat", String(card.body.…
+    235|     expect(one.vaultStore.secret(shared.id)?.value).toBe("sk_test_fake…
+    236|     expect(one.vaultStore.usableSecret("Stripe secret key", "ledger", …
+       |                                                                                                                   ^
+    237|     expect(one.vaultStore.usableSecret("Stripe secret key", "ledger", …
+    238|     for (const threadId of ["ben-chat", "ledger-main", "room-1"]) expe…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  server/host/secret-cards.test.ts > refuses saved file delivery after the card's screen is reassigned
+AssertionError: expected { status: 404, body: { …(2) } } to match object { status: 409, …(1) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "body": {
+-     "errorKey": "serverError.secret.screenUnavailable",
++     "errorKey": "serverError.secret.unavailableLower",
+    },
+-   "status": 409,
++   "status": 404,
+  }
+
+ ❯ server/host/secret-cards.test.ts:733:22
+    731|         : delivery === "saved" ? await one.cards.useSavedSecret("ledge…
+    732|         : await one.cards.requestCredential(one.bot, "screen-thread", …
+    733|       expect(result).toMatchObject({ status: 409, body: { errorKey } }…
+       |                      ^
+    734|     }
+    735|     expect(fileAccess).toHaveBeenLastCalledWith("shared:s2", "ledger",…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 48 passed (50)
+   Start at  22:16:26
+   Duration  2.97s (transform 1.70s, setup 751ms, import 1.49s, tests 606ms, environment 0ms)
+
+Exit: 1
+
+$ pnpm exec vitest run server/host/secret-cards.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  50 passed (50)
+   Start at  22:16:58
+   Duration  2.81s (transform 1.57s, setup 679ms, import 1.36s, tests 666ms, environment 0ms)
+
+Exit: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+Exit: 0
+
+$ pnpm exec vitest run server/screen-files.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed | 1 skipped (14)
+   Start at  22:17:38
+   Duration  5.95s (transform 1.26s, setup 855ms, import 274ms, tests 4.70s, environment 0ms)
+
+Exit: 0
+
+$ pnpm exec vitest run server/local-vm-browser-profiles.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ server/local-vm-browser-profiles.test.ts (12 tests | 5 failed) 74ms
+     × moves a first-run Firefox profile into the workspace and points ~/.mozilla at it 8ms
+     × keeps a user-installed desktop app across a new VM image 3ms
+     × keeps a durable profile over the image's empty one and clears the old desktop's Firefox locks 3ms
+     × keeps live browser locks across a Cua driver restart until the PID 1 start time changes 3ms
+     × keeps live browser locks across a Cua driver restart until the boot ID changes 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/local-vm-browser-profiles.test.ts > the image's start-up script keeps Firefox's profile in the workspace > moves a first-run Firefox profile into the workspace and points ~/.mozilla at it
+Error: spawnSync /bin/sh EPERM
+ ❯ prepareScript server/local-vm-browser-profiles.test.ts:37:3
+     35|   const printf = dockerfile.slice(start + "RUN ".length, end).replaceA…
+     36|     .replaceAll("/proc/sys/kernel/random/boot_id", bootId).replaceAll(…
+     37|   execFileSync("/bin/sh", ["-c", `${printf} > '${script}'`]);
+       |   ^
+     38|   return script;
+     39| }
+ ❯ server/local-vm-browser-profiles.test.ts:51:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  server/local-vm-browser-profiles.test.ts > the image's start-up script keeps Firefox's profile in the workspace > keeps a user-installed desktop app across a new VM image
+Error: spawnSync /bin/sh EPERM
+ ❯ prepareScript server/local-vm-browser-profiles.test.ts:37:3
+     35|   const printf = dockerfile.slice(start + "RUN ".length, end).replaceA…
+     36|     .replaceAll("/proc/sys/kernel/random/boot_id", bootId).replaceAll(…
+     37|   execFileSync("/bin/sh", ["-c", `${printf} > '${script}'`]);
+       |   ^
+     38|   return script;
+     39| }
+ ❯ server/local-vm-browser-profiles.test.ts:68:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  server/local-vm-browser-profiles.test.ts > the image's start-up script keeps Firefox's profile in the workspace > keeps a durable profile over the image's empty one and clears the old desktop's Firefox locks
+Error: spawnSync /bin/sh EPERM
+ ❯ prepareScript server/local-vm-browser-profiles.test.ts:37:3
+     35|   const printf = dockerfile.slice(start + "RUN ".length, end).replaceA…
+     36|     .replaceAll("/proc/sys/kernel/random/boot_id", bootId).replaceAll(…
+     37|   execFileSync("/bin/sh", ["-c", `${printf} > '${script}'`]);
+       |   ^
+     38|   return script;
+     39| }
+ ❯ server/local-vm-browser-profiles.test.ts:85:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  server/local-vm-browser-profiles.test.ts > the image's start-up script keeps Firefox's profile in the workspace > keeps live browser locks across a Cua driver restart until the PID 1 start time changes
+ FAIL  server/local-vm-browser-profiles.test.ts > the image's start-up script keeps Firefox's profile in the workspace > keeps live browser locks across a Cua driver restart until the boot ID changes
+Error: spawnSync /bin/sh EPERM
+ ❯ prepareScript server/local-vm-browser-profiles.test.ts:37:3
+     35|   const printf = dockerfile.slice(start + "RUN ".length, end).replaceA…
+     36|     .replaceAll("/proc/sys/kernel/random/boot_id", bootId).replaceAll(…
+     37|   execFileSync("/bin/sh", ["-c", `${printf} > '${script}'`]);
+       |   ^
+     38|   return script;
+     39| }
+ ❯ server/local-vm-browser-profiles.test.ts:100:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 7 passed (12)
+   Start at  22:17:45
+   Duration  1.29s (transform 834ms, setup 826ms, import 258ms, tests 74ms, environment 0ms)
+
+Exit: 1
+
+$ pnpm exec vitest run server/routes/secret-cards.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  22:17:47
+   Duration  2.13s (transform 1.56s, setup 828ms, import 1.16s, tests 9ms, environment 0ms)
+
+Exit: 0
+
+$ pnpm exec vitest run server/secret-vault.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  22:17:49
+   Duration  1.42s (transform 1.00s, setup 810ms, import 470ms, tests 16ms, environment 0ms)
+
+Exit: 0
+
+$ pnpm exec vitest run src/lib/i18n.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  39 passed (39)
+   Start at  22:17:51
+   Duration  7.04s (transform 3.16s, setup 1.06s, import 40ms, tests 5.80s, environment 0ms)
+
+Exit: 0
+
+$ node scripts/generate-locale.mjs --check
+de.json: 37% (3945/10588)
+es.json: 61% (6461/10588)
+fr.json: 36% (3774/10588)
+hi.json: 34% (3628/10588)
+it.json: 67% (7080/10588)
+ja.json: 76% (8049/10588)
+ko.json: 73% (7734/10588)
+pl.json: 68% (7222/10588)
+pt-br.json: 100% (10588/10588)
+ru.json: 69% (7274/10588)
+tr.json: 56% (5965/10588)
+uk.json: 38% (4049/10588)
+vi.json: 56% (5965/10588)
+zh-tw.json: 97% (10226/10588)
+zh.json: 76% (7994/10588)
+locale catalogs valid (16 languages, 10588 English strings)
+Exit: 0
+
+$ pnpm exec oxlint --deny-warnings server/screen-profile-files.ts server/screen-profile-files.test.ts server/host/secret-cards.ts server/host/secret-cards.test.ts server/user-errors.ts src/locales/en.json src/locales/zh.json src/locales/pt-br.json
+Exit: 0
+
+$ git diff --check
+Exit: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+Exit: 0
+
+$ git diff --check
+Exit: 0
+

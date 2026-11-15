@@ -1,6 +1,12 @@
+import { resolveScreenOrHost } from "./screen-host-files.ts";
 // The source opens through the message-file route's hardened resolver (realpath containment, O_NOFOLLOW, size cap) and is
 // copied into the private store, so the chat never reaches into a bot's workspace or VM home afterwards.
-import { basename, join, posix } from "node:path";
+import { Readable } from "node:stream";
+import { inSecretFolder, SECRET_FILE_REFUSAL } from "./secret-folder.ts";
+import { screenFilePath, type ScreenFileAccess } from "./screen-files.ts";
+import { guestWorkspaceToHost } from "./guest-workspace.ts";
+export { guestWorkspaceToHost } from "./guest-workspace.ts";
+import { basename, posix } from "node:path";
 import {
   extensionForFileMime,
   extensionForMime,
@@ -20,23 +26,6 @@ export const ATTACH_SUPPORTED_TYPES =
 
 function statusError(status: number, message: string): Error & { status: number } {
   return Object.assign(new Error(message), { status });
-}
-
-/** Maps a guest workspace path onto its bind-mounted host directory; anything outside it, `..` escapes included, is null. */
-export function guestWorkspaceToHost(input: string, guestRoot: string, hostRoot: string): string | null {
-  let value = input.trim();
-  if (/^file:\/\//i.test(value)) {
-    try {
-      value = decodeURIComponent(new URL(value).pathname);
-    } catch {
-      return null;
-    }
-  }
-  if (!value.startsWith("/")) return null;
-  const normalized = posix.normalize(value);
-  const relative = posix.relative(guestRoot, normalized);
-  if (!relative || relative === ".." || relative.startsWith("../") || posix.isAbsolute(relative)) return null;
-  return join(hostRoot, ...relative.split("/"));
 }
 
 /** Directory parts are dropped, never trusted. */
@@ -72,9 +61,25 @@ export interface SavedBotAttachment {
   bytes: number;
 }
 
-export async function saveBotAttachment(input: SaveBotAttachmentInput): Promise<SavedBotAttachment> {
-  const requested = input.path.trim();
+export async function saveBotAttachment(input: SaveBotAttachmentInput, access?: ScreenFileAccess): Promise<SavedBotAttachment> {
+  const resolved = await resolveScreenOrHost(input.path, input.roots, access, input.guest?.host);
+  if (access && !resolved.access) input = { ...input, roots: resolved.roots, guest: undefined, savedThisTurn: undefined };
+  access = resolved.access;
+  const requested = resolved.path.trim();
   if (!requested) throw statusError(400, "path is required");
+  if (access) {
+    const source = screenFilePath(access, requested);
+    if (inSecretFolder(source)) throw statusError(403, SECRET_FILE_REFUSAL);
+    const mime = mimeFor(source), name = displayNameFor(input.name, posix.basename(source));
+    if (!extensionForMime(mime) && !extensionForFileMime(mime)) throw statusError(415, `${name} is not a supported attachment type. Supported: ${ATTACH_SUPPORTED_TYPES}.`);
+    const data = await access.readFile(source, extensionForMime(mime) ? IMAGE_MAX_BYTES : FILE_MAX_BYTES);
+    if (extensionForMime(mime)) {
+      const saved = saveImage(data, mime);
+      return { attachment: { kind: "image", path: saved.path, mime: saved.mime, name, source }, bytes: saved.bytes };
+    }
+    const saved = await saveFile(Readable.from([data]), name, mime, { expectedBytes: data.length });
+    return { attachment: { kind: "file", path: saved.path, mime: saved.mime, name: saved.name, source }, bytes: saved.bytes };
+  }
   const guestHost = input.guest ? guestWorkspaceToHost(requested, input.guest.root, input.guest.host) : null;
   // A bot with a VM works in it: a relative path means its VM workspace first.
   const roots = input.guest ? [input.guest.host, ...input.roots] : input.roots;

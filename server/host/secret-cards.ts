@@ -1,5 +1,6 @@
 import { localVmWorkspace } from "../local-vm-screen-layout.ts";
-import { userError } from "../user-errors.ts";
+import type { ScreenFileAccess } from "../screen-files.ts";
+import { userError, userErrorFields, userErrorThrown } from "../user-errors.ts";
 // The secure credential cards request_credential adds: the card on the conversation's visible branch, settling it,
 // resuming the turn it paused, and the value a paired phone sealed for this computer. No card, message or log holds the value.
 import { randomUUID } from "node:crypto";
@@ -24,7 +25,7 @@ import {
 import { EMAIL_CREDENTIAL, outgoingFieldsOf, type EmailAccountView, type EmailConnectAnswer, type EmailConnectRequest, type EmailOutgoingAnswer, type EmailOutgoingFields, type EmailServerFields } from "../../shared/email.ts";
 import type { SecretRequestCardData } from "../../shared/wire.ts";
 import type { AppConfig } from "../config.ts";
-import { perBotLocalVmTarget, poolLocalVmTarget, sharedScreenTarget, SHARED_LOCAL_VM_TARGET } from "../container-computer.ts";
+import { perBotLocalVmTarget, poolLocalVmTarget, SHARED_LOCAL_VM_TARGET } from "../container-computer.ts";
 import { HOSTED_PROVIDER_SETTINGS_ERROR } from "../hosted-models.ts";
 import { addHeldSecretScrubber } from "../redact.ts";
 import { SECRET_VALUE_MAX_BYTES, SecretVault, type SavedSecret, type SecretFileHome } from "../secret-vault.ts";
@@ -58,6 +59,10 @@ export const phoneSecretEnvelopeSchema = z.object({
 }).strict();
 
 export interface SecretCardsDeps {
+  /** Security: delivery requires the bot to still occupy this screen in this conversation; otherwise return undefined. */
+  fileAccess?(vm: string, botId: string, threadId: string): ScreenFileAccess | undefined;
+  /** Security: access without an owner is only for sweeping expired files, never delivering secrets. */
+  fileAccess?(vm: string): ScreenFileAccess | undefined;
   store: Pick<Store, "activePath" | "appendMessage" | "patchMessage" | "messagesFor" | "botByThread" | "groupByThread" | "onChange">;
   cfg: AppConfig;
   botLogins: Pick<BotLogins, "credentialConfig" | "linkedSecret"> & Partial<Pick<BotLogins, "linkedSecrets">>;
@@ -122,9 +127,9 @@ function deliveryNote(botName: string, delivery: SecretDelivery, language: strin
 
 /** Where a file secret goes: the Local VM workspace its card names, else the bot's own folder. */
 function vmFileHome(botId: string, vm: string): SecretFileHome | null {
-  const screen = /^shared:s([1-4])$/.exec(vm);
+  if (vm.startsWith("shared:s")) throw userErrorThrown("serverError.secret.screenUnavailable");
   const pool = /^pool:(\d{1,4})$/.exec(vm);
-  const target = screen ? sharedScreenTarget(Number(screen[1])) : vm === SHARED_LOCAL_VM_TARGET.key ? SHARED_LOCAL_VM_TARGET
+  const target = vm === SHARED_LOCAL_VM_TARGET.key ? SHARED_LOCAL_VM_TARGET
     : pool ? poolLocalVmTarget(Number(pool[1]))
       : perBotLocalVmTarget(botId).key === vm ? perBotLocalVmTarget(botId) : null;
   if (!target) return null;
@@ -214,12 +219,21 @@ export function createSecretCards(deps: SecretCardsDeps) {
   const threadExists = (threadId: string) => Boolean(store.botByThread(threadId) || store.groupByThread(threadId));
   const savedAt = (threadId: string, messageId: string) =>
     store.messagesFor(threadId).find((message) => message.id === messageId)?.secret?.savedAt ?? null;
+  let sweeping = false;
   const sweep = () => {
-    try {
-      vault.sweep(sweepBases(), savedAt, threadExists);
-    } catch (error) {
-      console.warn(`secret files: sweep failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    if (sweeping) return;
+    sweeping = true;
+    void (async () => {
+      try {
+        vault.sweep(sweepBases(), savedAt, threadExists);
+        await Promise.allSettled(Array.from({ length: 4 }, async (_, index) => {
+          const access = deps.fileAccess?.(`shared:s${index + 1}`);
+          if (access) await vault.sweepAccess(access, savedAt, threadExists);
+        }));
+      } catch (error) {
+        console.warn(`secret files: sweep failed: ${error instanceof Error ? error.message : String(error)}`);
+      } finally { sweeping = false; }
+    })();
   };
   sweep();
   setInterval(sweep, SWEEP_MS).unref();
@@ -232,6 +246,7 @@ export function createSecretCards(deps: SecretCardsDeps) {
 
   /** Saves a custom card's value to the Vault for the asking bot, then hands it over. */
   function storeCustomSecret(message: Message, botId: string, threadId: string, value: string): void {
+    if (message.secret!.delivery === "file") accessFor(message.secret!.vm, botId, threadId);
     const person = deps.vaultReader(threadId).person;
     const saved = vaultStore.saveSecret({ name: message.secret!.label, value, source: "card", bots: [botId], refOnly: message.secret!.delivery !== "file", ...(person ? { person } : {}) });
     handOver(message, botId, threadId, value, saved.id);
@@ -248,6 +263,30 @@ export function createSecretCards(deps: SecretCardsDeps) {
       vault.saveRef(owner, message.id, secret.label, value, item);
     }
     store.patchMessage(threadId, message.id, { secret: { ...secret, savedAt: Date.now() } });
+  }
+
+  const accessFor = (vm: string | undefined, botId: string, threadId: string) => {
+    const access = vm ? deps.fileAccess?.(vm, botId, threadId) : undefined;
+    if (vm?.startsWith("shared:s") && !access) throw userErrorThrown("serverError.secret.screenUnavailable");
+    return access;
+  };
+  const deliveryFailure = (error: unknown) => userErrorFields(error).errorKey === "serverError.secret.screenUnavailable"
+    ? { status: 409, body: userError("serverError.secret.screenUnavailable") }
+    : { status: 500, body: userError("serverError.secret.notKeptSafely") };
+
+  async function handOverWithAccess(message: Message, botId: string, threadId: string, value: string, item: string): Promise<void> {
+    const secret = message.secret!;
+    const access = secret.delivery === "file" ? accessFor(secret.vm, botId, threadId) : undefined;
+    if (!access) { handOver(message, botId, threadId, value, item); return; }
+    await vault.saveFileWithAccess({ botId, threadId }, message.id, value, access);
+    store.patchMessage(threadId, message.id, { secret: { ...secret, savedAt: Date.now() } });
+  }
+
+  async function storeCustomSecretWithAccess(message: Message, botId: string, threadId: string, value: string): Promise<void> {
+    if (message.secret!.delivery === "file") accessFor(message.secret!.vm, botId, threadId);
+    const person = deps.vaultReader(threadId).person;
+    const saved = vaultStore.saveSecret({ name: message.secret!.label, value, source: "card", bots: [botId], refOnly: message.secret!.delivery !== "file", ...(person ? { person } : {}) });
+    await handOverWithAccess(message, botId, threadId, value, saved.id);
   }
 
   /** A custom card still waiting for its value, or why it can't take one. */
@@ -268,6 +307,7 @@ export function createSecretCards(deps: SecretCardsDeps) {
 
   /** A value typed into a custom card in the app: kept, then the paused turn resumes. */
   function saveCustomSecret(botId: string, threadId: string, messageId: string, raw: unknown): { status: number; body: Record<string, unknown> } {
+    if (savingCustomCards.has(cardKey(threadId, messageId))) return cardBusy();
     const message = openCustomCard(botId, threadId, messageId);
     if ("status" in message) return message;
     const value = typeof raw === "string" ? raw.trim() : "";
@@ -278,10 +318,34 @@ export function createSecretCards(deps: SecretCardsDeps) {
       storeCustomSecret(message, botId, threadId, value);
     } catch (error) {
       console.warn(`secret card: could not keep a secret: ${error instanceof Error ? error.message : String(error)}`);
-      return { status: 500, body: { ...userError("serverError.secret.notKeptSafely") } };
+      return deliveryFailure(error);
     }
     if (!resumeSecretCard(botId, threadId, message.id, "provided")) return { status: 409, body: { ...userError("serverError.secret.unavailableLower") } };
     return { status: 200, body: currentSecretState(botId, threadId, message.id) ?? { provided: true, resumed: false } };
+  }
+
+  const savingCustomCards = new Set<string>();
+  const cardKey = (threadId: string, messageId: string) => JSON.stringify([threadId, messageId]);
+  const cardBusy = () => ({ status: 409, body: { ...userError("serverError.secret.saving") } });
+
+  async function withCardLock<T extends object>(key: string, fn: () => Promise<T>): Promise<T | undefined> {
+    if (savingCustomCards.has(key)) return undefined;
+    savingCustomCards.add(key);
+    try { return await fn(); }
+    finally { savingCustomCards.delete(key); }
+  }
+
+  async function saveCustomSecretAsync(botId: string, threadId: string, messageId: string, raw: unknown): Promise<{ status: number; body: Record<string, unknown> }> {
+    return await withCardLock(cardKey(threadId, messageId), async () => {
+      const message = openCustomCard(botId, threadId, messageId);
+      if ("status" in message) return message;
+      const value = typeof raw === "string" ? raw.trim() : "";
+      if (!value || Buffer.byteLength(value) > SECRET_VALUE_MAX_BYTES) return { status: 400, body: { ...userError("serverError.secret.valueSize", { bytes: SECRET_VALUE_MAX_BYTES }) } };
+      try { await storeCustomSecretWithAccess(message, botId, threadId, value); }
+      catch (error) { return deliveryFailure(error); }
+      if (!resumeSecretCard(botId, threadId, message.id, "provided")) return { status: 409, body: { ...userError("serverError.secret.unavailableLower") } };
+      return { status: 200, body: currentSecretState(botId, threadId, message.id) ?? { provided: true, resumed: false } };
+    }) ?? cardBusy();
   }
 
   /** "Use a saved one" on a custom card: saved secrets and the bot's linked ones whose names could fit, never the one by
@@ -314,23 +378,25 @@ export function createSecretCards(deps: SecretCardsDeps) {
   /** The person picked a saved secret on the card: the bot may use it from now on, gets it as the card's delivery says,
    * and its paused turn resumes. */
   async function useSavedSecret(botId: string, threadId: string, messageId: string, itemId: unknown): Promise<{ status: number; body: Record<string, unknown> }> {
-    const open = openCustomCard(botId, threadId, messageId);
-    if ("status" in open) return open;
-    const choice = savedChoices(botId, threadId, messageId).find((one) => one.id === itemId);
-    if (!choice) return { status: 404, body: { ...userError("serverError.secret.unavailableLower") } };
-    let used: { id: string; value: string };
-    try { used = await choice.use(); }
-    catch (error) { return { status: 502, body: { error: error instanceof Error ? error.message : String(error) } }; }
-    const message = openCustomCard(botId, threadId, messageId);
-    if ("status" in message) return message;
-    try {
-      handOver(message, botId, threadId, used.value, used.id);
-    } catch (error) {
-      console.warn(`secret card: could not hand over a saved secret: ${error instanceof Error ? error.message : String(error)}`);
-      return { status: 500, body: { ...userError("serverError.secret.notKeptSafely") } };
-    }
-    if (!resumeSecretCard(botId, threadId, message.id, "provided")) return { status: 409, body: { ...userError("serverError.secret.unavailableLower") } };
-    return { status: 200, body: currentSecretState(botId, threadId, message.id) ?? { provided: true, resumed: false } };
+    return await withCardLock(cardKey(threadId, messageId), async () => {
+      const open = openCustomCard(botId, threadId, messageId);
+      if ("status" in open) return open;
+      const choice = savedChoices(botId, threadId, messageId).find((one) => one.id === itemId);
+      if (!choice) return { status: 404, body: { ...userError("serverError.secret.unavailableLower") } };
+      let used: { id: string; value: string };
+      try { used = await choice.use(); }
+      catch (error) { return { status: 502, body: { error: error instanceof Error ? error.message : String(error) } }; }
+      const message = openCustomCard(botId, threadId, messageId);
+      if ("status" in message) return message;
+      try {
+        await handOverWithAccess(message, botId, threadId, used.value, used.id);
+      } catch (error) {
+        console.warn(`secret card: could not hand over a saved secret: ${error instanceof Error ? error.message : String(error)}`);
+        return deliveryFailure(error);
+      }
+      if (!resumeSecretCard(botId, threadId, message.id, "provided")) return { status: 409, body: { ...userError("serverError.secret.unavailableLower") } };
+      return { status: 200, body: currentSecretState(botId, threadId, message.id) ?? { provided: true, resumed: false } };
+    }) ?? cardBusy();
   }
 
   /** The mailbox card: the password goes to the Email connector, which reads a real header before keeping it. A wrong one
@@ -435,7 +501,13 @@ export function createSecretCards(deps: SecretCardsDeps) {
     return true;
   }
 
-  async function provideSecretFromPhone(
+  async function provideSecretFromPhone(context: PhoneSecretContext, authenticatedDeviceId: string): Promise<{ provided: boolean; resumed: boolean }> {
+    const result = await withCardLock(cardKey(context.threadId, context.messageId), () => provideSecretFromPhoneLocked(context, authenticatedDeviceId));
+    if (!result) throw new PhoneSecretError(userError("serverError.secret.saving").error, 409);
+    return result;
+  }
+
+  async function provideSecretFromPhoneLocked(
     context: PhoneSecretContext,
     authenticatedDeviceId: string,
   ): Promise<{ provided: boolean; resumed: boolean }> {
@@ -520,7 +592,7 @@ export function createSecretCards(deps: SecretCardsDeps) {
             : await deps.email.connect({ address: current.secret.address, password: opened });
           if (!answer.ok) throw new PhoneSecretError(answer.error, 400);
           store.patchMessage(context.threadId, current.id, { secret: { ...current.secret, savedAt: Date.now() } });
-        } else storeCustomSecret(current, context.botId, context.threadId, opened);
+        } else await storeCustomSecretWithAccess(current, context.botId, context.threadId, opened);
       }
       const saved = secretMessage(context.botId, context.threadId, context.messageId) ?? current;
       // Electron acknowledges only after credentials.bin and the config update both commit; keep this assertion so no handler resumes first.
@@ -658,12 +730,13 @@ export function createSecretCards(deps: SecretCardsDeps) {
     if (item) {
       const owner = { botId: from.id, threadId };
       try {
-        const handed = asked.delivery === "file" ? { file: vault.mintFile(owner, item.id, item.value, fileHome(from.id, threadId, vm)) } : { ref: vault.mintRef(owner, item.name, item.value, item.id) };
+        const access = asked.delivery === "file" ? accessFor(vm, from.id, threadId) : undefined;
+        const handed = asked.delivery === "file" ? { file: access ? await vault.mintFileWithAccess(owner, item.id, item.value, access) : vault.mintFile(owner, item.id, item.value, fileHome(from.id, threadId, vm)) } : { ref: vault.mintRef(owner, item.name, item.value, item.id) };
         if (saved) vaultStore.markUsed(saved.id);
         return { status: 200, body: { label: asked.label, text: savedSecretText(asked.label, handed) } };
       } catch (error) {
         console.warn(`secret card: could not hand over a saved secret: ${error instanceof Error ? error.message : String(error)}`);
-        return { status: 500, body: userError("serverError.secret.notKeptSafely") };
+        return deliveryFailure(error);
       }
     }
     const path = store.activePath(threadId);
@@ -695,7 +768,7 @@ export function createSecretCards(deps: SecretCardsDeps) {
   }
 
   return {
-    phoneSecretSubmissionKey, secretMessage, currentSecretState, resumeSecretCard, provideSecretFromPhone, requestCredential, saveCustomSecret, saveEmailSecret,
+    phoneSecretSubmissionKey, secretMessage, currentSecretState, resumeSecretCard, provideSecretFromPhone, requestCredential, saveCustomSecret, saveCustomSecretAsync, saveEmailSecret,
     secretSaved, updateText, redeemMcpServer, useSavedSecret,
     /** Names only: what the card shows under "Use a saved one". */
     savedChoices: (botId: string, threadId: string, messageId: string): VaultChoice[] =>

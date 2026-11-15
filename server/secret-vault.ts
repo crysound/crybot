@@ -1,3 +1,4 @@
+import { screenFileRoot, removeScreenFile, type ScreenFileAccess } from "./screen-files.ts";
 // How a bot is handed a secret from a card or the Vault without seeing it.
 // Security: a `ref` value stays in this process's memory, behind a one-use reference bound to the asking bot and
 // conversation that only CryBot's own tools accept. A `file` value goes to an owner-only file in a private folder
@@ -82,6 +83,7 @@ export class SecretVault {
   private readonly byCard = new Map<string, { ref: string } | { file: string; until: number }>();
   /** "<thread>/<file name>" → until when, for files made from a Vault item rather than a card. */
   private readonly minted = new Map<string, number>();
+  private readonly pendingFiles = new Set<string>();
   private held: Array<{ forms: string[]; until: number }> = [];
   private readonly now: () => number;
 
@@ -123,6 +125,47 @@ export class SecretVault {
     const saved = this.writeFile(owner, name, value, home);
     this.minted.set(`${owner.threadId}/${name}`, saved.until);
     return saved.file;
+  }
+
+  async saveFileWithAccess(owner: SecretOwner, messageId: string, value: string, access: ScreenFileAccess): Promise<string> {
+    const saved = await this.writeWithAccess(owner, messageId, value, access);
+    this.byCard.set(messageId, saved);
+    return saved.file;
+  }
+
+  async mintFileWithAccess(owner: SecretOwner, itemId: string, value: string, access: ScreenFileAccess): Promise<string> {
+    const name = `vault-${itemId}`;
+    const saved = await this.writeWithAccess(owner, name, value, access);
+    this.minted.set(`${owner.threadId}/${name}`, saved.until);
+    return saved.file;
+  }
+
+  private async writeWithAccess(owner: SecretOwner, name: string, value: string, access: ScreenFileAccess): Promise<{ file: string; until: number }> {
+    if (!ID.test(owner.threadId) || !ID.test(name)) throw new Error("invalid conversation or file name");
+    const file = [screenFileRoot(access), SECRET_FOLDER, owner.threadId, name].join("/");
+    const until = this.now() + SECRET_FILE_TTL_MS;
+    this.hold(value, until);
+    this.pendingFiles.add(file);
+    try { await access.writeFile(file, Buffer.from(value), 0o600); }
+    finally { this.pendingFiles.delete(file); }
+    return { file, until };
+  }
+
+  async sweepAccess(access: ScreenFileAccess, savedAt: (threadId: string, messageId: string) => number | null, threadExists: (threadId: string) => boolean): Promise<void> {
+    const folder = `${screenFileRoot(access)}/${SECRET_FOLDER}`;
+    for (const thread of await access.list(folder).catch(() => [])) {
+      if (!ID.test(thread)) continue;
+      const threadFolder = `${folder}/${thread}`;
+      for (const card of await access.list(threadFolder).catch(() => [])) {
+        if (!ID.test(card)) continue;
+        const file = `${threadFolder}/${card}`;
+        if (this.pendingFiles.has(file)) continue;
+        const at = savedAt(thread, card), saved = this.byCard.get(card);
+        const cardUntil = saved && "file" in saved && saved.file === file ? saved.until : 0;
+        const live = threadExists(thread) && (at === null ? (this.minted.get(`${thread}/${card}`) ?? cardUntil) > this.now() : this.now() - at < SECRET_FILE_TTL_MS);
+        if (!live) await removeScreenFile(access, `${threadFolder}/${card}`).catch(() => {});
+      }
+    }
   }
 
   private writeFile(owner: SecretOwner, name: string, value: string, home: SecretFileHome): { file: string; until: number } {

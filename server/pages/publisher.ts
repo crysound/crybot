@@ -1,3 +1,5 @@
+import { resolveScreenOrHost } from "../screen-host-files.ts";
+import type { ScreenFileAccess } from "../screen-files.ts";
 import { PAGE_ID, type PublishedPageCard } from "../../shared/published-page.ts";
 import { redactSecretsInText } from "../../shared/redact.ts";
 import { PageBundleError, pageSignature, pageSource, readPageBundle, skippedNote, stillReadable, type PageBundle } from "./bundle.ts";
@@ -9,6 +11,8 @@ import type { PublishedPagesStore } from "./store.ts";
 export interface PageOutcome { status: number; text: string; card?: PublishedPageCard }
 
 export interface PublishInput {
+  access?: ScreenFileAccess;
+  vmWorkspace?: string | null;
   botId: string;
   threadId: string;
   path: string;
@@ -58,6 +62,7 @@ export function createPagePublisher(deps: {
   liveRoots?(botId: string, threadId: string): readonly string[] | null;
   /** True while the workspace is being backed up, restored or moved: live pages wait. */
   paused?(): boolean;
+  liveAccess?(botId: string, threadId: string, source: string): ScreenFileAccess | null | undefined;
 }) {
   const { client, store } = deps;
 
@@ -92,10 +97,11 @@ export function createPagePublisher(deps: {
       let bundle, signature: string | null = null;
       try {
         // A live page's fingerprint is taken before its files are read, so a change made during the read is published next.
-        const source = await pageSource(input.path, input.roots);
+        input = { ...input, ...await resolveScreenOrHost(input.path, input.roots, input.access, input.vmWorkspace) };
+        const source = await pageSource(input.path, input.roots, input.access, input.vmWorkspace);
         const remembered = input.pageId ? store.get(input.pageId) : store.fromSource(input.botId, source);
-        if (input.live ?? remembered?.live === true) signature = await pageSignature(source);
-        bundle = await readPageBundle(input.path, input.roots);
+        if (input.live ?? remembered?.live === true) signature = await pageSignature(source, {}, undefined, input.access);
+        bundle = await readPageBundle(input.path, input.roots, undefined, { vmWorkspace: input.vmWorkspace }, input.access);
       } catch (error) {
         if (error instanceof PageBundleError) return { status: error.status, text: error.message };
         throw error;
@@ -204,16 +210,17 @@ export function createPagePublisher(deps: {
           if (now < Math.max(record.updatedAt + LIVE_MIN_MS, nextTry.get(record.pageId) ?? 0)) continue;
           // The bot is gone or no longer has the folder: the page stays at its link as it is, and stops being republished.
           const threadId = record.cards.at(-1)?.threadId;
-          if (deps.liveRoots && !(await stillReadable(record.source, threadId ? deps.liveRoots(record.botId, threadId) : null))) {
+          const access = deps.liveAccess ? deps.liveAccess(record.botId, threadId ?? "", record.source) : record.source.startsWith("/home/cua/workspace/screens/") ? null : undefined;
+          if ((record.source.startsWith("/home/cua/workspace/screens/") && !access) || access === null || (deps.liveRoots && (access ? !threadId || !deps.liveRoots(record.botId, threadId)?.length : !(await stillReadable(record.source, threadId ? deps.liveRoots(record.botId, threadId) : null))))) {
             store.published({ ...record, card: null, live: false }, record.updatedAt);
             continue;
           }
-          const signature = await pageSignature(record.source);
+          const signature = await pageSignature(record.source, {}, undefined, access);
           if (signature === null || signature === record.signature) continue;
           nextTry.set(record.pageId, now + LIVE_MIN_MS);
           let bundle;
           try {
-            bundle = await readPageBundle(record.source, [record.source], undefined, { exactRoots: true });
+            bundle = await readPageBundle(record.source, [record.source], undefined, { exactRoots: true }, access);
           } catch (error) {
             if (!(error instanceof PageBundleError)) throw error;
             nextTry.set(record.pageId, now + LIVE_BROKEN_MS);
@@ -236,7 +243,7 @@ export function createPagePublisher(deps: {
     },
 
     /** Takes a page down, by its id or the file or folder it came from (with the bot's folders). */
-    async unpublish(input: { pageId?: string; path?: string; botId?: string; roots?: readonly string[]; call?: PagesCall }): Promise<PageOutcome> {
+    async unpublish(input: { pageId?: string; path?: string; botId?: string; roots?: readonly string[]; call?: PagesCall; access?: ScreenFileAccess; vmWorkspace?: string | null }): Promise<PageOutcome> {
       const pageId = input.pageId;
       if (pageId !== undefined && !PAGE_ID.test(pageId)) return { status: 400, text: "page_id must be the id of a page you published, from its link." };
       const takeDown = (id: string) => serially(pageKey(id), () => unpublishNow(id, input.call));
@@ -245,7 +252,7 @@ export function createPagePublisher(deps: {
         const notFound: PageOutcome = { status: 404, text: `No page was published from ${input.path}. Pass the page_id from its link instead.` };
         let source: string;
         try {
-          source = await pageSource(input.path, input.roots);
+          source = await pageSource(input.path, input.roots, input.access, input.vmWorkspace);
         } catch (error) {
           if (!(error instanceof PageBundleError)) throw error;
           return notFound;

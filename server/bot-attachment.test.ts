@@ -326,3 +326,39 @@ describe("deliveredCopy", () => {
     expect(deliveredCopy([ask, first, twice], { ...twice, parentId: "first" }, "sideboard.png")).toEqual(photo);
   });
 });
+
+it.skipIf(process.platform === "win32")("copies an s2 attachment through its access without falling back to a host root", async () => {
+  const { screenFilesFixture } = await import("./testing/screen-files-fixture.ts");
+  const f = await screenFilesFixture();
+  try {
+    await f.access.writeFile("report.txt", Buffer.from("screen two"));
+    const saved = await saveBotAttachment({ path: "report.txt", roots: [WORK] }, f.access);
+    expect(saved.attachment).toMatchObject({ source: "/home/cua/workspace/screens/s2/report.txt" });
+    expect(readFileSync(saved.attachment.path, "utf8")).toBe("screen two");
+    await expect(saveBotAttachment({ path: "/home/cua/workspace/screens/s1/report.txt", roots: [WORK] }, f.access)).rejects.toMatchObject({ status: 403 });
+    await f.access.writeFile(".crybot-secrets/private.txt", Buffer.from("fixture-value"));
+    await expect(saveBotAttachment({ path: ".crybot-secrets/private.txt", roots: [] }, f.access)).rejects.toMatchObject({ status: 403 });
+  } finally { await f.cleanup(); }
+});
+
+it("allows own host attachments with screen access but excludes the whole VM workspace", async () => {
+  const { screenFilesFixture } = await import("./testing/screen-files-fixture.ts");
+  const f = await screenFilesFixture();
+  try {
+    const own = join(WORK, "host-fallback.txt");
+    writeFileSync(own, "own host file");
+    const saved = await saveBotAttachment({ path: own, roots: [WORK, f.workspace], guest: { root: "/home/cua/workspace", host: f.workspace } }, f.access);
+    expect(readFileSync(saved.attachment.path, "utf8")).toBe("own host file");
+    const relative = await saveBotAttachment({ path: "host-fallback.txt", roots: [WORK] }, f.access);
+    expect(relative.attachment).toMatchObject({ source: own });
+    writeFileSync(join(f.workspace, "legacy.txt"), "legacy private file");
+    mkdirSync(join(f.workspace, "screens/s1"));
+    writeFileSync(join(f.workspace, "screens/s1/private.txt"), "other bot");
+    symlinkSync(f.workspace, join(WORK, "vm-link"));
+    for (const path of [join(f.workspace, "legacy.txt"), join(f.workspace, "screens/s1/private.txt"), join(WORK, "vm-link/legacy.txt")]) {
+      await expect(saveBotAttachment({ path, roots: [WORK, f.workspace] }, f.access)).rejects.toMatchObject({ status: 403 });
+    }
+    await f.access.writeFile("alias.txt", Buffer.from("own screen"));
+    expect((await saveBotAttachment({ path: "/home/crybot-s2/workspace/alias.txt", roots: [WORK] }, f.access)).attachment).toMatchObject({ source: "/home/cua/workspace/screens/s2/alias.txt" });
+  } finally { await f.cleanup(); }
+});
