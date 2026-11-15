@@ -12,7 +12,7 @@ export function IslandSettings() {
   const widthDirty = useRef(false);
   useEffect(() => { let alive = true; void bridge?.state().then(value => { if (alive) setSettings(value); }).catch(() => {}); return () => { alive = false; }; }, [bridge]);
   if (!bridge || !settings || capabilities.host?.platform !== "darwin") return null;
-  const save = (change: Partial<Settings>) => void bridge.set(change).then(setSettings).catch(() => {});
+  const save = (change: Partial<Settings>) => void bridge.set(change).then(setSettings).catch(() => { setWidth(null); });
   const commitWidth = () => {
     if (!widthDirty.current || width === null) return;
     widthDirty.current = false;

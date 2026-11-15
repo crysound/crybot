@@ -16,7 +16,7 @@ function fixture(t, platform = "darwin", overrides = {}) {
     setAlwaysOnTop(...value) { this.top = value; }
     setIgnoreMouseEvents(value) { this.ignoring = value; }
     setVisibleOnAllWorkspaces(...value) { this.spaces = value; }
-    setFocusable(value) { this.focusable = value; }
+    setFocusable(value) { this.focusCalls.push(`setFocusable(${value})`); this.focusable = value; }
     focus() { this.focusCalls.push("focus"); this.focused = true; }
     blur() { this.focused = false; this.emit("blur"); }
     showInactive() { this.focusCalls.push("showInactive"); this.visible = true; }
@@ -53,10 +53,23 @@ test("panel accepts the first click and cannot be minimized, maximized or fullsc
   for (const key of ["minimizable", "maximizable", "fullscreenable"]) assert.equal(options[key], false);
 });
 test("expanded island becomes key without showing the app, then releases keyboard focus", async t => {
-  const f = fixture(t), win = f.window();
+  const f = fixture(t, "darwin", {
+    source: () => ({ key: "https://team.example", origin: "https://team.example", local: false }),
+    request: async (_place, route, init) => {
+      if (route.includes("events")) return new Response(new ReadableStream({ start(controller) { init.signal.addEventListener("abort", () => controller.close()); } }));
+      if (route.startsWith("/api/bots")) return Response.json({ bots: [{ id: "atlas", threadId: "latest" }] });
+      return Response.json({ messages: [] });
+    },
+  }), win = f.window();
+  await new Promise(resolve => setImmediate(resolve));
   f.cursor({ x: 500, y: 10 }); t.mock.timers.tick(100);
+  win.focusCalls.length = 0;
   await f.action({ type: "expand" });
-  assert.deepEqual(win.focusCalls.slice(-2), ["showInactive", "focus"]);
+  assert.deepEqual(win.focusCalls, ["setFocusable(true)", "showInactive", "focus"]);
+  await f.action({ type: "select", botId: "atlas" });
+  await f.action({ type: "typing", value: true });
+  await f.action({ type: "typing", value: false });
+  assert.deepEqual(win.focusCalls, ["setFocusable(true)", "showInactive", "focus"]);
   await f.action({ type: "escape" });
   assert.equal(win.focused, false); assert.equal(win.focusable, false);
   t.mock.timers.tick(100);
