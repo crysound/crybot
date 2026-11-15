@@ -80,6 +80,28 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
   // The host runs this bot on its Local VM: preview, control and viewer all go to that desktop, not the cloud computer.
   const localVm = bot.computer === "vm";
   const [view, setView] = useState<"desktop" | "browser">(() => takeComputerPanelBrowserView(bot.id) ? "browser" : "desktop");
+  const [screenNumber, setScreenNumber] = useState<number | null>(null);
+  useEffect(() => {
+    setScreenNumber(null);
+    if (!localVm) return;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refreshScreen = async (background = false) => {
+      try {
+        const status = await api(`/api/bots/${bot.id}/local-computer`, { signal: controller.signal, background });
+        if (!controller.signal.aborted) setScreenNumber(status?.screen?.screen ?? null);
+      } catch (cause) {
+        if (!controller.signal.aborted && cause instanceof ApiError && cause.status === 409 && cause.body?.error === "screen_not_assigned") {
+          timer = setTimeout(() => void refreshScreen(true), 4000);
+        }
+      }
+    };
+    void refreshScreen();
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [bot.id, localVm, bot.busy]);
   const [signIn, setSignIn] = useState<BrowserSignIn>();
   const help = state.computerControl[bot.id]?.help ?? null;
   const asker = help ? state.bots.find((candidate) => candidate.id === help.botId)?.name ?? bot.name : bot.name;
@@ -185,6 +207,7 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
     try {
       if (!window.cry?.desktopViewer) throw new Error(t("remoteDesktop.viewerUnavailable"));
       const status = localVm ? await api(`/api/bots/${bot.id}/local-computer`) : null;
+      if (localVm) setScreenNumber(status?.screen?.screen ?? null);
       if (status?.queue_position) throw new Error(t("vm.screens.queued", { position: status.queue_position }));
       if (status?.screen === null) throw new Error(t("vm.screens.unassignedBot"));
       const target = localVm ? status?.screen?.viewerTarget : bot.cloudBackend === "vps" ? `vps/${bot.id}` : undefined;
@@ -227,7 +250,7 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
         <div>
           <div className="text-[14px] font-medium text-ink">{t("remoteDesktop.title", { name: bot.name })}</div>
           <div className="mt-0.5 text-[11px] text-ink-secondary">
-            {t(localVm ? "vm.dest.vm" : bot.cloudBackend === "vps" ? "botAccess.cloud.selfHostedVps" : "remoteDesktop.cloudDesktop")}
+            {localVm && screenNumber ? t("vm.screens.number", { screen: screenNumber }) : t(localVm ? "vm.dest.vm" : bot.cloudBackend === "vps" ? "botAccess.cloud.selfHostedVps" : "remoteDesktop.cloudDesktop")}
           </div>
         </div>
         <div className="flex items-center gap-1">

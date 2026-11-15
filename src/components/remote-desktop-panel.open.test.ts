@@ -168,3 +168,18 @@ it.each([2, null, "conflict"])("resolves a remote Local VM screen before taking 
     expect(open).not.toHaveBeenCalled();
   }
 });
+
+it.each([undefined, 2])("shows the remote VM screen number on opening the panel: %s", screen => {
+  fixture.vm = screen ? { screen: { screen, viewerTarget: "local/shared-s2" } } : {};
+  const container = document.createElement("div");
+  document.body.append(container);
+  root = createRoot(container);
+  flushSync(() => root!.render(createElement(BotEditorStore, { value: {
+    state: { ...initialState, instances: [engine] },
+    dispatch: vi.fn(), flushBotPatches: async () => null, refreshInstances: async () => {}, refreshModels: async () => {},
+  }, children: createElement(RemoteDesktopPanel, { bot: { ...bot, computer: "vm" } }) })));
+  return vi.waitFor(() => {
+    expect(container.textContent).toContain(screen ? "Screen 2" : "Private desktop");
+    if (screen) expect(container.textContent).not.toContain("Private desktop");
+  });
+});

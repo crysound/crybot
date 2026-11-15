@@ -3550,6 +3550,12 @@
             "state": "translated",
             "value": "已有 {minutes} 分鐘沒有活動，這個回合已停止"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已有 {minutes} 分钟没有活动，回合已停止"
+          }
         }
       }
     },
@@ -4193,6 +4199,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "正在 @{name} 中等待你的核准"
+          }
+        }
+      }
+    },
+    "chat.notice.waitingForScreen": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for its turn on this computer"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在排队等待屏幕"
           }
         }
       }

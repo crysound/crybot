@@ -1,6 +1,6 @@
 import { cloudHomeOffersPlace } from "../../shared/cloud-home";
 import { toolSurfaceKind } from "../../shared/tool-surface";
-import type { Bot, Task } from "@/state/store";
+import type { Bot, Task, ConfigStatus } from "@/state/store";
 import type { LocaleKey } from "@/locales";
 
 export type Place = "cloud" | "vm" | "local" | "browser";
@@ -23,6 +23,11 @@ export function personPin(task?: Pick<Task, "surface" | "surfaceAuto"> | null): 
 
 export function isComputerPlace(place: EffectivePlace): place is "cloud" | "vm" | "local" {
   return place === "cloud" || place === "vm" || place === "local";
+}
+
+export function vmDescriptionKey(config: Partial<Pick<ConfigStatus, "localVm">> | null | undefined): LocaleKey {
+  return config?.localVm?.mode === "shared" && (config.localVm.screens ?? 1) > 1
+    ? "computer.dest.vmScreenDesc" : "computer.dest.vmDesc";
 }
 
 export function placeLabelKey(place: EffectivePlace): LocaleKey {
