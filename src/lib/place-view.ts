@@ -57,7 +57,7 @@ export function placeFacts(input: {
   bot: Pick<Bot, "name" | "modelSelection" | "toolScope" | "cloudBackend">;
   place: PlaceFacts["place"];
   seat: PlaceSeat;
-  config: (FeatureFlagConfig & Pick<ConfigStatus, "box" | "providerLock">) | null | undefined;
+  config: (FeatureFlagConfig & Pick<ConfigStatus, "box" | "instabox" | "providerLock">) | null | undefined;
   instances: InstanceInfo[];
   local?: PlaceFacts["local"];
   computer?: PlaceFacts["computer"];
@@ -70,9 +70,9 @@ export function placeFacts(input: {
     providerLock: config?.providerLock,
     server: seat.server,
     bot: bot.name,
-    plan: seat.plan,
-    boat: config?.box?.configured ? (config.box.included ? "included" : "own-key") : "none",
-    backend: bot.cloudBackend === "vps" ? "vps" : "box",
+    plan: bot.cloudBackend === "instabox" ? false : seat.plan,
+    boat: bot.cloudBackend === "instabox" ? (config?.instabox?.configured ? "own-key" : "none") : config?.box?.configured ? (config.box.included ? "included" : "own-key") : "none",
+    backend: bot.cloudBackend ?? "box",
     engine: engineFacts(instance, bot.modelSelection.model),
     toolsAllowComputer: canUseMcpServer(bot.toolScope, "computer"),
     browserOn: builtInBrowserEnabled(config) && browserAvailable(config),
@@ -85,7 +85,9 @@ export function placeFacts(input: {
 }
 
 export function placeViewFor(facts: PlaceFacts): PlaceView {
-  return placeView(facts, { translate: placeTranslate, locale: activeLocale() });
+  const view = placeView(facts, { translate: placeTranslate, locale: activeLocale() });
+  return facts.backend === "instabox" && view.state === "cc-needs-key"
+    ? { ...view, short: t("computer.instabox.keyMissing"), line: t("botAccess.cloud.instaboxKeyHint"), action: null } : view;
 }
 
 export function placeRowViewFor(row: PlaceRow, seat: PlaceSeat, worksOnLabel?: string): PlaceView {

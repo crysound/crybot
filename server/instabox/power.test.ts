@@ -61,7 +61,7 @@ it("sends translation keys for user errors while preserving provider failures", 
   }
   const service = {} as InstaboxMachines;
   await expect(instaboxComputerAction(service, "bot", "provision", { template: "apple" })).rejects.toMatchObject({ status: 400, message: "Choose a Linux or Android computer.", errorKey: "serverError.instabox.template" });
-  await expect(instaboxComputerAction(service, "bot", "join", {})).rejects.toMatchObject({ status: 501, message: "This InstaBox computer is unavailable.", errorKey: "serverError.instabox.unavailable" });
+  await expect(instaboxComputerAction(service, "bot", "unsupported", {})).rejects.toMatchObject({ status: 501, message: "This InstaBox computer is unavailable.", errorKey: "serverError.instabox.unavailable" });
   const providerFailure = new Error("provider failed");
   expect(() => instaboxFailureResponse(providerFailure)).toThrow(providerFailure);
 });
@@ -69,7 +69,7 @@ it("sends translation keys for user errors while preserving provider failures", 
 it("leaves the template unspecified when provisioning an existing machine", async () => {
   const ensureRunning = vi.fn().mockResolvedValue({ id: "machine", template: "android", state: "running" });
   await expect(instaboxComputerAction({ ensureRunning } as unknown as InstaboxMachines, "bot", "provision", {})).resolves.toEqual({
-    machine: { id: "machine", template: "android", state: "running" },
+    ready: true, machine: { id: "machine", template: "android", state: "running" },
   });
   expect(ensureRunning).toHaveBeenCalledWith("bot", undefined);
 });

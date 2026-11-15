@@ -10625,5 +10625,5 @@
   "computer.instabox.snapshots.deleteConfirm": "Este instantâneo não poderá ser recuperado depois da exclusão. Excluir?",
   "computer.instabox.snapshots.busy": "Processando instantâneos, aguarde",
   "computer.instabox.snapshots.error": "Não foi possível processar o instantâneo. Tente novamente.",
-  "computer.instabox.snapshots.machineMissing": "Inicie primeiro o computador em nuvem InstaBox deste agente"
+  "computer.instabox.snapshots.machineMissing": "Inicie primeiro o computador em nuvem InstaBox deste bot"
 }

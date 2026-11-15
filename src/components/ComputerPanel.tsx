@@ -1,3 +1,4 @@
+import { cloudPanelStatus } from "./instabox-panel";
 import { InstaboxSnapshots } from "./InstaboxSnapshots";
 import { boatCapableEngine, cloudEngineOf } from "@/lib/remote-desktop";
 import { canWorkOnCloud } from "../../shared/cloud-computer";
@@ -537,8 +538,9 @@ export function ComputerPanel({
     }
     // Opening the panel only looks: it never creates or wakes a Boat.
     api(threadPath("computer"))
-      .then((status) => {
+      .then((rawStatus) => {
         if (!alive) return;
+        const status = cloudPanelStatus(rawStatus);
         const action = resolveBoatPanelAction({
           computer: livePlace === "cloud" ? "cloud" : undefined,
           configured: Boolean(status.configured),
@@ -600,7 +602,7 @@ export function ComputerPanel({
     engineReason,
     cloudSupported,
     providerLock,
-    state.config?.vps?.sshAlias,
+    state.config?.vps?.sshAlias, state.config?.instabox?.configured,
     panelView,
     computerSelectionPersisted,
     surfaceReady,
@@ -619,7 +621,7 @@ export function ComputerPanel({
       api(threadPath("computer"), { background: true })
         .then((status) => {
           if (!alive) return;
-          const state = typeof status.box?.state === "string" ? status.box.state : null;
+          const state = cloudPanelStatus(status).box?.state ?? null;
           setBoatState(state);
           if (isReadyBoatState(state)) setPhase("ready");
         })
@@ -634,7 +636,7 @@ export function ComputerPanel({
   const control = state.computerControl[bot.id] ?? { held: false, helpReason: null };
   const liveTarget = bot.computer === "vm"
     ? localVmTakeoverTarget(phase, vmStatus, computerStatusCurrent)
-    : cloudPreviewReady && cloudBackend === "vps" ? `vps/${bot.id}` : null;
+    : cloudPreviewReady && (cloudBackend === "vps" || cloudBackend === "instabox") ? `vps/${bot.id}` : null;
   const requestControl = useCallback(async (action: ComputerControlAction, controlLeaseId?: string) => {
     const snap = computerControlSnapshotSchema.parse(await api(threadPath("computer/control"), {
       method: "POST",
@@ -654,9 +656,9 @@ export function ComputerPanel({
     session: localVmTakeoverSession(viewerConnectionKey, panelView, bot.computer === "vm" ? lastVmScreenTarget.current.target : null),
     held: control.held,
     request: requestControl,
-    viewerClose: bot.computer === "cloud" && cloudBackend === "vps" ? threadPath("computer/viewer-close") : null,
+    viewerClose: bot.computer === "cloud" && (cloudBackend === "vps" || cloudBackend === "instabox") ? threadPath("computer/viewer-close") : null,
   });
-  const vpsTakeoverTarget = bot.computer === "cloud" && cloudBackend === "vps" ? `vps/${bot.id}` : null;
+  const vpsTakeoverTarget = bot.computer === "cloud" && (cloudBackend === "vps" || cloudBackend === "instabox") ? `vps/${bot.id}` : null;
   const liveDesktopTarget = liveTarget ?? (takeover.here ? vpsTakeoverTarget : null);
   const liveHere = takeover.here && Boolean(liveDesktopTarget);
   useEffect(() => { if (liveTarget) void loadLiveDesktop(); }, [liveTarget]);
@@ -950,7 +952,7 @@ export function ComputerPanel({
     setPhase("starting");
     api(`/api/bots/${bot.id}/computer/provision`, { method: "POST" })
       .then((result) => {
-        setBoatState(result.state ?? null);
+        setBoatState(result.machine?.state ?? result.state ?? null);
         setResolvedComputerSelection({ botId: bot.id, threadId: bot.threadId, computer: bot.computer, cloudBackend });
         setPhase("ready");
       })
@@ -1091,7 +1093,7 @@ export function ComputerPanel({
 
   const managedPolicy = state.config?.managedPolicy;
   const busyBoat = busyBoatView(boatState, profileBot.busy === true);
-  const cloudComputer: PlaceFacts["computer"] = !computerStatusCurrent || livePlace !== "cloud" || cloudBackend !== "box" ? undefined
+  const cloudComputer: PlaceFacts["computer"] = !computerStatusCurrent || livePlace !== "cloud" || cloudBackend === "vps" ? undefined
     : phase === "starting" ? "starting"
       : phase === "busy-boat" ? (busyBoat.spinner ? "starting" : busyBoat.line === "computer.cloud.asleep" ? "asleep" : "none")
         : phase === "ready" ? "on"
@@ -1502,9 +1504,9 @@ export function ComputerPanel({
             {errorText}
           </div>
         )}
-        {!providerLock && (boatKeyShown || (phase === "unconfigured" && cloudView.action?.id === "add-boat-key")) && (
+        {!providerLock && (boatKeyShown || (phase === "unconfigured" && (cloudView.action?.id === "add-boat-key" || cloudBackend === "instabox"))) && (
           <div data-boat-key className="mt-3 rounded-xl bg-card py-1.5">
-            <KeyRow id="box" via="computer_panel"
+            <KeyRow id={cloudBackend === "instabox" ? "instabox" : "box"} via="computer_panel"
               onSaved={(configured) => { setBoatKeyShown(true); if (configured) setRetry((n) => n + 1); }}
             />
           </div>
@@ -1650,7 +1652,7 @@ export function ComputerPanel({
             )}
           </div>
         )}
-        {!providerLock && canManageCloud && cloudBackend !== "vps" && phase !== "unconfigured" && phase !== "team-boat" && teamComputer?.botId !== bot.id && <CloudComputerRecoveryRow botId={bot.id} name={bot.name} always={advanced} />}
+        {!providerLock && canManageCloud && cloudBackend === "box" && phase !== "unconfigured" && phase !== "team-boat" && teamComputer?.botId !== bot.id && <CloudComputerRecoveryRow botId={bot.id} name={bot.name} always={advanced} />}
         {phase !== "team-boat" && (bot.computer !== undefined || computerStatusCurrent) && <>
           <LocalScreenPreview />
           <LinuxLocalControl />

@@ -1,0 +1,268 @@
+T-1246 第 3 轮验证记录
+
+环境准备
+COMMAND: crybot-link-deps
+RESULT: linked 73 entries
+
+词汇回归
+COMMAND: pnpm exec vitest run src/locales/vocabulary.test.ts --maxWorkers=1
+RESULT: 1 file passed, 6 tests passed
+
+server/instabox 逐文件回归
+COMMAND: pnpm exec vitest run server/instabox/client.test.ts --maxWorkers=1
+RESULT: 1 file passed, 6 tests passed
+COMMAND: pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1
+RESULT: 1 file passed, 29 tests passed
+COMMAND: pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+RESULT: 1 file passed, 15 tests passed
+COMMAND: pnpm exec vitest run server/instabox/key.test.ts --maxWorkers=1
+RESULT: 1 file passed, 4 tests passed
+COMMAND: pnpm exec vitest run server/instabox/machines.test.ts --maxWorkers=1
+RESULT: 1 file passed, 24 tests passed
+COMMAND: pnpm exec vitest run server/instabox/persistence.test.ts --maxWorkers=1
+RESULT: 1 file passed, 1 test passed
+COMMAND: pnpm exec vitest run server/instabox/power.test.ts --maxWorkers=1
+RESULT: 1 file passed, 7 tests passed
+COMMAND: pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts --maxWorkers=1
+RESULT: 1 file passed, 6 tests passed
+COMMAND: pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+RESULT: 1 file passed, 31 tests passed, 1 existing test skipped
+COMMAND: pnpm exec vitest run server/instabox/vnc.test.ts --maxWorkers=1
+RESULT: 1 file passed, 2 tests passed
+COMMAND: pnpm exec vitest run server/instabox/wiring.e2e.test.ts --maxWorkers=1 (run 1/3)
+RESULT: 1 file passed, 6 tests passed
+COMMAND: pnpm exec vitest run server/instabox/wiring.e2e.test.ts --maxWorkers=1 (run 2/3)
+RESULT: 1 file passed, 6 tests passed
+COMMAND: pnpm exec vitest run server/instabox/wiring.e2e.test.ts --maxWorkers=1 (run 3/3)
+RESULT: 1 file passed, 6 tests passed
+COMMAND: pnpm exec vitest run server/instabox/wiring.test.ts --maxWorkers=1
+RESULT: 1 file passed, 4 tests passed
+
+类型与 lint
+COMMAND: pnpm exec tsc -p tsconfig.server.json
+RESULT: exit 0
+COMMAND: pnpm exec oxlint --deny-warnings server/instabox/wiring-backends-fixture.ts server/instabox/wiring.test.ts server/instabox/wiring.ts
+RESULT: exit 0
+COMMAND: git diff --check
+RESULT: exit 0
+
+验证均使用隔离 fixture；未连接用户应用或用户数据。仓库未提供 docs/verification/README.md。
+
+逐文件运行输出（原始摘要）
+
+>>> server/instabox/client.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+······
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  10:07:41
+   Duration  1.09s (transform 671ms, setup 855ms, import 34ms, tests 73ms, environment 0ms)
+
+
+>>> server/instabox/computer-tools.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+·····························
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  10:07:42
+   Duration  10.73s (transform 892ms, setup 842ms, import 310ms, tests 9.44s, environment 0ms)
+
+
+>>> server/instabox/core.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+···············
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  10:07:53
+   Duration  59.48s (transform 1.61s, setup 947ms, import 1.23s, tests 57.17s, environment 0ms)
+
+
+>>> server/instabox/key.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+····
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  10:08:54
+   Duration  1.03s (transform 666ms, setup 862ms, import 8ms, tests 20ms, environment 0ms)
+
+
+>>> server/instabox/machines.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+························
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  10:08:55
+   Duration  1.77s (transform 689ms, setup 851ms, import 48ms, tests 733ms, environment 0ms)
+
+
+>>> server/instabox/persistence.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+·
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  10:08:57
+   Duration  1.49s (transform 1.04s, setup 880ms, import 459ms, tests 25ms, environment 0ms)
+
+
+>>> server/instabox/power.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+stderr | server/instabox/power.test.ts > runs failed suspension in the background without misreporting a saved backend switch as a failed patch
+InstaBox machine could not be suspended after a backend change Add an InstaBox API key to use this computer.
+
+·······
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  10:08:59
+   Duration  2.46s (transform 1.80s, setup 1.06s, import 1.26s, tests 12ms, environment 0ms)
+
+
+>>> server/instabox/snapshot-wiring.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+······
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  10:09:02
+   Duration  7.45s (transform 1.71s, setup 1.03s, import 1.16s, tests 5.12s, environment 0ms)
+
+
+>>> server/instabox/vnc.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+·······························-
+
+ Test Files  1 passed (1)
+      Tests  31 passed | 1 skipped (32)
+   Start at  10:09:10
+   Duration  3.26s (transform 1.37s, setup 961ms, import 789ms, tests 1.37s, environment 0ms)
+
+
+>>> server/instabox/vnc.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+··
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:09:14
+   Duration  1.22s (transform 824ms, setup 1.04s, import 17ms, tests 5ms, environment 0ms)
+
+
+>>> server/instabox/wiring.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+······
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  10:09:16
+   Duration  30.67s (transform 1.57s, setup 988ms, import 1.10s, tests 28.42s, environment 0ms)
+
+
+>>> server/instabox/wiring.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+····
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  10:09:47
+   Duration  1.81s (transform 1.30s, setup 858ms, import 812ms, tests 7ms, environment 0ms)
+
+
+All instabox files passed
+
+>>> wiring e2e run 2
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+······
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  10:09:56
+   Duration  28.96s (transform 1.31s, setup 950ms, import 805ms, tests 27.06s, environment 0ms)
+
+
+>>> wiring e2e run 3
+
+ RUN  v4.1.11 /data/home/codex-t-1246-instabox-wiring-b90ca37edf34
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+······
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  10:10:25
+   Duration  28.59s (transform 1.43s, setup 1.04s, import 866ms, tests 26.55s, environment 0ms)
+
+
+Wiring e2e passed three total runs
