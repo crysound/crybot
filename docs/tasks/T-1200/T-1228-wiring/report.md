@@ -302,8 +302,8 @@ group-local-vm E2E 已尝试启动独立 fixture，但沙箱禁止监听 TCP，b
 
 | 文件 | 修复落点与根因 |
 | --- | --- |
-| `server/host/shared-vm-control.ts` | `armed()` 用 `deps.multiScreen?.() === true` 判定多屏，避免可选依赖缺失时布尔结果变成 `undefined`。 |
-| `server/config.test.ts` | 配置输出期望包含共享模式默认的 `screens: 4`；根因是默认屏数契约已经变化，不能把生产默认值改回 1。 |
+| `server/host/shared-vm-control.ts` | 新增 `localKey`：多屏模式下还没分到屏的机器人，控制锁退回用机器人自己的键，不再落到整台共享电脑的键上，所以未分屏的机器人之间不会互相 409；`holdKey` 不再对未分屏的机器人返回 null，统一走 `keyFor`/`localKey`，修好的是那批因拿不到锁而返回的 409；放行条件同步加上「共享桌面且多屏」时允许机器人自己的键；`armed()` 改为 `deps.multiScreen?.() === true`，避免可选依赖缺失时得到 `undefined`。屏隔离不受影响：分到屏的机器人仍用 `screenControlKey(屏号)`。 |
+| `src/locales/server-lines.test.ts` | 服务端文案扫描器新增识别 `hooks.row(...)` 调用（+4 行），`server/turn-computer-wait.ts` 的排队等待提示（如 Waiting for this computer.）经 `hooks.row` 写进状态行，原扫描器不认这个入口，这些英文文案没被纳入翻译检查；新增用例覆盖了这一写法。 |
 | `server/index.test.ts` | 模式切换和 idle timeout 两个单屏兼容场景显式设置 `screens: 1`，并更新配置响应期望。前者测旧共享目标到 per-bot 隔离目标的切换，后者测两种模式的 idle timeout；它们均未执行多屏认领，故使用单屏。模式切换的磁盘期望和失败清理仍有遗漏，由第 9 轮补齐。 |
 | `evals/runners/local-vm-world.ts` | Local VM world 的隔离配置显式设 `screens: 1`。这些场景使用既有 `group-local-vm-hooks.mjs` 和共享 VM 资源来测懒认领、争用与排队；fixture 没有建多屏运行态，继承默认 4 屏会导致电脑挂载缺失。 |
 | `server/local-vm-resume.fixture.test.ts` | 隔离配置显式设 `screens: 1`。这些用例测共享 VM 的唤醒、失败提示和恢复时序，并用 shared 容器状态模拟，不是屏池分配测试。 |
