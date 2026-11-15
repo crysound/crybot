@@ -11,7 +11,12 @@ import type { Action, AppState, Bot, InstanceInfo } from "@/state/store";
 const fixture = vi.hoisted(() => ({
   vm: {} as Record<string, unknown>,
   vmRequests: [] as string[],
+  vmForegroundRequests: 0,
+  assignment: null as Record<string, unknown> | null,
+  assignPaths: [] as string[],
   nextVmStatus: null as Promise<Record<string, unknown>> | null,
+  assignedOpen: null as Promise<void> | null,
+  nextTake: null as Promise<void> | null,
   takeoverRenders: [] as Array<{ botId: string; session: string }>,
   liveRenders: [] as Array<{ name: string; target: string }>,
   held: false,
@@ -25,6 +30,16 @@ const fixture = vi.hoisted(() => ({
   beacons: [] as Array<{ url: string; body: Record<string, unknown>; keepalive: boolean }>,
   live: null as null | { target: string; expanded: boolean; onUnreachable: () => void },
 }));
+vi.mock("./AssignLocalVmScreen", async (importOriginal) => {
+  const { AssignLocalVmScreen } = await importOriginal<typeof import("./AssignLocalVmScreen")>();
+  return { AssignLocalVmScreen: (props: Parameters<typeof AssignLocalVmScreen>[0]) => createElement(AssignLocalVmScreen, {
+    ...props,
+    onAssigned: () => {
+      fixture.assignedOpen = props.onAssigned();
+      return fixture.assignedOpen;
+    },
+  }) };
+});
 vi.mock("./DesktopCapabilities", async (importOriginal) => ({
   ...await importOriginal<typeof import("./DesktopCapabilities")>(),
   useCaptionChrome: () => ({ padClass: undefined }),
@@ -66,7 +81,7 @@ vi.mock("./CloudBackendPicker", () => ({ CloudBackendPicker: () => null }));
 vi.mock("./bot-settings/RoutinesSection", () => ({ RoutinesSection: () => null }));
 vi.mock("@/state/store", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/state/store")>(),
-  api: async (path: string, init?: RequestInit) => {
+  api: async (path: string, init?: RequestInit & { background?: boolean }) => {
     const route = path.split("?")[0]!;
     if (init?.method === "POST") fixture.posts.push(route);
     if (route === "/api/bots/scout/computer/control") {
@@ -75,6 +90,7 @@ vi.mock("@/state/store", async (importOriginal) => ({
       const body = JSON.parse(String(init.body));
       fixture.controls.push(body);
       if (body.action === "take") {
+        if (fixture.nextTake) await fixture.nextTake;
         if (fixture.refuse) return { held: false, helpReason: null };
         const owned = !fixture.held || fixture.owned;
         fixture.held = true;
@@ -83,9 +99,16 @@ vi.mock("@/state/store", async (importOriginal) => ({
       fixture.held = false;
       return { held: false, helpReason: null };
     }
+    if (route === "/api/bots/scout/local-computer/assign-screen") {
+      fixture.assignPaths.push(path);
+      fixture.vm = fixture.assignment!;
+      return fixture.vm;
+    }
     if (route === "/api/bots/scout/local-computer" || route === "/api/bots/rover/local-computer") {
       fixture.vmRequests.push(path);
+      if (!init?.background) fixture.vmForegroundRequests += 1;
       if (fixture.nextVmStatus) return fixture.nextVmStatus;
+      if (fixture.vm.statusError) throw new Error(String(fixture.vm.statusError));
       if (fixture.vm.unassigned) throw new ApiError("screen_not_assigned", 409, { error: "screen_not_assigned" });
       return {
         mode: "per-bot", max_instances: 2, image: true, create_supported: true, container: "running", imageMatches: true,
@@ -130,7 +153,7 @@ const draw = () => flushSync(() => root!.render(createElement(BotEditorStore, {
     dispatch: (action: Action) => {
       if (action.type !== "computerControl") return;
       state = { ...state, computerControl: { ...state.computerControl, [action.botId]: { held: action.held, helpReason: action.helpReason, help: action.help } } };
-      queueMicrotask(draw);
+      queueMicrotask(() => { if (root) draw(); });
     },
     flushBotPatches: async () => null,
     refreshInstances: async () => {},
@@ -182,7 +205,10 @@ beforeEach(() => {
   });
   fixture.vm = {};
   fixture.vmRequests = [];
+  fixture.vmForegroundRequests = 0;
   fixture.nextVmStatus = null;
+  fixture.assignedOpen = null;
+  fixture.nextTake = null;
   fixture.takeoverRenders = [];
   fixture.liveRenders = [];
   fixture.held = false;
@@ -601,4 +627,135 @@ it("treats a screen_not_assigned conflict as waiting and automatically retries",
   await press("Take control");
   await shownLive();
   expect(liveDesktop()!.dataset.target).toBe("local/shared-s4");
+});
+
+it.each([false, true])("assigns from the main panel and automatically takes control (queued=%s)", async queued => {
+  fixture.vm = { unassigned: true };
+  const ready = { mode: "shared", ready: true, screen: { screen: 3, viewerTarget: "local/shared-s3" } };
+  fixture.assignment = queued ? { screen: null, queue_position: 2 } : ready;
+  fixture.assignPaths = [];
+  await open(makeBot({ computer: "vm" }));
+  await press("Assign a screen now");
+  expect(fixture.assignPaths[0]).toContain("/local-computer/assign-screen?threadId=");
+  if (queued) {
+    expect(document.body.textContent).toContain("Queued · Position 2");
+    expect(fixture.controls).toEqual([]);
+    fixture.vm = ready;
+  }
+  await vi.waitFor(() => expect(liveDesktop()?.dataset.target).toBe("local/shared-s3"), { timeout: 5000 });
+  expect(fixture.assignPaths).toHaveLength(1);
+});
+
+
+it.each([false, true])("keeps assignment visible while starting, then opens or retries a failure (fail=%s)", async fail => {
+  vi.useFakeTimers();
+  fixture.vm = { unassigned: true };
+  fixture.assignment = { screen: null, queue_position: 2 };
+  fixture.assignPaths = [];
+  await open(makeBot({ computer: "vm" }));
+  await press("Assign a screen now");
+  expect(document.body.textContent).toContain("Queued · Position 2");
+  const ready = { mode: "shared", ready: true, desktopReady: true, screen: { screen: 3, viewerTarget: "local/shared-s3" } };
+  fixture.vm = { ...ready, ready: false };
+  await vi.advanceTimersByTimeAsync(20_000);
+  await settle();
+  expect(document.querySelector('[role="status"]')?.textContent).toContain(t("settings.updates.opening"));
+  expect(button(t("settings.updates.opening"))?.disabled).toBe(true);
+  expect(fixture.vmForegroundRequests).toBeGreaterThanOrEqual(3);
+  expect(liveDesktop()).toBeNull();
+  if (fail) {
+    fixture.vm = { statusError: "Screen startup failed" };
+    await vi.advanceTimersByTimeAsync(4000);
+    await settle();
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain("Screen startup failed");
+    expect(button("Retry")?.disabled).toBe(false);
+    fixture.assignment = ready;
+    await press("Retry");
+    expect(fixture.assignPaths).toHaveLength(2);
+  } else {
+    fixture.vm = ready;
+    await vi.advanceTimersByTimeAsync(2000);
+    await settle();
+  }
+  expect(liveDesktop()?.dataset.target).toBe("local/shared-s3");
+  expect(document.querySelector('[role="status"]')).toBeNull();
+  expect(button(t("settings.updates.opening"))).toBeUndefined();
+});
+
+
+it("keeps a failed desktop opening retryable after the screen becomes ready", async () => {
+  vi.useFakeTimers();
+  fixture.vm = { unassigned: true };
+  fixture.assignment = { ready: true, screen: { screen: 3, viewerTarget: "local/shared-s3" } };
+  fixture.refuse = true;
+  await open(makeBot({ computer: "vm" }));
+  await press("Assign a screen now");
+  expect(liveDesktop()).toBeNull();
+  expect(document.querySelector('[role="alert"]')?.textContent).toBe(t("computer.err.confirmControl"));
+  expect(button("Retry")?.disabled).toBe(false);
+  fixture.refuse = false;
+  await press("Retry");
+  expect(liveDesktop()?.dataset.target).toBe("local/shared-s3");
+  expect(document.querySelector('[role="alert"]')).toBeNull();
+});
+
+it.each(["unassigned", "error", "unavailable", "missing-target"])("makes an assigned screen retryable when the next status is %s", async outcome => {
+  vi.useFakeTimers();
+  fixture.vm = { unassigned: true };
+  fixture.assignment = { ready: true, screen: { screen: 3, viewerTarget: "local/shared-s3" } };
+  await open(makeBot({ computer: "vm" }));
+  let resolveStatus!: (status: Record<string, unknown>) => void;
+  let rejectStatus!: (cause: Error) => void;
+  fixture.nextVmStatus = new Promise((resolve, reject) => { resolveStatus = resolve; rejectStatus = reject; });
+  await press("Assign a screen now");
+  expect(fixture.assignedOpen).not.toBeNull();
+  expect(button(t("settings.updates.opening"))?.disabled).toBe(true);
+  if (outcome === "unassigned") rejectStatus(new ApiError("screen_not_assigned", 409, { error: "screen_not_assigned" }));
+  else if (outcome === "error") rejectStatus(new Error("Screen startup failed"));
+  else resolveStatus(outcome === "unavailable" ? { ready: false, problem: "Screen startup failed" } : { ready: true });
+  await settle();
+  const message = outcome === "unassigned" ? "screen_not_assigned" : outcome === "missing-target" ? t("computer.err.screenUnavailable") : "Screen startup failed";
+  expect(document.querySelector('[role="alert"]')?.textContent).toContain(message);
+  expect(button(t("settings.updates.opening"))).toBeUndefined();
+  const retry = document.querySelector('[role="alert"]')!.parentElement!.querySelector("button")!;
+  expect(retry.textContent).toBe(t("chat.retry"));
+  expect(retry.disabled).toBe(false);
+  expect(liveDesktop()).toBeNull();
+  fixture.nextVmStatus = null;
+  flushSync(() => retry.click());
+  await settle();
+  expect(liveDesktop()?.dataset.target).toBe("local/shared-s3");
+  expect(document.querySelector('[role="alert"]')).toBeNull();
+});
+
+it.each([
+  ["unmount", false], ["bot", false], ["thread", false],
+  ["unmount", true], ["bot", true], ["thread", true],
+] as const)("rejects the pending assigned-screen opening on %s (taking=%s)", async (change, taking) => {
+  vi.useFakeTimers();
+  fixture.vm = { unassigned: true };
+  fixture.assignment = { ready: true, screen: { screen: 3, viewerTarget: "local/shared-s3" } };
+  await open(makeBot({ computer: "vm" }));
+  let resolveStatus!: (status: Record<string, unknown>) => void;
+  let resolveTake!: () => void;
+  if (taking) fixture.nextTake = new Promise(resolve => { resolveTake = resolve; });
+  else fixture.nextVmStatus = new Promise(resolve => { resolveStatus = resolve; });
+  await press("Assign a screen now");
+  expect(fixture.assignedOpen).not.toBeNull();
+  const resolved = vi.fn(), rejected = vi.fn();
+  void fixture.assignedOpen!.then(resolved, rejected);
+  if (change === "unmount") {
+    flushSync(() => root!.unmount());
+    root = null;
+  } else {
+    shown = change === "bot" ? makeBot({ id: "rover", computer: "vm" }) : makeBot({ threadId: "next", computer: "vm" });
+    draw();
+  }
+  await settle();
+  expect(rejected).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ name: "AbortError" }));
+  if (taking) resolveTake();
+  else resolveStatus(fixture.assignment!);
+  await settle();
+  expect(resolved).not.toHaveBeenCalled();
+  expect(fixture.controls).toHaveLength(taking ? 1 : 0);
 });

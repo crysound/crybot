@@ -377,11 +377,26 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       });
     }
 
+    m = path.match(/^\/api\/bots\/([\w-]+)\/local-computer\/assign-screen$/);
+    if (m && method === "POST") {
+      if (!String(req.headers["content-type"] ?? "").toLowerCase().startsWith("application/json")) return json(res, 415, { error: "content-type must be application/json" });
+      const bot = computerPreviewBot(m[1], url);
+      if (!bot) return json(res, 404, { error: "no such bot" });
+      if (await computerPreviewSurface(bot, bot.threadId) !== "vm") return json(res, 409, { error: "This conversation is not using the Local VM" });
+      if (!deps.screens?.enabled()) return json(res, 200, await localVmPayload(localVmTargetForStatus(bot.id, bot.threadId), auth));
+      if (localVmImageBusy.get() || localVmModeChangeBusy.get() || localVmLifecycleBusy.has(SHARED_LOCAL_VM_TARGET.key)) return json(res, 409, { error: "Local VM setup is still running" });
+      const result = await deps.screens.requestScreen(bot.id);
+      if (result && "queued" in result) return json(res, 200, { screen: null, queue_position: result.position });
+      return json(res, 200, await localVmPayload(localVmTargetForStatus(bot.id, bot.threadId), auth));
+    }
     m = path.match(/^\/api\/bots\/([\w-]+)\/local-computer$/);
     if (m && method === "GET") {
       const bot = computerPreviewBot(m[1], url);
       if (!bot) return json(res, 404, { error: "no such bot" });
-      if (deps.screens?.enabled() && !deps.screens.assigned(bot.id)) return json(res, 409, { error: "screen_not_assigned" });
+      if (deps.screens?.enabled() && !deps.screens.assigned(bot.id)) {
+        const position = deps.screens.payload().queue.find(item => item.bot.id === bot.id)?.position;
+        return position ? json(res, 200, { screen: null, queue_position: position }) : json(res, 409, { error: "screen_not_assigned" });
+      }
       return json(res, 200, await localVmPayload(localVmTargetForStatus(bot.id, bot.threadId), auth));
     }
     m = path.match(/^\/api\/bots\/([\w-]+)\/local-computer\/(run|start|stop|remove)$/);

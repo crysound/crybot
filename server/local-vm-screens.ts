@@ -143,6 +143,19 @@ export class LocalVmScreenPool {
     return screen === null ? { queued: true, position: this.waitPosition(waiter.botId, waiter.threadId)! } : { screen };
   }
 
+  async requestAvailable(waiter: ScreenWaiter): Promise<{ screen: ScreenNumber } | { queued: true; position: number }> {
+    let result = this.request(waiter);
+    while (!("screen" in result)) {
+      const expired = this.slots.find(slot => slot.screen <= this.screens && slot.state === "ready"
+        && !this.deps.isBusy(slot.screen) && !this.busySeen.has(slot.screen)
+        && this.now() >= slot.lastActiveAt + this.idleMs);
+      if (!expired) break;
+      await this.stop(expired);
+      result = this.request(waiter);
+    }
+    return result;
+  }
+
   waitFor(waiter: ScreenWaiter, signal: AbortSignal): Promise<ScreenNumber> {
     if (signal.aborted) return Promise.reject(cancelled());
     return new Promise((resolve, reject) => {

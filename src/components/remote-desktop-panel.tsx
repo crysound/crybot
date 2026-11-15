@@ -1,3 +1,4 @@
+import { AssignLocalVmScreen } from "./AssignLocalVmScreen";
 import { boatCapableEngine } from "@/lib/remote-desktop";
 import { useEffect, useRef, useState } from "react";
 import { CalendarClock, CalendarDays, Globe, ImageOff, Loader2, Monitor, Plus, X } from "lucide-react";
@@ -80,18 +81,26 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
   // The host runs this bot on its Local VM: preview, control and viewer all go to that desktop, not the cloud computer.
   const localVm = bot.computer === "vm";
   const [view, setView] = useState<"desktop" | "browser">(() => takeComputerPanelBrowserView(bot.id) ? "browser" : "desktop");
+  const [screenWait, setScreenWait] = useState<{ position?: number } | null>(null);
   const [screenNumber, setScreenNumber] = useState<number | null>(null);
   useEffect(() => {
     setScreenNumber(null);
+    setScreenWait(null);
     if (!localVm) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
     const refreshScreen = async (background = false) => {
       try {
         const status = await api(`/api/bots/${bot.id}/local-computer`, { signal: controller.signal, background });
-        if (!controller.signal.aborted) setScreenNumber(status?.screen?.screen ?? null);
+        if (!controller.signal.aborted) {
+          setScreenNumber(status?.screen?.screen ?? null);
+          const waiting = status.screen === null || (status.screen && status.ready === false);
+          setScreenWait(waiting ? { position: status.queue_position } : null);
+          if (waiting) timer = setTimeout(() => void refreshScreen(true), 4000);
+        }
       } catch (cause) {
         if (!controller.signal.aborted && cause instanceof ApiError && cause.status === 409 && cause.body?.error === "screen_not_assigned") {
+          setScreenWait({});
           timer = setTimeout(() => void refreshScreen(true), 4000);
         }
       }
@@ -198,7 +207,7 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
     };
   }, [bot.id, localVm, pageVisible, viewerOpen, pending, view]);
 
-  const open = async () => {
+  const open = async (assignment = false) => {
     setPending(true);
     setError(null);
     // Set when another view holds the Local VM: this attempt opened nothing, so it must not close that view's viewer.
@@ -208,8 +217,11 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
       if (!window.cry?.desktopViewer) throw new Error(t("remoteDesktop.viewerUnavailable"));
       const status = localVm ? await api(`/api/bots/${bot.id}/local-computer`) : null;
       if (localVm) setScreenNumber(status?.screen?.screen ?? null);
-      if (status?.queue_position) throw new Error(t("vm.screens.queued", { position: status.queue_position }));
-      if (status?.screen === null) throw new Error(t("vm.screens.unassignedBot"));
+      if (status?.screen === null) {
+        setScreenWait({ position: status.queue_position });
+        if (assignment) throw new ApiError("screen_not_assigned", 409, { error: "screen_not_assigned" });
+        return;
+      }
       const target = localVm ? status?.screen?.viewerTarget : bot.cloudBackend === "vps" ? `vps/${bot.id}` : undefined;
       viewerRequested = true;
       await openProviderDesktop({
@@ -237,8 +249,9 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
           body: "{}",
         }).catch(() => {});
       }
-      setError(cause instanceof ApiError && cause.status === 409 && cause.body?.error === "screen_not_assigned"
-        ? t("vm.screens.unassignedBot") : panelErrorText(cause instanceof Error ? cause : String(cause)));
+      if (assignment) throw cause;
+      if (cause instanceof ApiError && cause.status === 409 && cause.body?.error === "screen_not_assigned") setScreenWait({});
+      else setError(panelErrorText(cause instanceof Error ? cause : String(cause)));
     } finally {
       setPending(false);
     }
@@ -333,6 +346,8 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
           {pending ? <Loader2 size={15} className="animate-spin" /> : <Monitor size={15} />}
           {t(pending ? "settings.updates.opening" : "computer.takeControl")}
         </button>
+        {localVm && <AssignLocalVmScreen key={bot.id} path={`/api/bots/${bot.id}/local-computer`}
+          visible={screenWait !== null} position={screenWait?.position} onAssigned={async () => { await open(true); setScreenWait(null); }} />}
         {error && (
           <div role="alert" className="w-full rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-left text-[12px] text-danger">
             {error}

@@ -2,6 +2,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LocalVmScreenPool, type ScreenNumber } from "../local-vm-screens.ts";
+import { requiredScope } from "../request-auth.ts";
 import type { AppConfig } from "../config.ts";
 import type { RequestAuth } from "../request-auth.ts";
 import type { BotRecord } from "../store.ts";
@@ -117,7 +119,7 @@ it("refuses a user request to create a team computer while locked", async () => 
 });
 
 describe("shared screen routes", () => {
-  async function setup(assigned: number | null = 2, multi = true) {
+  async function setup(assigned: number | null = 2, multi = true, pool?: LocalVmScreenPool) {
     const container = await import("../container-computer.ts");
     const { z } = await import("zod");
     vi.spyOn(container, "containerComputerStatus").mockResolvedValue({
@@ -129,6 +131,8 @@ describe("shared screen routes", () => {
     const bot = { id: "screen-bot", threadId: "screen-thread", name: "Screen bot" } as BotRecord;
     const beat = vi.fn(() => true);
     const touch = vi.fn();
+    const assignedFor = () => pool ? pool.assigned(bot.id) : assigned;
+    const requestScreen = vi.fn(async () => pool!.requestAvailable({ botId: bot.id, threadId: "viewer", generation: 0, enqueuedAt: Date.now() }));
     const handler = createComputerRoutes({
       cfg: { localVm: { mode: "shared", screens: multi ? 4 : 1 } }, store: { bot: () => bot },
       computerPreviewBot: () => bot, computerPreviewSurface: async () => "vm",
@@ -138,8 +142,8 @@ describe("shared screen routes", () => {
       localVmContainerBusy: () => true, localVmImageBusy: { get: () => false }, localVmModeChangeBusy: { get: () => false },
       localVmLifecycleBusy: new Set(), localVmLeaseFor: () => ({ current: () => null }), localVmActiveThreads: new Map(),
       localVmSeen: new Set(), localVmIdleFor: () => ({ touch, cancel: vi.fn() }), localVmIdleMs: () => 600000,
-      screens: { enabled: () => multi, payload: () => ({ layout: multi ? "multi" : "single" }), assigned: () => assigned, ready: (n: number) => n === assigned, password: () => "screen-password", touch },
-      localVmPayload: async () => ({ screens: { layout: "multi", screens: 4, slots: [], queue: [] } }),
+      screens: { enabled: () => multi, payload: () => ({ layout: multi ? "multi" : "single", queue: pool?.snapshot().waiters.map(w => ({ bot: { id: w.botId }, position: w.position })) ?? [] }), assigned: assignedFor, requestScreen, ready: (n: number) => n === assigned, password: () => "screen-password", touch },
+      localVmPayload: async () => ({ ready: true, ...(multi ? { screen: assignedFor() === null ? null : { screen: assignedFor() } } : {}), screens: { layout: "multi", screens: 4, slots: [], queue: [] } }),
       routines: () => null,
     } as unknown as ComputerRouteDeps);
     const request = async (path: string, method = "POST", scopes = ["admin"], remote = false) => {
@@ -153,9 +157,42 @@ describe("shared screen routes", () => {
       } as unknown as RouteContext);
       return result!;
     };
-    return { request, beat, touch, screenshot };
+    return { request, beat, touch, screenshot, requestScreen };
   }
 
+  it("assigns an available screen, queues behind busy screens, and preserves existing assignments", async () => {
+    const busy = new Set<ScreenNumber>();
+    const pool = new LocalVmScreenPool(4, { idleMs: 600000, isBusy: n => busy.has(n), startScreen: async () => {}, stopScreen: async () => {} });
+    try {
+      for (const [index, id] of ["a", "b", "c", "d"].entries()) {
+        await pool.waitFor({ botId: id, threadId: id, generation: 1, enqueuedAt: Date.now() }, new AbortController().signal);
+        busy.add((index + 1) as ScreenNumber);
+      }
+      const { request } = await setup(null, true, pool);
+      const path = "/api/bots/screen-bot/local-computer/assign-screen";
+      for (let n = 0; n < 2; n++) expect(await request(path)).toEqual({ status: 200, body: { screen: null, queue_position: 1 } });
+      expect(await request("/api/bots/screen-bot/local-computer", "GET")).toEqual({ status: 200, body: { screen: null, queue_position: 1 } });
+      expect(pool.snapshot().slots.map(slot => slot.botId)).toEqual(["a", "b", "c", "d"]);
+      busy.delete(2);
+      pool.release("b", "idle");
+      await vi.waitFor(() => expect(pool.assigned("screen-bot")).toBe(2));
+      expect((await request(path)).body.screen.screen).toBe(2);
+      expect(pool.snapshot().slots.map(slot => slot.botId)).toEqual(["a", "screen-bot", "c", "d"]);
+    } finally { await pool.stopAll("shutdown"); }
+  });
+  it("immediately assigns a free screen", async () => {
+    const pool = new LocalVmScreenPool(4, { idleMs: 600000, isBusy: () => false, startScreen: async () => {}, stopScreen: async () => {} });
+    try {
+      const { request } = await setup(null, true, pool);
+      expect((await request("/api/bots/screen-bot/local-computer/assign-screen")).body.screen.screen).toBe(1);
+    } finally { await pool.stopAll("shutdown"); }
+  });
+  it("does not allocate in single-screen mode and uses the same scope as joins", async () => {
+    const { request, requestScreen } = await setup(null, false);
+    expect((await request("/api/bots/screen-bot/local-computer/assign-screen")).body).not.toHaveProperty("screen");
+    expect(requestScreen).not.toHaveBeenCalled();
+    expect(requiredScope("POST", "/api/bots/screen-bot/local-computer/assign-screen")).toBe(requiredScope("POST", "/api/bots/screen-bot/local-computer/join"));
+  });
   it("returns the shared screen list without credentials", async () => {
     const { request } = await setup();
     const result = await request("/api/local-computer", "GET");

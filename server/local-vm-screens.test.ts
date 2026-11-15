@@ -516,3 +516,29 @@ describe("screen affinity file", () => {
     }
   });
 });
+
+it("manual requests reclaim only expired idle screens and keep FIFO order", async () => {
+  const { pool, busy } = fixture(2);
+  await pool.waitFor(waiter("a"), signal());
+  await pool.waitFor(waiter("b"), signal());
+  busy.add(1);
+  expect(await pool.requestAvailable(waiter("c"))).toEqual({ queued: true, position: 1 });
+  vi.setSystemTime(Date.now() + IDLE_MS);
+  expect(await pool.requestAvailable(waiter("d"))).toEqual({ queued: true, position: 1 });
+  expect(pool.assigned("a")).toBe(1);
+  expect(pool.assigned("c")).toBe(2);
+  expect(pool.assigned("d")).toBeNull();
+  await vi.advanceTimersByTimeAsync(IDLE_MS);
+  expect(pool.assigned("c")).toBeNull();
+  expect(pool.assigned("d")).toBe(2);
+});
+
+it("reclaims enough expired screens to serve earlier waiters before a manual request", async () => {
+  const { pool } = fixture(2);
+  await pool.waitFor(waiter("a"), signal());
+  await pool.waitFor(waiter("b"), signal());
+  pool.request(waiter("c"));
+  vi.setSystemTime(Date.now() + IDLE_MS);
+  expect(await pool.requestAvailable(waiter("d"))).toEqual({ screen: 2 });
+  expect(pool.assigned("c")).toBe(1);
+});
