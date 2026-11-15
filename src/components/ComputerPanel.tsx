@@ -1,3 +1,4 @@
+import { AssignLocalVmScreen } from "./AssignLocalVmScreen";
 import { cloudPanelStatus } from "./instabox-panel";
 import { InstaboxSnapshots } from "./InstaboxSnapshots";
 import { boatCapableEngine, cloudEngineOf } from "@/lib/remote-desktop";
@@ -302,7 +303,6 @@ export function ComputerPanel({
     writeComputerPanelView(bot.id, "data");
     dispatch({ type: "dataResultFocusConsumed", requestId: requestedDataResult.requestId });
   }, [bot.id, dispatch, requestedDataResult]);
-
   const requestedSignIn = state.signInFocus?.botId === bot.id ? state.signInFocus : undefined;
   const [signInRequest, setSignInRequest] = useState<{ url: string; site: string; nonce: number }>();
   // A published page's Open (usePageOpener): this bot's browser shows, with the page in a new tab.
@@ -317,7 +317,6 @@ export function ComputerPanel({
     if (view === "browser") setSignInRequest({ url: requestedSignIn.url, site: requestedSignIn.site, nonce: requestedSignIn.requestId });
     dispatch({ type: "signInFocusConsumed", requestId: requestedSignIn.requestId });
   }, [bot.id, dispatch, requestedSignIn]);
-
   useEffect(() => {
     let alive = true;
     const dv = window.cry?.desktopViewer;
@@ -345,6 +344,12 @@ export function ComputerPanel({
     lastVmScreenTarget.current = { botId: bot.id, computer: bot.computer, target: null };
   }
   const vmSupported = Boolean(selectedInstance?.capabilities?.computerMcp);
+  const openAssignedScreen = useRef<{ opening: boolean; resolve(): void; reject(cause: unknown): void } | null>(null);
+  const rejectAssignedScreen = useCallback((cause: unknown) => {
+    const completion = openAssignedScreen.current;
+    openAssignedScreen.current = null;
+    completion?.reject(cause);
+  }, []);
   const engineUnavailable = selectedInstance !== undefined && selectedInstance.snapshot.state !== "available";
   const engineReason = selectedInstance?.snapshot.reason?.trim().replace(/[.。\s]+$/, "");
   const cloudSupported = canWorkOnCloud(cloudEngineOf(selectedInstance));
@@ -378,7 +383,6 @@ export function ComputerPanel({
       setPhase("auto-unavailable");
       return;
     }
-
     if (bot.computer === "off") {
       setPhase("off");
       return;
@@ -397,11 +401,13 @@ export function ComputerPanel({
     }
     if (bot.computer === "vm") {
       if (engineUnavailable) {
+        rejectAssignedScreen(new LocalizedPanelError("computer.err.engineUnavailable", engineReason, "computer.err.engineUnknown"));
         setError(new LocalizedPanelError("computer.err.engineUnavailable", engineReason, "computer.err.engineUnknown"));
         setPhase("vm-unavailable");
         return;
       }
       if (!vmSupported) {
+        rejectAssignedScreen(new LocalizedPanelError("computer.err.vmEngine"));
         setError(new LocalizedPanelError("computer.err.vmEngine"));
         setPhase("vm-unavailable");
         return;
@@ -416,11 +422,12 @@ export function ComputerPanel({
           const waitState = localVmWaitState(status);
           const screenTarget = status.screen?.viewerTarget;
           if (screenTarget) lastVmScreenTarget.current.target = screenTarget;
-          if (waitState) {
+          if (waitState || (status.screen && !status.ready)) {
             setPhase("vm-waiting");
             setError(null);
             retryTimer = window.setTimeout(() => setRetry((n) => n + 1), localVmPollInterval(status));
           } else if (status.ready) {
+            if (openAssignedScreen.current && !localVmTakeoverTarget("vm", status, true)) throw new LocalizedPanelError("computer.err.screenUnavailable");
             vmReadinessAttempts.current = 0;
             setPhase("vm");
           } else if (
@@ -439,6 +446,7 @@ export function ComputerPanel({
             retryTimer = window.setTimeout(() => setRetry((n) => n + 1), 2000);
           }
           else {
+            rejectAssignedScreen(new LocalizedPanelError("computer.err.vmOpenSettings", status.problem, "computer.err.vmNotReady"));
             const canCreateHere =
               status.mode === "per-bot" &&
               status.container === "missing" &&
@@ -452,6 +460,7 @@ export function ComputerPanel({
         })
         .catch((e) => {
           if (!alive) return;
+          rejectAssignedScreen(e);
           if (e instanceof ApiError && e.status === 409 && e.body?.error === "screen_not_assigned") {
             setVmStatus((current) => localVmUnassignedStatus(current));
             setError(null);
@@ -609,6 +618,7 @@ export function ComputerPanel({
     canManageCloud,
     livePlace,
     threadPath,
+    rejectAssignedScreen,
   ]);
   useEffect(() => {
     if (phase !== "busy-boat") return;
@@ -679,7 +689,6 @@ export function ComputerPanel({
       },
     });
   }, [cloudPreviewReady, bot.id, bot.threadId]);
-
   useEffect(() => {
     if (panelView !== "computer" || !cloudPreviewReady || viewerOpen || liveHere || !pageVisible || pending || controlPending) return;
     let inFlight = false;
@@ -736,7 +745,6 @@ export function ComputerPanel({
       clearInterval(timer);
     };
   }, [panelView, cloudPreviewReady, threadPath, cloudBackend, viewerOpen, liveHere, pageVisible, pending, controlPending, previewRetry]);
-
   useEffect(() => {
     if (panelView !== "computer" || phase !== "vm" || !computerStatusCurrent || viewerOpen || liveHere || !pageVisible) return;
     const controller = new AbortController();
@@ -774,7 +782,6 @@ export function ComputerPanel({
       window.clearInterval(timer);
     };
   }, [panelView, phase, computerStatusCurrent, threadPath, viewerOpen, liveHere, pageVisible, bot.busy, setError, setPreviewError, setVmFrame]);
-
   // The first capture attempt is what makes macOS show the Screen Recording prompt (no reliable pre-grant on macOS
   // 15+), so repeated empty frames mean denied.
   const [localMisses, setLocalMisses] = useState(0);
@@ -798,7 +805,6 @@ export function ComputerPanel({
       clearInterval(timer);
     };
   }, [panelView, phase, computerStatusCurrent, isLinux, pageVisible, bot.busy, bot.id, bot.threadId]);
-
   const frameSrc = !computerStatusCurrent ? null :
     phase === "vm"
       ? vmFrame
@@ -808,7 +814,6 @@ export function ComputerPanel({
         ? polledFrame && `data:${polledFrame.mime};base64,${polledFrame.png}`
         : null;
   const previewOpensDesktop = Boolean(frameSrc && (liveTarget || cloudPreviewReady));
-
   const signInHelp = control.help ?? null;
   const signInAsker = signInHelp ? state.bots.find((candidate) => candidate.id === signInHelp.botId)?.name ?? bot.name : bot.name;
   useEffect(() => {
@@ -831,9 +836,7 @@ export function ComputerPanel({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bot.id, threadPath]);
-
   const setNativeBrowserControl = useCallback(async (): Promise<boolean> => true, []);
-
   const transitionControl = useCallback(async (action: ComputerControlAction) => {
     // Security: every computer surface must gate Electron's direct browser host; the server hold is bot-wide, and a
     // shell-capable agent could otherwise bypass the server proxy while the person drives.
@@ -844,7 +847,6 @@ export function ComputerPanel({
       setNativeBrowserControl,
     });
   }, [panelView, requestControl, setNativeBrowserControl]);
-
   const controlAction = useCallback(async (action: ComputerControlAction): Promise<boolean> => {
     setControlPending(true);
     setError(null);
@@ -858,7 +860,6 @@ export function ComputerPanel({
       setControlPending(false);
     }
   }, [transitionControl]);
-
   const bannerTakesControl = Boolean(signInHelp && signInHelp.place !== "browser" && signInHelp.place !== "local" &&
     (cloudPreviewReady || phase === "vm" || currentTeamComputer));
   const signInBanner = (take?: () => void) => signInHelp && (
@@ -869,7 +870,6 @@ export function ComputerPanel({
       onError={setError}
     />
   );
-
   const openDesktop = async () => {
     const controller = new AbortController();
     desktopJoin.current = controller;
@@ -893,7 +893,17 @@ export function ComputerPanel({
       }
     }
   };
-
+  useEffect(() => () => rejectAssignedScreen(new DOMException("Screen assignment cancelled", "AbortError")), [connectionKey, panelView, rejectAssignedScreen]);
+  useEffect(() => {
+    if (!openAssignedScreen.current || openAssignedScreen.current.opening || phase !== "vm" || !liveTarget) return;
+    const completion = openAssignedScreen.current;
+    completion.opening = true;
+    setControlPending(true);
+    void takeover.take().then(completion.resolve, completion.reject).finally(() => {
+      if (openAssignedScreen.current === completion) openAssignedScreen.current = null;
+      setControlPending(false);
+    });
+  });
   const takeBlocked = pending === "join" || (phase === "vm" && !liveTarget);
   const takeControl = async (expand = false) => {
     if (!liveTarget) return cloudPreviewReady ? openDesktop() : undefined;
@@ -908,7 +918,6 @@ export function ComputerPanel({
       setControlPending(false);
     }
   };
-
   const handBack = async () => {
     setError(null);
     void window.cry?.desktopViewer?.close(bot.id);
@@ -1291,9 +1300,8 @@ export function ComputerPanel({
             )}
             {computerStatusCurrent && bot.computer === "cloud" && cloudBackend === "vps" && (phase === "ready" || phase === "starting") && !liveHere && <span className="text-[11px]">{t("computer.badge.vps")}</span>}
         </div>
-        {phase === "vm-waiting" && <p role="status" className="mb-3 rounded-lg bg-card p-3 text-[13px] text-ink-secondary">
-          {emptyState["vm-waiting"]} {vmStatus && localVmWaitState(vmStatus) === "queued" && t("vm.screens.queueDetail")}
-        </p>}
+        {bot.computer === "vm" && <AssignLocalVmScreen visible={phase === "vm-waiting"} key={connectionKey} path={threadPath("local-computer")} position={vmStatus?.queue_position}
+          onAssigned={() => new Promise<void>((resolve, reject) => { openAssignedScreen.current = { opening: false, resolve, reject }; setRetry(n => n + 1); })} />}
         <div className={cn("relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl bg-card", liveHere && "ring-2 ring-accent")}>
           {liveHere && liveDesktopTarget ? (
             <Suspense fallback={<Loader2 size={18} className="animate-spin text-ink-secondary" />}>

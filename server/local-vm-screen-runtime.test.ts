@@ -341,3 +341,22 @@ it("stops orphaned running screens during server recovery before allocating them
   expect(f.runtime.password(2)).toBeNull();
   expect(f.runtime.payload().slots.every(slot => slot.bot === null && slot.state === "off")).toBe(true);
 });
+
+it("manual claims prepare the VM, share the task queue, and retire while idle", async () => {
+  const f = fixture(2);
+  expect(await f.runtime.requestScreen("a")).toEqual({ screen: 1 });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(f.runtime.ready(1)).toBe(true);
+  await f.runtime.claim("b", f.owner("b"));
+  expect(await f.runtime.requestScreen("c")).toEqual({ queued: true, position: 1 });
+  expect(await f.runtime.requestScreen("c")).toEqual({ queued: true, position: 1 });
+  await vi.advanceTimersByTimeAsync(1500);
+  expect(f.runtime.assigned("a")).toBeNull();
+  expect(f.runtime.assigned("b")).toBe(2);
+  expect(f.runtime.assigned("c")).toBe(1);
+});
+it("manual claims leave the single desktop alone", async () => {
+  const f = fixture(1);
+  expect(await f.runtime.requestScreen("a")).toBeNull();
+  expect(startScreen).not.toHaveBeenCalled();
+});

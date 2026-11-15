@@ -42,7 +42,7 @@ export function createLocalVmScreenRuntime(deps: {
   busy(screen: number): boolean;
   held(screen: number): boolean;
   bot(botId: string): { id: string; name: string } | null;
-  prepare(botId: string, owner: TurnOwner): Promise<Runtime | { runtime: Runtime; single: true }>;
+  prepare(botId: string, owner?: TurnOwner): Promise<Runtime | { runtime: Runtime; single: true }>;
   bind(owner: TurnOwner, resource: string): Promise<void>;
   wait: ComputerWaitHooks;
   estimate(resource: string): number | undefined;
@@ -169,6 +169,18 @@ export function createLocalVmScreenRuntime(deps: {
     }
   }
 
+  async function requestScreen(botId: string) {
+    pendingClaims++;
+    try {
+      await recover();
+      if (!enabled()) return null;
+      const prepared = await deps.prepare(botId);
+      if (typeof prepared !== "string") { runtime = prepared.runtime; fallback = true; return null; }
+      runtime = prepared;
+      return await pool.requestAvailable({ botId, threadId: "viewer", generation: 0, enqueuedAt: Date.now() });
+    } finally { pendingClaims--; }
+  }
+
   function payload(): ScreenListPayload {
     if (!enabled()) return { layout: "single", screens: 1, slots: [], queue: [] };
     const now = Date.now(), snapshot = pool.snapshot();
@@ -187,7 +199,7 @@ export function createLocalVmScreenRuntime(deps: {
   }
 
   return {
-    enabled, pool, claim, recover, payload, assigned, targetFor, touch, active,
+    enabled, pool, claim, requestScreen, recover, payload, assigned, targetFor, touch, active,
     claiming: () => pendingClaims > 0,
     password: (n: number) => passwords.get(n) ?? null,
     ready: (n: number) => enabled() && pool.snapshot().slots.some(slot => slot.screen === n && slot.state === "ready"),
