@@ -345,6 +345,31 @@ describe("Runtime: one tree, one lane", () => {
     invariants(w);
   });
 
+  it.each<RunResult>([
+    { kind: "completed", text: "late reply" },
+    { kind: "failed", outcome: "provider_error", text: "killed" },
+    { kind: "needs_input", question: "late question" },
+    { kind: "continue", text: "late continuation", note: "next step" },
+  ])("keeps turns cut at shutdown for restart reconciliation: $kind", async (result) => {
+    const w = world(() => "hold");
+    const root = w.runtime.begin(beginReq());
+    const child = ok(w.runtime.enqueue(toBot("builder", root.id)));
+    w.runtime.tick();
+    w.runtime.close();
+    w.runtime.end(root.id, { ok: result.kind !== "failed", text: "late host reply",
+      ...(result.kind === "needs_input" ? { needsInput: { question: result.question } } : {}),
+      ...(result.kind === "continue" ? { continue: { note: result.note } } : {}) });
+    await w.runner.release(child.id, result);
+    expect(w.store.get(root.id)?.status).toBe("running");
+    expect(w.store.get(child.id)?.status).toBe("running");
+    expect(w.runner.reports).toEqual([]);
+    expect(w.runner.parks).toEqual([]);
+    const restarted = world(() => "hold", {}, w.store);
+    expect(restarted.store.get(child.id)).toMatchObject({ status: "queued", restart: "rerun", restarts: 1 });
+    restarted.runtime.close();
+    w.store.close();
+  });
+
   it("reconciles a restart from stored data: rerun once, cut after handing out work, re-park, fail a rerun cut again", async () => {
     const store = openRuntimeStore(":memory:");
     const first = world(() => "hold", {}, store);

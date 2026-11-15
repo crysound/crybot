@@ -1,3 +1,4 @@
+import { instaboxKeyStatus } from "./keys/key-catalog";
 import type { CloudBackend } from "../../shared/wire";
 import { cn } from "@/lib/cn";
 import { useStore } from "@/state/store";
@@ -18,16 +19,18 @@ export function CloudBackendPicker({
     <div className="mt-3 rounded-lg bg-inset p-3">
       <div className="text-[12px] font-medium text-ink">{compact ? t("botAccess.cloud.provider") : t("botAccess.cloud.backend")}</div>
       <div className="mt-0.5 text-[12px] text-ink-secondary">
-        {compact
+        {value === "instabox" ? t("botAccess.cloud.instaboxDescription") : compact
           ? value === "vps" ? t("botAccess.cloud.vpsDescription") : t("botAccess.cloud.hostedDescription")
           : value === "vps"
           ? t("botAccess.cloud.vpsAutoDescription")
           : t("botAccess.cloud.hostedBackendDescription")}
       </div>
       <div className="mt-2 flex overflow-hidden rounded-lg border border-hairline/40">
-        {(["box", "vps"] as const).map((backend, i) => (
+        {(["box", "vps", "instabox"] as const).map((backend, i) => (
           <button
             key={backend}
+            type="button"
+            aria-pressed={value === backend}
             onClick={() => onChange(backend)}
             className={cn(
               "flex-1 py-1.5 text-[12px]",
@@ -35,10 +38,11 @@ export function CloudBackendPicker({
               value === backend ? "bg-raised text-ink" : "text-ink-secondary hover:bg-raised/60 hover:text-ink",
             )}
           >
-            {backend === "vps" ? t("botAccess.cloud.selfHostedVps") : t("botAccess.cloud.boat")}
+            {backend === "instabox" ? "InstaBox" : backend === "vps" ? t("botAccess.cloud.selfHostedVps") : t("botAccess.cloud.boat")}
           </button>
         ))}
       </div>
+      {value === "instabox" && !instaboxKeyStatus(state.config).configured && <p className="mt-2 text-[12px] text-ink-secondary">{t("botAccess.cloud.instaboxKeyHint")}</p>}
     </div>
   );
 }

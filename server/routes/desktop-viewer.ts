@@ -2,6 +2,7 @@
 import { appendUpgradeCookies } from "./upgrades.ts";
 import { createHash } from "node:crypto";
 import { request, type IncomingMessage } from "node:http";
+import { request as secureRequest } from "node:https";
 import type { Socket } from "node:net";
 import type { Duplex } from "node:stream";
 import { isSameOrigin, type RequestAuth } from "../request-auth.ts";
@@ -16,10 +17,12 @@ const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 const BOT_ID = /^[\w-]+$/;
 const CONTROL_LEASE = /^[A-Za-z0-9_-]{16,120}$/;
 
-/** Providers resolve a managed loopback endpoint, never a browser-supplied URL. */
+/** Providers resolve a managed endpoint, never a browser-supplied URL. */
 export interface DesktopConnection {
   port: number;
   password: string | null;
+  /** Server-only credentials: never serialize this endpoint or its headers to a viewer. */
+  upstream?: { url: string; headers: Record<string, string> };
   live?: boolean | (() => boolean);
   touch?: () => void;
   /** Acquired only by WebSockets; release must not close other viewers. */
@@ -47,6 +50,7 @@ export function createDesktopViewer(deps: {
   lease?: (id: string, botId: string, controlLeaseId: string, threadId?: string) => (() => boolean) | undefined;
   /** The server's shared upgrade gate; a viewer made without one keeps its own. */
   upgrades?: Upgrades;
+  allowInsecureLoopbackUpstream?: boolean;
 }) {
   const upgrades = deps.upgrades ?? createUpgrades();
   const ownGate = deps.upgrades === undefined;
@@ -106,7 +110,17 @@ export function createDesktopViewer(deps: {
       (typeof connection.live === "function" ? connection.live() : (connection.live ?? true));
     if (!live()) return json(res, 401, { error: "Viewer access expired" });
     if (!holds()) return json(res, 409, { error: "Take control of this computer first" });
-    if (!Number.isInteger(connection.port) || connection.port < 1 || connection.port > 65535
+    let upstreamUrl: URL | undefined;
+    if (connection.upstream) {
+      try {
+        upstreamUrl = new URL(connection.upstream.url);
+        if ((upstreamUrl.protocol !== "wss:" && !(deps.allowInsecureLoopbackUpstream
+          && upstreamUrl.protocol === "ws:" && upstreamUrl.hostname === "127.0.0.1"))
+          || upstreamUrl.username || upstreamUrl.password || upstreamUrl.hash) throw new Error();
+        upstreamUrl.protocol = upstreamUrl.protocol === "wss:" ? "https:" : "http:";
+      } catch { return json(res, 502, { error: "Could not connect to the desktop viewer" }); }
+    }
+    if ((!connection.upstream && (!Number.isInteger(connection.port) || connection.port < 1 || connection.port > 65535))
       || (screenOfViewerTarget(match[1]) !== null && connection.password === null)) {
       return json(res, 409, { error: "The desktop viewer is not available." });
     }
@@ -117,11 +131,15 @@ export function createDesktopViewer(deps: {
       || typeof key !== "string" || !/^[A-Za-z0-9+/]{22}==$/.test(key)) {
       return json(res, 400, { error: "Invalid WebSocket handshake" });
     }
-    // Fixed host and provider path, with the port from an inspected managed container. Never forward cookies, bearer tokens, or client headers.
-    const upstream = request({
-      hostname: "127.0.0.1", port: connection.port, path: connection.path ?? "/websockify",
-      headers: { Upgrade: "websocket", Connection: "Upgrade", "Sec-WebSocket-Key": key, "Sec-WebSocket-Version": "13" },
-    });
+    // Only provider headers cross this boundary; browser cookies and authorization never do.
+    let upstream: ReturnType<typeof request>;
+    try {
+      const headers = { ...connection.upstream?.headers, Upgrade: "websocket", Connection: "Upgrade",
+        "Sec-WebSocket-Key": key, "Sec-WebSocket-Version": "13" };
+      upstream = upstreamUrl
+        ? (upstreamUrl.protocol === "https:" ? secureRequest : request)(upstreamUrl, { headers })
+        : request({ hostname: "127.0.0.1", port: connection.port, path: connection.path ?? "/websockify", headers });
+    } catch { return json(res, 502, { error: "Could not connect to the desktop viewer" }); }
     const { socket } = upgrade;
     let peer: Duplex | undefined;
     let recheck: ReturnType<typeof setInterval> | undefined;

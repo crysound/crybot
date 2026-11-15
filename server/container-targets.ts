@@ -49,6 +49,7 @@ export function isScreenTarget(target: LocalVmTarget): target is LocalVmTarget &
 export function screenUser(n: number): string { return `crybot-s${checkedScreen(n)}`; }
 export function screenUid(n: number): number { return 61000 + checkedScreen(n); }
 export function screenDisplay(n: number): string { return `:${checkedScreen(n)}`; }
+export function screenXauthority(n: number): string { return `/run/crybot/screens/s${checkedScreen(n)}/Xauthority`; }
 export function screenSocket(n: number): string { return `/run/user/${screenUid(n)}/crybot-cua.sock`; }
 export function screenWorkdir(n: number): string { return `/home/cua/workspace/screens/s${checkedScreen(n)}`; }
 
