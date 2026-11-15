@@ -58,10 +58,10 @@ export interface ModelSelection {
   variant?: string;
 }
 
-/** Which cloud computer backs computer: "cloud"; absent means Boat. */
+/** Which cloud computer backs computer: "cloud"; absent means InstaBox. Team computers use Boat. */
 export type CloudBackend = "box" | "vps" | "instabox";
 
-/** A place a bot can act. `cloud` covers both cloud backends. */
+/** A place a bot can act. `cloud` covers InstaBox, Boat, and self-hosted VPS computers. */
 export type Surface = "cloud" | "vm" | "local" | "browser";
 
 export const BOT_COLOR_NAMES = [
@@ -323,7 +323,7 @@ export interface WireBot extends DefaultBotFields, BotAccessFields {
   modelSelection: ModelSelection;
   /** where the bot works ("Works on"). Unset = auto. */
   computer?: Surface | "off";
-  /** Which cloud computer backs computer: "cloud"; absent means Boat. */
+  /** Which cloud computer backs computer: "cloud"; absent means InstaBox. Team computers use Boat. */
   cloudBackend?: CloudBackend;
   /** Auto mode may prepare/start this bot's managed VPS container. */
   autoStartVps?: boolean;
