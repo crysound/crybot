@@ -116,13 +116,21 @@ const args = process.argv.slice(2);
 const name = path.basename(process.argv[1]);
 fs.appendFileSync(process.env.CALLS, JSON.stringify({ name, args, env: Object.fromEntries(['HOME', 'XDG_CACHE_HOME', 'CLANG_MODULE_CACHE_PATH', 'SWIFTPM_MODULECACHE_OVERRIDE', 'TMPDIR'].map(key => [key, process.env[key]])) }) + '\\n');
 if (name === 'swift' && args[0] === 'test') process.exit(Number(process.env.TEST_STATUS ?? 0));
+const binPath = path.join(process.env.FIXTURE, 'mobile/ios/.linux-build', process.env.BUILD_LAYOUT ?? 'debug');
 if (args.includes('--show-bin-path')) {
-  console.log(path.join(process.env.FIXTURE, 'mobile/ios/.linux-build/debug'));
+  console.log(binPath);
 } else if (name === 'swift') {
   if (process.env.BUILD_FAIL) process.exit(1);
-  const modules = path.join(process.env.FIXTURE, 'mobile/ios/.linux-build/debug/Modules');
+  if (process.env.MODULE_MISSING) process.exit(0);
+  const modules = path.join(binPath, 'Modules');
   fs.mkdirSync(modules, { recursive: true });
-  fs.writeFileSync(path.join(modules, 'CryCore.swiftmodule'), 'fixture');
+  const module = path.join(modules, 'CryCore.swiftmodule');
+  if (process.env.MODULE_DIRECTORY) {
+    fs.mkdirSync(module, { recursive: true });
+    fs.writeFileSync(path.join(module, 'x86_64-unknown-linux-gnu.swiftmodule'), 'fixture');
+  } else {
+    fs.writeFileSync(module, 'fixture');
+  }
 } else if ((args.includes('-parse') && process.env.PARSE_FAIL && args.some(a => a.endsWith('Watch.swift')))
   || (args.includes('-typecheck') && process.env.TYPE_FAIL)) {
   console.error(args.at(-1) + ':3:2: error: fixture diagnostic');
@@ -220,16 +228,47 @@ test('linux-check aggregates syntax, logic, naming and strings failures with dia
   assert.match(result.log, /strings check reached/);
 });
 
-test('a failed CryCore build still runs naming and strings but never uses stale modules', t => {
-  const { run } = fixture(t);
-  assert.equal(run('linux-check.sh').status, 0);
-  const result = run('linux-check.sh', { BUILD_FAIL: '1' });
-  assert.equal(result.status, 1);
-  assert.equal(result.calls.filter(call => call.args.includes('-typecheck')).length, 0);
-  assert.match(result.log, /Package.swift:1: error: check failed/);
-  assert.match(result.log, /Type names:/);
-  assert.match(result.log, /strings check reached/);
+const moduleLayouts = [
+  { BUILD_LAYOUT: 'debug' },
+  { BUILD_LAYOUT: 'out/Products/Debug-linux-x86_64', MODULE_DIRECTORY: '1' },
+];
+
+test('linux-check imports a directory module from the new SwiftPM product layout', t => {
+  const { dir, run } = fixture(t);
+  const result = run('linux-check.sh', moduleLayouts[1]);
+  assert.equal(result.status, 0, result.log);
+  const modules = path.join(dir, 'mobile/ios/.linux-build/out/Products/Debug-linux-x86_64/Modules');
+  assert.ok(fs.statSync(path.join(modules, 'CryCore.swiftmodule')).isDirectory());
+  const checks = result.calls.filter(call => call.args.includes('-typecheck'));
+  assert.equal(checks.length, 2);
+  for (const check of checks) assert.equal(check.args[check.args.indexOf('-I') + 1], modules);
+  assert.match(result.log, /2 Logic directories \(3 files\) typechecked; 0 failed checks/);
 });
+
+for (const layout of moduleLayouts) {
+  test(`a missing CryCore module fails without using another build layout: ${layout.BUILD_LAYOUT}`, t => {
+    const { write, run } = fixture(t);
+    write('mobile/ios/.linux-build/stale/Modules/CryCore.swiftmodule', 'stale module');
+    const result = run('linux-check.sh', { ...layout, MODULE_MISSING: '1' });
+    assert.equal(result.status, 1, result.log);
+    assert.equal(result.calls.filter(call => call.args.includes('-typecheck')).length, 0);
+    assert.ok(result.log.includes(`${layout.BUILD_LAYOUT}/Modules/CryCore.swiftmodule:1: error: CryCore module is missing`));
+    assert.match(result.log, /Type names:/);
+    assert.match(result.log, /strings check reached/);
+    assert.match(result.log, /1 failed checks/);
+  });
+
+  test(`a failed CryCore build never uses stale modules: ${layout.BUILD_LAYOUT}`, t => {
+    const { run } = fixture(t);
+    assert.equal(run('linux-check.sh', layout).status, 0);
+    const result = run('linux-check.sh', { ...layout, BUILD_FAIL: '1' });
+    assert.equal(result.status, 1);
+    assert.equal(result.calls.filter(call => call.args.includes('-typecheck')).length, 0);
+    assert.match(result.log, /Package.swift:1: error: check failed/);
+    assert.match(result.log, /Type names:/);
+    assert.match(result.log, /strings check reached/);
+  });
+}
 
 test('empty feature Logic trees are explicitly counted', t => {
   const { dir, run } = fixture(t);
@@ -242,6 +281,12 @@ test('empty feature Logic trees are explicitly counted', t => {
 test('iOS Linux workflow selects relevant PRs and executes both scripts and all Node tests', () => {
   const workflow = YAML.parse(fs.readFileSync(path.join(root, '.github/workflows/ios-linux.yml'), 'utf8'));
   assert.equal(workflow.name, 'iOS Linux');
+  assert.deepEqual(workflow.permissions, { contents: 'read' });
+  for (const job of Object.values(workflow.jobs)) {
+    for (const entry of [job, ...(job.steps ?? [])]) {
+      if ('uses' in entry) assert.match(entry.uses, /^[^@\s]+@[0-9a-fA-F]{40}$/);
+    }
+  }
   for (const glob of ['mobile/ios/**', 'shared/**', 'src/locales/**', '.github/workflows/ios-linux.yml']) {
     assert.ok(workflow.on.pull_request.paths.includes(glob));
   }

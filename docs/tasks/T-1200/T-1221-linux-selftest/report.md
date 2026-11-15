@@ -781,3 +781,267 @@ Metadata changed: 1
 ```
 
 差异全部位于 `<home>/.cache/<审查工具目录>/`：一个临时目录及其中 `changes.diff`、`security-audit.md` 被删除，父目录 mtime/ctime 改变；没有新增文件或既有普通文件内容元数据变化。`<home>/.swiftpm` 逐项一致。本任务命令没有操作该审查目录，沙箱也未授予该目录写权限。 <!-- public-scan: allow domain -->
+
+
+## 第 2 轮返工（2026-11-15）
+
+基于协调者已提交的 `416669bd` 继续修改。报告位置再次由 `<tools>/task-paths report T-1221-linux-selftest` 确认，前轮内容完整保留。本轮只修改两个脚本目录内文件和本报告，未提交 git；工作流的三个完整 SHA、Node 24 配置和协调者重生成的文案均未改动。没有网络访问、下载、systemd 或 macOS/Xcode 操作。
+
+### 修改与选择理由
+
+- `mobile/ios/scripts/linux-check.sh`：仍在 CryCore 构建成功后查询同一组 SwiftPM 参数的 `--show-bin-path`，对返回目录下的 `Modules/CryCore.swiftmodule` 同时接受普通文件和目录，`-I` 继续指向包含该模块的 `Modules` 父目录。这样不依赖固定的 debug 路径，也不引入跨版本构建系统选项；既覆盖本机文件形式，也覆盖题述 `out/Products/Debug-linux-x86_64/Modules/CryCore.swiftmodule/` 目录形式。没有遍历整个 scratch 的回退，所以当前产物缺失时不会捡到另一布局里的旧模块；构建失败时仍然跳过模块使用。 <!-- public-scan: allow domain -->
+- `mobile/ios/scripts/check-type-names.test.mjs`：假 swift 可生成上述两种布局；新增目录模块成功案例，核对两组 Logic 类型检查的 `-I` 均指向新布局的父目录。两种布局都覆盖成功构建但模块缺失（旁边放旧模块仍失败）以及先成功生成模块、随后构建失败（不得类型检查）的负例，同时断言后续命名和文案检查仍执行。
+- 同一测试文件的工作流检查增加顶层 `permissions` 与 `{ contents: 'read' }` 的精确比较，并遍历所有 job 及其步骤，要求每个 `uses` 都以 `@` 加 40 位十六进制 SHA 结尾。
+
+只扩大模块存在形式的接受范围，没有将缺失模块变为成功，也没有改变 SwiftPM 的构建方式。真实 Swift 6.4.2 未在本机运行；模拟新布局通过不等于该版本已验证，仍待协调者推送后在 Actions 上确认。
+
+### 本机验收
+
+本机 Swift 6.3.3、Node v24.22.3。三项指定命令均退出 0：Swift 测试 69 项、0 失败、1 项既有 CryRFB 占位跳过；检查脚本解析 152 个 Swift 文件、命名扫描 114 个文件、0 失败；Node 的默认隔离模式报告三个测试文件全部通过。当前工作区没有 Features Logic 文件，真实检查汇总为 0 个 Logic 目录；新布局的导入参数由隔离的假工具夹具验证。
+
+`bash -n mobile/ios/scripts/linux-check.sh` 和 `git diff --check` 均退出 0。验证使用工作区缓存及隔离测试夹具，不启动用户服务、不访问用户数据。仓库仍没有 `docs/verification/README.md`，本轮不涉及服务端或会话修改。
+
+下列为合并 stdout/stderr 的完整输出，仅将本机仓库绝对路径替换为 `<repo>`，其余内容原样保留；本地原日志保存在被忽略的 `.linux-cache/r2-*.log` 中。
+
+#### `swift --version`（退出 0）
+
+```text
+Swift version 6.3.3 (swift-6.3.3-RELEASE)
+Target: x86_64-unknown-linux-gnu
+```
+
+#### `mobile/ios/scripts/linux-test.sh`（退出 0）
+
+```text
+[0/1] Planning build
+Building for debugging...
+[0/2] Write swift-version-6F7309784324DD2.txt
+Build complete! (0.27s)
+Test Suite 'All tests' started at 2026-11-15 01:04:58.275
+Test Suite 'debug.xctest' started at 2026-11-15 01:04:58.298
+Test Suite 'CallbackTests' started at 2026-11-15 01:04:58.298
+Test Case 'CallbackTests.testBase64AndJWTExpiry' started at 2026-11-15 01:04:58.298
+Test Case 'CallbackTests.testBase64AndJWTExpiry' passed (0.007 seconds)
+Test Case 'CallbackTests.testBothHandoffEntrancesDispatchThroughRegistry' started at 2026-11-15 01:04:58.305
+Test Case 'CallbackTests.testBothHandoffEntrancesDispatchThroughRegistry' passed (0.002 seconds)
+Test Case 'CallbackTests.testCallbackModeFourCombinations' started at 2026-11-15 01:04:58.306
+Test Case 'CallbackTests.testCallbackModeFourCombinations' passed (0.0 seconds)
+Test Case 'CallbackTests.testMismatchedStateIsIgnoredBeforeVersionDispatch' started at 2026-11-15 01:04:58.306
+Test Case 'CallbackTests.testMismatchedStateIsIgnoredBeforeVersionDispatch' passed (0.001 seconds)
+Test Case 'CallbackTests.testParametersRejectDuplicatesAndNeverDescribePayload' started at 2026-11-15 01:04:58.307
+Test Case 'CallbackTests.testParametersRejectDuplicatesAndNeverDescribePayload' passed (0.101 seconds)
+Test Case 'CallbackTests.testRouterMatchesHostAndExactEncodedPath' started at 2026-11-15 01:04:58.409
+Test Case 'CallbackTests.testRouterMatchesHostAndExactEncodedPath' passed (0.101 seconds)
+Test Case 'CallbackTests.testVersionDispatchAndUnknownVersionError' started at 2026-11-15 01:04:58.510
+Test Case 'CallbackTests.testVersionDispatchAndUnknownVersionError' passed (0.001 seconds)
+Test Suite 'CallbackTests' passed at 2026-11-15 01:04:58.510
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.212 (0.212) seconds
+Test Suite 'ReconnectTests' started at 2026-11-15 01:04:58.510
+Test Case 'ReconnectTests.testBackoffAndPingReset' started at 2026-11-15 01:04:58.510
+Test Case 'ReconnectTests.testBackoffAndPingReset' passed (0.002 seconds)
+Test Case 'ReconnectTests.testFortySecondsWithoutFrame' started at 2026-11-15 01:04:58.512
+Test Case 'ReconnectTests.testFortySecondsWithoutFrame' passed (0.0 seconds)
+Test Case 'ReconnectTests.testParserAndStatePreserveEachFrameCursor' started at 2026-11-15 01:04:58.512
+Test Case 'ReconnectTests.testParserAndStatePreserveEachFrameCursor' passed (0.004 seconds)
+Test Case 'ReconnectTests.testResumedHelloNeverSkipsReplay' started at 2026-11-15 01:04:58.516
+Test Case 'ReconnectTests.testResumedHelloNeverSkipsReplay' passed (0.0 seconds)
+Test Case 'ReconnectTests.testSnapshotCursorCommitsOnlyAfterSnapshotAndKeepsNewerFrames' started at 2026-11-15 01:04:58.516
+Test Case 'ReconnectTests.testSnapshotCursorCommitsOnlyAfterSnapshotAndKeepsNewerFrames' passed (0.0 seconds)
+Test Suite 'ReconnectTests' passed at 2026-11-15 01:04:58.516
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.006 (0.006) seconds
+Test Suite 'SessionTests' started at 2026-11-15 01:04:58.516
+Test Case 'SessionTests.testCFFieldsRoundTripAndRedactedDescription' started at 2026-11-15 01:04:58.516
+Test Case 'SessionTests.testCFFieldsRoundTripAndRedactedDescription' passed (0.002 seconds)
+Test Case 'SessionTests.testCookieRotationWithCombinedHeadersAndExpiryComma' started at 2026-11-15 01:04:58.518
+Test Case 'SessionTests.testCookieRotationWithCombinedHeadersAndExpiryComma' passed (0.006 seconds)
+Test Case 'SessionTests.testCookieWithoutExpiryRetainsSessionDeadline' started at 2026-11-15 01:04:58.524
+Test Case 'SessionTests.testCookieWithoutExpiryRetainsSessionDeadline' passed (0.0 seconds)
+Test Case 'SessionTests.testExpiryByMethod' started at 2026-11-15 01:04:58.524
+Test Case 'SessionTests.testExpiryByMethod' passed (0.0 seconds)
+Test Case 'SessionTests.testHeadersWithAndWithoutCF' started at 2026-11-15 01:04:58.524
+Test Case 'SessionTests.testHeadersWithAndWithoutCF' passed (0.0 seconds)
+Test Case 'SessionTests.testMethodsAndOptionalCFEncoding' started at 2026-11-15 01:04:58.524
+Test Case 'SessionTests.testMethodsAndOptionalCFEncoding' passed (0.0 seconds)
+Test Case 'SessionTests.testPairingLinkUsesOneTimeTokenAndRefusesUnsupportedRoutes' started at 2026-11-15 01:04:58.525
+Test Case 'SessionTests.testPairingLinkUsesOneTimeTokenAndRefusesUnsupportedRoutes' passed (0.0 seconds)
+Test Case 'SessionTests.testResponseExpiryRules' started at 2026-11-15 01:04:58.525
+Test Case 'SessionTests.testResponseExpiryRules' passed (0.0 seconds)
+Test Case 'SessionTests.testServerNormalizationAndBuildSettings' started at 2026-11-15 01:04:58.526
+Test Case 'SessionTests.testServerNormalizationAndBuildSettings' passed (0.0 seconds)
+Test Case 'SessionTests.testUnknownVersionsRetainServerButDiscardCredentials' started at 2026-11-15 01:04:58.526
+Test Case 'SessionTests.testUnknownVersionsRetainServerButDiscardCredentials' passed (0.0 seconds)
+Test Case 'SessionTests.testVersionTwoAndUnknownMethodRoundTrip' started at 2026-11-15 01:04:58.526
+Test Case 'SessionTests.testVersionTwoAndUnknownMethodRoundTrip' passed (0.0 seconds)
+Test Case 'SessionTests.testWebSocketURLPreservesAPIOriginPortPrefixAndEscapedPath' started at 2026-11-15 01:04:58.526
+Test Case 'SessionTests.testWebSocketURLPreservesAPIOriginPortPrefixAndEscapedPath' passed (0.0 seconds)
+Test Suite 'SessionTests' passed at 2026-11-15 01:04:58.527
+	 Executed 12 tests, with 0 failures (0 unexpected) in 0.01 (0.01) seconds
+Test Suite 'ContractTests' started at 2026-11-15 01:04:58.527
+Test Case 'ContractTests.testComparatorDetectsDroppedChangedAndAddedValues' started at 2026-11-15 01:04:58.527
+Test Case 'ContractTests.testComparatorDetectsDroppedChangedAndAddedValues' passed (0.003 seconds)
+Test Case 'ContractTests.testEveryKnownUnionCaseUsesTypedDecoding' started at 2026-11-15 01:04:58.529
+Test Case 'ContractTests.testEveryKnownUnionCaseUsesTypedDecoding' passed (0.12 seconds)
+Test Case 'ContractTests.testJSONNumbersRetainLargeIntegersAndDecimals' started at 2026-11-15 01:04:58.649
+Test Case 'ContractTests.testJSONNumbersRetainLargeIntegersAndDecimals' passed (0.0 seconds)
+Test Case 'ContractTests.testMalformedMessagesDoNotDiscardThreadOrSnapshot' started at 2026-11-15 01:04:58.649
+Test Case 'ContractTests.testMalformedMessagesDoNotDiscardThreadOrSnapshot' passed (0.071 seconds)
+Test Case 'ContractTests.testManualRoundTrips' started at 2026-11-15 01:04:58.721
+Test Case 'ContractTests.testManualRoundTrips' passed (0.224 seconds)
+Test Case 'ContractTests.testNestedIgnoredKeysAreScopedToDeclaringModel' started at 2026-11-15 01:04:58.945
+Test Case 'ContractTests.testNestedIgnoredKeysAreScopedToDeclaringModel' passed (0.001 seconds)
+Test Case 'ContractTests.testPanelAndSettingsUnknownValues' started at 2026-11-15 01:04:58.946
+Test Case 'ContractTests.testPanelAndSettingsUnknownValues' passed (0.0 seconds)
+Test Case 'ContractTests.testRequiredFieldsAndKnownFieldTypesAreChecked' started at 2026-11-15 01:04:58.946
+Test Case 'ContractTests.testRequiredFieldsAndKnownFieldTypesAreChecked' passed (0.0 seconds)
+Test Case 'ContractTests.testServerContract' started at 2026-11-15 01:04:58.947
+Test Case 'ContractTests.testServerContract' passed (0.205 seconds)
+Test Case 'ContractTests.testTypedConstructorsMatchDecodedValuesAndExposeOptionalFields' started at 2026-11-15 01:04:59.152
+Test Case 'ContractTests.testTypedConstructorsMatchDecodedValuesAndExposeOptionalFields' passed (0.001 seconds)
+Test Case 'ContractTests.testUnknownKindsAndFieldsSurvive' started at 2026-11-15 01:04:59.153
+Test Case 'ContractTests.testUnknownKindsAndFieldsSurvive' passed (0.001 seconds)
+Test Suite 'ContractTests' passed at 2026-11-15 01:04:59.154
+	 Executed 11 tests, with 0 failures (0 unexpected) in 0.627 (0.627) seconds
+Test Suite 'EndpointTests' started at 2026-11-15 01:04:59.154
+Test Case 'EndpointTests.testInboxNotificationsConfigAndIdentityPaths' started at 2026-11-15 01:04:59.154
+Test Case 'EndpointTests.testInboxNotificationsConfigAndIdentityPaths' passed (0.001 seconds)
+Test Case 'EndpointTests.testInterruptReadAndReactionBodies' started at 2026-11-15 01:04:59.155
+Test Case 'EndpointTests.testInterruptReadAndReactionBodies' passed (0.001 seconds)
+Test Case 'EndpointTests.testOriginCannotBeReplacedByEndpoint' started at 2026-11-15 01:04:59.156
+Test Case 'EndpointTests.testOriginCannotBeReplacedByEndpoint' passed (0.001 seconds)
+Test Case 'EndpointTests.testQueryEncodingMatchesURIComponent' started at 2026-11-15 01:04:59.157
+Test Case 'EndpointTests.testQueryEncodingMatchesURIComponent' passed (0.0 seconds)
+Test Case 'EndpointTests.testSingleAndGroupSendsAndAllResponses' started at 2026-11-15 01:04:59.157
+Test Case 'EndpointTests.testSingleAndGroupSendsAndAllResponses' passed (0.001 seconds)
+Test Case 'EndpointTests.testSnapshotAndHistoryURLQueries' started at 2026-11-15 01:04:59.158
+Test Case 'EndpointTests.testSnapshotAndHistoryURLQueries' passed (0.0 seconds)
+Test Case 'EndpointTests.testUploadAndDownloadsUseRawBytesAndScopedFilePOST' started at 2026-11-15 01:04:59.158
+Test Case 'EndpointTests.testUploadAndDownloadsUseRawBytesAndScopedFilePOST' passed (0.0 seconds)
+Test Suite 'EndpointTests' passed at 2026-11-15 01:04:59.159
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.004 (0.004) seconds
+Test Suite 'LiveStateTests' started at 2026-11-15 01:04:59.159
+Test Case 'LiveStateTests.testBotGroupUpdatesOrderingAndDeletes' started at 2026-11-15 01:04:59.159
+Test Case 'LiveStateTests.testBotGroupUpdatesOrderingAndDeletes' passed (0.176 seconds)
+Test Case 'LiveStateTests.testComputerControlCallAndLatestScreen' started at 2026-11-15 01:04:59.335
+Test Case 'LiveStateTests.testComputerControlCallAndLatestScreen' passed (0.001 seconds)
+Test Case 'LiveStateTests.testFutureMessagesAndReadBeforeNotify' started at 2026-11-15 01:04:59.336
+Test Case 'LiveStateTests.testFutureMessagesAndReadBeforeNotify' passed (0.101 seconds)
+Test Case 'LiveStateTests.testLoadConfigInitializesAndReplacesAllFields' started at 2026-11-15 01:04:59.438
+Test Case 'LiveStateTests.testLoadConfigInitializesAndReplacesAllFields' passed (0.029 seconds)
+Test Case 'LiveStateTests.testLoadNotificationsMergesLiveEntriesAndServerReadState' started at 2026-11-15 01:04:59.467
+Test Case 'LiveStateTests.testLoadNotificationsMergesLiveEntriesAndServerReadState' passed (0.002 seconds)
+Test Case 'LiveStateTests.testMessagesPatchesLeavesAndQueuedConsumption' started at 2026-11-15 01:04:59.469
+Test Case 'LiveStateTests.testMessagesPatchesLeavesAndQueuedConsumption' passed (0.042 seconds)
+Test Case 'LiveStateTests.testNotificationDeduplicationReadAndReplay' started at 2026-11-15 01:04:59.512
+Test Case 'LiveStateTests.testNotificationDeduplicationReadAndReplay' passed (0.001 seconds)
+Test Case 'LiveStateTests.testPresenceAndConfigReplacement' started at 2026-11-15 01:04:59.512
+Test Case 'LiveStateTests.testPresenceAndConfigReplacement' passed (0.101 seconds)
+Test Case 'LiveStateTests.testRuntimeItemsRequestsAndTurnReset' started at 2026-11-15 01:04:59.614
+Test Case 'LiveStateTests.testRuntimeItemsRequestsAndTurnReset' passed (0.002 seconds)
+Test Case 'LiveStateTests.testRuntimeStreamingDeduplicationAndFinalMessageReplacement' started at 2026-11-15 01:04:59.616
+Test Case 'LiveStateTests.testRuntimeStreamingDeduplicationAndFinalMessageReplacement' passed (0.001 seconds)
+Test Case 'LiveStateTests.testSnapshotLoadsTranscriptsQueuesAndControlAndResetsStaleState' started at 2026-11-15 01:04:59.617
+Test Case 'LiveStateTests.testSnapshotLoadsTranscriptsQueuesAndControlAndResetsStaleState' passed (0.034 seconds)
+Test Case 'LiveStateTests.testSnapshotPreservesCallComputerAndScreen' started at 2026-11-15 01:04:59.650
+Test Case 'LiveStateTests.testSnapshotPreservesCallComputerAndScreen' passed (0.043 seconds)
+Test Case 'LiveStateTests.testSubscriptionOnlyAndUnknownFramesAreCounted' started at 2026-11-15 01:04:59.694
+Test Case 'LiveStateTests.testSubscriptionOnlyAndUnknownFramesAreCounted' passed (0.017 seconds)
+Test Suite 'LiveStateTests' passed at 2026-11-15 01:04:59.710
+	 Executed 13 tests, with 0 failures (0 unexpected) in 0.551 (0.551) seconds
+Test Suite 'RequestCardTests' started at 2026-11-15 01:04:59.710
+Test Case 'RequestCardTests.testAppliedAndUndoneRequireAllowedUnheldAutoApplication' started at 2026-11-15 01:04:59.710
+Test Case 'RequestCardTests.testAppliedAndUndoneRequireAllowedUnheldAutoApplication' passed (1.305 seconds)
+Test Case 'RequestCardTests.testEveryKindAndEveryPriorityPair' started at 2026-11-15 01:05:01.016
+Test Case 'RequestCardTests.testEveryKindAndEveryPriorityPair' passed (0.1 seconds)
+Test Case 'RequestCardTests.testFalseFlagsAndUnknownFieldUseGeneralApproval' started at 2026-11-15 01:05:01.116
+Test Case 'RequestCardTests.testFalseFlagsAndUnknownFieldUseGeneralApproval' passed (0.0 seconds)
+Test Suite 'RequestCardTests' passed at 2026-11-15 01:05:01.117
+	 Executed 3 tests, with 0 failures (0 unexpected) in 1.406 (1.406) seconds
+Test Suite 'SSEParserTests' started at 2026-11-15 01:05:01.117
+Test Case 'SSEParserTests.testCRLinesIDResetAndNulIgnored' started at 2026-11-15 01:05:01.117
+Test Case 'SSEParserTests.testCRLinesIDResetAndNulIgnored' passed (0.001 seconds)
+Test Case 'SSEParserTests.testEOFDiscardsIncompleteAndEventNameResets' started at 2026-11-15 01:05:01.117
+Test Case 'SSEParserTests.testEOFDiscardsIncompleteAndEventNameResets' passed (0.101 seconds)
+Test Case 'SSEParserTests.testEveryByteBoundaryIncludingUnicodeAndCRLF' started at 2026-11-15 01:05:01.218
+Test Case 'SSEParserTests.testEveryByteBoundaryIncludingUnicodeAndCRLF' passed (0.007 seconds)
+Test Case 'SSEParserTests.testGoodBadGoodFramesInOneChunk' started at 2026-11-15 01:05:01.225
+Test Case 'SSEParserTests.testGoodBadGoodFramesInOneChunk' passed (0.001 seconds)
+Test Case 'SSEParserTests.testIncompleteEventDoesNotCommitID' started at 2026-11-15 01:05:01.225
+Test Case 'SSEParserTests.testIncompleteEventDoesNotCommitID' passed (0.0 seconds)
+Test Case 'SSEParserTests.testMalformedEventsRecoverAtEveryChunkBoundary' started at 2026-11-15 01:05:01.226
+Test Case 'SSEParserTests.testMalformedEventsRecoverAtEveryChunkBoundary' passed (0.028 seconds)
+Test Case 'SSEParserTests.testMalformedJSONUTF8AndSizeLimits' started at 2026-11-15 01:05:01.254
+Test Case 'SSEParserTests.testMalformedJSONUTF8AndSizeLimits' passed (0.001 seconds)
+Test Case 'SSEParserTests.testMultipleDataLinesCommentsAndConsecutiveEvents' started at 2026-11-15 01:05:01.255
+Test Case 'SSEParserTests.testMultipleDataLinesCommentsAndConsecutiveEvents' passed (0.001 seconds)
+Test Suite 'SSEParserTests' passed at 2026-11-15 01:05:01.255
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.139 (0.139) seconds
+Test Suite 'WireMessageStackTests' started at 2026-11-15 01:05:01.255
+Test Case 'WireMessageStackTests.testDetachedRoundTripOfLargeMessageCollections' started at 2026-11-15 01:05:01.255
+Test Case 'WireMessageStackTests.testDetachedRoundTripOfLargeMessageCollections' passed (0.5 seconds)
+Test Case 'WireMessageStackTests.testFixedStackRoundTripOfLargeMessageCollections' started at 2026-11-15 01:05:01.755
+Test Case 'WireMessageStackTests.testFixedStackRoundTripOfLargeMessageCollections' passed (0.637 seconds)
+Test Suite 'WireMessageStackTests' passed at 2026-11-15 01:05:02.393
+	 Executed 2 tests, with 0 failures (0 unexpected) in 1.137 (1.137) seconds
+Test Suite 'Placeholder' started at 2026-11-15 01:05:02.393
+Test Case 'Placeholder.testImplementationPlaceholder' started at 2026-11-15 01:05:02.393
+<repo>/mobile/ios/Packages/CryKit/Tests/CryRFBTests/Placeholder.swift:6: Placeholder.testImplementationPlaceholder : Test skipped - CryRFB implementation is pending
+Test Case 'Placeholder.testImplementationPlaceholder' skipped (0.001 seconds)
+Test Suite 'Placeholder' passed at 2026-11-15 01:05:02.394
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'debug.xctest' passed at 2026-11-15 01:05:02.394
+	 Executed 69 tests, with 1 test skipped and 0 failures (0 unexpected) in 4.094 (4.094) seconds
+Test Suite 'All tests' passed at 2026-11-15 01:05:02.394
+	 Executed 69 tests, with 1 test skipped and 0 failures (0 unexpected) in 4.094 (4.094) seconds
+◇ Test run started.
+↳ Testing Library Version: 6.3.3 (48d727cc1cf4eda)
+↳ Target Platform: x86_64-unknown-linux-gnu
+✔ Test run with 0 tests in 0 suites passed after 0.002 seconds.
+```
+
+#### `mobile/ios/scripts/linux-check.sh`（退出 0）
+
+```text
+
+== Swift syntax ==
+
+== CryCore module and feature logic ==
+[0/1] Planning build
+Building for debugging...
+[0/1] Write swift-version-6F7309784324DD2.txt
+Build of target: 'CryCore' complete! (0.21s)
+
+== Type names and imports ==
+Type names: 114 Swift files checked; 0 errors.
+
+== Generated strings ==
+
+Summary: 152 Swift files parsed; 0 Logic directories (0 files) typechecked; 0 failed checks.
+```
+
+#### `TMPDIR="$PWD/mobile/ios/.linux-cache/tmp" node --test mobile/ios/scripts/*.test.mjs`（退出 0）
+
+```text
+✔ mobile/ios/scripts/check-type-names.test.mjs (5885.504176ms)
+✔ mobile/ios/scripts/gen-strings.test.mjs (781.409172ms)
+✔ mobile/ios/scripts/workflows.test.mjs (1280.913722ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5896.993375
+```
+
+#### Swift 验收前后的用户缓存快照
+
+复用前轮快照脚本，在真实 Swift 验收前后比较 `<home>/.cache` 与 `<home>/.swiftpm` 的路径、模式、大小、mtime_ns、ctime_ns 和符号链接目标；本轮快照完全一致。
+
+```text
+Cache entries before: 22141
+Cache entries after: 22141
+Added: 0
+Removed: 0
+Metadata changed: 0
+```

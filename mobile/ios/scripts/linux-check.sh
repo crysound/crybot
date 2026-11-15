@@ -43,7 +43,7 @@ fi
 printf '\n== CryCore module and feature logic ==\n'
 if check_step mobile/ios/Packages/CryKit/Package.swift swift build "${linux_package_args[@]}" --target CryCore --jobs "${CRY_SWIFT_JOBS:-2}"; then
   if bin_path=$(linux_env swift build "${linux_package_args[@]}" --show-bin-path); then
-    if [[ -f "$bin_path/Modules/CryCore.swiftmodule" ]]; then
+    if [[ -f "$bin_path/Modules/CryCore.swiftmodule" || -d "$bin_path/Modules/CryCore.swiftmodule" ]]; then
       shopt -s nullglob
       for directory in mobile/ios/CryBot/Features/*/Logic; do
         [[ -d "$directory" ]] || continue
