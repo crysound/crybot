@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { waitForComputer } from "./turn-computer-wait.ts";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   computerFreeAfterText,
@@ -82,4 +83,23 @@ describe("computer wait wording", () => {
       "Computer still busy after 45 seconds. Parked — it continues automatically when the computer is free.",
     );
   });
+});
+
+it.each([0, 2])("codes a running screen wait with queue position %i", async position => {
+  vi.useFakeTimers();
+  try {
+    const row = vi.fn();
+    const waiting = waitForComputer({ threadId: "waiting", generation: "fixture" }, "computer:vm:shared", {
+      claim: vi.fn().mockReturnValueOnce(false).mockReturnValue(true), position: () => position,
+      estimateMs: () => undefined, finish: vi.fn(),
+    }, { active: () => true, cancelled: () => new Error("cancelled"), row, started: vi.fn(), ended: vi.fn(), park: vi.fn() });
+    const tool = row.mock.calls[0][1];
+    expect(tool).toEqual({ name: computerWaitingText(undefined, { position }), nameCode: "chat.notice.waitingForScreen", ...(position ? { nameParams: { position } } : {}) });
+    expect(tool.ok).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(100);
+    await waiting;
+    expect(row.mock.calls[1][3]).toBe(true);
+  } finally {
+    vi.useRealTimers();
+  }
 });

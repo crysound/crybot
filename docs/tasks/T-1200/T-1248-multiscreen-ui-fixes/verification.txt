@@ -1,0 +1,917 @@
+T-1248 verification
+Tests run sequentially with one worker against test fixtures. Paths and loopback addresses are redacted.
+The referenced docs/verification/README.md is absent; server integration tests use launchVerificationServer with isolated temporary data.
+
+$ pnpm exec vitest run src/lib/live-activity.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  36 passed (36)
+   Start at  05:51:10
+   Duration  1.81s (transform 1.26s, setup 1.49s, import 109ms, tests 33ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/SidebarWorkingStep.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  05:51:12
+   Duration  2.59s (transform 1.25s, setup 1.44s, import 171ms, tests 32ms, environment 741ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/computer-wait.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  05:51:16
+   Duration  1.69s (transform 1.19s, setup 1.43s, import 60ms, tests 9ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/chat-notices.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  05:51:18
+   Duration  2.66s (transform 1.94s, setup 1.47s, import 994ms, tests 20ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/local-vm-screen-runtime.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  05:51:21
+   Duration  4.77s (transform 3.33s, setup 1.40s, import 2.69s, tests 486ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/PlaceChip.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  05:51:27
+   Duration  3.24s (transform 2.31s, setup 1.46s, import 1.50s, tests 66ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/PlaceChip.dom.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:51:31
+   Duration  3.28s (transform 2.25s, setup 1.48s, import 1.36s, tests 66ms, environment 199ms)
+
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED <loopback-endpoint>
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '<loopback>',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED <loopback-endpoint>
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '<loopback>',
+      port: 3000
+    }
+  ]
+}
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ServerUpdateRow.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  05:51:35
+   Duration  2.15s (transform 1.30s, setup 1.36s, import 347ms, tests 28ms, environment 218ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/SidebarThreadRow.shared-chat.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  05:51:38
+   Duration  2.84s (transform 1.84s, setup 1.35s, import 1.02s, tests 92ms, environment 193ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/lib/failed-turn.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  05:51:41
+   Duration  2.71s (transform 1.97s, setup 1.31s, import 1.18s, tests 28ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/incidents.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  05:51:45
+   Duration  2.54s (transform 1.82s, setup 1.43s, import 903ms, tests 11ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/locales/words.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  05:51:48
+   Duration  1.64s (transform 1.09s, setup 1.33s, import 77ms, tests 40ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/locales/server-lines.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  05:51:50
+   Duration  5.92s (transform 1.09s, setup 1.26s, import 3.73s, tests 742ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/locales/screen-words.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:51:57
+   Duration  1.68s (transform 1.21s, setup 1.46s, import 34ms, tests 5ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/lib/admin-scope.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  05:51:59
+   Duration  3.57s (transform 2.66s, setup 1.44s, import 18ms, tests 1.94s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/SidebarProfileMenu.server-update.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  05:52:04
+   Duration  3.48s (transform 2.58s, setup 1.44s, import 1.86s, tests 16ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/lib/server-update.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  21 passed (21)
+   Start at  05:52:08
+   Duration  1.52s (transform 1.02s, setup 1.24s, import 65ms, tests 26ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/lib/place.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  05:52:10
+   Duration  1.58s (transform 1.09s, setup 1.35s, import 40ms, tests 10ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.android.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  05:52:12
+   Duration  5.21s (transform 3.14s, setup 1.35s, import 2.86s, tests 637ms, environment 187ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.browser.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  05:52:18
+   Duration  4.46s (transform 3.30s, setup 1.28s, import 2.92s, tests 55ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.engine.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  05:52:23
+   Duration  4.21s (transform 2.64s, setup 1.18s, import 2.21s, tests 486ms, environment 170ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.focus.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  05:52:28
+   Duration  4.24s (transform 2.44s, setup 1.13s, import 2.03s, tests 725ms, environment 176ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.i18n.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  05:52:33
+   Duration  1.68s (transform 1.05s, setup 1.25s, import 172ms, tests 92ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.lazy.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  05:52:35
+   Duration  4.14s (transform 2.51s, setup 1.25s, import 2.01s, tests 566ms, environment 162ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.live.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED <loopback-endpoint>
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '<loopback>',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED <loopback-endpoint>
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '<loopback>',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED <loopback-endpoint>
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '<loopback>',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED <loopback-endpoint>
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '<loopback>',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED <loopback-endpoint>
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '<loopback>',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED <loopback-endpoint>
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '<loopback>',
+      port: 3000
+    }
+  ]
+}
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  05:52:40
+   Duration  3.53s (transform 2.36s, setup 1.13s, import 1.93s, tests 128ms, environment 179ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.simple.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  45 passed (45)
+   Start at  05:52:44
+   Duration  3.37s (transform 2.25s, setup 1.04s, import 1.91s, tests 264ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.tabs.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  05:52:48
+   Duration  5.01s (transform 2.42s, setup 1.09s, import 2.05s, tests 1.51s, environment 185ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.takeover.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  05:52:54
+   Duration  28.17s (transform 2.66s, setup 1.20s, import 2.19s, tests 24.44s, environment 180ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/ComputerPanel.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  05:53:23
+   Duration  1.50s (transform 1.04s, setup 1.30s, import 33ms, tests 6ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.focus.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  05:53:25
+   Duration  2.75s (transform 1.72s, setup 1.17s, import 1.06s, tests 186ms, environment 174ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.open.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  05:53:28
+   Duration  3.19s (transform 1.77s, setup 1.08s, import 1.25s, tests 533ms, environment 178ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  05:53:32
+   Duration  1.35s (transform 922ms, setup 1.16s, import 29ms, tests 5ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/incidents.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  05:53:34
+   Duration  99.33s (transform 2.19s, setup 1.48s, import 1.39s, tests 96.29s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/local-vm-screen-runtime.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ server/local-vm-screen-runtime.test.ts (18 tests | 2 failed) 338ms
+     × keeps an Auto claim queued after returning guidance and succeeds after a screen is released (queue text: false) 50ms
+     × keeps an Auto claim queued after returning guidance and succeeds after a screen is released (queue text: true) 22ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/local-vm-screen-runtime.test.ts > screen runtime lifecycle > keeps an Auto claim queued after returning guidance and succeeds after a screen is released (queue text: false)
+ FAIL  server/local-vm-screen-runtime.test.ts > screen runtime lifecycle > keeps an Auto claim queued after returning guidance and succeeds after a screen is released (queue text: true)
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'c', ObjectContaining{…}, undefined ]
+
+Received:
+
+  1st vi.fn() call:
+
+@@ -1,8 +1,9 @@
+  [
+-   "c",
+-   ObjectContaining {
++   "chat",
++   {
++     "name": "Waiting for its turn on this computer — 1st in queue. Starts automatically when it is free; recent waits here have taken 2 seconds.",
+      "nameCode": "chat.notice.waitingForScreen",
+      "nameParams": {
+        "position": 1,
+      },
+    },
+
+
+Number of calls: 1
+
+ ❯ server/local-vm-screen-runtime.test.ts:190:19
+    188|       expect(call).not.toHaveBeenCalled();
+    189|       expect(f.runtime.claiming()).toBe(true);
+    190|     expect(f.row).toHaveBeenCalledWith("c", expect.objectContaining({ …
+       |                   ^
+    191|       expect(f.runtime.payload().queue).toEqual([{ bot: { id: "chat", …
+    192|       expect(claims.get(owner.threadId)).toMatchObject({ attempts: 1 }…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 16 passed (18)
+   Start at  05:55:40
+   Duration  4.88s (transform 3.45s, setup 1.87s, import 2.38s, tests 338ms, environment 0ms)
+
+
+Exit: 1
+
+$ pnpm exec vitest run server/local-vm-screen-runtime.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  05:56:13
+   Duration  4.43s (transform 3.10s, setup 1.38s, import 2.50s, tests 371ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec tsc -b
+
+Exit: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+server/sessions.test.ts(79,38): error TS2741: Property 'label' is missing in type '{ code: string; source: string; browser: boolean; }' but required in type '{ code: string; label: string; source: string; fallbackLabel?: string | undefined; attemptId?: string | undefined; browser?: boolean | undefined; }'.
+
+Exit: 1
+
+$ pnpm exec tsc -p tsconfig.server.json (clean HEAD worktree; dependencies linked first)
+server/sessions.test.ts(79,38): error TS2741: Property 'label' is missing in type '{ code: string; source: string; browser: boolean; }' but required in type '{ code: string; label: string; source: string; fallbackLabel?: string | undefined; attemptId?: string | undefined; browser?: boolean | undefined; }'.
+
+Exit: 1
+The same sessions.test.ts:79 error is present on the unchanged baseline.
+
+$ pnpm exec oxlint --deny-warnings server/chat-notices.ts server/computer-wait.test.ts server/incidents.ts server/index.ts server/local-vm-screen-runtime.test.ts server/turn-computer-wait.ts shared/wire.ts src/components/ComputerPanel.simple.test.ts src/components/ComputerPanel.tsx src/components/PlaceChip.test.ts src/components/PlaceChip.tsx src/components/ServerUpdateRow.tsx src/components/SidebarThreadRow.shared-chat.test.ts src/components/SidebarWorkingStep.test.ts src/components/WorksOnGrid.tsx src/components/remote-desktop-panel.open.test.ts src/components/remote-desktop-panel.tsx src/lib/admin-scope.test.ts src/lib/admin-scope.ts src/lib/failed-turn.test.ts src/lib/live-activity.test.ts src/lib/live-activity.ts src/lib/place.ts src/lib/task-title.ts src/locales/en.json src/locales/server-lines.test.ts src/locales/zh.json src/state/config-status.ts src/components/ServerUpdateRow.test.ts
+
+Exit: 0
+
+
+Round 2 verification
+The previous scan claim is superseded by the complete scan recorded below.
+The initial working tree was clean; prior-round changes and task documents are tracked in the baseline.
+Tests use isolated DOM/API mocks or the existing temporary-home server fixture with fake Docker.
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.screen.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  06:12:24
+   Duration  3.27s (transform 1.92s, setup 1.24s, import 1.28s, tests 74ms, environment 446ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  06:12:53
+   Duration  1.25s (transform 844ms, setup 1.08s, import 26ms, tests 5ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.open.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  06:12:54
+   Duration  3.09s (transform 1.71s, setup 1.17s, import 1.10s, tests 527ms, environment 161ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.focus.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  06:12:58
+   Duration  2.91s (transform 1.84s, setup 1.28s, import 1.10s, tests 189ms, environment 180ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  06:13:02
+   Duration  65.62s (transform 1.24s, setup 1.15s, import 425ms, tests 63.90s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  06:14:08
+   Duration  67.92s (transform 1.09s, setup 957ms, import 431ms, tests 66.37s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  06:15:17
+   Duration  67.30s (transform 1.55s, setup 1.52s, import 444ms, tests 65.15s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec tsc -b
+
+Exit: 0
+
+$ pnpm exec oxlint --deny-warnings src/components/remote-desktop-panel.tsx src/components/remote-desktop-panel.screen.test.ts
+
+Exit: 0
+
+$ node --input-type=module <<'NODE'
+import { execFileSync, spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const { scanDiff } = await import(pathToFileURL(process.cwd() + '/scripts/public-scan/scan.mjs').href);
+const git = args => execFileSync('git', args, { encoding: 'utf8' });
+let diff = git(['diff', '--no-ext-diff', '--no-textconv', '--text', '--unified=0', 'HEAD', '--']);
+const untracked = git(['ls-files', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean);
+const fullFiles = [...new Set([
+  'docs/tasks/T-1200/T-1248-multiscreen-ui-fixes/brief.md',
+  'docs/tasks/T-1200/T-1248-multiscreen-ui-fixes/r2.md',
+  'docs/tasks/T-1200/T-1248-multiscreen-ui-fixes/report.md',
+  'docs/tasks/T-1200/T-1248-multiscreen-ui-fixes/verification.txt',
+  'src/components/ServerUpdateRow.test.ts',
+  ...untracked,
+])];
+for (const file of fullFiles) {
+  const result = spawnSync('git', ['diff', '--no-index', '--no-ext-diff', '--no-textconv', '--text', '--unified=0', '--', '/dev/null', file], { encoding: 'utf8' });
+  if (result.status !== 0 && result.status !== 1) throw new Error('Cannot read full-file diff');
+  diff += result.stdout;
+}
+const findings = scanDiff(diff, file => readFileSync(file));
+if (!process.env.PUBLIC_SCAN_DENYLIST_KEY) console.log('denylist: skipped (no key)');
+for (const { file, line, rule } of findings) console.log(`${file}:${line}: ${rule}`);
+console.log(`Working tree diff, ${untracked.length} untracked files, and ${fullFiles.length} full files including all task documents and new tests: ${findings.length} findings.`);
+process.exitCode = findings.length ? 1 : 0;
+NODE
+denylist: skipped (no key)
+Working tree diff, 1 untracked files, and 6 full files including all task documents and new tests: 0 findings.
+
+Exit: 0
+
+
+## 第 3 轮
+
+The referenced docs/verification/README.md is absent from this checkout. Port e2e uses temporary data, an isolated child server, and a Docker substitute. Output paths are normalized for publication.
+
+$ crybot-link-deps
+crybot-link-deps: linked 73 entries from /opt/crybot-deps/node_modules into <worktree>/node_modules
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.screen.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  06:45:03
+   Duration  3.46s (transform 2.07s, setup 1.40s, import 1.31s, tests 79ms, environment 450ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  06:45:07
+   Duration  1.44s (transform 984ms, setup 1.23s, import 46ms, tests 7ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.open.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  06:45:09
+   Duration  3.48s (transform 2.00s, setup 1.32s, import 1.22s, tests 548ms, environment 193ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.focus.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  06:45:13
+   Duration  3.26s (transform 2.10s, setup 1.30s, import 1.39s, tests 185ms, environment 181ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/state/api-background.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  06:45:17
+   Duration  2.26s (transform 1.61s, setup 1.36s, import 723ms, tests 14ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run src/lib/cloud-power.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  06:45:20
+   Duration  1.42s (transform 953ms, setup 1.21s, import 21ms, tests 11ms, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec tsc -b
+
+Exit: 0
+
+$ pnpm exec oxlint --deny-warnings src/components/remote-desktop-panel.tsx src/components/remote-desktop-panel.screen.test.ts
+
+Exit: 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  06:45:33
+   Duration  73.34s (transform 1.68s, setup 1.41s, import 616ms, tests 71.08s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  06:46:47
+   Duration  71.69s (transform 1.44s, setup 1.31s, import 479ms, tests 69.72s, environment 0ms)
+
+
+Exit: 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  06:48:00
+   Duration  68.82s (transform 1.41s, setup 1.27s, import 540ms, tests 66.82s, environment 0ms)
+
+
+Exit: 0
+
+$ node --input-type=module <<'NODE'
+import { execFileSync, spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
+const { scanDiff } = await import(pathToFileURL(process.cwd() + "/scripts/public-scan/scan.mjs"));
+const git = args => execFileSync("git", args, { encoding: "utf8" });
+let diff = git(["diff", "HEAD", "--no-ext-diff", "--no-textconv", "--text", "--unified=0", "--"]);
+const untracked = git(["ls-files", "--others", "--exclude-standard", "-z"]).split("\0").filter(Boolean);
+for (const file of untracked) {
+  const result = spawnSync("git", ["diff", "--no-index", "--no-ext-diff", "--no-textconv", "--text", "--unified=0", "--", "/dev/null", file], { encoding: "utf8" });
+  if (result.status !== 0 && result.status !== 1) throw new Error("Cannot read untracked diff");
+  diff += result.stdout;
+}
+const findings = scanDiff(diff, file => readFileSync(file));
+if (!process.env.PUBLIC_SCAN_DENYLIST_KEY) console.log("denylist: skipped (no key)");
+for (const { file, line, rule } of findings) console.log(`${file}:${line}: ${rule}`);
+console.log(`HEAD to working tree plus ${untracked.length} untracked files: ${findings.length} findings.`);
+process.exitCode = findings.length ? 1 : 0;
+NODE
+denylist: skipped (no key)
+HEAD to working tree plus 0 untracked files: 0 findings.
+
+Exit: 0
+
+$ git diff --check
+
+Exit: 0

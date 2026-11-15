@@ -2150,7 +2150,7 @@ function holderOfTurn({ threadId }: TurnOwner): { holder?: ComputerHolder; threa
 const computerWaitHooks: ComputerWaitHooks = {
   active: owner => activeInternalGenerationByThread.get(owner.threadId) === owner.generation && turnResourceOwners.get(owner.threadId)?.generation === owner.generation,
   cancelled: () => new DirectTurnSetupCancelled("Computer wait cancelled"),
-  row: (threadId, text, threadRef, ended) => { store.appendMessage(threadId, { role: "bot", kind: "activity", tool: { name: text, ...(ended ? { ok: true } : {}) }, ...(threadRef ? { threadRef } : {}) }); },
+  row: (threadId, tool, threadRef, ended) => { store.appendMessage(threadId, { role: "bot", kind: "activity", tool: typeof tool === "string" ? { name: tool, ...(ended ? { ok: true } : {}) } : tool, ...(threadRef ? { threadRef } : {}) }); },
   started: (threadId, resource, position, holder) => bus.publish({ ...waitEventBase(threadId), type: "turn.wait_started", resource, position, ...(holder ? { holder } : {}) }),
   ended: (threadId, resource, outcome, waitedMs, holder) => bus.publish({ ...waitEventBase(threadId), type: "turn.wait_ended", resource, outcome, waitedMs, ...(holder ? { holder } : {}) }),
   park: (owner, resource) => { computerParks.set(owner.generation, resource); },

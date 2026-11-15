@@ -51,7 +51,7 @@ function fixture(screens = 2) {
   const home = mkdtempSync(join(tmpdir(), "cry-screen-runtime-")); homes.push(home);
   const busy = new Set<string>(), held = new Set<number>();
   const stopped = new Set<string>();
-  const started = vi.fn(), ended = vi.fn(), park = vi.fn();
+  const row = vi.fn(), started = vi.fn(), ended = vi.fn(), park = vi.fn();
   const idle = { touch: vi.fn(), cancel: vi.fn() };
   const runtime = createLocalVmScreenRuntime({
     dataDir: home, screens: () => screens,
@@ -59,11 +59,11 @@ function fixture(screens = 2) {
     bot: id => ({ id, name: id }), prepare: async () => "docker",
     bind: async (_owner, resource) => { busy.add(resource); },
     estimate: () => undefined, containerIdle: idle,
-    wait: { active: owner => !stopped.has(owner.threadId), cancelled: () => new Error("cancelled"), row: vi.fn(), started, ended, park },
+    wait: { active: owner => !stopped.has(owner.threadId), cancelled: () => new Error("cancelled"), row, started, ended, park },
   });
   runtimes.push(runtime);
   const owner = (id: string): TurnOwner => ({ threadId: id, generation: id });
-  return { runtime, home, busy, held, idle, started, ended, park, owner, stopped };
+  return { runtime, home, busy, held, idle, row, started, ended, park, owner, stopped };
 }
 
 function routes(f: ReturnType<typeof fixture>) {
@@ -187,6 +187,7 @@ describe("screen runtime lifecycle", () => {
       expect(open).not.toHaveBeenCalled();
       expect(call).not.toHaveBeenCalled();
       expect(f.runtime.claiming()).toBe(true);
+      expect(f.row).toHaveBeenCalledWith("chat", expect.objectContaining({ nameCode: "chat.notice.waitingForScreen", nameParams: { position: 1 } }), undefined);
       expect(f.runtime.payload().queue).toEqual([{ bot: { id: "chat", name: "chat" }, position: 1, waitingSeconds: CONTROL_READ_TIMEOUT_MS / 1000 }]);
       expect(claims.get(owner.threadId)).toMatchObject({ attempts: 1 });
       expect(claims.get(owner.threadId)?.failed).toBeUndefined();
@@ -323,6 +324,7 @@ describe("screen runtime lifecycle", () => {
     const waiting = f.runtime.claim("c", f.owner("c")).catch(error => error);
     await vi.advanceTimersByTimeAsync(100);
     expect(f.runtime.claiming()).toBe(true);
+    expect(f.row).toHaveBeenCalledWith("c", expect.objectContaining({ nameCode: "chat.notice.waitingForScreen", nameParams: { position: 1 } }), undefined);
     f.stopped.add("c"); await vi.advanceTimersByTimeAsync(100);
     expect((await waiting).message).toBe("cancelled");
     expect(f.runtime.claiming()).toBe(false);

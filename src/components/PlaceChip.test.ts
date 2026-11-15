@@ -230,3 +230,26 @@ describe("J11: the chip names a place's problem in the panel's words", () => {
     expect(row).toContain("title=\"grok-4.6 can&#x27;t use a desktop. Choose a model that can, such as Claude or ChatGPT.\"");
   });
 });
+
+it.each([
+  ["shared", 4, "A screen in a shared container"],
+  ["shared", 1, "Isolated local desktop"],
+  ["shared", undefined, "Isolated local desktop"],
+  ["per-bot", 4, "Isolated local desktop"],
+] as const)("describes the VM choice for %s with %s screens", async (mode, screens, description) => {
+  fixture.config = { localVm: { mode, screens, maxInstances: 1 } };
+  fixture.menuOpen = true;
+  const html = renderToStaticMarkup(createElement(PlaceChip, { bot, live: false, onPin: vi.fn() }));
+  expect(html).toContain(description);
+  let note: string | undefined;
+  function Menu() {
+    note = usePlaceMenuItem({ bot, onPin: vi.fn() }).submenu?.find(item => item.key === "place:vm")?.note as string | undefined;
+    return null;
+  }
+  renderToStaticMarkup(createElement(Menu));
+  expect(note).toBe(description);
+  const { worksOnChoices } = await import("./WorksOnGrid");
+  const { t } = await import("@/lib/i18n");
+  const choice = worksOnChoices({ localVm: { mode, screens, maxInstances: 1 } }, {} as DesktopCapabilities).find(([place]) => place === "vm")!;
+  expect(t(choice[2])).toBe(description);
+});

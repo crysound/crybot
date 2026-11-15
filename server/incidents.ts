@@ -29,9 +29,7 @@ export interface Incident {
   lastReply?: string | null;
 }
 
-export const INCIDENTS_THREAD_TITLE = "Problems to look at";
-/** The same notices chat, as older versions named it. */
-export const OLD_INCIDENTS_THREAD_TITLE = "Team incidents";
+export { INCIDENTS_THREAD_TITLE, OLD_INCIDENTS_THREAD_TITLE } from "../shared/wire.ts";
 
 const sectionKey = (section?: string): string => section?.trim() || "";
 

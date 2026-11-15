@@ -1,8 +1,8 @@
 const refused = new Set<string>();
 
 export function lacksAdminScope(cause: unknown): boolean {
-  const error = Object(cause) as { status?: unknown; message?: unknown };
-  return error.status === 403 && typeof error.message === "string" && error.message.includes("lacks the admin scope");
+  const error = Object(cause) as { status?: unknown; message?: unknown; body?: { code?: unknown } };
+  return error.status === 403 && (error.body?.code === "admin_only" || (typeof error.message === "string" && error.message.includes("lacks the admin scope")));
 }
 
 /** Asks for `route` until the server says this session lacks the admin scope; from then on answers `refusedAnswer`
