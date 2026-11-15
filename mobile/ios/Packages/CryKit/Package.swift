@@ -22,3 +22,8 @@ let package = Package(
     ],
     swiftLanguageModes: [.v5]
 )
+
+#if os(Linux)
+package.products.removeAll { $0.name == "CryNet" }
+package.targets.removeAll { $0.name == "CryNet" || $0.name == "CryNetTests" }
+#endif
