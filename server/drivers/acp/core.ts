@@ -1688,6 +1688,10 @@ export function createAcpDriver(support: AcpSupport): ProviderDriver<AcpConfig> 
           disposing = true;
           await deviceSignIn?.dispose();
           const disposingSessions = Array.from(sessions);
+          const children = new Set([
+            ...disposingSessions.map(([, session]) => session.host.child),
+            ...[...retiring.values()].flatMap((group) => [...group]),
+          ]);
           for (const { stop } of active.values()) stop();
           for (const [threadId, session] of disposingSessions) {
             closeSession(threadId, "dispose");
@@ -1696,6 +1700,7 @@ export function createAcpDriver(support: AcpSupport): ProviderDriver<AcpConfig> 
           for (const [threadId, children] of retiring) {
             for (const child of children) void retireChild(threadId, child);
           }
+          await Promise.all([...children].map((child) => killCliTree(child)));
           listeners.clear();
         },
       };

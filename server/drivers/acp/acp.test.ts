@@ -252,12 +252,12 @@ describe("ACP turns (fake CLI)", () => {
   let recorder: EventRecorder;
   let scratch: string;
 
-  const create = async (driver = GrokAgentDriver, mode?: string) => {
+  const create = async (driver = GrokAgentDriver, mode?: string, environment: Record<string, string> = {}) => {
     if (mode) process.env.FAKE_ACP_MODE = mode;
     instance = await driver.create({
       instanceId: "acp-test",
       displayName: "ACP Test",
-      environment: {},
+      environment,
       enabled: true,
       config: { cli: FAKE_CLI, fullAuto: false },
     });
@@ -2236,6 +2236,17 @@ describe("ACP turns (fake CLI)", () => {
       .toEqual([expect.objectContaining({ text: "half an answer, then silence" })]);
     expect(recorder.events.filter((event) => event.type === "turn.completed"))
       .toEqual([expect.objectContaining({ threadId: "t-dispose-partial", stopReason: "cancelled" })]);
+  });
+
+  it("waits for a live turn's process tree before disposing", async () => {
+    const dump = join(scratch, "dispose-dump.json");
+    await create(SelectModelDriver, "hang", { FAKE_ACP_DUMP: dump });
+    const turn = await instance.adapter.sendTurn({ threadId: "t-dispose-live", text: "go" });
+    await recorder.until((event) => event.type === "turn.started" && event.turnId === turn.turnId);
+    await expect.poll(() => existsSync(dump)).toBe(true);
+    const pid = (JSON.parse(readFileSync(dump, "utf8")) as { pid: number }).pid;
+    await instance.dispose();
+    expect(() => process.kill(pid, 0)).toThrow();
   });
 
   it("rejects turns started by completion listeners during disposal", async () => {

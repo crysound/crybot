@@ -2079,6 +2079,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
         } finally {
           for (const { stop } of active.values()) stop();
           for (const threadId of Array.from(sessions.keys())) closeSession(threadId, "dispose");
+          await Promise.all([...sessions.values()].map((session) => killCliTree(session.child)));
           listeners.clear();
         }
       },

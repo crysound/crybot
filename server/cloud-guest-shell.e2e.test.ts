@@ -201,7 +201,9 @@ it("no engine a bot runs finds the Cloud's secrets: not in its own environment, 
   if (process.platform !== "win32") {
     expect(probe.own).not.toContain("CRYBOT_CLOUD_MACHINE_ID=");
     expect(probe.parent).not.toMatch(/^unreadable:/);
-    if (log.includes("bot box: on")) {
+    const health = await api("GET", "/api/health", { token: owner });
+    expect(health.status).toBe(200);
+    if (health.body.box === "on") {
       expect(probe.parent).not.toContain("CRYBOT_CLOUD_MACHINE_ID=");
       const serverEnvironment = readFileSync(`/proc/${child.pid}/environ`, "utf8");
       expect(serverEnvironment).toContain("CRYBOT_CLOUD_MACHINE_ID=");
