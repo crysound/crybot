@@ -38,3 +38,29 @@
 - `pnpm exec oxlint --deny-warnings src/components/remote-desktop-panel.tsx src/components/remote-desktop-panel.screen.test.ts`：通过，零警告、零错误。
 - 公开扫描 `scanDiff` 覆盖 HEAD 至工作区全部差异及全部未跟踪文件，零命中；未配置名单密钥，denylist 按工具规则跳过。`git diff --check` 通过。
 - 完整命令与输出追加于 [verification.txt](verification.txt)。引用的验证 README 在当前检出中缺失；实际 e2e 使用独立数据与子服务，未访问用户运行中的应用。
+
+## 第 4 轮
+
+改了什么（本轮文件清单与 git status 一致）：
+
+- `docs/tasks/T-1200/T-1248-multiscreen-ui-fixes/report.md`
+- `docs/tasks/T-1200/T-1248-multiscreen-ui-fixes/verification.txt`
+- `mobile/ios/CryBot/Strings/ServerText.xcstrings`
+- `server/incidents.ts`
+- `shared/thread-titles.ts`
+- `shared/wire.ts`
+- `src/lib/task-title.ts`
+
+为什么：重新生成过期的 iOS ServerText 文案；将事故线程标题常量移到 `shared/thread-titles.ts`，让 `shared/wire.ts` 回到 1000 行并更新引用。
+
+测试命令与结果摘要：
+
+- `node mobile/ios/scripts/gen-strings.mjs --check`：通过。
+- `pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1`：1 个测试通过。
+- `pnpm exec tsc -b --pretty false`：通过。
+- `node --test mobile/ios/scripts/gen-strings.test.mjs`：8 个测试通过。
+- `pnpm exec vitest run <server/incidents.test.ts、SidebarThreadRow.shared-chat.test.ts、words.test.ts、server-lines.test.ts> --maxWorkers=1`：四个文件逐一通过，共 26 个测试。
+- `pnpm exec oxlint --deny-warnings server/incidents.ts shared/thread-titles.ts src/lib/task-title.ts shared/wire.ts`、`git diff --check`：通过。
+- 公开扫描 HEAD 至工作区差异及未跟踪文件：0 命中。
+
+完整输出见 [verification.txt](verification.txt)。

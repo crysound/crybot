@@ -29,7 +29,7 @@ export interface Incident {
   lastReply?: string | null;
 }
 
-export { INCIDENTS_THREAD_TITLE, OLD_INCIDENTS_THREAD_TITLE } from "../shared/wire.ts";
+export { INCIDENTS_THREAD_TITLE, OLD_INCIDENTS_THREAD_TITLE } from "../shared/thread-titles.ts";
 
 const sectionKey = (section?: string): string => section?.trim() || "";
 

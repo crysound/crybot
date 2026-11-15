@@ -1,4 +1,5 @@
-import { SHARED_CHAT_TITLE, INCIDENTS_THREAD_TITLE, OLD_INCIDENTS_THREAD_TITLE } from "../../shared/wire";
+import { SHARED_CHAT_TITLE } from "../../shared/wire";
+import { INCIDENTS_THREAD_TITLE, OLD_INCIDENTS_THREAD_TITLE } from "../../shared/thread-titles";
 import { t } from "./i18n";
 
 /** Localize the factory title while preserving titles chosen by the user. */
