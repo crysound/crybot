@@ -71,6 +71,44 @@ $ CRYBOT_CDP_CHROME=/usr/bin/chromium pnpm exec vitest run server/instabox/vnc.e
 
 Exit: 0
 
+=== T-1244 round 2: browser skipped without Chrome ===
+$ env -u CRYBOT_CDP_CHROME pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1 --reporter=verbose
+
+ ✓ server/instabox/vnc.e2e.test.ts (31 passed)
+ ↓ server/instabox/vnc.e2e.test.ts > renders the 1280×800 None-authenticated desktop with the unchanged browser client (需要 CRYBOT_CDP_CHROME)
+ Test Files  1 passed (1)
+ Tests  31 passed | 1 skipped (32)
+ Unhandled Errors  0
+Exit: 0
+
+=== T-1244 round 2: browser available ===
+$ CRYBOT_CDP_CHROME=/usr/bin/chromium pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+
+ Test Files  1 passed (1)
+ Tests  32 passed (32)
+Exit: 0
+
+$ CRYBOT_CDP_CHROME=/usr/bin/chromium pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+ Test Files  1 passed (1)
+ Tests  32 passed (32)
+Exit: 0
+
+$ CRYBOT_CDP_CHROME=/usr/bin/chromium pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+ Test Files  1 passed (1)
+ Tests  32 passed (32)
+Exit: 0
+
+=== T-1244 round 2: checks ===
+$ pnpm exec oxlint --deny-warnings server/instabox/vnc.e2e.test.ts
+Exit: 0
+
+$ git diff --check
+Exit: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+server/sessions.test.ts(79,38): error TS2741: Property 'label' is missing in type '{ code: string; source: string; browser: boolean; }' but required in type '{ code: string; label: string; source: string; fallbackLabel?: string | undefined; attemptId?: string | undefined; browser?: boolean | undefined; }'.
+Exit: 2
+
 === server/instabox/vnc.e2e.test.ts (2/3) ===
 $ CRYBOT_CDP_CHROME=/usr/bin/chromium pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
 

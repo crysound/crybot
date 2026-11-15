@@ -47,3 +47,14 @@ git diff --check
 ```
 
 以上均退出 0。最终测试执行合计 232 项通过。`docs/verification/README.md` 在本工作区缺失；验证使用隔离 fixture、临时会话/浏览器目录及本地假服务，鉴权 e2e 启动隔离完整应用，未触碰真实 或用户应用数据。无未运行的上述检查；未提交 git。
+
+## 第 2 轮
+
+改了什么（与 `git status --short` 一致）：
+
+- `server/instabox/vnc.e2e.test.ts`：从 `headless-chrome.ts` 使用 `CHROME_PATH`，路径不存在时用 `it.skipIf(...)` 跳过浏览器用例，并在跳过标题中注明需要 `CRYBOT_CDP_CHROME`。
+- `docs/tasks/T-1200/T-1244-instabox-vnc/report.md`、`docs/tasks/T-1200/T-1244-instabox-vnc/verification.txt`：本轮报告与验证记录。
+
+为什么：GitHub Actions 没有 Chrome；避免默认 macOS 路径启动失败及未捕获异常，同时保留有 Chrome 环境下的完整浏览器验证。`scripts/testing/headless-chrome.ts` 未修改。
+
+测试命令与结果摘要：未设置 `CRYBOT_CDP_CHROME` 时，`server/instabox/vnc.e2e.test.ts` 为 31 passed、1 skipped（跳过原因含“需要 CRYBOT_CDP_CHROME”），无 Unhandled Errors；设置 `CRYBOT_CDP_CHROME=/usr/bin/chromium` 后连续 3 轮均为 32 passed。`pnpm exec oxlint --deny-warnings server/instabox/vnc.e2e.test.ts` 与 `git diff --check` 通过。`pnpm exec tsc -p tsconfig.server.json` 仍被未改动的 `server/sessions.test.ts:79` 缺少 `label` 报错阻断。

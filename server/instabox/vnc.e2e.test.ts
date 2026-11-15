@@ -2,13 +2,13 @@ import { once } from "node:events";
 import { execFileSync } from "node:child_process";
 import { createServer, request, type IncomingHttpHeaders } from "node:http";
 import { globalAgent } from "node:https";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { build } from "esbuild";
 import { WebSocket } from "ws";
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
-import { openHeadlessChrome } from "../../scripts/testing/headless-chrome.ts";
+import { CHROME_PATH, openHeadlessChrome } from "../../scripts/testing/headless-chrome.ts";
 import { SessionRegistry } from "../sessions.ts";
 import { resolveRequestAuth } from "../request-auth.ts";
 import { json, readBody } from "../harness/http.ts";
@@ -24,6 +24,7 @@ const leaseId = "fixture-control-lease";
 const leased = `${base}/websockify?botId=fixture-bot&controlLeaseId=${leaseId}`;
 const cleanups: Array<() => Promise<void>> = [];
 const tlsDir = mkdtempSync(join(tmpdir(), "cry-instabox-vnc-tls-"));
+const chromeAvailable = existsSync(CHROME_PATH);
 let tls: { key: string; cert: string };
 beforeAll(() => {
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-noenc", "-days", "1",
@@ -271,7 +272,7 @@ it.each(["refused", "invalid-header", "provider", "rejected", "forged", "tls", "
   if (failure === "untrusted-cert") expect(f.desktop.requests).toEqual([]);
 });
 
-it("renders the 1280×800 None-authenticated desktop with the unchanged browser client", async () => {
+it.skipIf(!chromeAvailable)(`renders the 1280×800 None-authenticated desktop with the unchanged browser client${chromeAvailable ? "" : " (需要 CRYBOT_CDP_CHROME)"}`, async () => {
   trustFixtureCertificate();
   const f = await fixture({ tls, allowInsecure: false });
   const bundle = await build({ stdin: { contents: `
