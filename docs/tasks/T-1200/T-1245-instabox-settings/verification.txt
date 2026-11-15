@@ -1,0 +1,685 @@
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  04:30:29
+   Duration  2.84s (transform 1.59s, setup 1.11s, import 980ms, tests 582ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Restore snapshot, supports cancel, then refreshes
+The current testing environment is not configured to support act(...)
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Restore snapshot, supports cancel, then refreshes
+The current testing environment is not configured to support act(...)
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Restore snapshot, supports cancel, then refreshes
+The current testing environment is not configured to support act(...)
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Restore snapshot, supports cancel, then refreshes
+The current testing environment is not configured to support act(...)
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Restore snapshot, supports cancel, then refreshes
+In HTML, <p> cannot be a descendant of <p>.
+This will cause a hydration error.
+
+  <InstaboxSnapshots botId="bot-one">
+    <SnapshotPanel botId="bot-one">
+      <section className="mt-3 min-w..." aria-label="Disk snaps...">
+        <div>
+        <p>
+        <ul>
+        <ConfirmDialog open={true} title="Restore sn..." body={<Fragment>} confirmLabel="Restore sn..." pending={false} ...>
+          <div className="fixed inse..." onMouseDown={function onMouseDown}>
+            <ConfirmDialogCard ref={{current:null}} cancelRef={{current:null}} open={true} title="Restore sn..." ...>
+              <div ref={{current:null}} role="alertdialog" tabIndex={-1} aria-modal="true" aria-busy={false} ...>
+                <div className="flex items...">
+                  <span>
+                  <div className="min-w-0">
+                    <h2>
+>                   <p id="confirm-dialog-body" className="mt-1.5 text-[13px] leading-relaxed text-ink-secondary">
+>                     <p className="break-all">
+                      ...
+                ...
+
+<p> cannot contain a nested <p>.
+See this log for the ancestor stack trace.
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Restore snapshot, supports cancel, then refreshes
+The current testing environment is not configured to support act(...)
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Delete, supports cancel, then refreshes
+The current testing environment is not configured to support act(...)
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Delete, supports cancel, then refreshes
+The current testing environment is not configured to support act(...)
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Delete, supports cancel, then refreshes
+The current testing environment is not configured to support act(...)
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Delete, supports cancel, then refreshes
+The current testing environment is not configured to support act(...)
+
+stderr | src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Delete, supports cancel, then refreshes
+The current testing environment is not configured to support act(...)
+
+ ❯ src/components/InstaboxSnapshots.test.tsx (6 tests | 2 failed) 61ms
+     × requires confirmation for Restore snapshot, supports cancel, then refreshes 16ms
+     × requires confirmation for Delete, supports cancel, then refreshes 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Restore snapshot, supports cancel, then refreshes
+ FAIL  src/components/InstaboxSnapshots.test.tsx > InstaBox snapshots > requires confirmation for Delete, supports cancel, then refreshes
+AssertionError: the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string
+ ❯ src/components/InstaboxSnapshots.test.tsx:46:68
+     44|     await click(label);
+     45|     expect(fixture.api).toHaveBeenCalledTimes(1);
+     46|     expect(document.querySelector('[role="dialog"]')?.textContent).toC…
+       |                                                                    ^
+     47|     await click("Cancel", document);
+     48|     expect(document.querySelector('[role="dialog"]')).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 4 passed (6)
+   Start at  04:31:03
+   Duration  2.04s (transform 900ms, setup 1.03s, import 220ms, tests 61ms, environment 558ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  04:31:26
+   Duration  1.72s (transform 1.17s, setup 915ms, import 648ms, tests 21ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  04:31:36
+   Duration  1.11s (transform 684ms, setup 851ms, import 105ms, tests 21ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  04:31:57
+   Duration  1.67s (transform 868ms, setup 996ms, import 196ms, tests 73ms, environment 263ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  04:33:03
+   Duration  2.79s (transform 2.04s, setup 915ms, import 1.69s, tests 45ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  04:35:14
+   Duration  1.58s (transform 1.01s, setup 1.21s, import 139ms, tests 28ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  04:35:16
+   Duration  2.04s (transform 1.39s, setup 1.10s, import 736ms, tests 39ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  04:35:19
+   Duration  2.47s (transform 1.57s, setup 1.10s, import 956ms, tests 44ms, environment 187ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  04:35:22
+   Duration  1.99s (transform 1.40s, setup 1.10s, import 717ms, tests 8ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+ ❯ src/components/keys/KeysPage.dom.test.ts (23 tests | 1 failed) 1806ms
+     × filters rows live by name, purpose and section, and says so when nothing matches 50ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/keys/KeysPage.dom.test.ts > the keys page > filters rows live by name, purpose and section, and says so when nothing matches
+AssertionError: expected [ 'box', 'instabox', 'vps', …(1) ] to deeply equal [ 'box', 'vps', 'onePassword' ]
+
+- Expected
++ Received
+
+  [
+    "box",
++   "instabox",
+    "vps",
+    "onePassword",
+  ]
+
+ ❯ src/components/keys/KeysPage.dom.test.ts:160:25
+    158|     expect(rowsShown()).toEqual(["fishAudio"]);
+    159|     type(search, "Computers and browser");
+    160|     expect(rowsShown()).toEqual(["box", "vps", "onePassword"]);
+       |                         ^
+    161|     type(search, "research");
+    162|     expect(rowsShown()).toEqual(["treg"]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 22 passed (23)
+   Start at  04:35:25
+   Duration  4.11s (transform 1.48s, setup 1.09s, import 853ms, tests 1.81s, environment 204ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  04:35:59
+   Duration  4.48s (transform 1.86s, setup 1.38s, import 928ms, tests 1.75s, environment 224ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  04:36:05
+   Duration  1.42s (transform 883ms, setup 1.06s, import 140ms, tests 78ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+ ❯ src/lib/i18n.test.ts (39 tests | 1 failed) 5844ms
+     × is true only for a pack other than English that has every English key 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/i18n.test.ts > activePackComplete > is true only for a pack other than English that has every English key
+AssertionError: expected false to be true // Object-is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/lib/i18n.test.ts:137:34
+    135|     expect(activePackComplete()).toBe(false);
+    136|     setLocale("pt-br");
+    137|     expect(activePackComplete()).toBe(true);
+       |                                  ^
+    138|     locales["zz"] = { "approval.held.native": "x" };
+    139|     try {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 38 passed (39)
+   Start at  04:36:06
+   Duration  6.95s (transform 3.14s, setup 927ms, import 43ms, tests 5.84s, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  04:36:49
+   Duration  1.45s (transform 1.03s, setup 1.22s, import 43ms, tests 7ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  04:36:51
+   Duration  3.30s (transform 2.44s, setup 988ms, import 2.13s, tests 40ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  04:36:54
+   Duration  2.84s (transform 1.55s, setup 807ms, import 1.25s, tests 516ms, environment 141ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  04:36:58
+   Duration  2.92s (transform 1.65s, setup 808ms, import 1.34s, tests 514ms, environment 140ms)
+
+
+ RUN  v4.1.11 .
+
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  [errors]: [
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      syscall: 'connect',
+      address: '::1',
+      port: 3000
+    },
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      syscall: 'connect',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  [errors]: [
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      syscall: 'connect',
+      address: '::1',
+      port: 3000
+    },
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      syscall: 'connect',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  [errors]: [
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      syscall: 'connect',
+      address: '::1',
+      port: 3000
+    },
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      syscall: 'connect',
+      port: 3000
+    }
+  ]
+}
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  04:37:01
+   Duration  2.55s (transform 1.65s, setup 845ms, import 1.33s, tests 89ms, environment 156ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  04:37:04
+   Duration  2.92s (transform 1.56s, setup 794ms, import 1.27s, tests 582ms, environment 152ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  04:37:08
+   Duration  26.00s (transform 1.43s, setup 732ms, import 1.15s, tests 23.86s, environment 138ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  04:37:34
+   Duration  3.56s (transform 1.50s, setup 777ms, import 1.20s, tests 1.32s, environment 138ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  43 passed (43)
+   Start at  04:37:38
+   Duration  2.05s (transform 1.32s, setup 673ms, import 1.07s, tests 188ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  04:38:16
+   Duration  2.82s (transform 1.65s, setup 791ms, import 1.31s, tests 600ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  04:38:20
+   Duration  2.79s (transform 1.62s, setup 722ms, import 1.35s, tests 592ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  04:38:23
+   Duration  2.90s (transform 1.71s, setup 814ms, import 1.37s, tests 595ms, environment 0ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  04:39:15
+   Duration  3.99s (transform 2.19s, setup 2.38s, import 501ms, tests 158ms, environment 502ms)
+
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  04:39:21
+   Duration  2.71s (transform 1.70s, setup 2.23s, import 26ms, tests 252ms, environment 0ms)
+
+
+COMMAND: pnpm exec tsc -p tsconfig.server.json
+EXIT: 0
+
+COMMAND: pnpm exec tsc -p tsconfig.json
+EXIT: 0
+
+COMMAND: pnpm exec oxlint --deny-warnings <all changed TS/TSX files>
+EXIT: 0
+
+COMMAND: node scripts/generate-locale.mjs --check
+de.json: 37% (3965/10628)
+es.json: 61% (6481/10628)
+fr.json: 36% (3794/10628)
+hi.json: 34% (3648/10628)
+it.json: 67% (7100/10628)
+ja.json: 76% (8069/10628)
+ko.json: 73% (7754/10628)
+pl.json: 68% (7242/10628)
+pt-br.json: 100% (10608/10628)
+ru.json: 69% (7294/10628)
+tr.json: 56% (5985/10628)
+uk.json: 38% (4069/10628)
+vi.json: 56% (5985/10628)
+zh-tw.json: 96% (10246/10628)
+zh.json: 76% (8034/10628)
+locale catalogs valid (16 languages, 10628 English strings)
+EXIT: 0
+
+COMMAND: node --experimental-strip-types <isolated browser capture script>
+Browser E2E 1: three backends / save / restore confirmation / cancel / restore / delete PASS
+Browser E2E 2: three backends / save / restore confirmation / cancel / restore / delete PASS
+Browser E2E 3: three backends / save / restore confirmation / cancel / restore / delete PASS
+Layout 1280px and restore dialog: no horizontal overflow
+Layout 390px and restore dialog: no horizontal overflow
+Layout 360px and restore dialog: no horizontal overflow
+Environment key: read-only PASS
+EXIT: 0
+
+COMMAND: node --experimental-strip-types --input-type=module <isolated saveConfig probe>
+Isolated real saveConfig check: instabox field persisted = false
+Integration prerequisite: task 1/5 must add instabox to the configuration schema and saveConfig section merge list.
+EXIT: 0
+
+FINAL TEST LEDGER (every Vitest invocation uses: pnpm exec vitest run <file> --maxWorkers=1)
+server/routes/instabox-snapshots.e2e.test.ts: 11/11 PASS, three consecutive final runs
+server/routes/config-screens.test.ts: 7/7 PASS
+src/components/CloudBackendPicker.test.ts: 8/8 PASS
+src/components/InstaboxSnapshots.test.tsx: 6/6 PASS
+src/components/keys/key-catalog.test.ts: 16/16 PASS
+src/components/keys/KeyRow.test.ts: 13/13 PASS
+src/components/keys/KeyRow.dom.test.ts: 1/1 PASS
+src/components/keys/key-save.test.ts: 24/24 PASS
+src/components/keys/KeysPage.dom.test.ts: 24/24 PASS
+src/components/ComputerPanel.i18n.test.ts: 3/3 PASS
+src/components/ComputerPanel.test.ts: 5/5 PASS
+src/components/ComputerPanel.browser.test.ts: 7/7 PASS
+src/components/ComputerPanel.lazy.test.ts: 9/9 PASS
+src/components/ComputerPanel.android.test.ts: 7/7 PASS
+src/components/ComputerPanel.live.test.ts: 5/5 PASS (existing fixture logs connection refusals on localhost:3000)
+src/components/ComputerPanel.focus.test.ts: 12/12 PASS
+src/components/ComputerPanel.takeover.test.ts: 29/29 PASS
+src/components/ComputerPanel.tabs.test.ts: 11/11 PASS
+src/components/ComputerPanel.simple.test.ts: 43/43 PASS
+scripts/testing/file-size-ratchet.test.ts: 1/1 PASS
+src/lib/i18n.test.ts: 38/39 PASS; activePackComplete assumes pt-br contains every English key. The 20 new English keys are deliberately added only to en/zh under the task scope.
+The missing docs/verification/README.md could not be read; all HTTP/browser checks used isolated local fake servers and temporary data directories.
+No real InstaBox API or live user application was used. No git commit was created.
+
+第 2 轮验收（仓库根目录 `.`）
+
+COMMAND: pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts --maxWorkers=1
+RESULT: Test Files 1 passed; Tests 12 passed (12). 连续第 1 次。
+
+COMMAND: pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts --maxWorkers=1
+RESULT: Test Files 1 passed; Tests 12 passed (12). 连续第 2 次。
+
+COMMAND: pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts --maxWorkers=1
+RESULT: Test Files 1 passed; Tests 12 passed (12). 连续第 3 次。
+
+COMMAND: pnpm exec vitest run src/components/InstaboxSnapshots.test.tsx --maxWorkers=1
+RESULT: Test Files 1 passed; Tests 6 passed (6).
+
+COMMAND: pnpm exec vitest run src/components/CloudBackendPicker.test.ts --maxWorkers=1
+RESULT: Test Files 1 passed; Tests 8 passed (8).
+
+COMMAND: pnpm exec vitest run src/components/keys/key-catalog.test.ts --maxWorkers=1
+RESULT: Test Files 1 passed; Tests 16 passed (16).
+
+COMMAND: pnpm exec vitest run src/components/keys/KeysPage.dom.test.ts --maxWorkers=1
+RESULT: Test Files 1 passed; Tests 24 passed (24).
+
+COMMAND: pnpm exec vitest run src/lib/i18n.test.ts --maxWorkers=1
+RESULT: Test Files 1 passed; Tests 39 passed (39).
+
+COMMAND: pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1
+RESULT: Test Files 1 passed; Tests 1 passed (1).
+
+COMMAND: pnpm exec tsc -b --pretty false
+EXIT: 0
+
+COMMAND: pnpm exec tsc -p tsconfig.server.json --pretty false
+EXIT: 0
+
+COMMAND: pnpm exec oxlint --deny-warnings server/routes/instabox-snapshots.e2e.test.ts server/routes/instabox-snapshots.ts server/testing/fake-instabox-snapshots.ts
+EXIT: 0
+
+COMMAND: node scripts/generate-locale.mjs --check
+RESULT: locale catalogs valid (16 languages, 10627 English strings); pt-br 100% (10627/10627).
+
+COMMAND: git diff --check
+EXIT: 0
+
+PUBLIC API CHECK: InstaBox 公共 OpenAPI 文档 returned 200. Its `POST /v1/machines/{id}/snapshots` 201 and 202 responses are documented as `Snapshot`; the route also accepts the operation shape required by this task.
+
+FULL COMMAND: pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts --maxWorkers=1 (run 1)
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  05:15:50
+   Duration  3.20s (transform 1.93s, setup 877ms, import 1.56s, tests 622ms, environment 0ms)
+
+
+FULL COMMAND: pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts --maxWorkers=1 (run 2)
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  05:15:54
+   Duration  3.22s (transform 1.96s, setup 896ms, import 1.59s, tests 607ms, environment 0ms)
+
+
+FULL COMMAND: pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts --maxWorkers=1 (run 3)
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  05:15:58
+   Duration  3.32s (transform 2.04s, setup 864ms, import 1.72s, tests 613ms, environment 0ms)
+
+
+FULL COMMAND: pnpm exec vitest run src/components/InstaboxSnapshots.test.tsx --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  05:16:02
+   Duration  1.40s (transform 762ms, setup 848ms, import 190ms, tests 62ms, environment 151ms)
+
+
+FULL COMMAND: pnpm exec vitest run src/components/CloudBackendPicker.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  05:16:04
+   Duration  1.50s (transform 997ms, setup 832ms, import 508ms, tests 22ms, environment 0ms)
+
+
+FULL COMMAND: pnpm exec vitest run src/components/keys/key-catalog.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  05:16:06
+   Duration  1.22s (transform 775ms, setup 945ms, import 117ms, tests 19ms, environment 0ms)
+
+
+FULL COMMAND: pnpm exec vitest run src/components/keys/KeysPage.dom.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  05:16:08
+   Duration  3.64s (transform 1.29s, setup 885ms, import 821ms, tests 1.65s, environment 143ms)
+
+
+FULL COMMAND: pnpm exec vitest run src/lib/i18n.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  39 passed (39)
+   Start at  05:16:12
+   Duration  6.58s (transform 2.89s, setup 929ms, import 44ms, tests 5.48s, environment 0ms)
+
+
+FULL COMMAND: pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:16:19
+   Duration  1.16s (transform 702ms, setup 926ms, import 10ms, tests 89ms, environment 0ms)
+
+
+FULL COMMAND: pnpm exec tsc -b --pretty false
+
+FULL COMMAND: pnpm exec tsc -p tsconfig.server.json --pretty false
+
+FULL COMMAND: pnpm exec oxlint --deny-warnings server/routes/instabox-snapshots.e2e.test.ts server/routes/instabox-snapshots.ts server/testing/fake-instabox-snapshots.ts
+
+FULL COMMAND: node scripts/generate-locale.mjs --check
+de.json: 37% (3965/10627)
+es.json: 61% (6481/10627)
+fr.json: 36% (3794/10627)
+hi.json: 34% (3648/10627)
+it.json: 67% (7100/10627)
+ja.json: 76% (8069/10627)
+ko.json: 73% (7754/10627)
+pl.json: 68% (7242/10627)
+pt-br.json: 100% (10627/10627)
+ru.json: 69% (7294/10627)
+tr.json: 56% (5985/10627)
+uk.json: 38% (4069/10627)
+vi.json: 56% (5985/10627)
+zh-tw.json: 96% (10246/10627)
+zh.json: 76% (8033/10627)
+locale catalogs valid (16 languages, 10627 English strings)
+
+FULL COMMAND: git diff --check
+
+FULL COMMAND: git status --short --untracked-files=all
+ M docs/tasks/T-1200/T-1245-instabox-settings/report.md
+ M docs/tasks/T-1200/T-1245-instabox-settings/verification.txt
+ M server/routes/instabox-snapshots.e2e.test.ts
+ M server/routes/instabox-snapshots.ts
+ M server/testing/fake-instabox-snapshots.ts
+ M src/locales/en.json
+ M src/locales/pt-br.json
+ M src/locales/zh.json

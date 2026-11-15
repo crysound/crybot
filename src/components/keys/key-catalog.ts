@@ -38,7 +38,7 @@ export interface KeyTarget {
   href?: string;
   test?: TestableProvider;
   verifiedOnSave?: boolean;
-  analytics: KeyProvider;
+  analytics: KeyProvider | "instabox";
   shape?: RegExp;
   warningKey?: LocaleKey;
   noteKey?: LocaleKey;
@@ -48,7 +48,7 @@ export interface KeyTarget {
 
 export type KeyId =
   | "openai" | "anthropic" | "xai" | "openrouter" | "mistral" | "cerebras" | "groq" | "greenference" | "modelgo" | "meta" | "deepseek" | "opencodeGo" | "opencodeProviders"
-  | "ollama" | "lmStudio" | "openaiCompat" | "liveCalls" | "liveKey" | "elevenlabs" | "fishAudio" | "geminiTts" | "box" | "vps" | "onePassword" | "composio" | "treg" | "postiz"
+  | "ollama" | "lmStudio" | "openaiCompat" | "liveCalls" | "liveKey" | "elevenlabs" | "fishAudio" | "geminiTts" | "box" | "instabox" | "instaboxEnv" | "vps" | "onePassword" | "composio" | "treg" | "postiz"
   | "jev" | "openrouterHelper" | "workersAi" | "imageOpenai" | "imageGemini" | "imageCustom";
 
 export type KeyMark = { driverKind: string; preset?: ProviderIconPreset } | { icon: LucideIcon };
@@ -72,6 +72,11 @@ export interface KeyEntry {
 
 function flag(saved: SavedKey | undefined): SavedState {
   return { configured: saved?.configured === true, ...(saved?.configured && saved.last4 ? { last4: saved.last4 } : {}) };
+}
+
+export function instaboxKeyStatus(config: ConfigStatus | null | undefined): SavedState & { fromEnv: boolean } {
+  const status = config?.instabox;
+  return { ...flag(status?.fromEnv ? { configured: status.configured } : status), fromEnv: status?.fromEnv === true };
 }
 
 type TopLevelKey = "openai" | "openrouter" | "xai" | "mistral" | "cerebras" | "groq" | "greenference" | "modelgo" | "meta" | "deepseek" | "treg";
@@ -162,6 +167,13 @@ export const KEY_CATALOG: readonly KeyEntry[] = [
     target: { patch: (value) => ({ box: { token: value } }), slot: "boxToken", verifiedOnSave: true,
       saved: (config) => ({ ...flag(config.box?.included ? undefined : config.box), ...(config.box?.included ? { included: true } : {}) }),
       placeholder: "boat_…", href: "https://docs.boat.dev/api-keys", analytics: "boat", shape: /^(boat|box)_/, warningKey: "keys.boat.warning" } },
+  { id: "instabox", section: "computers", labelKey: "keys.instabox.label", purposeKey: "keys.purpose.instabox", name: "InstaBox", env: ["INSTABOX_API_KEY"],
+    words: ["instabox", "cloud computer", "snapshot", "android"], mark: { icon: Monitor }, kind: "key",
+    target: { patch: (value) => ({ instabox: { apiKey: value } }), saved: (config) => flag(instaboxKeyStatus(config)),
+      placeholder: "…", analytics: "instabox" } },
+  { id: "instaboxEnv", section: "computers", labelKey: "keys.instabox.label", purposeKey: "keys.purpose.instabox", name: "InstaBox", env: [],
+    words: ["instabox", "cloud computer", "environment", "INSTABOX_API_KEY"], mark: { icon: Monitor }, kind: "elsewhere",
+    status: instaboxKeyStatus, whereKey: "keys.instabox.environment" },
   { id: "vps", section: "computers", labelKey: "keys.vps.label", purposeKey: "keys.purpose.vps", name: "VPS", env: [],
     words: ["vps", "ssh", "server", "self-hosted", "computer", "docker"], mark: { icon: Server }, kind: "panel",
     status: (config) => ({ configured: config.vps?.configured === true }) },
@@ -242,6 +254,8 @@ export function savedState(entry: KeyEntry, config: ConfigStatus | null | undefi
 
 /** With Azure or Fish Audio chosen, Live calls do not use the OpenAI key the Live calls row points at, so that row is hidden. */
 export function keyHidden(id: KeyId, config: ConfigStatus | null | undefined): boolean {
+  if (id === "instabox") return instaboxKeyStatus(config).fromEnv;
+  if (id === "instaboxEnv") return !instaboxKeyStatus(config).fromEnv;
   if (config?.providerLock && (id === "box" || KEY_CATALOG.find((entry) => entry.id === id)?.section === "ai")) return true;
   const provider = config?.live?.provider;
   return id === "liveCalls" && (provider === "azure" || provider === "fish");

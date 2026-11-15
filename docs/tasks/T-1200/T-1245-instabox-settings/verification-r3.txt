@@ -1,0 +1,259 @@
+第 3 轮验证
+crybot-link-deps: exit 0，链接 73 项依赖。
+docs/verification/README.md 缺失；所有服务和数据均使用隔离 fixture。
+
+仅补清单后的回归复现：
+
+ RUN  v4.1.11 .
+
+ ❯ scripts/testing/key-readback.e2e.test.ts (2 tests | 1 failed) 6195ms
+   × saves every kind of credential, reads it back and shows it masked to its last four, then removes it 674ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/testing/key-readback.e2e.test.ts > saves every kind of credential, reads it back and shows it masked to its last four, then removes it
+AssertionError: instabox: expected { configured: false, fromEnv: false } to deeply equal { configured: true, last4: 'b0ca' }
+
+- Expected
++ Received
+
+  {
+-   "configured": true,
+-   "last4": "b0ca",
++   "configured": false,
++   "fromEnv": false,
+  }
+
+ ❯ scripts/testing/key-readback.e2e.test.ts:137:75
+    135|
+    136|       const config = (await call("GET", "/api/config")).body;
+    137|       expect(savedState(entry, config as never), `${entry.id}${storage…
+       |                                                                           ^
+    138|       if (storage) expect(readFileSync(join(fixture.info.dataDir, "con…
+    139|       expect(JSON.stringify(config), entry.id).not.toContain(key);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  06:35:07
+   Duration  10.12s (transform 2.55s, setup 1.32s, import 2.39s, tests 6.19s, environment 0ms)
+
+
+$ pnpm exec vitest run scripts/testing/key-readback.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  06:38:17
+   Duration  8.88s (transform 2.38s, setup 1.25s, import 1.91s, tests 5.58s, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run scripts/testing/key-readback.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  06:38:26
+   Duration  8.93s (transform 2.30s, setup 1.20s, import 1.84s, tests 5.73s, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run scripts/testing/key-readback.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  06:38:36
+   Duration  8.36s (transform 2.14s, setup 1.13s, import 1.72s, tests 5.35s, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run server/config.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  257 passed (257)
+   Start at  06:38:45
+   Duration  2.37s (transform 960ms, setup 1.08s, import 158ms, tests 997ms, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run server/credential-env.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  06:38:48
+   Duration  1.46s (transform 990ms, setup 1.07s, import 193ms, tests 55ms, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run server/routes/config-screens.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  06:38:50
+   Duration  3.46s (transform 2.58s, setup 1.18s, import 2.05s, tests 42ms, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run server/key-hint.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  06:38:54
+   Duration  1.23s (transform 860ms, setup 1.06s, import 17ms, tests 6ms, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run src/components/keys/key-catalog.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  06:38:55
+   Duration  1.47s (transform 970ms, setup 1.15s, import 123ms, tests 21ms, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run src/components/keys/key-save.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  06:38:58
+   Duration  1.80s (transform 1.26s, setup 1.03s, import 633ms, tests 9ms, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run src/components/keys/KeysPage.dom.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  06:39:00
+   Duration  4.37s (transform 1.42s, setup 965ms, import 917ms, tests 1.68s, environment 661ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run src/state/store.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  243 passed (243)
+   Start at  06:39:05
+   Duration  2.64s (transform 1.32s, setup 1.03s, import 695ms, tests 596ms, environment 158ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run src/components/CloudBackendPicker.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  06:39:08
+   Duration  1.92s (transform 1.34s, setup 1.03s, import 740ms, tests 22ms, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run src/components/settings/settings-index.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  124 passed (124)
+   Start at  06:39:11
+   Duration  1.75s (transform 1.20s, setup 947ms, import 626ms, tests 32ms, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  06:39:13
+   Duration  1.27s (transform 817ms, setup 1.04s, import 12ms, tests 78ms, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec vitest run server/index.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  338 passed (338)
+   Start at  06:39:15
+   Duration  164.59s (transform 1.49s, setup 1.03s, import 907ms, tests 162.51s, environment 0ms)
+
+
+exit: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+
+exit: 0
+
+$ pnpm exec tsc -p tsconfig.json
+
+exit: 0
+
+$ pnpm exec oxlint --deny-warnings scripts/testing/key-readback.e2e.test.ts server/config.test.ts server/config.ts server/credential-env.ts server/index.ts server/routes/config.ts src/components/keys/key-catalog.test.ts src/components/keys/key-catalog.ts src/state/config-status.ts src/state/store.test.ts src/state/store.tsx
+
+exit: 0
+
+$ git diff --check
+docs/tasks/T-1200/T-1245-instabox-settings/report.md:97: new blank line at EOF.
+
+exit: 2
+
+报告完成后的最终核验
+$ git diff --check
+exit: 0
+report.md 第 3 轮文件列表与 git status 一致：13 个文件。

@@ -157,7 +157,7 @@ describe("the keys page", () => {
     type(search, "fish");
     expect(rowsShown()).toEqual(["fishAudio"]);
     type(search, "Computers and browser");
-    expect(rowsShown()).toEqual(["box", "vps", "onePassword"]);
+    expect(rowsShown()).toEqual(["box", "instabox", "vps", "onePassword"]);
     type(search, "research");
     expect(rowsShown()).toEqual(["treg"]);
     type(search, "zzz");
@@ -363,4 +363,15 @@ it.each([false, true])("uses a Chinese computers purpose without cloud desktops 
   page();
   expect(host.textContent?.includes("云端桌面")).toBe(!providerLock);
   if (providerLock) expect(host.textContent).toContain("你自己的服务器和网站登录信息。");
+});
+
+it("shows the shared InstaBox environment key without editing controls or key characters", () => {
+  setConfig({ instabox: { configured: true, fromEnv: true, apiKey: "fixture-secret", last4: "cret" } });
+  page();
+  expect(row("instabox")).toBeNull();
+  const readOnly = row("instaboxEnv")!;
+  expect(readOnly.textContent).toContain("INSTABOX_API_KEY");
+  expect(readOnly.querySelector("input, button")).toBeNull();
+  expect(readOnly.textContent).not.toContain("fixture-secret");
+  expect(readOnly.textContent).not.toContain("cret");
 });
