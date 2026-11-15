@@ -52,10 +52,11 @@ beforeEach(() => {
 });
 
 describe("J11: a failed place's row", () => {
-  it.each([false, true])("hides a stored Boat connection prompt only while locked: %s", (providerLock) => {
+  it.each([false, true])("hides the retired provider and its connection action: %s", (providerLock) => {
     fixture.config = { providerLock };
     const row: PlaceRow = { state: "cc-needs-key", params: { bot: "Scout" }, source: "works-on" };
-    expect(show(stored(row)).html.includes("Boat")).toBe(!providerLock);
+    expect(show(stored(row)).html).not.toContain("Boat");
+    expect(show(stored(row)).buttons).toHaveLength(0);
   });
 
   it("preserves model guidance for VPS computers while locked", () => {
@@ -97,7 +98,7 @@ describe("J11: a failed place's row", () => {
 
   it("reads the Boat sign-up as My Cloud's on a desktop with a paid plan", () => {
     const needsKey: PlaceRow = { state: "cc-needs-key", params: { bot: "Scout" }, source: "works-on" };
-    expect(show(stored(needsKey)).html).toContain("Bots here can get their own cloud desktops from Boat, a paid service.");
+    expect(show(stored(needsKey)).html).toContain("Bots here can get their own cloud desktops through a paid cloud service.");
     const seat = { server: "mac", plan: true, role: "admin", mode: "simple" } as const;
     expect(placeRowViewFor(needsKey, seat)).toMatchObject({
       state: "cc-on-my-cloud", line: "Cloud desktops from your plan work for Cloud bots for now.", action: { id: "open-my-cloud" },
@@ -140,4 +141,10 @@ describe("the computer panel's refused cloud desktop", () => {
     expect(panelCloudRefusal(answered({ error: "Cloud computers are busy right now. Try again in a few minutes." }), "Cloud computers are busy right now. Try again in a few minutes.", true).state)
       .toBe("cc-unavailable");
   });
+});
+
+it.each(["cc-needs-key", "cc-at-once", "auto-team"] as const)("hides retired cloud management links for stored %s rows", state => {
+  const view = placeRowViewFor({ state, params: { bot: "Scout", computer: "Team", max: 1 }, source: "works-on" },
+    { server: "mac", plan: false, role: "admin", mode: "simple" });
+  expect(view.action).toBeNull();
 });

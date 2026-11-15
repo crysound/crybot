@@ -23,7 +23,7 @@ const fixture = vi.hoisted(() => {
     index: 0,
     own: 0,
     seed: {} as Record<string, unknown>,
-    config: {} as FeatureFlagConfig & { cloudHome?: boolean; providerLock?: boolean; box?: { configured: boolean; last4?: string } },
+    config: {} as FeatureFlagConfig & { cloudHome?: boolean; providerLock?: boolean; box?: { configured: boolean; last4?: string }; instabox?: { configured: boolean } },
     instances: [] as InstanceInfo[],
     android: false,
     dispatch: (() => {}) as (...args: unknown[]) => void,
@@ -83,7 +83,6 @@ vi.mock("./CloudScreenPreview", () => ({ CloudScreenPreview: () => null }));
 vi.mock("./LocalScreenPreview", () => ({ LocalScreenPreview: () => null }));
 vi.mock("./LinuxLocalControl", () => ({ LinuxLocalControl: () => null }));
 vi.mock("./MacLocalControl", () => ({ MacLocalControl: () => null }));
-vi.mock("./CloudBackendPicker", () => ({ CloudBackendPicker: () => null }));
 vi.mock("./LocalComputerAutoWarning", () => ({ LocalComputerAutoWarning: () => null }));
 vi.mock("./bot-settings/RoutinesSection", () => ({ RoutinesSection: () => null }));
 vi.mock("@/state/store", async (importOriginal) => ({
@@ -91,7 +90,7 @@ vi.mock("@/state/store", async (importOriginal) => ({
   api: (...args: unknown[]) => fixture.api(...args),
   useStore: () => ({
     state: {
-      config: { box: { configured: true }, ...fixture.config },
+      config: { box: { configured: true }, instabox: { configured: true }, ...fixture.config },
       instances: fixture.instances,
       computerControl: {},
       routines: [],
@@ -435,62 +434,40 @@ describe("Where the bot works", () => {
     expect(card.props.title).toBe(tile.props.title);
   });
 
-  it("reads a refused start as the same state a failed row does, never the relay's words", () => {
-    fixture.seed = {
-      phase: "error",
-      resolved: { botId: "scout", threadId: "thread-scout", computer: "cloud", cloudBackend: "box" },
-      error: "Your Personal plan includes 1 cloud computer at once. Delete one to start another.",
-    };
-    const rendered = render(makeBot({ computer: "cloud" }));
-    expect(rendered.html).toContain("All the cloud desktops your plan includes are in use.");
-    expect(rendered.html).not.toContain("Delete one to start another");
-    const actions = rendered.nodes.filter((node) => node.props["data-testid"] === "place-action").map((node) => text(node.props.children));
-    expect(actions).toContain("Manage cloud desktops");
-    (rendered.nodes.find((node) => node.props["data-testid"] === "place-action")!.props.onClick as () => void)();
-    expect(fixture.dispatch).toHaveBeenCalledWith({ type: "toggleAppSettings", open: true, section: "computer" });
+  it("replaces retired provider refusals with a neutral switch prompt", () => {
+    fixture.config = { ...fixture.config, instabox: { configured: true } };
+    fixture.seed = { phase: "error", error: "private-relay-details" };
+    const rendered = render(makeBot({ computer: "cloud", cloudBackend: "box" }));
+    expect(rendered.html).toContain("This agent’s old cloud computer has been retired.");
+    expect(rendered.html).not.toContain("private-relay-details");
+    expect(rendered.html).not.toContain("Manage cloud desktops");
+    const picker = rendered.nodes.find((node) => node.type === CloudBackendPicker)!;
+    (picker.props.onChange as (backend: string) => void)("instabox");
+    expect(fixture.dispatch).toHaveBeenCalledWith({ type: "updateBot", botId: "scout", patch: { cloudBackend: "instabox" } });
   });
 
-  it("offers the one next action for the chosen place, and a User is told to ask an Admin", () => {
-    fixture.config = { ...fixture.config, box: { configured: false } };
-    const rendered = render(makeBot({ computer: "cloud" }));
-    expect(placeLine(rendered)).toBe("Bots here can get their own cloud desktops from Boat, a paid service.Connect Boat");
-    (rendered.nodes.find((node) => node.props["data-testid"] === "place-action")!.props.onClick as () => void)();
-    expect(fixture.dispatch).toHaveBeenCalledWith({ type: "toggleAppSettings", open: true, section: "connections" });
-
-    fixture.ownerOrAdmin = false;
-    fixture.values = [];
-    phaseIndex = -1;
-    const user = render(makeBot({ computer: "cloud" }));
-    expect(placeLine(user)).toBe("Bots here can get their own cloud desktops from Boat, a paid service. Ask an Admin to change it.");
-    expect(user.nodes.some((node) => node.props["data-testid"] === "place-action")).toBe(false);
+  it("shows the InstaBox key hint without a retired provider action for either role", () => {
+    fixture.config = { ...fixture.config, instabox: { configured: false } };
+    for (const admin of [true, false]) {
+      fixture.ownerOrAdmin = admin;
+      fixture.values = []; phaseIndex = -1;
+      const rendered = render(makeBot({ computer: "cloud" }));
+      expect(placeLine(rendered)).toBe("Add your InstaBox key in Settings first");
+      expect(rendered.nodes.some((node) => node.props["data-testid"] === "place-action")).toBe(false);
+    }
   });
 
-  it("saves a Boat key pasted into the panel as one from the Computer panel", () => {
-    fixture.config = { ...fixture.config, box: { configured: false } };
-    fixture.seed = { phase: "unconfigured", resolved: { botId: "scout", threadId: "thread-scout", computer: "cloud", cloudBackend: "box" } };
-    const rows = render(makeBot({ computer: "cloud" })).nodes.filter((node) => node.type === KeyRow);
-    expect(rows.map((node) => ({ id: node.props.id, via: node.props.via }))).toEqual([{ id: "box", via: "computer_panel" }]);
-  });
-
-  it("keeps a Boat key saved in the panel in view, masked and connected, after the panel moves on", () => {
-    fixture.config = { ...fixture.config, box: { configured: false } };
-    fixture.seed = { phase: "unconfigured", resolved: { botId: "scout", threadId: "thread-scout", computer: "cloud", cloudBackend: "box" } };
-    const before = render(makeBot({ computer: "cloud" }));
-    const saved = before.nodes.find((node) => node.type === KeyRow)!.props.onSaved as (configured: boolean) => void;
-    saved(true);
-    fixture.values[phaseIndex] = "checking";
-    fixture.config = { ...fixture.config, box: { configured: true, last4: "c3d4" } };
-    const after = render(makeBot({ computer: "cloud" }));
-    expect(after.nodes.filter((node) => node.type === KeyRow).map((node) => node.props.id)).toEqual(["box"]);
-    expect(after.html).toContain("••••••••c3d4");
-    expect(after.html).toContain(">Connected<");
-    expect(after.html).toContain("data-key-replace");
+  it.each(["unconfigured", "checking"])("keeps the retired key hidden in %s", phase => {
+    fixture.seed = { phase };
+    const rendered = render(makeBot({ computer: "cloud", cloudBackend: "box" }));
+    expect(rendered.nodes.filter((node) => node.type === KeyRow)).toEqual([]);
+    expect(rendered.html).toContain("Switch to InstaBox");
   });
 
   it("dispatches exactly what the Advanced picker dispatches for each place", () => {
     const expected = [
       { computer: null },
-      { computer: "cloud" },
+      { computer: "cloud", cloudBackend: "instabox" },
       { computer: "vm" },
       { computer: "local" },
       { computer: "browser", browser: true },
@@ -624,7 +601,7 @@ describe("Technical controls", () => {
 
   it("wakes an auto-selected stopped shared desktop", async () => {
     fixture.seed = {
-      autoSurface: { key: "scout:thread-scout:auto:box:claude", surface: "vm" },
+      autoSurface: { key: "scout:thread-scout:auto:instabox:claude", surface: "vm" },
       phase: "vm-unavailable",
       vmStatus: {
         mode: "shared", container: "stopped", resumable: true, stop_reason: "idle",
@@ -644,7 +621,7 @@ describe("Technical controls", () => {
     expect(fixture.api).toHaveBeenCalledWith("/api/local-computer/start", expect.objectContaining({ method: "POST" }));
   });
 
-  it("keeps the explicit private desktop controls unchanged", () => {
+  it.each([undefined, "box"] as const)("keeps explicit private desktop controls with backend %s", cloudBackend => {
     fixture.seed = {
       phase: "vm-unavailable",
       vmStatus: {
@@ -652,12 +629,12 @@ describe("Technical controls", () => {
         image: true, create_supported: true, ready: false,
       },
     };
-    const rendered = render(makeBot({ computer: "vm" }));
+    const rendered = render(makeBot({ computer: "vm", cloudBackend }));
     expect(rendered.button("Start the private desktop")).toBeDefined();
   });
 
   it("shows Take control, Full screen and Sleep under a ready cloud screen", () => {
-    fixture.seed = { phase: "ready", resolved: { botId: "scout", threadId: "thread-scout", computer: "cloud", cloudBackend: "box" } };
+    fixture.seed = { phase: "ready", resolved: { botId: "scout", threadId: "thread-scout", computer: "cloud", cloudBackend: "instabox" } };
     const simple = render(cloud());
     const row = simple.nodes.find((node) => node.props["data-testid"] === "computer-actions")!;
     expect(actionLabels(row))
@@ -676,7 +653,7 @@ describe("Technical controls", () => {
     fixture.cry.desktopWorkspace = {};
     fixture.seed = {
       phase: "vm",
-      resolved: { botId: "scout", threadId: "thread-scout", computer: "vm", cloudBackend: "box" },
+      resolved: { botId: "scout", threadId: "thread-scout", computer: "vm", cloudBackend: "instabox" },
       vmStatus: { mode: "per-bot", container: "running", ready: true, viewer_url: "http://127.0.0.1/viewer", target_key: `bot:${"a".repeat(64)}` },
     };
     const vm = () => makeBot({ computer: "vm" });
@@ -706,8 +683,8 @@ describe("Technical controls", () => {
     expect(simple.button("Open VPS settings")).toBeUndefined();
     const choices = simple.nodes.find((node) => node.type === SimpleVpsChoices)!;
     expect(simple.html).not.toContain("Start VPS automatically");
-    (choices.props.onBackend as (backend: string) => void)("box");
-    expect(fixture.dispatch).toHaveBeenLastCalledWith({ type: "updateBot", botId: "scout", patch: { cloudBackend: "box" } });
+    (choices.props.onBackend as (backend: string) => void)("instabox");
+    expect(fixture.dispatch).toHaveBeenLastCalledWith({ type: "updateBot", botId: "scout", patch: { cloudBackend: "instabox" } });
 
     fixture.advanced = true;
     fixture.values = [];
@@ -730,20 +707,21 @@ describe("Technical controls", () => {
   });
 });
 
-it.each([false, true])("offers VPS and private desktops while hiding Boat only when locked: %s", async (providerLock) => {
-  fixture.config = { ...fixture.config, providerLock, box: { configured: false } };
+it.each([false, true])("offers VPS and private desktops without naming the retired provider: %s", async (providerLock) => {
+  fixture.config = { ...fixture.config, providerLock, box: { configured: false }, instabox: { configured: false } };
   fixture.dispatch = vi.fn();
   const rendered = render(makeBot());
   const labels = grid(rendered).map((node) => text(node.props.children));
   expect(labels.some((label) => label.includes("Private desktop"))).toBe(true);
-  expect(labels.some((label) => label.includes("Cloud desktop"))).toBe(!providerLock);
-  expect(rendered.html.includes("Connect Boat first")).toBe(!providerLock);
+  expect(labels.some((label) => label.includes("Cloud desktop"))).toBe(true);
+  expect(rendered.html.includes("InstaBox key is not set")).toBe(true);
+  expect(rendered.html).not.toContain("Boat");
   if (providerLock) {
     expect(rendered.html).not.toMatch(/Boat|data-boat-key|cloud-computer-recovery/);
-    const vps = grid(rendered).find((node) => text(node.props.children).includes("Self-hosted VPS"))!;
-    expect(vps).toBeDefined();
-    (vps.props.onClick as () => void)();
-    expect(fixture.dispatch).toHaveBeenCalledWith({ type: "updateBot", botId: "scout", patch: { computer: "cloud", cloudBackend: "vps" } });
+    const cloud = grid(rendered).find((node) => text(node.props.children).includes("Cloud desktop"))!;
+    expect(cloud).toBeDefined();
+    (cloud.props.onClick as () => void)();
+    expect(fixture.dispatch).toHaveBeenCalledWith({ type: "updateBot", botId: "scout", patch: { computer: "cloud", cloudBackend: "instabox" } });
   }
 });
 

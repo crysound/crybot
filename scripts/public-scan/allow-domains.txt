@@ -73,3 +73,4 @@ typesafe.ai # 第三方公开服务域名（文案里给用户的链接）。
 update.error.network # 文案键名，不是域名。
 email.security # 文案键名，不是域名。
 homeLine.local # 文案键名，不是域名。
+keys.boat.link # 文案键名，不是域名。

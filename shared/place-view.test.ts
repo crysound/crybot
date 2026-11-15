@@ -101,7 +101,7 @@ describe("U1: one line and at most one action for every state", () => {
     expect(placeViewOf("auto", {}, { role: "admin", server: "mac" }).line)
       .toBe("Uses the built-in browser, a private desktop on this computer, or this computer's screen, whichever the task needs.");
     expect(placeViewOf("cc-provider", { bot: "Scout", words: "Start the $20/month Boat plan." }, admin))
-      .toMatchObject({ short: "Couldn't start", line: "Your Boat account couldn't start Scout's cloud desktop: Start the $20/month Boat plan." });
+      .toMatchObject({ short: "Couldn't start", line: "Your cloud service account couldn't start Scout's cloud desktop: Start the $20/month cloud service plan." });
   });
 });
 
@@ -203,7 +203,7 @@ describe("cloudRefusal reads the Admin's refusals", () => {
     expect(included("box desktop link could not be created").state).toBe("cc-no-start");
     expect(included("this cloud computer is being deleted — wait for it to finish, or retry Delete if it needs attention").state).toBe("cc-clearing");
     expect(cloudRefusal({ message: "Start the $20/month Boat plan to create sandboxes.", status: 402 }, false))
-      .toEqual({ state: "cc-provider", params: { words: "Start the $20/month Boat plan to create sandboxes." } });
+      .toEqual({ state: "cc-provider", params: { words: "Start the $20/month cloud service plan to create sandboxes." } });
     expect(included("something new").state).toBe("cc-no-start");
   });
 
@@ -265,9 +265,10 @@ describe("the Admin's limit, read and told to the bot", () => {
   });
 });
 
-it("omits Boat setup and team desktop hints under provider lock while retaining VPS and VM views", () => {
+it("omits retired cloud setup under provider lock while retaining InstaBox, VPS and VM views", () => {
   expect(placeView(facts({ boat: "none", server: "linux" })).action?.id).toBe("add-boat-key");
-  expect(placeView(facts({ providerLock: true, boat: "none", server: "linux" }))).toMatchObject({ state: "off", action: null });
+  expect(placeView(facts({ providerLock: true, backend: "box", boat: "none", server: "linux" }))).toMatchObject({ state: "off", action: null });
+  expect(placeView(facts({ providerLock: true, backend: "instabox", boat: "none", server: "linux" })).state).toBe("cc-needs-key");
   const auto = placeView(facts({ providerLock: true, place: "auto", teamComputer: "Shared desktop" }));
   expect(auto.state).toBe("auto");
   expect(auto.line).not.toMatch(/cloud desktop|Shared desktop|Boat/i);

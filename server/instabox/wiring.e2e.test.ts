@@ -21,6 +21,46 @@ async function fixture(extraEnv: NodeJS.ProcessEnv = {}) {
   return { fake, env, app, request, close: async () => { await app.close(); await fake.close(); } };
 }
 
+it("keeps the InstaBox boot path available while provider lock disables the retired backend", async () => {
+  const f = await fixture({ CRYBOT_PROVIDER_LOCK: "1" });
+  try {
+    expect((await f.request("PUT", "/api/config", { instabox: { apiKey: "instabox-e2e-fixture" } })).status).toBe(200);
+    const bot = (await f.request("POST", "/api/bots", { name: "Locked InstaBox fixture" })).body.bot;
+    const path = `/api/bots/${bot.id}`;
+    expect((await f.request("PATCH", path, { computer: "cloud", cloudBackend: "instabox" })).status).toBe(200);
+    expect((await f.request("POST", `${path}/computer/provision`, {})).status).toBe(200);
+    expect((await f.request("GET", `${path}/computer`)).body).toMatchObject({ backend: "instabox", ready: true });
+    expect((await f.request("POST", `${path}/computer/screenshot`, {})).status).toBe(200);
+    expect((await f.request("GET", `${path}/instabox/snapshots`)).status).toBe(200);
+  } finally { await f.close(); }
+}, 60_000);
+
+it("previews a running default InstaBox machine and suspends it when a legacy bot switches to VPS", async () => {
+  const f = await fixture();
+  try {
+    await f.request("PUT", "/api/config", { instabox: { apiKey: "instabox-e2e-fixture" } });
+    const bot = (await f.request("POST", "/api/bots", { name: "Legacy backend fixture" })).body.bot;
+    await f.app.stop();
+    const file = join(f.app.dataDir, "bots.json");
+    const bots = JSON.parse(readFileSync(file, "utf8"));
+    delete bots.find((entry: { id: string }) => entry.id === bot.id).cloudBackend;
+    writeFileSync(file, JSON.stringify(bots));
+    await f.app.start();
+    const current = () => f.request("GET", "/api/bots?messages=0").then(result => result.body.bots.find((entry: { id: string }) => entry.id === bot.id));
+    expect((await current()).cloudBackend).toBeUndefined();
+    const path = `/api/bots/${bot.id}`;
+    const preview = path + `/computer?threadId=${bot.threadId}`;
+    expect((await f.request("GET", preview)).body.surface).not.toBe("cloud");
+    expect((await f.request("POST", path + "/computer/provision", {})).status).toBe(200);
+    expect((await current()).cloudBackend).toBeUndefined();
+    expect((await f.request("GET", preview)).body).toMatchObject({ surface: "cloud", backend: "instabox", ready: true });
+    const beforeSwitch = f.fake.calls.length;
+    expect((await f.request("PATCH", path, { cloudBackend: "vps" })).status).toBe(200);
+    await expect.poll(() => f.fake.calls.slice(beforeSwitch).some(call => call.method === "POST" && call.path.endsWith("/suspend"))).toBe(true);
+    await expect.poll(() => [...f.fake.machines.values()][0]?.state).toBe("suspended");
+  } finally { await f.close(); }
+}, 60_000);
+
 it("wires saved and environment keys, turn tools, VNC, snapshots, replacement and deletion through the real entry", async () => {
   const f = await fixture();
   const { request, fake, app, env } = f;
@@ -41,11 +81,12 @@ it("wires saved and environment keys, turn tools, VNC, snapshots, replacement an
     expect((await request("GET", "/api/config")).body.instabox).toEqual({ configured: true, last4: "-env", fromEnv: true });
     expect((await request("PATCH", "/api/config", { instabox: { apiKey: "" } })).status).toBe(409);
     expect(JSON.parse(readFileSync(join(app.dataDir, "config.json"), "utf8")).instabox.apiKey).toBe("instabox-e2e-fixture-file");
-    const created = await request("POST", "/api/bots", { name: "Wiring fixture", computer: "cloud", cloudBackend: "instabox", modelSelection: { instanceId: "claude", model: "claude-sonnet-5" } });
+    const created = await request("POST", "/api/bots", { name: "Wiring fixture", settings: { computer: "cloud" }, modelSelection: { instanceId: "claude", model: "claude-sonnet-5" } });
     expect(created.status).toBe(201);
     const bot = created.body.bot;
+    expect(bot.cloudBackend).toBe("instabox");
     const path = `/api/bots/${bot.id}`;
-    expect((await request("PATCH", path, { computer: "cloud", cloudBackend: "instabox" })).status).toBe(200);
+    expect((await request("PATCH", path, { computer: "cloud" })).status).toBe(200);
     expect((await request("GET", path + "/computer")).body.backend).toBe("instabox");
     writeFileSync(app.planPath, JSON.stringify({ [bot.id]: { steps: [
       { server: "computer", tool: "exec", arguments: { command: "printf wiring-fixture" } },
@@ -93,7 +134,7 @@ it.each(["box", "vps"])("keeps %s computer and snapshot/viewer paths away from I
   const f = await fixture(backends.env);
   try {
     expect((await f.request("PUT", "/api/config", { instabox: { apiKey: "instabox-e2e-fixture-file" }, box: { token: "boat-e2e-fixture" }, vps: { sshAlias: "fixture-vps" } })).status).toBe(200);
-    const bot = (await f.request("POST", "/api/bots", { computer: "cloud", cloudBackend: backend, modelSelection: { instanceId: "claude", model: "claude-sonnet-5" } })).body.bot;
+    const bot = (await f.request("POST", "/api/bots", { settings: { computer: "cloud", cloudBackend: backend }, modelSelection: { instanceId: "claude", model: "claude-sonnet-5" } })).body.bot;
     const path = `/api/bots/${bot.id}`;
     expect((await f.request("PATCH", path, { computer: "cloud", cloudBackend: backend })).status).toBe(200);
     await f.request("GET", path + "/computer");

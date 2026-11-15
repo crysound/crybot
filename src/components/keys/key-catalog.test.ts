@@ -110,7 +110,7 @@ describe("searching the keys", () => {
   it("matches a provider's name, what the key is for, and its section's title", () => {
     expect(found("fish")).toEqual(["fishAudio"]);
     expect(found("ElevenLabs")).toEqual(["elevenlabs"]);
-    expect(found("Computers and browser")).toEqual(["box", "instabox", "vps", "onePassword"]);
+    expect(found("Computers and browser")).toEqual(["instabox", "vps", "onePassword"]);
     expect(found("voice")).toEqual(expect.arrayContaining(["liveCalls", "liveKey", "elevenlabs", "fishAudio"]));
     expect(found("openai")).toEqual(expect.arrayContaining(["openai", "liveCalls", "liveKey", "imageOpenai"]));
     expect(found("gmail")).toEqual(["composio"]);
@@ -162,11 +162,11 @@ describe("engines that run on a key", () => {
   });
 });
 
-it.each([false, true])("hides only the Boat computer key when provider lock is %s", (providerLock) => {
+it.each([false, true])("hides the legacy cloud computer key when provider lock is %s", (providerLock) => {
   const config = { providerLock } as ConfigStatus;
   const computers = KEY_CATALOG.filter((entry) => entry.section === "computers" && !keyHidden(entry.id, config));
-  expect(computers.map((entry) => entry.id)).toEqual(providerLock ? ["instabox", "vps", "onePassword"] : ["box", "instabox", "vps", "onePassword"]);
-  expect(computers.filter((entry) => keyMatches(entry, "boat", config)).map((entry) => entry.id)).toEqual(providerLock ? [] : ["box"]);
+  expect(computers.map((entry) => entry.id)).toEqual(["instabox", "vps", "onePassword"]);
+  expect(computers.filter((entry) => keyMatches(entry, "boat", config)).map((entry) => entry.id)).toEqual([]);
 });
 
 it("shows only the saved InstaBox key's last four and saves and clears its agreed config field", () => {

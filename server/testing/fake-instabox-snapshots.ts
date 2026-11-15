@@ -1,9 +1,9 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { json, readBody } from "../harness/http.ts";
-import type { InstaboxRequest } from "../instabox/machine.ts";
+import { createInstaboxRequest } from "../instabox/client.ts";
 
-export interface FakeSnapshot { id: string; name: string; status: "pending" | "ready" | "failed"; sourceMachineId: string; metadata?: { app?: string; botId?: string } }
+export interface FakeSnapshot { id: string; name: string; status: "pending" | "ready" | "failed"; sourceMachineId: string; createdAt?: string; metadata?: { app?: string; botId?: string } }
 type CreateResponseShape = "operation" | "snapshot";
 
 export async function fakeInstaboxSnapshots(options: { createResponse?: CreateResponseShape } = {}) {
@@ -13,6 +13,7 @@ export async function fakeInstaboxSnapshots(options: { createResponse?: CreateRe
   let failNext = false;
   let snapshotFails = false;
   let operationFails = false;
+  let conflictNext: "busy" | "refused" | null = null;
   let createResponse = options.createResponse ?? "operation";
   const server = createServer(async (req, res) => {
     const url = new URL(req.url!, "http://localhost");
@@ -25,7 +26,8 @@ export async function fakeInstaboxSnapshots(options: { createResponse?: CreateRe
     if (url.pathname === "/v1/snapshots") return json(res, 200, { snapshots: [...snapshots.values()] });
     const id = url.pathname.split("/").at(-1)!;
     if (method === "POST" && url.pathname.endsWith("/snapshots")) {
-      const snapshot = { id: randomUUID(), name: body.name, status: "pending" as const, sourceMachineId: "machine-one" };
+      if (conflictNext) { const kind = conflictNext; conflictNext = null; return json(res, 409, { code: kind === "busy" ? "operation_in_progress" : "operation_conflict" }); }
+      const snapshot = { id: randomUUID(), name: body.name, status: "pending" as const, sourceMachineId: "machine-one", createdAt: new Date().toISOString() };
       snapshots.set(snapshot.id, snapshot);
       if (createResponse === "snapshot") return json(res, 202, snapshot);
       const operation = { id: randomUUID(), machineId: "machine-one", type: "create", state: "pending", phase: "snapshotting", error: null };
@@ -54,17 +56,13 @@ export async function fakeInstaboxSnapshots(options: { createResponse?: CreateRe
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("No fixture address");
   const base = `http://127.0.0.1:${address.port}`;
-  const request: InstaboxRequest = (method, path, opts) => {
-    const url = new URL(path, base);
-    for (const [key, value] of Object.entries(opts?.query ?? {})) url.searchParams.set(key, value);
-    return fetch(url, { method, headers: { "content-type": "application/json", ...(opts?.idempotent ? { "Idempotency-Key": randomUUID() } : {}) },
-      ...(opts?.body === undefined ? {} : { body: JSON.stringify(opts.body) }) });
-  };
+  const request = createInstaboxRequest("snapshot-fixture-key", base);
   return { request, calls, snapshots,
     setCreateResponse: (shape: CreateResponseShape) => { createResponse = shape; },
     failNext: () => { failNext = true; },
     failSnapshot: () => { snapshotFails = true; },
     failOperation: () => { operationFails = true; },
+    conflict: (kind: "busy" | "refused") => { conflictNext = kind; },
     close: () => new Promise<void>((resolve, reject) => { server.close((error) => error ? reject(error) : resolve()); server.closeAllConnections(); }),
   };
 }

@@ -1,0 +1,2613 @@
+T-1252 round 3 verification (isolated fixtures only)
+
+crybot-link-deps
+exit 0
+
+pnpm exec vitest run src/locales/no-retired-provider-visible.test.ts src/components/InstaboxSnapshots.test.tsx src/components/CloudBackendPicker.test.ts src/components/keys/key-catalog.test.ts src/components/keys/KeysPage.dom.test.ts src/components/bot-settings/AccessSection.test.ts src/components/ComputerPanel.simple.test.ts shared/place-view.test.ts
+Test Files 8 passed; Tests 146 passed.
+
+pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts (3 runs)
+Each run: Test Files 1 passed; Tests 15 passed.
+
+pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts (3 runs)
+Each run: Test Files 1 passed; Tests 6 passed.
+
+pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+Test Files 1 passed; Tests 1 passed.
+
+node --test electron/desktop-prefs.node-test.mjs
+23 passed; 0 failed.
+
+pnpm i18n:check
+locale catalogs valid (2 languages, 10640 English strings)
+
+pnpm exec tsc -b --pretty false
+exit 0
+
+pnpm exec tsc -p tsconfig.server.json --pretty false
+exit 0
+
+pnpm exec oxlint --deny-warnings <all changed TypeScript files>
+exit 0
+
+git diff --check
+exit 0
+
+
+T-1252 round 4 verification (isolated fixtures; one test file at a time)
+
+docs/verification/README.md is absent. Used isolated HTTP fake services and launchRestartableServer / launchVerificationServer with temporary data.
+
+crybot-link-deps: exit 0; linked 73 entries.
+
+46 distinct test files; 56 file runs; 934 passed test executions.
+
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  12:58:17
+   Duration  1.03s (transform 629ms, setup 815ms, import 7ms, tests 72ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/cloud-backend.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  12:39:55
+   Duration  1.24s (transform 856ms, setup 1.08s, import 18ms, tests 5ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/client.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:46:11
+   Duration  1.68s (transform 1.07s, setup 1.34s, import 46ms, tests 111ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts (consecutive run 1/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  12:52:42
+   Duration  63.02s (transform 1.82s, setup 1.08s, import 1.32s, tests 60.47s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts (consecutive run 2/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  12:53:45
+   Duration  62.61s (transform 1.88s, setup 1.09s, import 1.35s, tests 60.03s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts (consecutive run 3/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  12:54:49
+   Duration  60.69s (transform 2.90s, setup 1.67s, import 2.26s, tests 56.48s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/machines.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  12:46:13
+   Duration  2.27s (transform 998ms, setup 1.22s, import 81ms, tests 805ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts (consecutive run 1/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  12:46:32
+   Duration  6.05s (transform 2.14s, setup 1.39s, import 1.32s, tests 3.20s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts (consecutive run 2/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  12:46:39
+   Duration  5.95s (transform 2.05s, setup 1.45s, import 1.14s, tests 3.18s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts (consecutive run 3/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  12:46:46
+   Duration  5.94s (transform 2.08s, setup 1.36s, import 1.25s, tests 3.16s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts (consecutive run 1/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:46:52
+   Duration  8.28s (transform 2.25s, setup 1.37s, import 1.57s, tests 5.15s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts (consecutive run 2/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:47:01
+   Duration  8.34s (transform 2.38s, setup 1.31s, import 1.68s, tests 5.17s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts (consecutive run 3/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:47:11
+   Duration  12.26s (transform 5.24s, setup 2.49s, import 4.19s, tests 5.25s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts (consecutive run 1/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:51:09
+   Duration  32.40s (transform 2.69s, setup 1.80s, import 1.93s, tests 28.46s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts (consecutive run 2/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:51:42
+   Duration  29.00s (transform 1.49s, setup 1.00s, import 985ms, tests 26.87s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts (consecutive run 3/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:52:12
+   Duration  29.35s (transform 1.35s, setup 957ms, import 875ms, tests 27.40s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/new-bot-defaults.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  12:50:31
+   Duration  1.32s (transform 882ms, setup 1.13s, import 13ms, tests 31ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/routes/bot-patch.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  12:50:27
+   Duration  3.16s (transform 2.19s, setup 1.09s, import 1.70s, tests 223ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/routes/bots-create.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  12:50:23
+   Duration  3.20s (transform 1.98s, setup 1.02s, import 1.59s, tests 414ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts (consecutive run 1/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  12:46:16
+   Duration  4.44s (transform 2.88s, setup 1.18s, import 2.44s, tests 650ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts (consecutive run 2/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  12:46:21
+   Duration  4.60s (transform 3.02s, setup 1.23s, import 2.55s, tests 653ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts (consecutive run 3/3)
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  12:46:26
+   Duration  5.02s (transform 3.36s, setup 1.45s, import 2.73s, tests 652ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/store.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  158 passed (158)
+   Start at  12:40:05
+   Duration  5.06s (transform 1.37s, setup 1.12s, import 607ms, tests 3.17s, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run server/user-errors.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  12:58:16
+   Duration  1.05s (transform 678ms, setup 834ms, import 70ms, tests 12ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run shared/place-view.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  12:58:14
+   Duration  1.03s (transform 679ms, setup 784ms, import 94ms, tests 19ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/BotSettingsDialog.simple.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  102 passed (102)
+   Start at  12:57:46
+   Duration  3.54s (transform 2.39s, setup 741ms, import 2.35s, tests 323ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/CloudBackendPicker.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  12:57:53
+   Duration  1.35s (transform 899ms, setup 741ms, import 465ms, tests 21ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.android.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  12:56:27
+   Duration  2.67s (transform 1.43s, setup 711ms, import 1.16s, tests 534ms, environment 142ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.browser.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  12:56:30
+   Duration  2.89s (transform 2.08s, setup 810ms, import 1.90s, tests 41ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.engine.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  12:56:34
+   Duration  2.69s (transform 1.54s, setup 787ms, import 1.24s, tests 393ms, environment 146ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.focus.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  12:59:34
+   Duration  2.79s (transform 1.49s, setup 778ms, import 1.18s, tests 562ms, environment 146ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.i18n.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  12:56:43
+   Duration  2.46s (transform 1.55s, setup 1.88s, import 263ms, tests 23ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.instabox.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  12:56:46
+   Duration  4.75s (transform 3.16s, setup 1.21s, import 2.82s, tests 232ms, environment 217ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.lazy.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  12:56:52
+   Duration  6.11s (transform 3.73s, setup 1.67s, import 3.22s, tests 792ms, environment 205ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.live.test.ts
+RUN  v4.1.11 <worktree>
+
+AggregateError:
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [loopback]:3000
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[loopback]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [ip]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[ip]',
+      port: 3000
+    }
+  ]
+}
+AggregateError:
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [loopback]:3000
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[loopback]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [ip]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[ip]',
+      port: 3000
+    }
+  ]
+}
+AggregateError:
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [loopback]:3000
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[loopback]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [ip]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[ip]',
+      port: 3000
+    }
+  ]
+}
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  12:59:37
+   Duration  2.56s (transform 1.65s, setup 802ms, import 1.35s, tests 111ms, environment 153ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.simple.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  46 passed (46)
+   Start at  12:57:04
+   Duration  4.99s (transform 3.44s, setup 1.67s, import 2.90s, tests 250ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.tabs.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  12:59:40
+   Duration  3.72s (transform 1.59s, setup 812ms, import 1.25s, tests 1.39s, environment 145ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.takeover.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  12:57:14
+   Duration  26.08s (transform 1.46s, setup 724ms, import 1.21s, tests 23.89s, environment 136ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/ComputerPanel.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  12:57:40
+   Duration  787ms (transform 505ms, setup 653ms, import 18ms, tests 5ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/FailedTurnRow.place.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  12:57:42
+   Duration  4.29s (transform 2.94s, setup 751ms, import 3.39s, tests 22ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/InstaboxSnapshots.test.tsx
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  12:57:55
+   Duration  1.16s (transform 590ms, setup 682ms, import 138ms, tests 70ms, environment 142ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/LocalComputerSection.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  52 passed (52)
+   Start at  12:57:59
+   Duration  2.01s (transform 1.03s, setup 814ms, import 559ms, tests 377ms, environment 137ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/TeamMapPage.edges.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  12:58:01
+   Duration  1.90s (transform 1.23s, setup 722ms, import 888ms, tests 23ms, environment 147ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/bot-settings/AccessSection.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  26 passed (26)
+   Start at  12:57:51
+   Duration  2.05s (transform 1.40s, setup 769ms, import 1.07s, tests 83ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/instabox-panel.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:57:57
+   Duration  1.69s (transform 1.20s, setup 808ms, import 757ms, tests 6ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/keys/KeysPage.dom.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  12:50:42
+   Duration  3.82s (transform 1.39s, setup 1.02s, import 801ms, tests 1.69s, environment 169ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/keys/key-catalog.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  12:50:47
+   Duration  1.35s (transform 837ms, setup 1.03s, import 129ms, tests 24ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.focus.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  12:42:04
+   Duration  2.36s (transform 1.44s, setup 1.01s, import 890ms, tests 172ms, environment 154ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.open.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  12:42:07
+   Duration  2.78s (transform 1.51s, setup 987ms, import 987ms, tests 524ms, environment 152ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.screen.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  12:42:11
+   Duration  2.30s (transform 1.47s, setup 995ms, import 941ms, tests 95ms, environment 141ms)
+exit 0
+
+
+$ pnpm exec vitest run src/components/remote-desktop-panel.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:42:14
+   Duration  1.11s (transform 753ms, setup 953ms, import 20ms, tests 5ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/lib/local-computer.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  12:50:49
+   Duration  1.32s (transform 909ms, setup 1.06s, import 112ms, tests 13ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/lib/notices.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  12:58:05
+   Duration  920ms (transform 607ms, setup 721ms, import 77ms, tests 9ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/lib/remote-desktop.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  12:58:04
+   Duration  941ms (transform 621ms, setup 793ms, import 20ms, tests 3ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/locales/no-retired-provider-visible.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  12:58:13
+   Duration  1.00s (transform 658ms, setup 741ms, import 122ms, tests 19ms, environment 0ms)
+exit 0
+
+
+$ pnpm exec vitest run src/locales/vocabulary.test.ts
+RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:58:07
+   Duration  5.54s (transform 635ms, setup 748ms, import 236ms, tests 4.44s, environment 0ms)
+exit 0
+
+
+$ pnpm exec tsc -b --pretty false
+
+exit 0
+
+
+$ pnpm exec tsc -p tsconfig.server.json
+
+exit 0
+
+
+$ pnpm i18n:check
+
+> crybot@1.0.3 i18n:check <worktree>
+> node scripts/generate-locale.mjs --check
+
+zh.json: 79% (8441/10638)
+locale catalogs valid (2 languages, 10638 English strings)
+
+exit 0
+
+
+$ pnpm exec oxlint --deny-warnings server/cloud-backend.test.ts server/cloud-backend.ts server/instabox/core.e2e.test.ts server/instabox/snapshot-wiring.ts server/instabox/wiring.e2e.test.ts server/new-bot-defaults.test.ts server/new-bot-defaults.ts server/routes/bot-patch.test.ts server/routes/bots-create.test.ts server/routes/instabox-snapshots.e2e.test.ts server/routes/instabox-snapshots.ts server/store.ts server/testing/fake-instabox-core.ts server/testing/fake-instabox-snapshots.ts shared/place-view.test.ts shared/place-view.ts src/components/BotSettingsDialog.simple.test.ts src/components/CloudBackendPicker.test.ts src/components/CloudBackendPicker.tsx src/components/ComputerPanel.android.test.ts src/components/ComputerPanel.focus.test.ts src/components/ComputerPanel.instabox.test.ts src/components/ComputerPanel.lazy.test.ts src/components/ComputerPanel.live.test.ts src/components/ComputerPanel.simple.test.ts src/components/ComputerPanel.tabs.test.ts src/components/ComputerPanel.takeover.test.ts src/components/ComputerPanel.tsx src/components/FailedTurnRow.place.test.ts src/components/InstaboxSnapshots.test.tsx src/components/InstaboxSnapshots.tsx src/components/LocalComputerSection.test.ts src/components/LocalComputerSection.tsx src/components/TeamMapPage.edges.test.ts src/components/TeamMapPage.tsx src/components/bot-panel/ComputerTab.tsx src/components/bot-settings/AccessSection.test.ts src/components/bot-settings/AccessSection.tsx src/lib/local-computer.test.ts src/lib/local-computer.ts src/lib/notices.test.ts src/lib/place-view.ts src/lib/remote-desktop.ts src/locales/no-retired-provider-visible.test.ts src/locales/vocabulary.test.ts server/instabox/snapshot-conflicts.e2e.test.ts src/lib/remote-desktop.test.ts
+
+exit 0
+
+
+Locale value scan: zh/en contain no retired provider name; no boatOffer keys. Passed.
+$ git diff --check
+exit 0
+No git commit created.
+
+
+T-1252 round 5 verification (isolated fixtures; one test file at a time)
+docs/verification/README.md is absent. Used temporary data homes, fake services and the existing isolated server fixtures.
+$ crybot-link-deps
+crybot-link-deps: linked 73 entries.
+exit 0
+Initial regression development: the preview-selection response does not include VM readiness; readiness is now asserted through the local-computer endpoint. Existing surface fixtures explicitly select their original fake backend. No production deletion behavior was changed.
+
+$ pnpm exec vitest run server/surface-pins.e2e.test.ts -t "previews the ready shared VM"
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ server/surface-pins.e2e.test.ts (13 tests | 2 failed | 11 skipped) 13138ms
+     × previews the ready shared VM in Auto with the new default backend and no InstaBox key 9439ms
+     × previews the ready shared VM in Auto with the legacy default backend and no InstaBox key 3692ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > previews the ready shared VM in Auto with the new default backend and no InstaBox key
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > previews the ready shared VM in Auto with the legacy default backend and no InstaBox key
+AssertionError: expected { surface: 'vm', …(2) } to match object { surface: 'vm', ready: true }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "ready": true,
+    "surface": "vm",
+  }
+
+ ❯ server/surface-pins.e2e.test.ts:170:41
+    168|     expect(savedTask(bot.id, bot.threadId)?.surface).toBeUndefined();
+    169|     const preview = `/api/bots/${bot.id}/computer?threadId=${bot.threa…
+    170|     expect(await apiOk("GET", preview)).toMatchObject({ surface: "vm",…
+       |                                         ^
+    171|     expect(savedTask(bot.id, bot.threadId)?.surface).toBeUndefined();
+    172|     await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud", c…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 11 skipped (13)
+   Start at  13:08:47
+   Duration  14.53s (transform 844ms, setup 1.06s, import 131ms, tests 13.14s, environment 0ms)
+
+
+exit 1
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts -t "previews a running default"
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 6 skipped (7)
+   Start at  13:09:20
+   Duration  5.47s (transform 1.09s, setup 749ms, import 796ms, tests 3.80s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/surface-pins.e2e.test.ts (before fixture backend correction)
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ server/surface-pins.e2e.test.ts (13 tests | 11 failed) 50079ms
+     × previews the ready shared VM in Auto with the new default backend and no InstaBox key 1899ms
+     × previews the ready shared VM in Auto with the legacy default backend and no InstaBox key 3446ms
+     × marks a person's thread pin as theirs and clears provenance with the pin 1882ms
+     × still refuses to change a busy thread's surface 2356ms
+     × sweeps only conflicting auto pins when Works on is set, and nothing when it returns to Auto 3397ms
+     × preserves pre-provenance user pins at boot and after Works on changes 5198ms
+     × mounts the VM for a turn into a thread auto-pinned to this computer 5449ms
+     × records future auto pins and moves them when Works on changes 3933ms
+     × keeps a person's pin when Works on changes under it 3436ms
+     × clears a select_computer pin to a cloud computer that fails, and keeps a person's pin 2664ms
+     × never takes a relayed line's conversation for where the person writes, when select_computer continues its turn 2992ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 11 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > previews the ready shared VM in Auto with the new default backend and no InstaBox key
+AssertionError: DELETE /api/bots/<id>: {"error":"InstaBox failed to delete this bot's machine: Add an InstaBox API key to use this computer.. The bot was kept so deletion can be retried"}: expected 503 to be less than 400
+ ❯ apiOk server/surface-pins.e2e.test.ts:44:80
+     42|   const apiOk = async (method: string, path: string, body?: unknown) =…
+     43|     const result = await api(method, path, body);
+     44|     expect(result.status, `${method} ${path}: ${JSON.stringify(result.…
+       |                                                                                ^
+     45|     return result.body;
+     46|   };
+ ❯ server/surface-pins.e2e.test.ts:177:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/11]⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > previews the ready shared VM in Auto with the legacy default backend and no InstaBox key
+AssertionError: DELETE /api/bots/<id>: {"error":"InstaBox failed to delete this bot's machine: Add an InstaBox API key to use this computer.. The bot was kept so deletion can be retried"}: expected 503 to be less than 400
+ ❯ apiOk server/surface-pins.e2e.test.ts:44:80
+     42|   const apiOk = async (method: string, path: string, body?: unknown) =…
+     43|     const result = await api(method, path, body);
+     44|     expect(result.status, `${method} ${path}: ${JSON.stringify(result.…
+       |                                                                                ^
+     45|     return result.body;
+     46|   };
+ ❯ server/surface-pins.e2e.test.ts:177:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/11]⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > marks a person's thread pin as theirs and clears provenance with the pin
+AssertionError: DELETE /api/bots/<id>: {"error":"InstaBox failed to delete this bot's machine: Add an InstaBox API key to use this computer.. The bot was kept so deletion can be retried"}: expected 503 to be less than 400
+ ❯ apiOk server/surface-pins.e2e.test.ts:44:80
+     42|   const apiOk = async (method: string, path: string, body?: unknown) =…
+     43|     const result = await api(method, path, body);
+     44|     expect(result.status, `${method} ${path}: ${JSON.stringify(result.…
+       |                                                                                ^
+     45|     return result.body;
+     46|   };
+ ❯ server/surface-pins.e2e.test.ts:193:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/11]⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > still refuses to change a busy thread's surface
+AssertionError: DELETE /api/bots/<id>: {"error":"InstaBox failed to delete this bot's machine: Add an InstaBox API key to use this computer.. The bot was kept so deletion can be retried"}: expected 503 to be less than 400
+ ❯ apiOk server/surface-pins.e2e.test.ts:44:80
+     42|   const apiOk = async (method: string, path: string, body?: unknown) =…
+     43|     const result = await api(method, path, body);
+     44|     expect(result.status, `${method} ${path}: ${JSON.stringify(result.…
+       |                                                                                ^
+     45|     return result.body;
+     46|   };
+ ❯ server/surface-pins.e2e.test.ts:213:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/11]⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > sweeps only conflicting auto pins when Works on is set, and nothing when it returns to Auto
+AssertionError: DELETE /api/bots/<id>: {"error":"InstaBox failed to delete this bot's machine: Add an InstaBox API key to use this computer.. The bot was kept so deletion can be retried"}: expected 503 to be less than 400
+ ❯ apiOk server/surface-pins.e2e.test.ts:44:80
+     42|   const apiOk = async (method: string, path: string, body?: unknown) =…
+     43|     const result = await api(method, path, body);
+     44|     expect(result.status, `${method} ${path}: ${JSON.stringify(result.…
+       |                                                                                ^
+     45|     return result.body;
+     46|   };
+ ❯ server/surface-pins.e2e.test.ts:242:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/11]⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > preserves pre-provenance user pins at boot and after Works on changes
+AssertionError: DELETE /api/bots/<id>: {"error":"InstaBox failed to delete this bot's machine: Add an InstaBox API key to use this computer.. The bot was kept so deletion can be retried"}: expected 503 to be less than 400
+ ❯ apiOk server/surface-pins.e2e.test.ts:44:80
+     42|   const apiOk = async (method: string, path: string, body?: unknown) =…
+     43|     const result = await api(method, path, body);
+     44|     expect(result.status, `${method} ${path}: ${JSON.stringify(result.…
+       |                                                                                ^
+     45|     return result.body;
+     46|   };
+ ❯ server/surface-pins.e2e.test.ts:270:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/11]⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > mounts the VM for a turn into a thread auto-pinned to this computer
+AssertionError: DELETE /api/bots/<id>: {"error":"InstaBox failed to delete this bot's machine: Add an InstaBox API key to use this computer.. The bot was kept so deletion can be retried"}: expected 503 to be less than 400
+ ❯ apiOk server/surface-pins.e2e.test.ts:44:80
+     42|   const apiOk = async (method: string, path: string, body?: unknown) =…
+     43|     const result = await api(method, path, body);
+     44|     expect(result.status, `${method} ${path}: ${JSON.stringify(result.…
+       |                                                                                ^
+     45|     return result.body;
+     46|   };
+ ❯ server/surface-pins.e2e.test.ts:298:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/11]⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > records future auto pins and moves them when Works on changes
+AssertionError: DELETE /api/bots/<id>: {"error":"InstaBox failed to delete this bot's machine: Add an InstaBox API key to use this computer.. The bot was kept so deletion can be retried"}: expected 503 to be less than 400
+ ❯ apiOk server/surface-pins.e2e.test.ts:44:80
+     42|   const apiOk = async (method: string, path: string, body?: unknown) =…
+     43|     const result = await api(method, path, body);
+     44|     expect(result.status, `${method} ${path}: ${JSON.stringify(result.…
+       |                                                                                ^
+     45|     return result.body;
+     46|   };
+ ❯ server/surface-pins.e2e.test.ts:372:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/11]⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > keeps a person's pin when Works on changes under it
+AssertionError: DELETE /api/bots/<id>: {"error":"InstaBox failed to delete this bot's machine: Add an InstaBox API key to use this computer.. The bot was kept so deletion can be retried"}: expected 503 to be less than 400
+ ❯ apiOk server/surface-pins.e2e.test.ts:44:80
+     42|   const apiOk = async (method: string, path: string, body?: unknown) =…
+     43|     const result = await api(method, path, body);
+     44|     expect(result.status, `${method} ${path}: ${JSON.stringify(result.…
+       |                                                                                ^
+     45|     return result.body;
+     46|   };
+ ❯ server/surface-pins.e2e.test.ts:414:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/11]⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > clears a select_computer pin to a cloud computer that fails, and keeps a person's pin
+AssertionError: expected { …(2) } to match object { status: 'pending', surface: 'cloud' }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "status": "pending",
++   "error": "Add an InstaBox API key to use this computer.",
++   "options": [
++     {
++       "available": false,
++       "canCreate": false,
++       "canStart": false,
++       "label": "the cloud computer",
++       "ready": false,
++       "reason": "Add an InstaBox API key to use this computer.",
+        "surface": "cloud",
++     },
++     {
++       "available": true,
++       "canCreate": false,
++       "canStart": false,
++       "label": "the Local VM",
++       "ready": true,
++       "surface": "vm",
++     },
++     {
++       "available": false,
++       "canCreate": false,
++       "canStart": false,
++       "label": "this computer",
++       "ready": false,
++       "reason": "This computer is not configured or running. Open the Screen panel to set it up.",
++       "surface": "local",
++     },
++     {
++       "available": false,
++       "canCreate": false,
++       "canStart": false,
++       "label": "the built-in browser",
++       "ready": false,
++       "reason": "The built-in browser is disabled, not installed, or unsupported by this model.",
++       "surface": "browser",
++     },
++   ],
+  }
+
+ ❯ server/surface-pins.e2e.test.ts:433:35
+    431|     const selected = await fetch(base + "/api/internal/computer/select…
+    432|       headers: { authorization: `Bearer ${token}`, "content-type": "ap…
+    433|     expect(await selected.json()).toMatchObject({ status: "pending", s…
+       |                                   ^
+    434|     boatDown = true;
+    435|     writeFileSync(finishFile, "finish");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/11]⎯
+
+ FAIL  server/surface-pins.e2e.test.ts > surface pin provenance against the real server > never takes a relayed line's conversation for where the person writes, when select_computer continues its turn
+AssertionError: expected { …(2) } to match object { status: 'pending', surface: 'cloud' }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "status": "pending",
++   "error": "Add an InstaBox API key to use this computer.",
++   "options": [
++     {
++       "available": false,
++       "canCreate": false,
++       "canStart": false,
++       "label": "the cloud computer",
++       "ready": false,
++       "reason": "Add an InstaBox API key to use this computer.",
+        "surface": "cloud",
++     },
++     {
++       "available": true,
++       "canCreate": false,
++       "canStart": false,
++       "label": "the Local VM",
++       "ready": true,
++       "surface": "vm",
++     },
++     {
++       "available": false,
++       "canCreate": false,
++       "canStart": false,
++       "label": "this computer",
++       "ready": false,
++       "reason": "This computer is not configured or running. Open the Screen panel to set it up.",
++       "surface": "local",
++     },
++     {
++       "available": false,
++       "canCreate": false,
++       "canStart": false,
++       "label": "the built-in browser",
++       "ready": false,
++       "reason": "The built-in browser is disabled, not installed, or unsupported by this model.",
++       "surface": "browser",
++     },
++   ],
+  }
+
+ ❯ server/surface-pins.e2e.test.ts:480:35
+    478|     const selected = await fetch(base + "/api/internal/computer/select…
+    479|       headers: { authorization: `Bearer ${token}`, "content-type": "ap…
+    480|     expect(await selected.json()).toMatchObject({ status: "pending", s…
+       |                                   ^
+    481|     boatDown = true;
+    482|     writeFileSync(finishFile, "finish");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/11]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  11 failed | 2 passed (13)
+   Start at  13:10:02
+   Duration  50.94s (transform 566ms, setup 672ms, import 70ms, tests 50.08s, environment 0ms)
+
+
+exit 1
+
+Final validation runs
+VNC browser coverage initially skipped without the browser path; all 32 cases subsequently passed three times using the temporary Chromium launcher (--no-sandbox). VPS image coverage initially skipped without Pillow; all 59 cases subsequently passed with Pillow installed in a temporary virtual environment.
+
+$ pnpm exec vitest run server/surface-pins.e2e.test.ts (consecutive run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  13:11:41
+   Duration  49.32s (transform 656ms, setup 778ms, import 76ms, tests 48.35s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/surface-pins.e2e.test.ts (consecutive run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  13:12:30
+   Duration  51.91s (transform 668ms, setup 791ms, import 86ms, tests 50.91s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/surface-pins.e2e.test.ts (consecutive run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  13:13:23
+   Duration  53.35s (transform 861ms, setup 1.01s, import 109ms, tests 52.10s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts (consecutive run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:14:17
+   Duration  64.47s (transform 1.00s, setup 913ms, import 373ms, tests 63.05s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts (consecutive run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:15:22
+   Duration  64.49s (transform 1.07s, setup 982ms, import 400ms, tests 62.97s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts (consecutive run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:16:27
+   Duration  65.88s (transform 939ms, setup 915ms, import 295ms, tests 64.52s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/client.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  13:17:34
+   Duration  1.45s (transform 846ms, setup 1.04s, import 27ms, tests 79ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts (consecutive run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  13:17:36
+   Duration  10.97s (transform 912ms, setup 910ms, import 292ms, tests 9.65s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts (consecutive run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  13:17:47
+   Duration  11.02s (transform 994ms, setup 974ms, import 333ms, tests 9.57s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts (consecutive run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  13:17:59
+   Duration  10.74s (transform 878ms, setup 855ms, import 295ms, tests 9.46s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts (consecutive run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:18:10
+   Duration  59.68s (transform 1.39s, setup 793ms, import 1.07s, tests 57.70s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts (consecutive run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:19:11
+   Duration  54.90s (transform 1.27s, setup 757ms, import 939ms, tests 53.07s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts (consecutive run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:20:06
+   Duration  55.38s (transform 1.36s, setup 794ms, import 1.06s, tests 53.40s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/key.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  13:21:02
+   Duration  1.05s (transform 662ms, setup 873ms, import 7ms, tests 17ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/machines.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  13:21:03
+   Duration  1.72s (transform 655ms, setup 815ms, import 52ms, tests 733ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/persistence.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  13:21:06
+   Duration  1.32s (transform 897ms, setup 795ms, import 374ms, tests 17ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/power.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  13:21:08
+   Duration  1.71s (transform 1.21s, setup 766ms, import 814ms, tests 9ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts (consecutive run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  13:21:10
+   Duration  4.90s (transform 1.27s, setup 815ms, import 801ms, tests 3.14s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts (consecutive run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  13:21:15
+   Duration  4.72s (transform 1.14s, setup 795ms, import 673ms, tests 3.13s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts (consecutive run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  13:21:21
+   Duration  4.87s (transform 1.24s, setup 878ms, import 730ms, tests 3.14s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts (consecutive run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  13:21:26
+   Duration  6.90s (transform 1.29s, setup 801ms, import 860ms, tests 5.11s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts (consecutive run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  13:21:33
+   Duration  6.78s (transform 1.20s, setup 761ms, import 794ms, tests 5.12s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts (consecutive run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  13:21:41
+   Duration  6.87s (transform 1.26s, setup 782ms, import 851ms, tests 5.12s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/vnc.e2e.test.ts (consecutive run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  31 passed | 1 skipped (32)
+   Start at  13:21:48
+   Duration  2.96s (transform 1.15s, setup 790ms, import 707ms, tests 1.35s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/vnc.e2e.test.ts (consecutive run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  31 passed | 1 skipped (32)
+   Start at  13:21:52
+   Duration  3.11s (transform 1.27s, setup 904ms, import 749ms, tests 1.33s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/vnc.e2e.test.ts (consecutive run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  31 passed | 1 skipped (32)
+   Start at  13:21:55
+   Duration  2.94s (transform 1.16s, setup 781ms, import 696ms, tests 1.34s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/vnc.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  13:21:59
+   Duration  1.05s (transform 704ms, setup 912ms, import 13ms, tests 4ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts (consecutive run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  13:22:00
+   Duration  31.34s (transform 1.28s, setup 891ms, import 827ms, tests 29.50s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts (consecutive run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  13:22:32
+   Duration  30.94s (transform 1.23s, setup 860ms, import 799ms, tests 29.15s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts (consecutive run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  13:23:04
+   Duration  30.79s (transform 1.15s, setup 832ms, import 725ms, tests 29.10s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  13:23:35
+   Duration  1.70s (transform 1.21s, setup 688ms, import 880ms, tests 8ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/cloud-backend.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  13:23:37
+   Duration  850ms (transform 550ms, setup 718ms, import 13ms, tests 5ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/surface.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  48 passed (48)
+   Start at  13:23:39
+   Duration  1.13s (transform 736ms, setup 873ms, import 89ms, tests 37ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/routes/computers.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  13:23:40
+   Duration  2.10s (transform 1.54s, setup 789ms, import 1.18s, tests 18ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/routes/computer-frames.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  13:23:43
+   Duration  1.95s (transform 1.43s, setup 753ms, import 1.08s, tests 6ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/routes/bot-patch.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  13:23:45
+   Duration  2.28s (transform 1.58s, setup 825ms, import 1.19s, tests 154ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/routes/bots-create.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  13:23:48
+   Duration  2.23s (transform 1.41s, setup 704ms, import 1.16s, tests 252ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/new-bot-defaults.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  13:23:51
+   Duration  924ms (transform 595ms, setup 769ms, import 11ms, tests 30ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/vps-computer.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  58 passed | 1 skipped (59)
+   Start at  13:23:52
+   Duration  1.39s (transform 883ms, setup 709ms, import 475ms, tests 85ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screens.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  33 passed (33)
+   Start at  13:23:54
+   Duration  875ms (transform 543ms, setup 693ms, import 25ms, tests 39ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screen-runtime.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  13:23:56
+   Duration  2.31s (transform 1.55s, setup 772ms, import 1.23s, tests 196ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screen-layout.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  13:23:58
+   Duration  1.26s (transform 855ms, setup 821ms, import 307ms, tests 6ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-seat-pool.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  13:24:00
+   Duration  1.06s (transform 704ms, setup 892ms, import 23ms, tests 6ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-ready.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  13:24:02
+   Duration  1.27s (transform 865ms, setup 882ms, import 244ms, tests 11ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-resume.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  13:24:04
+   Duration  1.26s (transform 861ms, setup 842ms, import 278ms, tests 14ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-box.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  13:24:05
+   Duration  1.13s (transform 772ms, setup 789ms, import 212ms, tests 4ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts (consecutive run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:24:07
+   Duration  2.69s (transform 1.54s, setup 674ms, import 1.29s, tests 605ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts (consecutive run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:24:10
+   Duration  2.71s (transform 1.56s, setup 772ms, import 1.22s, tests 601ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts (consecutive run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  13:24:13
+   Duration  2.88s (transform 1.68s, setup 804ms, import 1.35s, tests 602ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  13:24:17
+   Duration  1.16s (transform 561ms, setup 736ms, import 8ms, tests 298ms, environment 0ms)
+
+
+exit 0
+
+$ CRYBOT_CDP_CHROME=<isolated-chromium-launcher> pnpm exec vitest run server/instabox/vnc.e2e.test.ts (consecutive run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  13:24:47
+   Duration  6.69s (transform 1.04s, setup 793ms, import 552ms, tests 5.21s, environment 0ms)
+
+
+exit 0
+
+$ CRYBOT_CDP_CHROME=<isolated-chromium-launcher> pnpm exec vitest run server/instabox/vnc.e2e.test.ts (consecutive run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  13:24:54
+   Duration  3.29s (transform 1.01s, setup 748ms, import 557ms, tests 1.86s, environment 0ms)
+
+
+exit 0
+
+$ CRYBOT_CDP_CHROME=<isolated-chromium-launcher> pnpm exec vitest run server/instabox/vnc.e2e.test.ts (consecutive run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  13:24:58
+   Duration  3.62s (transform 1.23s, setup 837ms, import 752ms, tests 1.91s, environment 0ms)
+
+
+exit 0
+
+$ PATH=<temporary-pillow-venv>:$PATH pnpm exec vitest run server/vps-computer.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  59 passed (59)
+   Start at  13:25:34
+   Duration  4.29s (transform 958ms, setup 834ms, import 445ms, tests 2.89s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+
+exit 0
+
+$ pnpm exec oxlint --deny-warnings server/index.ts server/instabox/power.ts server/instabox/power.test.ts server/instabox/wiring.e2e.test.ts server/local-vm-screens.e2e.test.ts server/surface-pins.e2e.test.ts
+
+exit 0
+
+$ git diff --check
+
+exit 0
+
+T-1252 round 6 verification (isolated fixtures)
+
+pnpm exec vitest run <changed UI and shared test files>
+Each file passed; 18 files, 120 tests in the changed UI/provider-lock group.
+
+pnpm exec vitest run <provider-lock test files>
+Each file passed; 19 tests total.
+
+pnpm exec vitest run <each server/instabox test file>
+All 13 server/instabox test files passed. The wiring e2e passed 8 tests in each of 3 consecutive runs. The VNC e2e passed 32 tests in each of 3 consecutive runs with the installed Chromium fixture.
+
+pnpm exec vitest run src/locales/no-retired-provider-visible.test.ts src/locales/vocabulary.test.ts scripts/testing/file-size-ratchet.test.ts
+2, 6, and 1 tests passed respectively.
+
+pnpm i18n:check
+locale catalogs valid.
+
+pnpm exec tsc -b --pretty false
+exit 0
+
+pnpm exec tsc -p tsconfig.server.json --pretty false
+exit 0
+
+pnpm exec oxlint --deny-warnings <changed TypeScript files>
+exit 0
+
+git diff --check
+exit 0
+
+T-1252 round 7 verification (isolated fixtures; one test file at a time)
+
+crybot-link-deps: exit 0; linked 73 entries.
+Verification README is absent; used isolated fake services and temporary fixture data.
+
+Initial regression run: fixture assertion incorrectly expected a ready field on the VM preview response; corrected to assert surface vm after separately checking VM readiness.
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ server/instabox/preview.e2e.test.ts (3 tests | 3 failed) 19928ms
+   × cancels a stalled cloud lookup and previews the shared VM for an Auto new bot 7399ms
+   × cancels a stalled cloud lookup and previews the shared VM for an Auto legacy bot 6344ms
+   × cancels a stalled cloud lookup and previews the shared VM for an Auto explicit bot 6184ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/instabox/preview.e2e.test.ts > cancels a stalled cloud lookup and previews the shared VM for an Auto new bot
+ FAIL  server/instabox/preview.e2e.test.ts > cancels a stalled cloud lookup and previews the shared VM for an Auto legacy bot
+ FAIL  server/instabox/preview.e2e.test.ts > cancels a stalled cloud lookup and previews the shared VM for an Auto explicit bot
+AssertionError: expected { surface: 'vm', …(2) } to match object { surface: 'vm', ready: true }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "ready": true,
+    "surface": "vm",
+  }
+
+ ❯ server/instabox/preview.e2e.test.ts:62:21
+     60|     const start = performance.now();
+     61|     const preview = await request("GET", `/api/bots/${bot.id}/computer…
+     62|     expect(preview).toMatchObject({ surface: "vm", ready: true });
+       |                     ^
+     63|     expect(performance.now() - start).toBeLessThan(4_000);
+     64|     expect(calls).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed (3)
+   Start at  14:00:43
+   Duration  22.21s (transform 1.52s, setup 1.15s, import 951ms, tests 19.93s, environment 0ms)
+
+
+$ pnpm exec vitest run server/instabox/preview.e2e.test.ts --maxWorkers=1 (run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  14:01:34
+   Duration  21.96s (transform 1.21s, setup 857ms, import 749ms, tests 20.19s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/preview.e2e.test.ts --maxWorkers=1 (run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  14:01:57
+   Duration  22.14s (transform 2.11s, setup 1.89s, import 868ms, tests 19.09s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/preview.e2e.test.ts --maxWorkers=1 (run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  14:02:20
+   Duration  20.42s (transform 1.19s, setup 830ms, import 763ms, tests 18.71s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/client.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  14:02:59
+   Duration  1.21s (transform 765ms, setup 964ms, import 43ms, tests 67ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+
+exit 0
+
+$ pnpm exec oxlint --deny-warnings server/index.ts server/instabox/wiring.ts server/instabox/preview.e2e.test.ts
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1 (run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  14:03:01
+   Duration  10.80s (transform 750ms, setup 784ms, import 211ms, tests 9.69s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1 (run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  14:03:13
+   Duration  12.28s (transform 1.60s, setup 1.18s, import 1.30s, tests 9.67s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1 (run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  14:03:26
+   Duration  10.71s (transform 770ms, setup 816ms, import 210ms, tests 9.57s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 (run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  14:03:37
+   Duration  59.57s (transform 1.67s, setup 898ms, import 1.49s, tests 57.05s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 (run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  14:04:37
+   Duration  54.59s (transform 1.26s, setup 713ms, import 983ms, tests 52.77s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 (run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  14:05:32
+   Duration  55.19s (transform 1.33s, setup 818ms, import 971ms, tests 53.29s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/key.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  14:06:28
+   Duration  1.10s (transform 723ms, setup 930ms, import 12ms, tests 16ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/machines.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  14:06:30
+   Duration  1.90s (transform 776ms, setup 949ms, import 57ms, tests 740ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/persistence.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:06:32
+   Duration  1.61s (transform 1.13s, setup 1.00s, import 452ms, tests 28ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/power.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  14:06:34
+   Duration  2.07s (transform 1.51s, setup 906ms, import 1.01s, tests 9ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts --maxWorkers=1 (run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  14:06:37
+   Duration  4.97s (transform 1.32s, setup 952ms, import 745ms, tests 3.13s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts --maxWorkers=1 (run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  14:06:42
+   Duration  4.95s (transform 1.31s, setup 916ms, import 779ms, tests 3.13s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts --maxWorkers=1 (run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  14:06:48
+   Duration  4.72s (transform 1.15s, setup 808ms, import 658ms, tests 3.13s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts --maxWorkers=1 (run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  14:06:53
+   Duration  7.01s (transform 1.36s, setup 873ms, import 894ms, tests 5.12s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts --maxWorkers=1 (run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  14:07:01
+   Duration  7.04s (transform 1.39s, setup 949ms, import 847ms, tests 5.12s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts --maxWorkers=1 (run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  14:07:08
+   Duration  7.22s (transform 1.53s, setup 929ms, import 1.04s, tests 5.12s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1 (run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  14:07:16
+   Duration  7.21s (transform 1.34s, setup 936ms, import 787ms, tests 5.35s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1 (run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  14:07:24
+   Duration  3.90s (transform 1.29s, setup 855ms, import 806ms, tests 2.11s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1 (run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  14:07:28
+   Duration  3.91s (transform 1.32s, setup 926ms, import 764ms, tests 2.07s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/vnc.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  14:07:33
+   Duration  1.30s (transform 890ms, setup 1.14s, import 19ms, tests 5ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts --maxWorkers=1 (run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  14:07:35
+   Duration  34.25s (transform 1.49s, setup 1.09s, import 917ms, tests 32.09s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts --maxWorkers=1 (run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  14:08:10
+   Duration  34.73s (transform 1.56s, setup 1.09s, import 971ms, tests 32.53s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.e2e.test.ts --maxWorkers=1 (run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  14:08:45
+   Duration  36.01s (transform 1.48s, setup 1.04s, import 924ms, tests 33.91s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/instabox/wiring.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  14:09:22
+   Duration  2.36s (transform 1.72s, setup 982ms, import 1.21s, tests 8ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/surface-pins.e2e.test.ts --maxWorkers=1 (run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  14:09:25
+   Duration  56.96s (transform 899ms, setup 1.06s, import 113ms, tests 55.62s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/surface-pins.e2e.test.ts --maxWorkers=1 (run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  14:10:22
+   Duration  53.67s (transform 905ms, setup 1.06s, import 110ms, tests 52.36s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/surface-pins.e2e.test.ts --maxWorkers=1 (run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  14:11:16
+   Duration  51.55s (transform 730ms, setup 860ms, import 95ms, tests 50.46s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts --maxWorkers=1 (run 1/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  14:12:09
+   Duration  69.53s (transform 1.01s, setup 945ms, import 351ms, tests 68.09s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts --maxWorkers=1 (run 2/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  14:13:19
+   Duration  67.00s (transform 994ms, setup 988ms, import 287ms, tests 65.58s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts --maxWorkers=1 (run 3/3)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  14:14:26
+   Duration  63.34s (transform 1.04s, setup 953ms, import 365ms, tests 61.88s, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/surface.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  48 passed (48)
+   Start at  14:15:30
+   Duration  1.01s (transform 641ms, setup 777ms, import 72ms, tests 34ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/computer-selection.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  14:15:32
+   Duration  1.05s (transform 699ms, setup 908ms, import 14ms, tests 5ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/cloud-backend.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  14:15:33
+   Duration  884ms (transform 580ms, setup 737ms, import 12ms, tests 4ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/container-computer.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  157 passed (157)
+   Start at  14:15:35
+   Duration  1.51s (transform 1.01s, setup 949ms, import 350ms, tests 66ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-ready.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  14:15:37
+   Duration  1.41s (transform 967ms, setup 968ms, import 274ms, tests 14ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-screen-runtime.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  14:15:39
+   Duration  3.03s (transform 2.10s, setup 928ms, import 1.72s, tests 250ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1 (run 1/1)
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:15:42
+   Duration  1.57s (transform 715ms, setup 922ms, import 14ms, tests 495ms, environment 0ms)
+
+
+exit 0
+
+VNC browser runs used installed Chromium through a temporary --no-sandbox launcher selected by CRYBOT_CDP_CHROME.
+
+Final results: 23 test files; 41 successful file runs; 696 passed test executions; 9 e2e files each passed 3 consecutive runs; no skipped tests.
+
+$ git diff --check
+
+exit 0
+
+
+第 8 轮
+
+$ pnpm exec vitest run src/components/RoutineCalendarPage.dialogs.test.ts --maxWorkers=1 (before fix)
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ src/components/RoutineCalendarPage.dialogs.test.ts (21 tests | 2 failed) 94ms
+       × computer cloud, backend instabox, runOn bot 6ms
+       × computer cloud, backend undefined, runOn bot 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/RoutineCalendarPage.dialogs.test.ts > calendar event details drawer > run location with provider lock true > computer cloud, backend instabox, runOn bot
+ FAIL  src/components/RoutineCalendarPage.dialogs.test.ts > calendar event details drawer > run location with provider lock true > computer cloud, backend undefined, runOn bot
+AssertionError: expected false to be true // Object is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/components/RoutineCalendarPage.dialogs.test.ts:101:58
+     99|         bots: [{ ...bot, computer, cloudBackend }], onClose: vi.fn(), …
+    100|       }));
+    101|       expect(html.includes(t("routines.drawer.runsOn"))).toBe(!provide…
+       |                                                          ^
+    102|     });
+    103|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 19 passed (21)
+   Start at  14:43:09
+   Duration  2.38s (transform 1.64s, setup 945ms, import 1.19s, tests 94ms, environment 0ms)
+
+
+exit 1
+
+$ pnpm exec vitest run src/components/RoutineCalendarPage.dialogs.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  21 passed (21)
+   Start at  14:43:28
+   Duration  2.11s (transform 1.45s, setup 707ms, import 1.19s, tests 91ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run src/components/RoutineCalendarPage.simple.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  14:43:31
+   Duration  2.25s (transform 1.51s, setup 802ms, import 1.16s, tests 157ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run src/components/RoutineCalendarPage.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  14:43:34
+   Duration  2.44s (transform 1.74s, setup 962ms, import 1.31s, tests 24ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run src/components/RoutineResultsNavigation.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  14:43:37
+   Duration  4.12s (transform 2.98s, setup 738ms, import 3.22s, tests 39ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run src/components/limit-resets.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  14:43:41
+   Duration  6.12s (transform 2.93s, setup 746ms, import 3.10s, tests 1.90s, environment 229ms)
+
+
+exit 0
+
+$ pnpm exec vitest run src/components/bot-settings/RoutinesSection.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  14:43:48
+   Duration  1.98s (transform 1.39s, setup 770ms, import 1.06s, tests 27ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run src/components/routines/CalendarEventCard.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  14:43:50
+   Duration  1.78s (transform 1.24s, setup 850ms, import 793ms, tests 18ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/cloud-backend.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  14:43:53
+   Duration  1.13s (transform 760ms, setup 976ms, import 17ms, tests 5ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:43:54
+   Duration  1.21s (transform 741ms, setup 960ms, import 12ms, tests 90ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec tsc -b --pretty false
+
+exit 0
+
+$ pnpm exec oxlint --deny-warnings src/components/RoutineCalendarPage.tsx src/components/RoutineCalendarPage.dialogs.test.ts
+
+exit 0
+
+$ git diff --check
+
+exit 0
+
+Final results: 9 test files, 107 tests passed, no skipped tests. Frontend tsc and oxlint passed. No port-based e2e is affected by this frontend-only rendering change. Verification README is absent; tests use isolated component fixtures.
+
+Frontend audit: reviewed providerLock/providerLocked/boatLocked and non-VPS backend checks across the repository. The only matching lock/non-VPS misclassification was RoutineCalendarPage.tsx:1463, now fixed. Legacy runOn=cloud handling is unchanged.
+
+$ git diff --check (including report)
+
+exit 0

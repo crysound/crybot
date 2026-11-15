@@ -1,7 +1,9 @@
+// @vitest-environment happy-dom
 import { createElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Bot } from "@/state/store";
+import { t } from "@/lib/i18n";
 
 const fixture = vi.hoisted(() => ({ dispatch: vi.fn(), showThreads: true, bots: [] as Bot[] }));
 vi.mock("@/lib/thread-preferences", () => ({ useShowThreads: () => fixture.showThreads }));
@@ -9,7 +11,7 @@ vi.mock("@/state/store", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/state/store")>();
   return { ...original, useStore: () => ({ state: { ...original.initialState, bots: fixture.bots }, dispatch: fixture.dispatch }) };
 });
-const { EdgeRow } = await import("./TeamMapPage");
+const { EdgeRow, TeamMapPage } = await import("./TeamMapPage");
 
 const bot = (id: string, extra: Partial<Bot> = {}): Bot => ({
   id, threadId: `${id}-chat`, name: id, title: "", description: "", notifications: true, color: "green", unread: false,
@@ -50,4 +52,12 @@ describe("a team map hand-off", () => {
     fixture.dispatch.mockClear();
     expect(click({ sourceBotId: "clive", targetBotId: "ada", state: "connected", groupId: "room" })).toEqual([{ type: "select", id: "room" }]);
   });
+});
+
+it("hides retired team cloud management while keeping Local VM setup", () => {
+  const markup = renderToStaticMarkup(createElement(TeamMapPage));
+  expect(markup).not.toContain(`aria-label="${t("canvas.computers")}"`);
+  expect(markup).not.toContain(t("canvas.cloudComputer"));
+  expect(markup).not.toContain("InstaBox");
+  expect(markup).toContain(t("canvas.localVm"));
 });

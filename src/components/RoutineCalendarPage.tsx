@@ -1460,7 +1460,7 @@ export function EventDetails({
           </DrawerField>
         )}
         {description && <DrawerField label={isCall ? t("routines.drawer.agenda") : t("routines.drawer.what")}><div className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink">{description}</div></DrawerField>}
-        {!isCall && !(state.config?.providerLock && (runOn === "cloud" || (primary?.computer === "cloud" && primary.cloudBackend !== "vps"))) && (
+        {!isCall && !(state.config?.providerLock && (runOn === "cloud" || (primary?.computer === "cloud" && (primary.cloudBackend ?? "instabox") === "box"))) && (
           <DrawerField label={t("routines.drawer.runsOn")}>
             <div className="flex items-start gap-2 text-[13px] text-ink">{runOn === "cloud" ? <Cloud size={14} className="mt-0.5 shrink-0 text-ink-secondary" /> : <Laptop size={14} className="mt-0.5 shrink-0 text-ink-secondary" />}<span>{runsOn.label}</span></div>
             <div className="mt-0.5 text-[11px] leading-relaxed text-ink-secondary">{runsOn.hint}</div>

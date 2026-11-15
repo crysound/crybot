@@ -4,7 +4,7 @@ import { api, ApiError } from "@/state/api";
 import { t } from "@/lib/i18n";
 import { ConfirmDialog } from "./ConfirmDialog";
 
-interface Snapshot { id: string; name: string; state: string }
+interface Snapshot { id: string; name: string; state: string; createdAt?: string | number }
 type Action = { kind: "restore" | "delete"; snapshot: Snapshot };
 const button = "rounded-lg bg-control px-3 py-2 text-[12px] text-ink hover:bg-raised-hover disabled:opacity-50";
 
@@ -13,7 +13,20 @@ function snapshotError(error: unknown): string {
   if (code === "instabox_key_missing") return t("computer.instabox.keyMissing");
   if (code === "instabox_snapshot_machine_missing") return t("computer.instabox.snapshots.machineMissing");
   if (code === "instabox_snapshot_busy") return t("computer.instabox.snapshots.busy");
+  if (code === "instabox_snapshot_machine_busy") return t("computer.instabox.snapshots.machineBusy");
+  if (code === "instabox_snapshot_conflict") return t("computer.instabox.snapshots.conflict", { reason: String(error instanceof ApiError ? error.body?.reason ?? "request_failed" : "request_failed") });
   return t("computer.instabox.snapshots.error");
+}
+
+function snapshotDateValue(value: Snapshot["createdAt"]): Date | null {
+  if (value === undefined) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? null : date;
+}
+
+function snapshotDate(value: Snapshot["createdAt"]): string {
+  const date = snapshotDateValue(value);
+  return date ? date.toLocaleString() : t("computer.instabox.snapshots.timeUnknown");
 }
 
 export function InstaboxSnapshots({ botId }: { botId: string }) {
@@ -25,6 +38,7 @@ function SnapshotPanel({ botId }: { botId: string }) {
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [action, setAction] = useState<Action | null>(null);
   const mounted = useRef(true);
   const busy = useRef(false);
@@ -46,11 +60,17 @@ function SnapshotPanel({ botId }: { botId: string }) {
     busy.current = true;
     setPending(true);
     setError(null);
+    setNotice(null);
     try {
       const path = chosen ? `${base}/${encodeURIComponent(chosen.snapshot.id)}${chosen.kind === "restore" ? "/restore" : ""}` : base;
       await api(path, { timeoutMs: 720_000, method: chosen?.kind === "delete" ? "DELETE" : "POST", ...(!chosen ? { body: "{}" } : {}) });
-      const data = await api<{ snapshots: Snapshot[] }>(base);
-      if (mounted.current) { setSnapshots(data.snapshots); setAction(null); }
+      if (mounted.current) { setAction(null); if (chosen?.kind === "restore") setNotice(t("computer.instabox.snapshots.restoreSuccess")); }
+      try {
+        const data = await api<{ snapshots: Snapshot[] }>(base);
+        if (mounted.current) setSnapshots(data.snapshots);
+      } catch {
+        if (mounted.current) setError(t("computer.instabox.snapshots.refreshError"));
+      }
     } catch (cause) {
       if (mounted.current) { setError(snapshotError(cause)); setAction(null); }
     } finally {
@@ -67,12 +87,14 @@ function SnapshotPanel({ botId }: { botId: string }) {
       </div>
       <p className="mt-2 text-[12px] leading-5 text-ink-secondary">{t("computer.instabox.snapshots.hint")}</p>
       {(loading || pending) && <p role="status" className="mt-2 flex items-center gap-2 text-[12px] text-ink-secondary"><Loader2 size={14} className="animate-spin" />{t("computer.instabox.snapshots.busy")}</p>}
+      {notice && <p role="status" className="mt-2 text-[12px] text-success">{notice}</p>}
       {error && <p role="alert" className="mt-2 text-[12px] text-danger">{error}</p>}
       {!loading && !error && snapshots.length === 0 && <p className="mt-3 text-[12px] text-ink-secondary">{t("computer.instabox.snapshots.empty")}</p>}
       <ul className="mt-2 min-w-0 divide-y divide-hairline/40">
         {snapshots.map((snapshot) => (
           <li key={snapshot.id} className="flex min-w-0 flex-wrap items-center gap-2 py-2">
             <span className="min-w-0 flex-[1_1_12rem] break-all text-[12px] text-ink">{snapshot.name}</span>
+            <time className="shrink-0 text-[11px] text-ink-secondary" dateTime={snapshotDateValue(snapshot.createdAt)?.toISOString()}>{snapshotDate(snapshot.createdAt)}</time>
             <span className="flex shrink-0 gap-2">
               <button type="button" className={button} disabled={pending || snapshot.state !== "ready"} onClick={() => setAction({ kind: "restore", snapshot })}>{t("computer.instabox.snapshots.restore")}</button>
               <button type="button" className={`${button} text-danger`} disabled={pending} onClick={() => setAction({ kind: "delete", snapshot })}>{t("common.delete")}</button>

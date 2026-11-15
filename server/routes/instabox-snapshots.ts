@@ -1,14 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
+import { InstaboxError } from "../instabox/client.ts";
 import type { InstaboxMachines, InstaboxRequest } from "../instabox/machine.ts";
 import { isSameOrigin } from "../request-auth.ts";
 import { PASS, type RouteHandler } from "./table.ts";
 
 const snapshotSchema = z.object({
   id: z.string().min(1), name: z.string(), state: z.string().optional(), status: z.string().optional(),
+  createdAt: z.union([z.string(), z.number()]).optional(), created_at: z.union([z.string(), z.number()]).optional(),
   metadata: z.object({ app: z.string().optional(), botId: z.string().optional() }).optional(),
-}).refine((snapshot) => snapshot.state !== undefined || snapshot.status !== undefined).transform((snapshot) => ({ ...snapshot, state: snapshot.state ?? snapshot.status! }));
+}).refine((snapshot) => snapshot.state !== undefined || snapshot.status !== undefined).transform((snapshot) => ({
+  ...snapshot, state: snapshot.state ?? snapshot.status!, createdAt: snapshot.createdAt ?? snapshot.created_at,
+}));
 type Snapshot = z.infer<typeof snapshotSchema>;
 const createSchema = z.object({ name: z.string().max(200).optional() });
 const operationSchema = z.object({ id: z.string().min(1), state: z.string() });
@@ -35,10 +39,32 @@ class SnapshotError extends Error {
   constructor(status: number, code: string) { super(code); this.status = status; this.code = code; }
 }
 
-async function call(request: InstaboxRequest, method: string, path: string, body?: unknown, query?: Record<string, string>): Promise<Response> {
-  const response = await request(method, path, { body, query, idempotent: true });
-  if (!response.ok) throw new SnapshotError(response.status === 404 ? 404 : 502, "upstream");
-  return response;
+function call(request: InstaboxRequest, method: string, path: string, body?: unknown, query?: Record<string, string>): Promise<Response> {
+  return request(method, path, { body, query, idempotent: true });
+}
+
+export class SnapshotClaimError extends Error {
+  readonly code: "busy" | "machine_busy";
+  constructor(code: "busy" | "machine_busy") { super(code); this.code = code; }
+}
+
+async function saveOrRestore(request: InstaboxRequest, machines: InstaboxMachines, botId: string, path: string, body: unknown): Promise<Response> {
+  try { return await call(request, "POST", path, body); }
+  catch (error) {
+    if (!(error instanceof InstaboxError) || error.status !== 409 || !["operation_conflict", "machine_not_running"].includes(error.code)) throw error;
+    const machine = await machines.find(botId);
+    if (!machine || !["suspended", "stopped"].includes(machine.state)) throw error;
+    await machines.ensureRunning(botId);
+    return call(request, "POST", path, body);
+  }
+}
+
+async function runningMachine(machines: InstaboxMachines, botId: string, machineIdFor: () => Promise<string | null>): Promise<string | null> {
+  const currentId = await machineIdFor();
+  if (!currentId) return null;
+  const current = await machines.find(botId);
+  if (current?.state === "running") return current.id;
+  return (await machines.ensureRunning(botId)).id;
 }
 
 async function readySnapshot(request: InstaboxRequest, id: string, signal?: AbortSignal): Promise<Snapshot> {
@@ -112,20 +138,28 @@ export function createInstaboxSnapshotRoutes(deps: { machines(): InstaboxMachine
     res.setHeader("cache-control", "private, no-store");
     let release: (() => void) | undefined;
     try {
-      if (!listing) release = deps.claim(botId);
+      if (!listing) {
+        try { release = deps.claim(botId); }
+        catch (error) {
+          if (error instanceof SnapshotClaimError) throw new SnapshotError(409, error.code);
+          if (error instanceof Error && "status" in error && error.status === 409) throw new SnapshotError(409, "machine_busy");
+          throw error;
+        }
+      }
       if (!deps.botExists(botId)) throw new SnapshotError(404, "bot_missing");
       if (listing) {
+        if (!await deps.machineIdFor(botId)) return json(res, 200, { snapshots: [] });
         const snapshots = await listSnapshots(request);
-        return json(res, 200, { snapshots: snapshots.filter((snapshot) => belongsTo(snapshot, botId)).map(({ id, name, state }) => ({ id, name, state })) });
+        return json(res, 200, { snapshots: snapshots.filter((snapshot) => belongsTo(snapshot, botId)).map(({ id, name, state, createdAt }) => ({ id, name, state, ...(createdAt === undefined ? {} : { createdAt }) })) });
       }
       if (saving) {
         if (!String(req.headers["content-type"] ?? "").startsWith("application/json")) throw new SnapshotError(415, "invalid");
         const parsed = createSchema.safeParse(await readBody(req).catch(() => { throw new SnapshotError(400, "invalid"); }));
         if (!parsed.success) throw new SnapshotError(400, "invalid");
-        const machineId = await deps.machineIdFor(botId);
+        const machineId = await runningMachine(machines, botId, () => deps.machineIdFor(botId));
         if (!machineId) throw new SnapshotError(409, "machine_missing");
         const name = snapshotName(botId, parsed.data.name);
-        const response = await call(request, "POST", `/v1/machines/${encodeURIComponent(machineId)}/snapshots`, {
+        const response = await saveOrRestore(request, machines, botId, `/v1/machines/${encodeURIComponent(machineId)}/snapshots`, {
           name, description: `Cry Bot snapshot for ${botId}`,
         });
         const createdPayload: unknown = await response.json();
@@ -138,16 +172,16 @@ export function createInstaboxSnapshotRoutes(deps: { machines(): InstaboxMachine
           created = snapshotSchema.parse(createdPayload);
         }
         const { id, name: readyName, state } = await readySnapshot(request, created.id, deps.signal);
-        return json(res, 201, { snapshot: { id, name: readyName, state } });
+        return json(res, 201, { snapshot: { id, name: readyName, state, ...(created.createdAt === undefined ? {} : { createdAt: created.createdAt }) } });
       }
       const response = await call(request, "GET", `/v1/snapshots/${encodeURIComponent(snapshotId!)}`);
       const snapshot = snapshotSchema.parse(await response.json());
       if (!belongsTo(snapshot, botId)) throw new SnapshotError(403, "ownership");
       if (restoring) {
         if (snapshot.state !== "ready") throw new SnapshotError(409, "not_ready");
-        const machineId = await deps.machineIdFor(botId);
+        const machineId = await runningMachine(machines, botId, () => deps.machineIdFor(botId));
         if (!machineId) throw new SnapshotError(409, "machine_missing");
-        await finishOperation(request, await call(request, "POST", `/v1/machines/${encodeURIComponent(machineId)}/restore`, { snapshotId, desiredState: "running" }), deps.signal);
+        await finishOperation(request, await saveOrRestore(request, machines, botId, `/v1/machines/${encodeURIComponent(machineId)}/restore`, { snapshotId, desiredState: "running" }), deps.signal);
         await machines.ensureRunning(botId);
       } else {
         await finishOperation(request, await call(request, "DELETE", `/v1/snapshots/${encodeURIComponent(snapshotId!)}`), deps.signal);
@@ -155,9 +189,20 @@ export function createInstaboxSnapshotRoutes(deps: { machines(): InstaboxMachine
       return json(res, 200, { ok: true });
     } catch (error) {
       if (deps.signal?.aborted) return json(res, 504, { error: "InstaBox snapshot request timed out or disconnected", code: "instabox_snapshot_timeout" });
-      if (!(error instanceof SnapshotError) && error instanceof Error && "status" in error && error.status === 409) return json(res, 409, { error: "Computer is in use", code: "instabox_snapshot_busy" });
+      if (error instanceof InstaboxError) {
+        const code = error.status === 409
+          ? ["operation_in_progress", "snapshot_in_progress"].includes(error.code) ? "busy"
+            : ["machine_busy", "machine_locked"].includes(error.code) ? "machine_busy" : "conflict"
+          : "upstream";
+        return json(res, error.status === 404 ? 404 : error.status === 409 ? 409 : 502, {
+          error: code === "busy" ? "Another snapshot operation is in progress" : code === "machine_busy" ? "Computer is in use" : "InstaBox snapshot request was refused",
+          code: `instabox_snapshot_${code}`, ...(code === "conflict" ? { reason: error.code } : {}),
+        });
+      }
       const known = error instanceof SnapshotError;
-      return json(res, known ? error.status : 502, { error: "InstaBox snapshot request failed", code: `instabox_snapshot_${known ? error.code : "upstream"}` });
+      const code = known ? error.code : "upstream";
+      const message = code === "busy" ? "Another snapshot operation is in progress" : code === "machine_busy" ? "Computer is in use" : "InstaBox snapshot request failed";
+      return json(res, known ? error.status : 502, { error: message, code: `instabox_snapshot_${code}` });
     } finally {
       release?.();
     }

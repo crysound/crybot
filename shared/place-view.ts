@@ -131,7 +131,8 @@ export const PLACE_EN = {
   "place.view.ccSignIn.line": "Sign in to {engine} first. {bot} uses it on its cloud desktop too.",
   "place.view.ccSignIn.lineMyCloud": "Sign in to {engine} in the Cloud first. {bot} uses it on its cloud desktop too.",
   "place.view.ccNew.short": "Ready",
-  "place.view.ccNew.line": "{bot} gets its own cloud desktop from Boat the first time a task needs one. The first start takes about a minute.",
+  "place.view.ccNew.line": "{bot} gets its own cloud desktop the first time a task needs one. The first start takes about a minute.",
+  "place.view.ccNew.lineInstabox": "{bot} gets its own cloud desktop the first time a task needs one. The first start takes about a minute.",
   "place.view.ccStarting.short": "Starting…",
   "place.view.ccStarting.line": "Starting {bot}'s cloud desktop. The first start takes about a minute.",
   "place.view.ccWaking.short": "Waking…",
@@ -157,11 +158,11 @@ export const PLACE_EN = {
   "place.view.ccClearing.short": "Clearing up",
   "place.view.ccClearing.line": "{bot}'s previous cloud desktop is still being removed.",
   "place.view.ccProvider.short": "Couldn't start",
-  "place.view.ccProvider.line": "Your Boat account couldn't start {bot}'s cloud desktop: {words}",
+  "place.view.ccProvider.line": "Your cloud service account couldn't start {bot}'s cloud desktop: {words}",
   "place.view.ccOnMyCloud.short": "For Cloud bots",
   "place.view.ccOnMyCloud.line": "Cloud desktops from your plan work for Cloud bots for now.",
-  "place.view.ccNeedsKey.short": "Connect Boat first",
-  "place.view.ccNeedsKey.line": "Bots here can get their own cloud desktops from Boat, a paid service.",
+  "place.view.ccNeedsKey.short": "Connect cloud service first",
+  "place.view.ccNeedsKey.line": "Bots here can get their own cloud desktops through a paid cloud service.",
   "place.view.vps.short": "Your own machine",
   "place.view.vps.line": "Uses your own Linux machine, connected over SSH.",
   "place.view.browser.short": "Web pages only",
@@ -192,7 +193,7 @@ export const PLACE_EN = {
   "place.action.manageComputers": "Manage cloud desktops",
   "place.action.tryAgain": "Try again",
   "place.action.openMyCloud": "Open the Cloud",
-  "place.action.addBoatKey": "Connect Boat",
+  "place.action.addBoatKey": "Connect cloud service",
   "place.action.turnOnBrowser": "Turn on the browser",
   "place.action.openTeamMap": "Open Team map",
   "place.action.openVmSettings": "Private desktop settings",
@@ -219,7 +220,7 @@ export const PLACE_WORDS: Record<PlaceActionId, string> = {
   "manage-computers": "Manage your cloud desktops in Settings → Bot desktops.",
   "try-again": "Try again.",
   "open-my-cloud": "Open My Cloud from the menu at the top of the sidebar.",
-  "add-boat-key": "Connect your Boat account in AI › Other services.",
+  "add-boat-key": "Connect your cloud service account in AI › Other services.",
   "turn-on-browser": "Turn on the built-in browser in the Screen panel.",
   "open-team-map": "Open Team map to manage it.",
   "open-vm-settings": "Check it in Settings → Bot desktops.",
@@ -308,7 +309,7 @@ const ACTION_KEY: Record<PlaceActionId, PlaceKey> = {
 export function placeState(facts: PlaceFacts): { state: PlaceState; params: PlaceParams } {
   const bot = facts.bot;
   const model = facts.engine.model || facts.engine.name;
-  if (facts.providerLock && facts.place === "cloud" && facts.backend !== "vps") return { state: "off", params: { bot } };
+  if (facts.providerLock && facts.place === "cloud" && facts.backend === "box") return { state: "off", params: { bot } };
   if (facts.place === "off") return { state: "off", params: { bot } };
   if (facts.place === "auto") {
     return facts.teamComputer && !facts.providerLock
@@ -361,7 +362,7 @@ function sourceAction(source: PlaceSource, state: PlaceState): PlaceActionId | n
   }
 }
 
-function lineKey(state: PlaceState, params: PlaceParams, server?: ServerKind): PlaceKey {
+function lineKey(state: PlaceState, params: PlaceParams, server?: ServerKind, backend?: PlaceFacts["backend"]): PlaceKey {
   const segment = STATE[state].key;
   if (state === "auto") {
     return server === "my-cloud" ? "place.view.auto.lineMyCloud" : server === "linux" || server === "remote" ? "place.view.auto.lineLinux" : "place.view.auto.lineDesktop";
@@ -374,6 +375,7 @@ function lineKey(state: PlaceState, params: PlaceParams, server?: ServerKind): P
     if (!params.holders?.length || !params.plan || params.max === undefined) return "place.view.ccAtOnce.lineUnknown";
     return params.max === 1 ? "place.view.ccAtOnce.lineOne" : "place.view.ccAtOnce.lineMany";
   }
+  if (state === "cc-new" && backend === "instabox") return "place.view.ccNew.lineInstabox";
   return `place.view.${segment}.line` as PlaceKey;
 }
 
@@ -397,6 +399,7 @@ function templateParams(params: PlaceParams, locale: string): Record<string, str
 
 export interface PlaceContext {
   server?: ServerKind;
+  backend?: PlaceFacts["backend"];
   role: "admin" | "user";
   mode?: "simple" | "advanced";
   source?: PlaceSource;
@@ -409,9 +412,10 @@ export interface PlaceContext {
 /** One state, worded: its short label, its one line and its one action. */
 export function placeViewOf(state: PlaceState, params: PlaceParams, context: PlaceContext): PlaceView {
   const translate = context.translate ?? english;
-  const values = templateParams(params, context.locale ?? "en");
+  const safeParams = params.words === undefined ? params : { ...params, words: params.words.replace(/\bboat\b/gi, "cloud service") };
+  const values = templateParams(safeParams, context.locale ?? "en");
   const segment = STATE[state].key;
-  let line = translate(lineKey(state, params, context.server), values);
+  let line = translate(lineKey(state, params, context.server, context.backend), values);
   let action: PlaceActionId | null = context.source && PASSING.has(state) ? sourceAction(context.source, state) : STATE[state].action;
   // A failed row never offers what only the panel can do on the spot.
   if (context.source && (action === "start" || action === "wake" || action === "watch")) action = null;
@@ -431,7 +435,7 @@ export function placeViewOf(state: PlaceState, params: PlaceParams, context: Pla
       : translate(ACTION_KEY[action], values);
   return {
     state,
-    params,
+    params: safeParams,
     short: translate(`place.view.${segment}.short` as PlaceKey, values),
     line,
     action: action && label ? { id: action, label } : null,
@@ -441,7 +445,7 @@ export function placeViewOf(state: PlaceState, params: PlaceParams, context: Pla
 /** The view of a place from its facts. */
 export function placeView(facts: PlaceFacts, options: { translate?: PlaceTranslate; locale?: string } = {}): PlaceView {
   const { state, params } = placeState(facts);
-  return placeViewOf(state, params, { server: facts.providerLock && facts.server === "my-cloud" ? "linux" : facts.server, role: facts.role, mode: facts.mode, ...options });
+  return placeViewOf(state, params, { server: facts.providerLock && facts.server === "my-cloud" ? "linux" : facts.server, backend: facts.backend, role: facts.role, mode: facts.mode, ...options });
 }
 
 /** A stored failed-turn row, worded for this reader. */
@@ -590,6 +594,9 @@ export function cloudRefusal(failure: CloudFailure, included: boolean): { state:
   if (NO_START_WORDS.some((words) => words.test(message))) return { state: "cc-no-start", params: {} };
   if (CLEARING_WORDS.some((words) => words.test(message))) return { state: "cc-clearing", params: {} };
   if ((failure.status ?? 0) >= 500 || PASSING_WORDS.some((words) => words.test(message))) return { state: "cc-unavailable", params: {} };
-  if (!included && message) return { state: "cc-provider", params: { words: message.replace(/[\s.]+$/, "") + "." } };
+  if (!included && message) {
+    const safeMessage = message.replace(/\bboat\b/gi, "cloud service");
+    return { state: "cc-provider", params: { words: safeMessage.replace(/[\s.]+$/, "") + "." } };
+  }
   return { state: "cc-no-start", params: {} };
 }

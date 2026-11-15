@@ -254,9 +254,10 @@ export function savedState(entry: KeyEntry, config: ConfigStatus | null | undefi
 
 /** With Azure or Fish Audio chosen, Live calls do not use the OpenAI key the Live calls row points at, so that row is hidden. */
 export function keyHidden(id: KeyId, config: ConfigStatus | null | undefined): boolean {
+  if (id === "box") return true;
   if (id === "instabox") return instaboxKeyStatus(config).fromEnv;
   if (id === "instaboxEnv") return !instaboxKeyStatus(config).fromEnv;
-  if (config?.providerLock && (id === "box" || KEY_CATALOG.find((entry) => entry.id === id)?.section === "ai")) return true;
+  if (config?.providerLock && KEY_CATALOG.find((entry) => entry.id === id)?.section === "ai") return true;
   const provider = config?.live?.provider;
   return id === "liveCalls" && (provider === "azure" || provider === "fish");
 }

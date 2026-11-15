@@ -1,5 +1,5 @@
 import type { AppConfig } from "../config.ts";
-import { createInstaboxSnapshotRoutes } from "../routes/instabox-snapshots.ts";
+import { createInstaboxSnapshotRoutes, SnapshotClaimError } from "../routes/instabox-snapshots.ts";
 import { PASS, type RouteHandler } from "../routes/table.ts";
 import { createInstaboxRequest } from "./client.ts";
 import { instaboxApiKey } from "./key.ts";
@@ -14,6 +14,7 @@ export function createSnapshotWiring(deps: {
   baseUrl?: string;
   snapshotTimeoutMs?: number;
 }): RouteHandler {
+  const activeSnapshots = new Set<string>();
   return async ctx => {
     if (!/^\/api\/bots\/[\w-]+\/instabox\/snapshots(?:\/|$)/.test(ctx.path)) return PASS;
     const controller = new AbortController();
@@ -37,12 +38,14 @@ export function createSnapshotWiring(deps: {
         machineIdFor: async botId => (await machines?.find(botId))?.id ?? null,
         botExists: deps.eligible, signal: controller.signal,
         claim: botId => {
+          if (activeSnapshots.has(botId)) throw new SnapshotClaimError("busy");
           const release = deps.claim(botId);
           if (deps.inUse(botId)) {
             release();
-            throw Object.assign(new Error("Computer is in use"), { status: 409 });
+            throw new SnapshotClaimError("machine_busy");
           }
-          return release;
+          activeSnapshots.add(botId);
+          return () => { activeSnapshots.delete(botId); release(); };
         },
       })({ ...ctx, readBody: async req => {
         controller.signal.throwIfAborted();

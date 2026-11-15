@@ -6,7 +6,7 @@ import { createInstaboxRequest } from "./client.ts";
 import { instaboxApiKey } from "./key.ts";
 import type { InstaboxMachine, InstaboxMachines, InstaboxRequest } from "./machine.ts";
 import { createInstaboxMachines } from "./machines.ts";
-import { requireInstabox } from "./power.ts";
+import { instaboxStatus, requireInstabox } from "./power.ts";
 import { instaboxDesktopTarget } from "./vnc.ts";
 
 export function createInstaboxWiring(deps: { cfg(): AppConfig; eligible(botId: string): boolean; claim(botId: string, allowPreview?: boolean): () => void; inUse(botId: string): boolean; snapshotTimeoutMs?: number }) {
@@ -38,6 +38,11 @@ export function createInstaboxWiring(deps: { cfg(): AppConfig; eligible(botId: s
   const machines = () => service()?.machines ?? null;
   return {
     machines,
+    previewStatus(botId: string) {
+      const key = instaboxApiKey(deps.cfg());
+      const probe = key ? createInstaboxMachines(createInstaboxRequest(key, fixture ? fixtureApi : undefined, 2_500)) : null;
+      return instaboxStatus(probe, botId);
+    },
     allowInsecureLoopbackUpstream: fixture,
     tools(boxId: string | null | undefined) {
       if (!boxId?.startsWith("instabox/")) return undefined;

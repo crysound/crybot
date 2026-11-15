@@ -39,6 +39,23 @@ it.each([200, 400])("suspends after a successful backend switch only (status %s)
   expect(json).toHaveBeenCalledOnce();
 });
 
+it.each([
+  { before: undefined, after: "vps", suspendCount: 1 },
+  { before: undefined, after: "instabox", suspendCount: 0 },
+  { before: "instabox", after: undefined, suspendCount: 0 },
+] as const)("uses effective backends for $before → $after", async ({ before, after, suspendCount }) => {
+  let bot = { id: "bot", cloudBackend: before } as BotRecord;
+  const suspend = vi.fn().mockResolvedValue(undefined);
+  const json = vi.fn();
+  const route = withInstaboxBackendPower(async ctx => {
+    bot = { ...bot, cloudBackend: after };
+    ctx.json(ctx.res, 200, { bot });
+  }, { bot: () => bot, machines: () => ({ suspend }) as unknown as InstaboxMachines });
+  await route({ path: "/api/bots/bot", method: "PATCH", json } as unknown as RouteContext);
+  expect(suspend).toHaveBeenCalledTimes(suspendCount);
+  expect(json).toHaveBeenCalledOnce();
+});
+
 
 it("runs failed suspension in the background without misreporting a saved backend switch as a failed patch", async () => {
   let bot = { id: "bot", cloudBackend: "instabox" } as BotRecord;

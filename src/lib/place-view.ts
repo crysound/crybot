@@ -9,7 +9,6 @@ import { useAdvancedMode } from "@/lib/interface-mode";
 import { pageOnRemoteServer } from "@/lib/local-computer";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { openBotSettings } from "@/components/bot-panel/panel-link";
-import { openKeySettings } from "@/components/keys/key-focus";
 import type { Action, Bot, ConfigStatus, InstanceInfo } from "@/state/store";
 import type { LocaleKey } from "@/locales";
 import {
@@ -70,9 +69,9 @@ export function placeFacts(input: {
     providerLock: config?.providerLock,
     server: seat.server,
     bot: bot.name,
-    plan: bot.cloudBackend === "instabox" ? false : seat.plan,
-    boat: bot.cloudBackend === "instabox" ? (config?.instabox?.configured ? "own-key" : "none") : config?.box?.configured ? (config.box.included ? "included" : "own-key") : "none",
-    backend: bot.cloudBackend ?? "box",
+    plan: (bot.cloudBackend ?? "instabox") === "instabox" ? false : seat.plan,
+    boat: (bot.cloudBackend ?? "instabox") === "instabox" ? (config?.instabox?.configured ? "own-key" : "none") : config?.box?.configured ? (config.box.included ? "included" : "own-key") : "none",
+    backend: bot.cloudBackend ?? "instabox",
     engine: engineFacts(instance, bot.modelSelection.model),
     toolsAllowComputer: canUseMcpServer(bot.toolScope, "computer"),
     browserOn: builtInBrowserEnabled(config) && browserAvailable(config),
@@ -86,6 +85,7 @@ export function placeFacts(input: {
 
 export function placeViewFor(facts: PlaceFacts): PlaceView {
   const view = placeView(facts, { translate: placeTranslate, locale: activeLocale() });
+  if (facts.backend === "box" && facts.place === "cloud") return { ...view, short: t("botAccess.cloud.switchInstabox"), line: t("botAccess.cloud.retired"), action: null };
   return facts.backend === "instabox" && view.state === "cc-needs-key"
     ? { ...view, short: t("computer.instabox.keyMissing"), line: t("botAccess.cloud.instaboxKeyHint"), action: null } : view;
 }
@@ -93,7 +93,8 @@ export function placeViewFor(facts: PlaceFacts): PlaceView {
 export function placeRowViewFor(row: PlaceRow, seat: PlaceSeat, worksOnLabel?: string): PlaceView {
   if (seat.providerLock && ((row.state.startsWith("cc-") && !["cc-cannot", "cc-tools-off", "cc-sign-in"].includes(row.state)) || row.state === "auto-team")) return placeRowView({ ...row, state: "off" }, { server: seat.server, role: seat.role, translate: placeTranslate });
   const read = row.state === "cc-needs-key" && seat.plan && seat.server !== "my-cloud" ? { ...row, state: "cc-on-my-cloud" as const } : row;
-  return placeRowView(read, { server: seat.server, role: seat.role, mode: seat.mode, worksOnLabel, translate: placeTranslate, locale: activeLocale() });
+  const view = placeRowView(read, { server: seat.server, role: seat.role, mode: seat.mode, worksOnLabel, translate: placeTranslate, locale: activeLocale() });
+  return view.action && (["add-boat-key", "manage-computers"].includes(view.action.id) || row.state === "auto-team") ? { ...view, action: null } : view;
 }
 
 export function placeBlocked(view: PlaceView): boolean {
@@ -138,8 +139,8 @@ export function openPlaceAction(
     case "open-tools": openBotSettings(dispatch, "access", { botId: target.botId, page: "tools" }); return true;
     case "change-routine": openBotSettings(dispatch, "routines", { botId: target.botId }); return true;
     case "sign-in": appSettings("engines"); return true;
-    case "manage-computers": appSettings("computer"); return true;
-    case "add-boat-key": dispatch(openKeySettings("box")); return true;
+    case "manage-computers":
+    case "add-boat-key": return false;
     case "open-vm-settings":
       window.sessionStorage?.setItem("crybot.settings.section", "computer");
       appSettings("computer");

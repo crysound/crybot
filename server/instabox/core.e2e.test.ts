@@ -172,7 +172,7 @@ it.each(["vps", "instabox"] as const)("checks run_on=cloud %s turns against the 
     return { status: response.status, body: await response.json() as any };
   };
   try {
-    const created = await request("POST", "/api/bots", { computer: "off" });
+    const created = await request("POST", "/api/bots", { settings: { computer: "off", cloudBackend: backend } });
     expect(created.status, JSON.stringify(created.body)).toBe(201);
     const bot = created.body.bot;
     const path = `/api/bots/${bot.id}`;
@@ -390,7 +390,7 @@ it.each(["http", "network"] as const)("keeps deletion independent of InstaBox %s
     return { status: response.status, body: await response.json() as any };
   };
   try {
-    const bot = (await request("POST", "/api/bots")).body.bot;
+    const bot = (await request("POST", "/api/bots", { settings: { cloudBackend: "box" } })).body.bot;
     expect((await request("PATCH", `/api/bots/${bot.id}`, { cloudBackend: "box" })).status).toBe(200);
     if (mode === "http") fake.failNext({ status: 503, code: "fixture_unavailable" });
     else await fake.close();

@@ -103,13 +103,13 @@ export function ComputerPanel({
   const livePlace = effectivePlace(profileBot, liveTask);
   const livePin = personPin(liveTask);
   const threadBot = currentTaskBot(profileBot);
-  const connectionKey = `${profileBot.id}:${profileBot.threadId}:${livePlace}:${profileBot.cloudBackend ?? "box"}:${threadBot.modelSelection.instanceId}`;
+  const connectionKey = `${profileBot.id}:${profileBot.threadId}:${livePlace}:${profileBot.cloudBackend ?? "instabox"}:${threadBot.modelSelection.instanceId}`;
   const [autoSurface, setAutoSurface] = useState<{ key: string; surface: Bot["computer"] } | null>(null);
   const autoSurfaceCurrent = autoSurface?.key === connectionKey;
   const surfaceReady = livePlace !== "auto" || autoSurfaceCurrent;
   const bot = { ...threadBot, computer: livePlace === "auto"
     ? autoSurfaceCurrent ? autoSurface.surface : undefined : livePlace };
-  const viewerConnectionKey = `${bot.id}:${bot.threadId}:${bot.computer}:${bot.cloudBackend ?? "box"}`;
+  const viewerConnectionKey = `${bot.id}:${bot.threadId}:${bot.computer}:${bot.cloudBackend ?? "instabox"}`;
   const viewerConnection = useRef(viewerConnectionKey);
   viewerConnection.current = viewerConnectionKey;
   const desktopJoin = useRef<AbortController | null>(null);
@@ -118,7 +118,7 @@ export function ComputerPanel({
   const threadPath = useCallback((suffix: string) =>
     `/api/bots/${profileBot.id}/${suffix}?threadId=${encodeURIComponent(profileBot.threadId)}`,
   [profileBot.id, profileBot.threadId]);
-  const canManageCloud = profileBot.computer === "cloud" && livePlace === "cloud" && (!state.config?.providerLock || profileBot.cloudBackend === "vps");
+  const canManageCloud = profileBot.computer === "cloud" && livePlace === "cloud" && (!state.config?.providerLock || profileBot.cloudBackend !== "box");
   const canManageVm = profileBot.computer === "vm" && livePlace === "vm";
   const { capabilities, ready: capabilitiesReady } = useDesktopCapabilities();
   const localAvailable = capabilities.localComputer.available;
@@ -144,7 +144,7 @@ export function ComputerPanel({
   const [teamComputer, setTeamComputer] = useState<{
     id: string; name: string; botId: string; section: string;
   } | null>(null);
-  const cloudBackend = bot.cloudBackend ?? "box";
+  const cloudBackend = bot.cloudBackend ?? "instabox";
   const providerLock = state.config?.providerLock === true;
   const computerSelectionPersisted = Boolean(
     persistedComputerSelection
@@ -284,7 +284,7 @@ export function ComputerPanel({
 
   const previousPanelTarget = useRef<string | null>(null);
   // Excludes the model and Auto's resolved surface: neither may move the tab.
-  const panelTargetKey = `${profileBot.id}:${profileBot.threadId}:${livePlace}:${profileBot.cloudBackend ?? "box"}`;
+  const panelTargetKey = `${profileBot.id}:${profileBot.threadId}:${livePlace}:${profileBot.cloudBackend ?? "instabox"}`;
   useEffect(() => {
     const previous = previousPanelTarget.current;
     if (previous === panelTargetKey && (explicitPanelView.current || !(bot.computer === "browser" && browserEnabled))) return;
@@ -374,11 +374,12 @@ export function ComputerPanel({
     setError(null);
     // The selection may be optimistic: never let it choose a provider until the PATCH confirms server state.
     if (!computerSelectionPersisted || !surfaceReady) return;
-    if (bot.computer === undefined || (providerLock && bot.computer === "cloud" && cloudBackend !== "vps")) {
+    if (bot.computer === undefined || (providerLock && bot.computer === "cloud" && cloudBackend === "box")) {
       setPhase("auto-unavailable");
       return;
     }
 
+    if (bot.computer === "cloud" && cloudBackend === "box") { setPhase("unconfigured"); return; }
     if (bot.computer === "off") {
       setPhase("off");
       return;
@@ -1100,7 +1101,7 @@ export function ComputerPanel({
           : boatState === "archived" || boatState === "stopped" ? "asleep" : undefined;
   const viewOf = (place: PlaceFacts["place"], refusal?: PlaceFacts["refusal"]): PlaceView => placeViewFor({
     ...placeFacts({
-      bot: providerLock && place === "cloud" ? { ...bot, cloudBackend: "vps" } : bot, place, seat: placeSeat, config: state.config, instances: state.instances,
+      bot, place, seat: placeSeat, config: state.config, instances: state.instances,
       local: { ready: localSelectable, reason: localDisabledReason ?? t("computer.unavailableLocal") },
       ...(place === "cloud" ? { computer: cloudComputer } : {}),
       ...(place === "auto" && currentTeamComputer ? { teamComputer: currentTeamComputer.name } : {}),
@@ -1114,13 +1115,13 @@ export function ComputerPanel({
   const autoView = viewOf("auto");
   const localHidden = pageOnRemoteServer(capabilities);
   const placeOptions = worksOnChoices(state.config, capabilities).map(([mode, labelKey, descriptionKey, Icon]) => {
-    const selected = worksOnSelected(mode, profileBot.computer, capabilities) && !(providerLock && mode === "cloud" && profileBot.cloudBackend !== "vps");
-    const managedBy = placeManagedBy(mode, providerLock ? "vps" : profileBot.cloudBackend, managedPolicy);
+    const selected = worksOnSelected(mode, profileBot.computer, capabilities);
+    const managedBy = placeManagedBy(mode, profileBot.cloudBackend, managedPolicy);
     const view = mode === null ? autoView : mode === "cloud" ? cloudView : viewOf(mode);
     const disabled = Boolean(managedBy) || placeBlocked(view);
     const issue = !managedBy && placeHasIssue(view);
     const unavailableTitle = managedBy ?? (issue ? view.line : mode === "browser" ? t("computer.browserOnlyTitle") : undefined);
-    return { mode, labelKey, descriptionKey, Icon, simpleLabel: providerLock && mode === "cloud" ? t("botAccess.cloud.selfHostedVps") : worksOnSimpleLabel(mode ?? undefined, capabilities.host.platform), selected, managedBy, disabled, unavailableTitle, view, issue };
+    return { mode, labelKey, descriptionKey, Icon, simpleLabel: worksOnSimpleLabel(mode ?? undefined, capabilities.host.platform), selected, managedBy, disabled, unavailableTitle, view, issue };
   });
   const worksOnView = placeOptions.find(({ selected }) => selected)?.view ?? autoView;
   const runPlaceAction = (id: PlaceActionId) => {
@@ -1139,11 +1140,11 @@ export function ComputerPanel({
       </button>
     ) : null;
   const selectPlace = (mode: (typeof placeOptions)[number]["mode"]) => {
-    if ((mode === null && profileBot.computer === undefined) || (mode === profileBot.computer && !(providerLock && mode === "cloud" && cloudBackend !== "vps"))) return;
+    if (mode === null && profileBot.computer === undefined) return;
     if (mode === "local" && approvalModeFor(profileBot) === "auto") {
       setLocalAutoWarningTarget(bot.id);
     }
-    else if (mode === "cloud" && providerLock) updateComputerSelection({ computer: mode, cloudBackend: "vps" });
+    else if (mode === "cloud") updateComputerSelection({ computer: mode, cloudBackend: profileBot.cloudBackend === "vps" ? "vps" : "instabox" });
     else if (mode === "browser") updateComputerSelection({ computer: mode, browser: true });
     else updateComputerSelection({ computer: mode });
   };
@@ -1233,7 +1234,7 @@ export function ComputerPanel({
         </div>
       </div>
 
-      {panelView === "routines" ? (
+      {panelView === "computer" && bot.computer === "cloud" && cloudBackend === "box" ? <CloudBackendPicker value="box" onChange={(backend) => updateComputerSelection({ cloudBackend: backend })} /> : panelView === "routines" ? (
         <div {...tabPanelProps("routines")} className={cn("min-h-0 flex-1 overflow-y-auto px-4 pb-4", TAB_PANEL_FOCUS)}>
           <RoutinesSection key={bot.id} bot={bot} routines={botRoutines} runs={state.routineRuns} defaultRunOn={cloudRoutineReady ? "cloud" : "bot"} />
         </div>
@@ -1504,14 +1505,14 @@ export function ComputerPanel({
             {errorText}
           </div>
         )}
-        {!providerLock && (boatKeyShown || (phase === "unconfigured" && (cloudView.action?.id === "add-boat-key" || cloudBackend === "instabox"))) && (
+        {cloudBackend === "instabox" && (boatKeyShown || phase === "unconfigured") && (
           <div data-boat-key className="mt-3 rounded-xl bg-card py-1.5">
-            <KeyRow id={cloudBackend === "instabox" ? "instabox" : "box"} via="computer_panel"
+            <KeyRow id="instabox" via="computer_panel"
               onSaved={(configured) => { setBoatKeyShown(true); if (configured) setRetry((n) => n + 1); }}
             />
           </div>
         )}
-        {cloudBackend === "instabox" && profileBot.computer === "cloud" && phase !== "team-boat" && <InstaboxSnapshots botId={bot.id} />}
+        {panelView === "computer" && cloudBackend === "instabox" && profileBot.computer === "cloud" && phase !== "team-boat" && <InstaboxSnapshots botId={bot.id} />}
         {advanced && phase === "vps-unconfigured" && (
           <div className="mt-3 rounded-xl bg-card p-4">
             <div className="mb-3 text-[13px] text-ink-secondary">

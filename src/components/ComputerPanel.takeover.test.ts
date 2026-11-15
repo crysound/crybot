@@ -504,7 +504,7 @@ describe("shared screen takeover", () => {
     fixture.liveRenders = [];
     shown = makeBot({ id: "rover", name: "Rover", computer: "vm" });
     draw();
-    expect(fixture.takeoverRenders[0]).toEqual({ botId: "rover", session: "rover:thread:vm:box:computer" });
+    expect(fixture.takeoverRenders[0]).toEqual({ botId: "rover", session: "rover:thread:vm:instabox:computer" });
     expect(fixture.liveRenders).toEqual([]);
     expect(liveDesktop()).toBeNull();
     await settle();

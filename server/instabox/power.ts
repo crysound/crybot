@@ -1,5 +1,6 @@
 import { runInstaboxComputerTool } from "./computer-tools.ts";
 import { desktopViewerUrl } from "../routes/desktop-viewer.ts";
+import { cloudKindOf } from "../cloud-backend.ts";
 import type { AppConfig } from "../config.ts";
 import type { RouteHandler } from "../routes/table.ts";
 import type { BotRecord } from "../store.ts";
@@ -83,12 +84,13 @@ export function withInstaboxBackendPower(handler: RouteHandler, deps: {
   return async ctx => {
     const match = ctx.method === "PATCH" && /^\/api\/bots\/([\w-]+)$/.exec(ctx.path);
     const before = match ? deps.bot(match[1]) : null;
-    if (before?.cloudBackend !== "instabox") return handler(ctx);
+    if (!before || cloudKindOf(before) !== "instabox") return handler(ctx);
     const botId = before.id;
     let response: Parameters<typeof ctx.json> | undefined;
     const result = await handler({ ...ctx, json: (...args) => { response = args; } });
     if (response) {
-      if (response[1] >= 200 && response[1] < 300 && deps.bot(botId)?.cloudBackend !== "instabox") {
+      const after = deps.bot(botId);
+      if (response[1] >= 200 && response[1] < 300 && after && cloudKindOf(after) !== "instabox") {
         void Promise.resolve().then(() => requireInstabox(deps.machines()).suspend(botId)).catch(error => {
           console.warn("InstaBox machine could not be suspended after a backend change", error instanceof Error ? error.message : String(error));
         });
