@@ -31,17 +31,22 @@ export function cliInvocation(executable: string, args: string[], platform = pro
   return { command: executable, args };
 }
 
+function cleanBrokerCharacter(character: string): string {
+  const code = character.codePointAt(0)!;
+  if (code === 0x061c || code === 0x180e || code === 0xfeff ||
+    (code >= 0x200b && code <= 0x200f) || (code >= 0x202a && code <= 0x202e) ||
+    (code >= 0x2060 && code <= 0x2064) || (code >= 0x2066 && code <= 0x2069)) return "";
+  if (/\s/u.test(character) || code === 0x85) return " ";
+  if (code <= 0x1f || (code >= 0x7f && code <= 0x9f)) return "";
+  return character;
+}
+
 function brokerErrorMessage(error: unknown): string {
-  const rawMessage = error instanceof BrokerAuthorizationError && error.authorizationUrl
-    ? error.message.slice(0, -error.authorizationUrl.length)
+  const rawMessage = error instanceof BrokerAuthorizationError
+    ? error.brokerMessage
     : error instanceof Error ? error.message : "";
-  const message = [...rawMessage].map(character => {
-    const code = character.codePointAt(0)!;
-    if (/\s/u.test(character) || code === 0x85) return " ";
-    return code <= 0x1f || (code >= 0x7f && code <= 0x9f) ||
-      (code >= 0x200b && code <= 0x200f) || (code >= 0x202a && code <= 0x202e) ||
-      (code >= 0x2066 && code <= 0x2069) ? "" : character;
-  }).join("").replace(/ +/g, " ").trim();
+  const message = [...rawMessage].map(cleanBrokerCharacter).join("")
+    .replace(/ +/g, " ").trim().replace(/(?:https?:\/\/|www\.)\S+/gi, "[链接已移除]");
   const characters = [...message];
   return characters.length > 300 ? characters.slice(0, 299).join("") + "…" : message || "飞书代领服务不可用";
 }
