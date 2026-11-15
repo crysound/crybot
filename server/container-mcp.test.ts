@@ -213,10 +213,12 @@ describe("screen MCP connection validation", () => {
     const { args } = containerMcpExecArgs(["docker", CONTAINER, "/run/user/61002/crybot-cua.sock", "crybot-s2", ":2"]);
     expect(args.slice(args.indexOf(CONTAINER))).toEqual([
       CONTAINER, "env", "-u", "VNC_PW", "prlimit", "--nproc=1500", "--",
+      "/usr/local/libexec/crybot/screen-program",
       "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
       CUA_EXECUTABLE, "mcp", "--socket", "/run/user/61002/crybot-cua.sock",
     ]);
     expect(args).toContain("DISPLAY=:2");
+    expect(args).toContain("XAUTHORITY=/run/crybot/screens/s2/Xauthority");
     expect(args).toContain("crybot-s2");
   });
 });

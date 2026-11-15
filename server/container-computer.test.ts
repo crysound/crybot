@@ -811,6 +811,27 @@ describe("containerComputerStatus", () => {
     expect(fake.calls.some(call => call.startsWith("docker exec"))).toBe(false);
   });
 
+  it("probes the multi-screen fallback marker even when desktop probing is disabled", async () => {
+    const detail = JSON.parse(readyInspect())[0];
+    detail.Config.Labels[SCREENS_LAYOUT_LABEL] = "multi";
+    const calls: string[] = [];
+    const fakeRun: CommandRunner = async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (command === "/usr/bin/which") {
+        if (args[0] === "docker") return { stdout: "docker\n" };
+        throw new Error("missing");
+      }
+      if (command === "docker" && args[0] === "info") return { stdout: "29\n" };
+      if (command === "docker" && args[0] === "image") return { stdout: preparedImageInspect() };
+      if (command === "docker" && args[0] === "inspect") return { stdout: JSON.stringify([detail]) };
+      if (args.some(arg => arg.includes("screens-layout-single"))) return { stdout: "multi\n" };
+      throw new Error(`unexpected command: ${command} ${args.join(" ")}`);
+    };
+    const status = await containerComputerStatus(fakeRun, "linux", undefined, { probeDesktop: false });
+    expect(status.screens_layout).toBe("multi");
+    expect(calls.some(call => call.includes("screens-layout-single"))).toBe(true);
+  });
+
   it("raises the process cap of a desktop made under an older, lower one, in place and once", async () => {
     const statusOf = async (botId: string, pids: number | null, targetLabel?: string) => {
       const target = perBotLocalVmTarget(botId);
@@ -1597,10 +1618,10 @@ describe("screen execution regressions", () => {
     await containerExec(sharedScreenTarget(2), "id -u", { runtime: "docker", timeoutSeconds: 10, exec });
     expect(exec).toHaveBeenCalledExactlyOnceWith("docker", [
       "exec", "-u", "crybot-s2", "-w", "/home/cua/workspace/screens/s2",
-      "-e", "HOME=/home/crybot-s2", "-e", "DISPLAY=:2", "-e", "XDG_RUNTIME_DIR=/run/user/61002",
+      "-e", "HOME=/home/crybot-s2", "-e", "DISPLAY=:2", "-e", "XAUTHORITY=/run/crybot/screens/s2/Xauthority", "-e", "XDG_RUNTIME_DIR=/run/user/61002",
       "-e", "TMPDIR=/run/user/61002/tmp", "-e", "CUA_DRIVER_INSTALL_CHANNEL=python_package",
       "-e", "CUA_DRIVER_RS_TELEMETRY_ENABLED=0", CONTAINER, "env", "-u", "VNC_PW",
-      "prlimit", "--nproc=1500", "--", "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
+      "prlimit", "--nproc=1500", "--", "/usr/local/libexec/crybot/screen-program", "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
       "timeout", "-k", "5", "10", "sh", "-lc", "id -u",
     ], { timeout: 30_000 });
   });
@@ -1624,6 +1645,66 @@ describe("screen execution regressions", () => {
       ["docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "supervisorctl", "-c", "/etc/crybot/supervisord.conf", "stop", "screen-s2:*"], 30_000],
       ["docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000],
     ]);
+  });
+
+  it("tries cleanup after supervisor stop failure and preserves that error", async () => {
+    const stopError = new Error("supervisor stop failed");
+    const run = vi.fn()
+      .mockRejectedValueOnce(stopError)
+      .mockResolvedValueOnce({ stdout: "" });
+    await expect(stopScreen("docker", sharedScreenTarget(2), run)).rejects.toBe(stopError);
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run).toHaveBeenNthCalledWith(2, "docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000);
+  });
+
+  it("throws cleanup failure when supervisor stop succeeds", async () => {
+    const cleanupError = new Error("process cleanup failed");
+    const run = vi.fn()
+      .mockResolvedValueOnce({ stdout: "" })
+      .mockRejectedValueOnce(cleanupError);
+    await expect(stopScreen("docker", sharedScreenTarget(2), run)).rejects.toBe(cleanupError);
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run).toHaveBeenNthCalledWith(2, "docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000);
+  });
+
+  it("retains both stop errors with the supervisor error as cause", async () => {
+    const stopError = new Error("supervisor stop failed");
+    const cleanupError = new Error("process cleanup failed");
+    const run = vi.fn().mockRejectedValueOnce(stopError).mockRejectedValueOnce(cleanupError);
+    let failure: AggregateError | undefined;
+    try {
+      await stopScreen("docker", sharedScreenTarget(2), run);
+    } catch (error) {
+      failure = error as AggregateError;
+    }
+    expect(failure).toBeDefined();
+    const aggregate = failure!;
+    expect(aggregate).toBeInstanceOf(AggregateError);
+    expect(aggregate.cause).toBe(stopError);
+    expect(aggregate.errors).toEqual([stopError, cleanupError]);
+    expect(aggregate.message).toContain("supervisor stop failed");
+    expect(aggregate.message).toContain("process cleanup failed");
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run).toHaveBeenNthCalledWith(2, "docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000);
+  });
+
+  it.each(["stop", "cleanup", "both"])("preserves undefined rejection from %s", async step => {
+    const run = vi.fn();
+    if (step === "cleanup") run.mockResolvedValueOnce({ stdout: "" });
+    else run.mockRejectedValueOnce(undefined);
+    if (step === "stop") run.mockResolvedValueOnce({ stdout: "" });
+    else run.mockRejectedValueOnce(undefined);
+    const result = stopScreen("docker", sharedScreenTarget(2), run);
+    if (step === "both") {
+      await expect(result).rejects.toMatchObject({
+        name: "AggregateError", cause: undefined, errors: [undefined, undefined],
+        message: "stopScreen failed: supervisor stop: undefined; process cleanup: undefined",
+      });
+    } else {
+      await expect(result).rejects.toBeUndefined();
+    }
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run).toHaveBeenNthCalledWith(2, "docker", ["exec", "-u", "0", CONTAINER, "env", "-u", "VNC_PW", "HOME=/root", "PYTHONNOUSERSITE=1", "sh", "-c", 'setpriv --reuid=61002 --regid=61002 --clear-groups pkill -KILL -u crybot-s2 || { code=$?; [ "$code" -eq 1 ] || exit "$code"; }'], 30_000);
   });
 
   it.each(["-o", ".", "+x", "sudo-", "vim+"])("rejects package %s before runtime execution", async name => {
@@ -1706,6 +1787,7 @@ describe("shared container probes for screen targets", () => {
     const screenCalls = fake.calls.filter(call => call.includes("-u crybot-s"));
     expect(screenCalls).toHaveLength(2);
     expect(screenCalls.every(call => call.includes("env -u VNC_PW"))).toBe(true);
+    expect(screenCalls.every(call => call.includes("-e XAUTHORITY=/run/crybot/screens/s2/Xauthority"))).toBe(true);
     expect(fake.calls.some(call => call.includes("61003"))).toBe(false);
   });
 
