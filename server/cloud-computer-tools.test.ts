@@ -2,6 +2,7 @@
 import { createServer, type Server } from "node:http";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppConfig } from "./config.ts";
+import type { InstaboxMachines } from "./instabox/machine.ts";
 
 const jpeg = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD8qqKKKAP/2Q==";
 let server: Server;
@@ -105,6 +106,7 @@ describe("cloud computer tools", () => {
 
   it.each([
     ["a shell fragment in a coordinate", "click", { x: "1; touch marker", y: 4 }],
+    ["a scroll without direction", "scroll", { x: 1, y: 2 }],
     ["a file URL", "open_url", { url: "file:///etc/passwd" }],
     ["an extra field", "move", { x: 1, y: 2, after: "rm -rf /" }],
     ["a key with shell syntax", "key_press", { key: "a; reboot" }],
@@ -166,6 +168,21 @@ describe("cloud computer tools", () => {
     }) as { isError?: boolean; content: Array<{ text: string }> };
     expect(result).toEqual({ isError: true, content: [{ type: "text", text: tools.CLOUD_COMPUTER_NOT_READY }] });
     expect(calls).toHaveLength(0);
+  });
+
+  it("uses the InstaBox machine id and machines executor without reading the Boat id", async () => {
+    const execute = vi.fn(async () => ({ stdout: "1280 800", stderr: "", exitCode: 0, timedOut: false, truncated: false }));
+    const machines = { exec: execute } as unknown as InstaboxMachines;
+    const result = await tools.cloudComputerRpc({ method: "tools/call", params: { name: "get_screen_size", arguments: {} } }, {
+      cfg,
+      instabox: { machines, machineId: () => "machine-from-fixture" },
+      boxId: () => { throw new Error("boxId must not be read for InstaBox"); },
+      gate: async () => ({ held: false }),
+      assertActive: () => {},
+      signal: new AbortController().signal,
+    });
+    expect(result).toMatchObject({ content: [{ type: "text" }] });
+    expect(execute).toHaveBeenCalledWith("machine-from-fixture", expect.objectContaining({ envs: { DISPLAY: ":1" } }));
   });
 
   it("stops when the turn's capability is gone, before and after the Boat acts", async () => {
