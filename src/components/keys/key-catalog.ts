@@ -75,8 +75,8 @@ function flag(saved: SavedKey | undefined): SavedState {
 }
 
 export function instaboxKeyStatus(config: ConfigStatus | null | undefined): SavedState & { fromEnv: boolean } {
-  const status = (config as (ConfigStatus & { instabox?: { configured?: boolean; fromEnv?: boolean } }) | null | undefined)?.instabox;
-  return { configured: status?.configured === true, fromEnv: status?.fromEnv === true };
+  const status = config?.instabox;
+  return { ...flag(status?.fromEnv ? { configured: status.configured } : status), fromEnv: status?.fromEnv === true };
 }
 
 type TopLevelKey = "openai" | "openrouter" | "xai" | "mistral" | "cerebras" | "groq" | "greenference" | "modelgo" | "meta" | "deepseek" | "treg";
@@ -169,7 +169,7 @@ export const KEY_CATALOG: readonly KeyEntry[] = [
       placeholder: "boat_…", href: "https://docs.boat.dev/api-keys", analytics: "boat", shape: /^(boat|box)_/, warningKey: "keys.boat.warning" } },
   { id: "instabox", section: "computers", labelKey: "keys.instabox.label", purposeKey: "keys.purpose.instabox", name: "InstaBox", env: ["INSTABOX_API_KEY"],
     words: ["instabox", "cloud computer", "snapshot", "android"], mark: { icon: Monitor }, kind: "key",
-    target: { patch: (value) => ({ instabox: { apiKey: value } }), saved: instaboxKeyStatus,
+    target: { patch: (value) => ({ instabox: { apiKey: value } }), saved: (config) => flag(instaboxKeyStatus(config)),
       placeholder: "…", analytics: "instabox" } },
   { id: "instaboxEnv", section: "computers", labelKey: "keys.instabox.label", purposeKey: "keys.purpose.instabox", name: "InstaBox", env: [],
     words: ["instabox", "cloud computer", "environment", "INSTABOX_API_KEY"], mark: { icon: Monitor }, kind: "elsewhere",

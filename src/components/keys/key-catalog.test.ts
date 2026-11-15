@@ -169,13 +169,15 @@ it.each([false, true])("hides only the Boat computer key when provider lock is %
   expect(computers.filter((entry) => keyMatches(entry, "boat", config)).map((entry) => entry.id)).toEqual(providerLock ? [] : ["box"]);
 });
 
-it("keeps the shared InstaBox key write-only and saves and clears its agreed config field", () => {
+it("shows only the saved InstaBox key's last four and saves and clears its agreed config field", () => {
   const entry = keyEntry("instabox");
   expect(entry.env).toEqual(["INSTABOX_API_KEY"]);
   expect(entry.target?.patch("fixture-key", true)).toEqual({ instabox: { apiKey: "fixture-key" } });
   expect(entry.target?.patch("", false)).toEqual({ instabox: { apiKey: "" } });
   expect(savedState(entry, { instabox: { configured: true, last4: "nope", apiKey: "never-display", fromEnv: true } } as unknown as ConfigStatus))
-    .toEqual({ configured: true, fromEnv: true });
+    .toEqual({ configured: true });
+  expect(savedState(entry, { instabox: { configured: true, last4: "play", apiKey: "never-display", fromEnv: false } } as unknown as ConfigStatus))
+    .toEqual({ configured: true, last4: "play" });
 });
 
 it("shows exactly one InstaBox row and makes the environment variant read-only", () => {

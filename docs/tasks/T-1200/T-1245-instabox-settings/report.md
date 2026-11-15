@@ -65,3 +65,38 @@ export function createInstaboxSnapshotRoutes(deps: { machines(): InstaboxMachine
 - `pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts --maxWorkers=1`：12/12 通过；最终验收连续运行 3 次。
 - `pnpm exec vitest run src/lib/i18n.test.ts --maxWorkers=1`：39/39 通过；`node scripts/generate-locale.mjs --check` 通过。
 - 其余验收测试、`tsc -b`、`tsc -p tsconfig.server.json`、改动文件 `oxlint --deny-warnings`、行数门禁和 `git diff --check` 的结果已追加到 `verification.txt`。未提交 git。
+
+
+第 3 轮
+
+改了什么
+
+将 纳入 27 项钥匙的保存、读回、末四位掩码和删除流程，补齐配置持久化、状态广播及前端状态转换；补充决策服务假响应，以及环境变量优先级、凭据隔离和末四位保留的同类测试覆盖。实际文件列表：
+
+```text
+docs/tasks/T-1200/T-1245-instabox-settings/report.md
+docs/tasks/T-1200/T-1245-instabox-settings/verification-r3.txt
+scripts/testing/key-readback.e2e.test.ts
+server/config.test.ts
+server/config.ts
+server/credential-env.ts
+server/index.ts
+server/routes/config.ts
+src/components/keys/key-catalog.test.ts
+src/components/keys/key-catalog.ts
+src/state/config-status.ts
+src/state/store.test.ts
+src/state/store.tsx
+```
+
+为什么
+
+仅补期望清单后，隔离测试仍在 读回处失败：配置未持久化，状态仅含 configured/fromEnv。为满足本轮末四位验收，接通最小读写链路并复用现有安全掩码；保存响应、读回及页面均断言不泄露完整钥匙，环境变量来源保持只读。全仓搜索还补上了“所有凭据环境变量优先”和“所有已保存钥匙保留末四位”的遗漏；桌面凭据槽及聊天凭据清单按各自实际支持范围保持断言。
+
+测试命令与结果摘要
+
+- 依赖准备脚本 成功；`docs/verification/README.md` 缺失，全部使用临时数据和隔离假服务验证。
+- `pnpm exec vitest run scripts/testing/key-readback.e2e.test.ts --maxWorkers=1`：最终连续 3 次通过，每次 2/2，包含全部 27 项钥匙。
+- `pnpm exec vitest run <文件> --maxWorkers=1`：相关 12 个回归文件逐文件运行，共 1047 项通过；逐条命令与完整输出见 [verification-r3.txt](verification-r3.txt)。
+- `pnpm exec tsc -p tsconfig.server.json`、`pnpm exec tsc -p tsconfig.json`、全部 11 个改动 TS/TSX 文件的 `pnpm exec oxlint --deny-warnings` 均通过；行数门禁通过。
+- 报告写完后 `git diff --check` 通过；文件列表与 `git status --short --untracked-files=all` 一致。未提交 git。

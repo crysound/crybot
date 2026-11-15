@@ -55,7 +55,6 @@ export interface BusyFlag {
 }
 
 export type RemoteComputerProvider = "box" | "vps" | "instabox";
-type InstaboxConfig = { instabox?: { apiKey?: string } };
 
 export type ModelSelectionCheck = { ok: true; selection: ModelSelection } | ({ ok: false; status: number } & ServerErrorBody);
 
@@ -124,10 +123,9 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
     closeBrowser, browserEngineSwitched, sharedComputers, sharedComputerControl, hostedModels, cloudHome: CLOUD_HOME, sharedMembership, lendingEnabled, providerConfigs,
     localVmIdleMs, localVmIdles, localVmActiveThreads, localVmLifecycleBusy, localVmImageBusy, localVmModeChangeBusy, localVmModeChanging,
     providerConfigBusy, computerProviderConfigTransitions, managedBoatOwners, providerOperationConflict,
-    perBotLocalVmCountForModeChange, checkedModelSelection, policyModelRefusal, browserSessionSpec, configStatus: baseConfigStatus,
+    perBotLocalVmCountForModeChange, checkedModelSelection, policyModelRefusal, browserSessionSpec, configStatus,
     configForAccess, resyncOpenCodeProviderKeys, revokeEngineCapabilities, reloadProviders, broadcast, drainQueuedSends, ownProfile, ownHints, postiz,
   } = deps;
-  const configStatus = () => ({ ...baseConfigStatus(), instabox: { configured: !!(process.env.INSTABOX_API_KEY?.trim() || (cfg as AppConfig & InstaboxConfig).instabox?.apiKey?.trim()), fromEnv: !!process.env.INSTABOX_API_KEY?.trim() } });
   return async ({ req, res, url, path, method, auth, json, readBody }) => {
     // API keys are never echoed back: booleans only.
     if (method === "GET" && path === "/api/config") {
@@ -136,13 +134,12 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
     if ((method === "PUT" || method === "PATCH") && path === "/api/config") {
       const body = await readBody(req);
       if (hostedModels && ["instances", "anthropic", "openai", "openrouter", "openaiCompat", "xai", "mistral", "cerebras", "groq", "greenference", "modelgo", "meta", "opencodeGo"].some(key => Object.hasOwn(body, key))) return json(res, 403, { error: HOSTED_PROVIDER_SETTINGS_ERROR });
-      const patch: ReturnType<typeof parseConfigPatchForPerson> & InstaboxConfig = parseConfigPatchForPerson(body);
       if (Object.hasOwn(body, "instabox")) {
         if (process.env.INSTABOX_API_KEY?.trim()) return json(res, 409, { error: "InstaBox key is provided by the environment", code: "instabox_key_env" });
         const key = z.object({ apiKey: z.string().trim().max(8192) }).strict().safeParse(body.instabox);
         if (!key.success) return json(res, 400, { error: "Invalid InstaBox key", code: "instabox_key_invalid" });
-        patch.instabox = key.data;
       }
+      const patch = parseConfigPatchForPerson(body);
       if (patch.localVm) localVmConfigSchema.parse({ ...cfg.localVm, ...patch.localVm });
       if (patch.profile && ownProfile) {
         // The address is the verified claim's; a profile names no other.
