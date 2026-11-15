@@ -113,6 +113,19 @@ async function fixture(screens = 4, waitMs = 15_000, initialState: Record<string
 }
 
 describe("shared Local VM screens through the server", () => {
+  it.each([1, 4])("previews the shared VM in Auto with %s screens and the default cloud backend", async screens => {
+    const f = await fixture(screens);
+    const bot = await f.bot(0, true);
+    expect(bot.cloudBackend).toBe("instabox");
+    expect(bot.computer).toBeUndefined();
+    expect((await f.request("GET", "/api/config")).instabox.configured).toBe(false);
+    expect(await f.request("GET", "/api/local-computer")).toMatchObject({ ready: true, mode: "shared" });
+    const preview = await f.request("GET", `/api/bots/${bot.id}/computer?threadId=${bot.threadId}`);
+    expect(preview).toMatchObject({ surface: "vm" });
+    expect(f.rows(".resources")).toEqual([]);
+    expect(f.rows(".actions")).toEqual([]);
+  });
+
   it("1: assigns two agents different resources, exec users, displays and sockets", async () => {
     const f = await fixture();
     expect((await f.request("GET", "/api/config")).localVm.screens).toBe(4);

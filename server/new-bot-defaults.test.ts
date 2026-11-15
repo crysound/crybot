@@ -79,3 +79,9 @@ describe("new-bot templates", () => {
     expect(newBotDefaultsSchema.safeParse({ memory }).success).toBe(false);
   });
 });
+
+it.each(["instabox", "vps", "box"] as const)("preserves %s in saved defaults and explicit creation settings", cloudBackend => {
+  const profile = { computer: "cloud" as const, cloudBackend };
+  expect(parseConfigPatch({ newBotDefaults: { profile } }).newBotDefaults?.profile).toEqual(profile);
+  expect(resolveBotCreationDefaults(undefined, { settings: profile }).profile).toEqual(profile);
+});

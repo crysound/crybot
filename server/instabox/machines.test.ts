@@ -33,6 +33,22 @@ it("single-flights concurrent starts and tolerates an already running desktop", 
   await expect(service.ensureRunning(botId)).resolves.toEqual(machines[0]);
 });
 
+it("finishes a pending suspension before deleting the machine", async () => {
+  const machine = await service.ensureRunning(botId);
+  const hold = fake.holdNext("POST", `/v1/machines/${machine.id}/suspend`, true);
+  const suspension = service.suspend(botId);
+  await hold.reached;
+  const removal = service.remove(botId);
+  try {
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(fake.calls.some(call => call.method === "DELETE")).toBe(false);
+  } finally {
+    hold.release();
+    await Promise.all([suspension, removal]);
+  }
+  expect(fake.machines.get(machine.id)?.state).toBe("deleted");
+});
+
 it.each(["suspended", "stopped"] as const)("wakes a %s machine and retries exec exactly once", async state => {
   const machine = await service.ensureRunning(botId);
   fake.machines.get(machine.id)!.state = state;

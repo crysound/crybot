@@ -51,7 +51,7 @@ describe("cloud backend switching", () => {
 
 describe("cloud kind selection", () => {
   it.each([undefined, "box", "vps", "instabox"] as const)("selects %s without falling back and preserves team Boat", backend => {
-    expect(cloudKindOf({ cloudBackend: backend })).toBe(backend ?? "box");
+    expect(cloudKindOf({ cloudBackend: backend })).toBe(backend ?? "instabox");
     expect(cloudKindOf({ cloudBackend: backend }, true)).toBe("box");
     expect(cloudPolicyKindOf({ cloudBackend: backend })).toBe(backend === "instabox" ? "box" : backend ?? "box");
   });

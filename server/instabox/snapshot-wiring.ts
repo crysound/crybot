@@ -1,10 +1,11 @@
 import type { AppConfig } from "../config.ts";
-import { createInstaboxSnapshotRoutes } from "../routes/instabox-snapshots.ts";
+import { createInstaboxSnapshotRoutes, SnapshotClaimError } from "../routes/instabox-snapshots.ts";
 import { PASS, type RouteHandler } from "../routes/table.ts";
 import { createInstaboxRequest } from "./client.ts";
 import { instaboxApiKey } from "./key.ts";
 import type { InstaboxRequest } from "./machine.ts";
 import { createInstaboxMachines } from "./machines.ts";
+import type { createInstaboxMachineRecords } from "./machine-records.ts";
 
 export function createSnapshotWiring(deps: {
   cfg(): AppConfig;
@@ -13,7 +14,9 @@ export function createSnapshotWiring(deps: {
   inUse(botId: string): boolean;
   baseUrl?: string;
   snapshotTimeoutMs?: number;
+  records?: ReturnType<typeof createInstaboxMachineRecords>;
 }): RouteHandler {
+  const activeSnapshots = new Set<string>();
   return async ctx => {
     if (!/^\/api\/bots\/[\w-]+\/instabox\/snapshots(?:\/|$)/.test(ctx.path)) return PASS;
     const controller = new AbortController();
@@ -31,18 +34,20 @@ export function createSnapshotWiring(deps: {
         const query = opts?.query?.wait ? { ...opts.query, wait: `${Math.min(parseFloat(opts.query.wait), 25, (deadline - Date.now()) / 1000)}s` } : opts?.query;
         return upstream(method, path, { ...opts, query });
       });
-      const machines = request ? createInstaboxMachines(request) : null;
+      const machines = request ? createInstaboxMachines(request, deps.records, key) : null;
       return await createInstaboxSnapshotRoutes({
         request: () => request, machines: () => machines,
         machineIdFor: async botId => (await machines?.find(botId))?.id ?? null,
         botExists: deps.eligible, signal: controller.signal,
         claim: botId => {
+          if (activeSnapshots.has(botId)) throw new SnapshotClaimError("busy");
           const release = deps.claim(botId);
           if (deps.inUse(botId)) {
             release();
-            throw Object.assign(new Error("Computer is in use"), { status: 409 });
+            throw new SnapshotClaimError("machine_busy");
           }
-          return release;
+          activeSnapshots.add(botId);
+          return () => { activeSnapshots.delete(botId); release(); };
         },
       })({ ...ctx, readBody: async req => {
         controller.signal.throwIfAborted();

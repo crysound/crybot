@@ -193,3 +193,9 @@ it.each([["de", "German"], ["ar", "Arabic"]])("keeps %s for model-written setup 
   expect(prompts[0]).toContain(`Write every option in ${name}`);
   expect(prompts[0]).not.toContain("Write every option in English");
 });
+
+it.each([undefined, "instabox", "vps", "box"] as const)("persists the selected or default cloud backend (%s) on creation", async cloudBackend => {
+  const bot = await create({ settings: { computer: "cloud", ...(cloudBackend ? { cloudBackend } : {}) } });
+  expect(bot.cloudBackend).toBe(cloudBackend ?? "instabox");
+  expect(bot.computer).toBe("cloud");
+});

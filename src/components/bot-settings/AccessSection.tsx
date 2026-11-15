@@ -601,14 +601,14 @@ export function CloudPreference({ bot, patch }: { bot: Bot; patch: ReturnType<ty
   if (!cloudPreferenceShown(bot, state.config)) return null;
   return (
     <>
-      {!state.config?.providerLock && !bot.computer && !draft && (
+      {!bot.computer && !draft && (
         <div className="mt-3 rounded-lg bg-inset px-3 py-2.5 text-[12px] leading-relaxed text-ink-secondary">
           <span className="font-medium text-ink">{t("botAccess.cloud.autoTitle")}</span>{" "}
           {t("botAccess.cloud.autoDescription")}
         </div>
       )}
       <CloudBackendPicker
-        value={bot.cloudBackend ?? "box"}
+        value={bot.cloudBackend ?? "instabox"}
         onChange={(backend) => patch({ cloudBackend: backend })}
       />
       {/* A saved bot only: a new bot starts on the default server, and new-bot defaults never name one. */}
@@ -637,7 +637,7 @@ function DraftWorksOn({ bot, patch, seat }: { bot: Bot; patch: ReturnType<typeof
   const { capabilities } = useDesktopCapabilities();
   const providerSupportsLocal = instanceSupportsLocalComputer(state.instances, bot);
   const localReason = localComputerDisabledReason({ capabilities, providerSupportsLocal });
-  const named = { ...bot, ...(state.config?.providerLock ? { cloudBackend: "vps" as const } : {}), name: bot.name || t("sidebar.newBotSimple") };
+  const named = { ...bot, name: bot.name || t("sidebar.newBotSimple") };
   const options = worksOnChoices(state.config, capabilities).map(([mode, labelKey, descriptionKey, Icon]) => {
     const view = placeViewFor(placeFacts({
       bot: named, place: mode ?? "auto", seat, config: state.config, instances: state.instances,
@@ -655,7 +655,7 @@ function DraftWorksOn({ bot, patch, seat }: { bot: Bot; patch: ReturnType<typeof
       note: placeHasIssue(view) ? view.line : mode === "local" ? localReason ?? undefined : undefined,
     };
   });
-  const choose = (mode: WorksOnMode) => patch(mode === "cloud" && state.config?.providerLock ? { computer: mode, cloudBackend: "vps" } : mode === "browser" ? { computer: mode, browser: true } : { computer: mode });
+  const choose = (mode: WorksOnMode) => patch(mode === "cloud" ? { computer: mode, cloudBackend: bot.cloudBackend === "vps" ? "vps" : "instabox" } : mode === "browser" ? { computer: mode, browser: true } : { computer: mode });
   return <>
     <div className="text-[15px] font-medium text-ink">{t("computer.worksOn")}</div>
     <p className="mt-1 text-[12px] leading-5 text-ink-secondary">{t(state.config?.cloudHome ? "computer.worksOnHintCloudHome" : "computer.worksOnHint")}</p>

@@ -158,7 +158,7 @@ describe("a cloud computer that can't start, against the real server", () => {
   it("J5: no hours left says when they come back, offers the plan, and starts nothing", async () => {
     await start();
     const { bot } = await apiOk("POST", "/api/bots", { name: "Hours Bot" });
-    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud" });
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud", cloudBackend: "box" });
     createAnswer = HOURS;
     await send(bot.id, bot.threadId, "Open the desktop.");
     const row = await failedRow(bot.threadId);
@@ -172,7 +172,7 @@ describe("a cloud computer that can't start, against the real server", () => {
   it("J5b: a free trial's hours used up get the plan's card too, from an Admin that sends only its words", async () => {
     await start();
     const { bot } = await apiOk("POST", "/api/bots", { name: "Trial Bot" });
-    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud" });
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud", cloudBackend: "box" });
     createAnswer = TRIAL_HOURS;
     await send(bot.id, bot.threadId, "Open the desktop.");
     const row = await failedRow(bot.threadId);
@@ -184,14 +184,14 @@ describe("a cloud computer that can't start, against the real server", () => {
   it("J6: at once names the bot that holds the plan's cloud computer", async () => {
     await start();
     const { bot: holder } = await apiOk("POST", "/api/bots", { name: "Ada" });
-    await apiOk("PATCH", `/api/bots/${holder.id}`, { computer: "cloud" });
+    await apiOk("PATCH", `/api/bots/${holder.id}`, { computer: "cloud", cloudBackend: "box" });
     await send(holder.id, holder.threadId, "Use your desktop.");
     await until(() => boxes.length, count => count === 1, "Ada's computer");
     await idle(holder.id);
     expect((await messages(holder.threadId)).some(message => String(message.tool?.name ?? "").startsWith("error:"))).toBe(false);
 
     const { bot } = await apiOk("POST", "/api/bots", { name: "Bo" });
-    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud" });
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud", cloudBackend: "box" });
     createAnswer = AT_ONCE;
     await send(bot.id, bot.threadId, "Use your desktop too.");
     const row = await failedRow(bot.threadId);
@@ -202,7 +202,7 @@ describe("a cloud computer that can't start, against the real server", () => {
   it("J7: a relay that can't start one says so plainly, with Try again and no Boat words", async () => {
     await start();
     const { bot } = await apiOk("POST", "/api/bots", { name: "Down Bot" });
-    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud" });
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud", cloudBackend: "box" });
     createAnswer = DOWN;
     await send(bot.id, bot.threadId, "Open the desktop.");
     const row = await failedRow(bot.threadId);
@@ -216,7 +216,7 @@ describe("a cloud computer that can't start, against the real server", () => {
     writeConfig(false);
     await start();
     const { bot } = await apiOk("POST", "/api/bots", { name: "Ended Bot" });
-    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud" });
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud", cloudBackend: "box" });
     createAnswer = refusal(402, "subscription_inactive", "Cloud computers are included with an active Cloud subscription.");
     await send(bot.id, bot.threadId, "Open the desktop.");
     const row = await failedRow(bot.threadId);
@@ -229,6 +229,7 @@ describe("a cloud computer that can't start, against the real server", () => {
     const { bot } = await apiOk("POST", "/api/bots", { name: "Pinned Bot" });
     await stop();
     editSavedBot(bot.id, saved => {
+      saved.cloudBackend = "box";
       Object.assign(saved.tasks.find((task: any) => task.threadId === bot.threadId), { surface: "cloud", surfaceSource: "auto" });
     });
     await start();

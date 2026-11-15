@@ -26,4 +26,15 @@ describe("InstaBox computer panel", () => {
     expect(ready.state).toBe("cc-on");
     expect(ready.line).not.toContain("Boat");
   });
+
+  it("does not call a new InstaBox desktop a Boat desktop", () => {
+    const bot = { name: "Fixture", cloudBackend: "instabox", modelSelection: { instanceId: "fixture", model: "fixture" } } as Bot;
+    const instances = [{ instanceId: "fixture", capabilities: { computerMcp: true }, snapshot: { authenticated: true, state: "available" } }] as InstanceInfo[];
+    const view = placeViewFor(placeFacts({
+      bot, instances, place: "cloud", seat: { server: "linux", plan: false, role: "admin", mode: "simple" }, computer: undefined,
+      config: { instabox: { configured: true, fromEnv: false }, box: { configured: false } },
+    }));
+    expect(view.state).toBe("cc-new");
+    expect(view.line).not.toContain("Boat");
+  });
 });

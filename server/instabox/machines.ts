@@ -1,6 +1,8 @@
+import { createHash } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { InstaboxError, instaboxVncUpstream, readInstaboxFile, waitOperation } from "./client.ts";
 import type { InstaboxExecResult, InstaboxMachine, InstaboxMachines, InstaboxRequest, InstaboxTemplate } from "./machine.ts";
+import type { createInstaboxMachineRecords } from "./machine-records.ts";
 
 const LIFECYCLE_TIMEOUT = 180_000;
 const stableStates = new Set(["running", "stopped", "suspended", "deleted", "error"]);
@@ -9,12 +11,15 @@ function machineOf(row: InstaboxMachine & { templateId?: string }): InstaboxMach
   return { id: row.id, name: row.name, state: row.state, template: row.templateId === "android" || row.template === "android" ? "android" : "linux" };
 }
 
-export function createInstaboxMachines(request: InstaboxRequest): InstaboxMachines {
+export function createInstaboxMachines(request: InstaboxRequest, records?: ReturnType<typeof createInstaboxMachineRecords>, apiKey?: string | null): InstaboxMachines {
+  const keyFingerprint = apiKey ? createHash("sha256").update(apiKey).digest("hex").slice(0, 16) : null;
   const pending = new Map<string, Promise<InstaboxMachine>>();
+  const suspending = new Map<string, Promise<void>>();
   const pathOf = (id: string) => `/v1/machines/${encodeURIComponent(id)}`;
   const read = async (id: string) => machineOf(await (await request("GET", pathOf(id))).json() as InstaboxMachine & { templateId?: string });
-  const lifecycle = async (method: string, path: string, opts: Parameters<InstaboxRequest>[2] = {}) => {
+  const lifecycle = async (method: string, path: string, opts: Parameters<InstaboxRequest>[2] = {}, createdFor?: string) => {
     const operation = await (await request(method, path, { ...opts, idempotent: true })).json() as { id: string; machineId: string };
+    if (createdFor) records?.remember(createdFor, operation.machineId, keyFingerprint);
     await waitOperation(request, operation.id, LIFECYCLE_TIMEOUT);
     return operation;
   };
@@ -32,6 +37,7 @@ export function createInstaboxMachines(request: InstaboxRequest): InstaboxMachin
     const result = await (await request("GET", "/v1/machines", { query: { name } })).json() as Array<InstaboxMachine & { metadata?: Record<string, unknown> }> | { machines?: Array<InstaboxMachine & { metadata?: Record<string, unknown> }>; items?: Array<InstaboxMachine & { metadata?: Record<string, unknown> }> };
     const rows = Array.isArray(result) ? result : result.machines ?? result.items ?? [];
     const found = rows.find(row => row.name === name && row.metadata?.botId === botId && row.state !== "deleted");
+    if (found) records?.remember(botId, found.id, keyFingerprint);
     return found ? machineOf(found) : null;
   };
   const wake = async (machine: InstaboxMachine): Promise<InstaboxMachine> => {
@@ -62,7 +68,7 @@ export function createInstaboxMachines(request: InstaboxRequest): InstaboxMachin
       const operation = await lifecycle("POST", "/v1/machines", { body: {
         name: `crybot-${botId.slice(0, 12)}`, templateId: template === "android" ? "android" : "agent-browser",
         spec: { vcpus: 4, memoryGiB: 8 }, autoSuspendAfterSeconds: 600, metadata: { app: "crybot", botId },
-      } });
+      } }, botId);
       machine = await read(operation.machineId);
     }
     machine = await wake(machine);
@@ -83,17 +89,35 @@ export function createInstaboxMachines(request: InstaboxRequest): InstaboxMachin
       pending.set(botId, task);
       return task;
     },
-    async suspend(botId) {
-      await pending.get(botId);
-      const found = await find(botId);
-      if (!found) return;
-      const machine = await stable(found);
-      if (machine.state === "running") await lifecycle("POST", `${pathOf(machine.id)}/suspend`);
+    suspend(botId) {
+      const current = suspending.get(botId);
+      if (current) return current;
+      const task = (async () => {
+        await pending.get(botId);
+        const found = await find(botId);
+        if (!found) return;
+        const machine = await stable(found);
+        if (machine.state === "running") await lifecycle("POST", `${pathOf(machine.id)}/suspend`);
+      })().finally(() => { suspending.delete(botId); });
+      suspending.set(botId, task);
+      return task;
     },
     async remove(botId) {
       await pending.get(botId);
+      await suspending.get(botId)?.catch(() => {});
       const machine = await find(botId);
-      if (machine) await lifecycle("DELETE", pathOf(machine.id), { headers: { "X-Confirm-Delete": machine.id } });
+      if (machine) {
+        await lifecycle("DELETE", pathOf(machine.id), { headers: { "X-Confirm-Delete": machine.id } });
+      } else {
+        const record = records?.get(botId);
+        if (!record) return;
+        const deleted = await read(record.machineId).then(found => found.state === "deleted", error => error instanceof InstaboxError && error.status === 404);
+        if (!keyFingerprint || record.keyFingerprint !== keyFingerprint) {
+          throw new Error("This bot's cloud computer was created with another InstaBox API key, or its original key is unknown. Restore the original key before deleting this bot.");
+        }
+        if (!deleted) throw new Error("Cannot confirm this bot's InstaBox cloud computer was deleted. Restore the original key before deleting this bot.");
+      }
+      records?.forget(botId);
     },
     async exec(machineId, req) {
       return whileRunning(machineId, async () => (await request("POST", `${pathOf(machineId)}/exec`, { body: req })).json() as Promise<InstaboxExecResult>);

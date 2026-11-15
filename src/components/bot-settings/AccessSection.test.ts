@@ -229,10 +229,12 @@ describe("AccessSection Works on", () => {
     expect(html).toContain("Cloud desktop");
     expect(html).toMatch(/aria-pressed="true"[^>]*>.*?Auto/);
 
-    fixture.config = { box: { configured: true } } as Partial<ConfigStatus>;
+    fixture.config = { box: { configured: true }, providerLock: true, instabox: { configured: true } } as Partial<ConfigStatus>;
     const chosen = draft(makeBot({ computer: "cloud" }));
     expect(chosen.html).toMatch(/<button[^>]*aria-pressed="true"[^>]*>(?:(?!<\/button>).)*?Cloud desktop/);
     expect(chosen.html).toContain("Cloud backend");
+    expect(chosen.html).toContain("Self-hosted VPS");
+    expect(chosen.html).toContain("InstaBox");
 
     const picker = nodes(chosen.tree).find((node) => (node.type as { name?: string }).name === "DraftWorksOn")!;
     let rendered: ReactNode = null;
@@ -245,9 +247,10 @@ describe("AccessSection Works on", () => {
     expect(renderToStaticMarkup(grid).replaceAll("&#x27;", "'")).toContain(local.view.line);
 
     const select = grid.props.onSelect as (mode: string | null) => void;
+    select("cloud");
     select("browser");
     select(null);
-    expect(vi.mocked(derived.patch).mock.calls).toEqual([[{ computer: "browser", browser: true }], [{ computer: null }]]);
+    expect(vi.mocked(derived.patch).mock.calls).toEqual([[{ computer: "cloud", cloudBackend: "instabox" }], [{ computer: "browser", browser: true }], [{ computer: null }]]);
   });
 
   it("says on a selectable tile of a bot not made yet what stands in its way, with no name to borrow", () => {

@@ -9,38 +9,36 @@ export function CloudBackendPicker({
   compact = false,
   onChange,
 }: {
-  value: CloudBackend;
+  value?: CloudBackend;
   compact?: boolean;
   onChange: (backend: CloudBackend) => void;
 }) {
   const { state } = useStore();
-  if (state.config?.cloudHome || state.config?.providerLock) return null;
+  if (value !== "box" && state.config?.cloudHome) return null;
+  const selected = value ?? "instabox";
   return (
     <div className="mt-3 rounded-lg bg-inset p-3">
       <div className="text-[12px] font-medium text-ink">{compact ? t("botAccess.cloud.provider") : t("botAccess.cloud.backend")}</div>
       <div className="mt-0.5 text-[12px] text-ink-secondary">
-        {value === "instabox" ? t("botAccess.cloud.instaboxDescription") : compact
-          ? value === "vps" ? t("botAccess.cloud.vpsDescription") : t("botAccess.cloud.hostedDescription")
-          : value === "vps"
-          ? t("botAccess.cloud.vpsAutoDescription")
-          : t("botAccess.cloud.hostedBackendDescription")}
+        {value === "box" ? t("botAccess.cloud.retired") : selected === "instabox" ? t("botAccess.cloud.instaboxDescription")
+          : t(compact ? "botAccess.cloud.vpsDescription" : "botAccess.cloud.vpsAutoDescription")}
       </div>
       <div className="mt-2 flex overflow-hidden rounded-lg border border-hairline/40">
-        {(["box", "vps", "instabox"] as const).map((backend, i) => (
+        {(["vps", "instabox"] as const).map((backend, i) => (
           <button
             key={backend}
             type="button"
             disabled={backend === "instabox" && !instaboxKeyStatus(state.config).configured}
             title={backend === "instabox" && !instaboxKeyStatus(state.config).configured ? t("botAccess.cloud.instaboxKeyHint") : undefined}
-            aria-pressed={value === backend}
+            aria-pressed={selected === backend}
             onClick={() => onChange(backend)}
             className={cn(
               "flex-1 py-1.5 text-[12px] disabled:opacity-50 disabled:cursor-not-allowed",
               i > 0 && "border-l border-hairline/40",
-              value === backend ? "bg-raised text-ink" : "text-ink-secondary hover:bg-raised/60 hover:text-ink",
+              selected === backend ? "bg-raised text-ink" : "text-ink-secondary hover:bg-raised/60 hover:text-ink",
             )}
           >
-            {backend === "instabox" ? "InstaBox" : backend === "vps" ? t("botAccess.cloud.selfHostedVps") : t("botAccess.cloud.boat")}
+            {backend === "instabox" ? value === "box" ? t("botAccess.cloud.switchInstabox") : "InstaBox" : t("botAccess.cloud.selfHostedVps")}
           </button>
         ))}
       </div>

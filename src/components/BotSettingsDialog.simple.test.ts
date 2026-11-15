@@ -1028,7 +1028,7 @@ describe("the Where it works page", () => {
   it("saves each place through the bot patch, and sends nothing for the place already chosen", () => {
     const rendered = where(makeBot());
     choose(rendered, "cloud");
-    expect(patch).toHaveBeenLastCalledWith({ computer: "cloud" });
+    expect(patch).toHaveBeenLastCalledWith({ computer: "cloud", cloudBackend: "instabox" });
     choose(rendered, "local");
     expect(patch).toHaveBeenLastCalledWith({ computer: "local" });
     choose(rendered, "browser");

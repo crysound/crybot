@@ -1294,7 +1294,7 @@ export class Store {
       description: profile.description ?? "",
       soul: profile.soul ?? "",
       soulHash: soulHash(profile.soul ?? ""),
-      notifications: true,
+      notifications: true, cloudBackend: "instabox",
       color: profile.color ?? rotationColor(this.bots.length), mascotFaceColor: profile.mascotFaceColor ?? undefined,
       ...(profile.mascotExpression ? { mascotExpression: profile.mascotExpression } : {}),
       ...(profile.mascotBody ? { mascotBody: profile.mascotBody } : {}),
@@ -1493,7 +1493,7 @@ export class Store {
     const toAsk = patch.modelSelection ? (bot.tasks ?? []).filter((task) => task.modelSelection === undefined &&
       this.switchNeedsAsk(id, task.threadId, bot.modelSelection, patch.modelSelection!)) : [];
     // Revocations take effect in memory even when the disk write fails.
-    Object.assign(bot, patch); if (patch.connectorScopes !== undefined) grantScopedApps(bot);
+    Object.assign(bot, patch); bot.cloudBackend ??= "instabox"; if (patch.connectorScopes !== undefined) grantScopedApps(bot);
     for (const task of toAsk) Object.assign(task, structuredClone(ASK_NOW));
     const task = this.activeTask(id);
     if (task) {

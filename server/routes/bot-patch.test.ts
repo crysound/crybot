@@ -378,6 +378,14 @@ describe("PATCH /api/bots/:id mainThreadChoice", () => {
 
 
 describe("PATCH cloudBackend", () => {
+  it("persists the default backend when saving a bot that never selected one", async () => {
+    const { bot, patch } = fixture();
+    delete bot.cloudBackend;
+    const result = await patch(bot.id, { name: "Saved" });
+    expect(result.status).toBe(200);
+    expect(result.body.bot.cloudBackend).toBe("instabox");
+    expect(new Store(() => sonnet).bot(bot.id)?.cloudBackend).toBe("instabox");
+  });
   it("accepts instabox and keeps it across store reload", async () => {
     const { bot, patch } = fixture();
     const result = await patch(bot.id, { cloudBackend: "instabox" });

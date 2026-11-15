@@ -79,7 +79,7 @@ export async function fakeInstaboxCore() {
       machine.state = action === "resume" ? "resuming" : action === "start" ? "starting" : "suspending";
       return finish(machine.id, action === "suspend" ? "suspended" : "running");
     }
-    if (machine.state !== "running") return send(409, { error: { code: "machine_not_running" } });
+    if (machine.state !== "running") return send(409, { error: { code: action === "snapshots" || action === "restore" ? "operation_conflict" : "machine_not_running" } });
     if (action === "desktop") {
       if (desktop.has(machine.id)) return send(409, { error: { code: "desktop_already_running" } });
       desktop.add(machine.id); return send(200, { running: true });

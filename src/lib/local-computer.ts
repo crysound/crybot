@@ -157,7 +157,7 @@ export function persistedComputerSelectionMatches({
   persistedBot: Pick<Bot, "computer" | "cloudBackend">;
 }): boolean {
   return persistedBot.computer === computer
-    && (persistedBot.cloudBackend ?? "box") === cloudBackend;
+    && (persistedBot.cloudBackend ?? "instabox") === cloudBackend;
 }
 
 export function autoSelectsLocalComputer({

@@ -102,6 +102,8 @@ it("boots an isolated InstaBox bot, persists its backend, suspends on switching,
     expect((await request("GET", `${missingPath}/computer`)).body).toMatchObject({ backend: "instabox", configured: false, problem: "Add an InstaBox API key to use this computer." });
     const callsBeforeMissingProvision = fake.calls.length;
     expect(await request("POST", `${missingPath}/computer/provision`, {})).toMatchObject({ status: 409, body: { error: "Add an InstaBox API key to use this computer.", errorKey: "serverError.instabox.keyMissing" } });
+    expect(await request("DELETE", missingPath)).toMatchObject({ status: 200, body: { ok: true } });
+    expect((await request("GET", "/api/bots")).body.bots.some((entry: { id: string }) => entry.id === missing.body.bot.id)).toBe(false);
     expect(fake.calls.slice(callsBeforeMissingProvision).some(call => call.path === "/v1/machines")).toBe(false);
     expect(readFileSync(fixture.logPath, "utf8")).not.toContain("instabox-e2e-fixture");
   } finally { await fixture.close(); await fake.close(); }
@@ -172,7 +174,7 @@ it.each(["vps", "instabox"] as const)("checks run_on=cloud %s turns against the 
     return { status: response.status, body: await response.json() as any };
   };
   try {
-    const created = await request("POST", "/api/bots", { computer: "off" });
+    const created = await request("POST", "/api/bots", { settings: { computer: "off", cloudBackend: backend } });
     expect(created.status, JSON.stringify(created.body)).toBe(201);
     const bot = created.body.bot;
     const path = `/api/bots/${bot.id}`;
@@ -390,7 +392,7 @@ it.each(["http", "network"] as const)("keeps deletion independent of InstaBox %s
     return { status: response.status, body: await response.json() as any };
   };
   try {
-    const bot = (await request("POST", "/api/bots")).body.bot;
+    const bot = (await request("POST", "/api/bots", { settings: { cloudBackend: "box" } })).body.bot;
     expect((await request("PATCH", `/api/bots/${bot.id}`, { cloudBackend: "box" })).status).toBe(200);
     if (mode === "http") fake.failNext({ status: 503, code: "fixture_unavailable" });
     else await fake.close();

@@ -39,7 +39,7 @@ async function fixture(stall: "lookup" | "pages" | "poll" | "desktop" | "body", 
       reached();
       return;
     }
-    if (stall === "pages") {
+    if (stall === "pages" && path === "/v1/snapshots") {
       await delay(220);
       return json(res, 200, { snapshots: [], nextCursor: `page-${calls.length}` });
     }
@@ -76,7 +76,7 @@ it.each(["lookup", "pages", "poll", "desktop", "body"] as const)("bounds the who
   expect(f.locked()).toBe(false);
   if (stage === "desktop") expect(f.calls.map(call => call.path)).toContain("/v1/machines/machine/desktop");
   if (stage !== "pages") await expect.poll(f.cancelled).toBe(true);
-  if (stage === "pages") expect(f.calls.length).toBeLessThanOrEqual(3);
+  if (stage === "pages") expect(f.calls.length).toBeLessThanOrEqual(4);
   if (stage === "poll" || stage === "desktop") {
     const wait = f.calls.find(call => call.path.startsWith("/v1/operations/"))!.wait!;
     expect(parseFloat(wait)).toBeLessThan(0.45);

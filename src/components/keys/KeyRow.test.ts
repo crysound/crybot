@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLocale } from "@/lib/i18n";
 import type { ConfigStatus, InstanceInfo } from "@/state/store";
+import { keyHidden } from "./key-catalog";
 
 const fixture = vi.hoisted(() => ({ config: {} as Partial<ConfigStatus>, instances: [] as InstanceInfo[] }));
 vi.mock("@/state/store", async (original) => {
@@ -38,7 +39,8 @@ describe("an empty key row", () => {
   });
 
   it("keeps a key's warning in view before it is added", () => {
-    expect(render({ id: "box" })).toContain("Boat is a paid service after its trial.");
+    expect(keyHidden("box", fixture.config as ConfigStatus)).toBe(true);
+    expect(render({ id: "instabox" })).not.toContain("Boat");
     expect(render({ id: "openai" })).toContain("Codex doesn&#x27;t use this key");
   });
 });

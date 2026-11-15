@@ -33,6 +33,7 @@ vi.mock("./AndroidDevicePanel", async (importOriginal) => ({
     return null;
   },
 }));
+vi.mock("./InstaboxSnapshots", () => ({ InstaboxSnapshots: () => null }));
 vi.mock("./BrowserPanel", () => ({ BrowserPanel: () => null }));
 vi.mock("./CloudBackendPicker", () => ({ CloudBackendPicker: () => null }));
 vi.mock("./bot-settings/RoutinesSection", () => ({ RoutinesSection: () => null }));

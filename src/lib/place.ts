@@ -8,7 +8,7 @@ export const PLACES: readonly Place[] = ["cloud", "vm", "local", "browser"];
 export type EffectivePlace = Place | "auto" | "off";
 
 export function placeOffered(place: Place, config: { cloudHome?: boolean; providerLock?: boolean } | null | undefined, backend?: Bot["cloudBackend"]): boolean {
-  return !(config?.providerLock && place === "cloud" && backend !== "vps") && (!config?.cloudHome || cloudHomeOffersPlace(place));
+  return !(config?.providerLock && place === "cloud" && backend === "box") && (!config?.cloudHome || cloudHomeOffersPlace(place));
 }
 
 export function effectivePlace(bot: Pick<Bot, "computer">, task?: Pick<Task, "surface"> | null): EffectivePlace {

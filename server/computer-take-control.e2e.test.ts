@@ -55,7 +55,7 @@ describe("taking control never waits for the screen preview", () => {
   };
   const newBot = async (name: string, patch: Record<string, unknown>) => {
     const { bot } = await apiOk("POST", "/api/bots", { name });
-    await apiOk("PATCH", `/api/bots/${bot.id}`, { browser: false, modelSelection: { instanceId: "engine", model: "claude-sonnet-5" }, ...patch });
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { browser: false, modelSelection: { instanceId: "engine", model: "claude-sonnet-5" }, cloudBackend: "box", ...patch });
     return bot as { id: string; name: string; threadId: string };
   };
 

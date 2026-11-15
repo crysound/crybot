@@ -323,10 +323,10 @@ describe("cloud computer inventory UI", () => {
 
   it("keeps disconnected, unavailable, and empty states distinct", () => {
     const disconnected = renderCard({ configured: false });
-    expect(disconnected).toContain("Boat is not connected");
+    expect(disconnected).toContain("The cloud service is not connected");
     expect(disconnected).not.toContain("No cloud desktops found");
-    expect(disconnected.match(/Boat is not connected/g)).toHaveLength(1);
-    expect(disconnected).toContain("Connect your Boat account");
+    expect(disconnected.match(/The cloud service is not connected/g)).toHaveLength(1);
+    expect(disconnected).toContain("Connect your cloud service account");
     expect(disconnected).not.toContain("aria-busy");
 
     const unavailable = renderCard({ unavailableReason: "boat.dev is unavailable" });
@@ -335,7 +335,7 @@ describe("cloud computer inventory UI", () => {
 
     const endpointFailure = renderCard({ configured: null, unavailableReason: "Computer inventory could not load" });
     expect(endpointFailure).toContain("Computer inventory could not load");
-    expect(endpointFailure).not.toContain("Boat is not connected");
+    expect(endpointFailure).not.toContain("The cloud service is not connected");
 
     const empty = renderCard();
     expect(empty).toContain("No cloud desktops found");
@@ -589,13 +589,13 @@ describe("Settings → Computers on an CRY Cloud home", () => {
   const cards = () => [...renderToStaticMarkup(createElement(LocalComputerSection)).matchAll(/<div class="text-\[16px\] font-semibold text-ink[^"]*">([^<]+)<\/div>/g)].map((match) => match[1]);
 
   it("sets up a Local VM on a desktop or self-hosted server", () => {
-    expect(cards()).toEqual(expect.arrayContaining(["Cloud desktops", "Private desktops", "Setup"]));
+    expect(cards()).toEqual(expect.arrayContaining(["Private desktops", "Setup"]));
   });
 
   it("shows no Local VM, and no steps to install one, where it cannot exist", () => {
     storeFixture.config = { cloudHome: true };
     const titles = cards();
-    expect(titles).toContain("Cloud desktops");
+    expect(titles).not.toContain("Cloud desktops");
     expect(titles).not.toContain("Private desktops");
     expect(titles).not.toContain("Setup");
   });
@@ -639,15 +639,15 @@ describe("Local VM idle timeout setting", () => {
   });
 });
 
-it.each([false, true])("keeps local and VPS settings and hides Boat only while locked: %s", (providerLock) => {
+it.each([false, true])("keeps local and VPS settings and hides the retired cloud management entry: %s", (providerLock) => {
   storeFixture.config = { providerLock };
   try {
     setLocale("en");
     const markup = renderToStaticMarkup(createElement(LocalComputerSection));
-    expect(markup.includes("Cloud desktops")).toBe(!providerLock);
+    expect(markup).not.toContain("Cloud desktops");
     expect(markup).toContain("Private desktops");
     expect(markup).toContain("Self-hosted VPS computers");
-    if (providerLock) expect(markup).not.toMatch(/Boat|data-keys-link="box"/);
+    expect(markup).not.toMatch(/Boat|data-keys-link="box"/);
   } finally { storeFixture.config = null; }
 });
 

@@ -153,9 +153,34 @@ describe("surface pin provenance against the real server", () => {
   });
   afterEach(async () => { await stop(); resetTurn(); boatDown = false; });
 
+  it.each(["new", "legacy"])("previews the ready shared VM in Auto with the %s default backend and no InstaBox key", async kind => {
+    await start();
+    const { bot } = await apiOk("POST", "/api/bots", { name: "Auto preview fixture" });
+    expect(bot.cloudBackend).toBe("instabox");
+    expect(bot.computer).toBeUndefined();
+    if (kind === "legacy") {
+      await stop();
+      editSavedBot(bot.id, saved => { delete saved.cloudBackend; });
+      await start();
+      expect((await apiOk("GET", "/api/bots?messages=0")).bots.find((entry: any) => entry.id === bot.id).cloudBackend).toBeUndefined();
+    }
+    expect((await apiOk("GET", "/api/config")).instabox.configured).toBe(false);
+    expect(await apiOk("GET", "/api/local-computer")).toMatchObject({ ready: true, mode: "shared" });
+    expect(savedTask(bot.id, bot.threadId)?.surface).toBeUndefined();
+    const preview = `/api/bots/${bot.id}/computer?threadId=${bot.threadId}`;
+    expect(await apiOk("GET", preview)).toMatchObject({ surface: "vm" });
+    expect(savedTask(bot.id, bot.threadId)?.surface).toBeUndefined();
+    vmState({ containers: ["shared"], stopped: ["shared"] });
+    expect(await apiOk("GET", preview)).toMatchObject({ surface: "vm" });
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { computer: "cloud", cloudBackend: "instabox" });
+    expect(await apiOk("GET", preview)).toMatchObject({ surface: "cloud", backend: "instabox", configured: false });
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { cloudBackend: "box" });
+    await apiOk("DELETE", `/api/bots/${bot.id}`);
+  });
+
   it("marks a person's thread pin as theirs and clears provenance with the pin", async () => {
     await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Pin Bot" });
+    const { bot } = await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Pin Bot" });
     const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, {});
     await apiOk("PATCH", `/api/bots/${bot.id}/tasks/${task.threadId}`, { surface: "local" });
     expect(savedTask(bot.id, task.threadId)).toMatchObject({ surface: "local", surfaceSource: "user" });
@@ -172,7 +197,7 @@ describe("surface pin provenance against the real server", () => {
 
   it("still refuses to change a busy thread's surface", async () => {
     await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Busy Pin Bot" });
+    const { bot } = await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Busy Pin Bot" });
     const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, {});
     resetTurn();
     await apiOk("POST", `/api/bots/${bot.id}/messages`, { text: "Work slowly.", threadId: task.threadId });
@@ -192,7 +217,7 @@ describe("surface pin provenance against the real server", () => {
 
   it("sweeps only conflicting auto pins when Works on is set, and nothing when it returns to Auto", async () => {
     await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Sweep Bot" });
+    const { bot } = await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Sweep Bot" });
     const [autoMismatch, personMismatch, autoMatch] = (await Promise.all([
       apiOk("POST", `/api/bots/${bot.id}/tasks`, {}),
       apiOk("POST", `/api/bots/${bot.id}/tasks`, {}),
@@ -221,7 +246,7 @@ describe("surface pin provenance against the real server", () => {
 
   it("preserves pre-provenance user pins at boot and after Works on changes", async () => {
     await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Repair Bot" });
+    const { bot } = await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Repair Bot" });
     const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, {});
     await apiOk("PATCH", `/api/bots/${bot.id}/tasks/${task.threadId}`, { surface: "local" });
     await stop();
@@ -249,7 +274,7 @@ describe("surface pin provenance against the real server", () => {
 
   it("mounts the VM for a turn into a thread auto-pinned to this computer", async () => {
     await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Incident Bot" });
+    const { bot } = await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Incident Bot" });
     const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, {});
     await apiOk("PATCH", `/api/bots/${bot.id}/tasks/${task.threadId}`, { surface: "local" });
     await stop();
@@ -277,7 +302,7 @@ describe("surface pin provenance against the real server", () => {
 
   it("mounts the built-in browser beside the computer in a thread a teammate opened, and not in a person's thread", async () => {
     await start(true);
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Delegated Browser Bot" });
+    const { bot } = await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Delegated Browser Bot" });
     const [own, delegated] = (await Promise.all([
       apiOk("POST", `/api/bots/${bot.id}/tasks`, {}),
       apiOk("POST", `/api/bots/${bot.id}/tasks`, {}),
@@ -320,7 +345,7 @@ describe("surface pin provenance against the real server", () => {
 
   it("records future auto pins and moves them when Works on changes", async () => {
     await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "New Auto Pin Bot" });
+    const { bot } = await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "New Auto Pin Bot" });
     const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, {});
     resetTurn();
     await apiOk("POST", `/api/bots/${bot.id}/messages`, { text: "Use the available computer.", threadId: task.threadId });
@@ -351,7 +376,7 @@ describe("surface pin provenance against the real server", () => {
 
   it("keeps a person's pin when Works on changes under it", async () => {
     await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Person Pin Bot" });
+    const { bot } = await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Person Pin Bot" });
     const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, {});
     await apiOk("PATCH", `/api/bots/${bot.id}/tasks/${task.threadId}`, { surface: "local" });
     await stop();
@@ -393,7 +418,7 @@ describe("surface pin provenance against the real server", () => {
 
   it("clears a select_computer pin to a cloud computer that fails, and keeps a person's pin", async () => {
     await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Failed place bot" });
+    const { bot } = await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Failed place bot" });
     const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, {});
     await apiOk("PUT", "/api/config", { box: { token: "box_fixture" } });
     const lastRow = async () => {
@@ -437,7 +462,7 @@ describe("surface pin provenance against the real server", () => {
 
   it("never takes a relayed line's conversation for where the person writes, when select_computer continues its turn", async () => {
     await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Relayed place bot" });
+    const { bot } = await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Relayed place bot" });
     // An Ask thread, as a Slack relay's guarded send expects.
     const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, { approvalMode: "ask" });
     await apiOk("PUT", "/api/config", { box: { token: "box_fixture" } });
@@ -470,8 +495,8 @@ describe("surface pin provenance against the real server", () => {
     rmSync(teammateDump, { force: true });
     rmSync(teammateFinish, { force: true });
     await start(true);
-    const asker = (await apiOk("POST", "/api/bots", { name: "Asker" })).bot;
-    const tester = (await apiOk("POST", "/api/bots", { name: "Tester" })).bot;
+    const asker = (await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Asker" })).bot;
+    const tester = (await apiOk("POST", "/api/bots", { settings: { cloudBackend: "box" }, name: "Tester" })).bot;
     await apiOk("PATCH", `/api/bots/${tester.id}`, { modelSelection: { ...tester.modelSelection, instanceId: "teammate" } });
     await stop();
     editSavedBot(tester.id, saved => { saved.browserProfile = "guest"; });

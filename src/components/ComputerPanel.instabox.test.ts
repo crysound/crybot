@@ -35,9 +35,10 @@ vi.mock("@/state/store", async original => ({
 const { ComputerPanel } = await import("./ComputerPanel");
 const { BotEditorStore, initialState } = await import("@/state/store");
 
-it("refreshes the selected InstaBox panel when its key is saved in Settings", async () => {
+it.each([undefined, "instabox"] as const)("uses InstaBox and refreshes its key for backend %s", async (cloudBackend) => {
+  fixture.configured = false; fixture.reads = 0;
   const bot = { id: "fixture-bot", threadId: "fixture-thread", name: "Fixture", title: "", description: "", color: "green",
-    computer: "cloud", cloudBackend: "instabox", modelSelection: { instanceId: "fixture", model: "fixture" },
+    computer: "cloud", cloudBackend, modelSelection: { instanceId: "fixture", model: "fixture" },
     messages: [], tasks: [], busy: false } as unknown as Bot;
   const instance = { instanceId: "fixture", driverKind: "claudeAgent", displayName: "Fixture", access: "subscription",
     snapshot: { state: "available", authenticated: true }, capabilities: { computerMcp: true, browserMcp: true },

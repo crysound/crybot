@@ -20,8 +20,8 @@ const WORKS_ON_CHOICES = [
 ] as const satisfies ReadonlyArray<readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon]>;
 
 export function worksOnChoices(config: Partial<Pick<ConfigStatus, "cloudHome" | "providerLock" | "localVm">> | null | undefined, capabilities: DesktopCapabilities): ReadonlyArray<readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon]> {
-  return WORKS_ON_CHOICES.map((choice): readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon] => config?.providerLock && choice[0] === "cloud"
-    ? ["cloud", "botAccess.cloud.selfHostedVps", "botAccess.cloud.vpsDescription", Cloud] : choice[0] === "vm" ? [choice[0], vmLabelKey(config), vmDescriptionKey(config), choice[3]] : choice).filter(([mode]) => mode === null || mode === "off" || (placeOffered(mode, config, config?.providerLock ? "vps" : undefined) && !(mode === "local" && pageOnRemoteServer(capabilities))));
+  return WORKS_ON_CHOICES.map((choice): readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon] => choice[0] === "vm"
+    ? [choice[0], vmLabelKey(config), vmDescriptionKey(config), choice[3]] : choice).filter(([mode]) => mode === null || mode === "off" || (placeOffered(mode, config) && !(mode === "local" && pageOnRemoteServer(capabilities))));
 }
 
 export function worksOnSelected(mode: WorksOnMode, computer: Bot["computer"], capabilities: DesktopCapabilities): boolean {

@@ -510,7 +510,7 @@ describe("Group Local VM ownership on the real isolated server", () => {
     const { bot } = await api("POST", "/api/bots", { name: "Chat cloud selection" });
     try {
       await api("PUT", "/api/config", { box: { token: "box_fixture" } });
-      await api("PATCH", `/api/bots/${bot.id}`, { computer: state === "missing-auto" ? "browser" : "vm", browser: false });
+      await api("PATCH", `/api/bots/${bot.id}`, { computer: state === "missing-auto" ? "browser" : "vm", cloudBackend: "box", browser: false });
       const environmentId = readFileSync(join(fixtureHome, "data", "environment-id"), "utf8").trim();
       const scope = createHash("sha256").update(environmentId).digest("hex").slice(0, 12);
       const prefix = bot.id.slice(0, 8).replace(/[^a-z0-9]/g, "");
@@ -565,7 +565,7 @@ describe("Group Local VM ownership on the real isolated server", () => {
     const { bot } = await api("POST", "/api/bots", { name: "Chat selects computer" });
     try {
       await api("PUT", "/api/config", { box: { token: "box_fixture" } });
-      await api("PATCH", `/api/bots/${bot.id}`, { computer: "browser", browser: false });
+      await api("PATCH", `/api/bots/${bot.id}`, { computer: "browser", cloudBackend: "box", browser: false });
       await api("POST", `/api/bots/${bot.id}/messages`, { text: "Open Chrome on an available VM and inspect its page title" });
       const before: any = await dump();
       expect(computer(before)).toBeUndefined();
@@ -614,7 +614,7 @@ describe("Group Local VM ownership on the real isolated server", () => {
     const { bot } = await api("POST", "/api/bots", { name: "Chat prefers its desktop" });
     try {
       await api("PUT", "/api/config", { box: { token: "box_fixture" } });
-      await api("PATCH", `/api/bots/${bot.id}`, { computer: "browser", browser: false });
+      await api("PATCH", `/api/bots/${bot.id}`, { computer: "browser", cloudBackend: "box", browser: false });
       const environmentId = readFileSync(join(fixtureHome, "data", "environment-id"), "utf8").trim();
       const scope = createHash("sha256").update(environmentId).digest("hex").slice(0, 12);
       const prefix = bot.id.slice(0, 8).replace(/[^a-z0-9]/g, "");
@@ -843,7 +843,7 @@ describe("Group Local VM ownership on the real isolated server", () => {
     const { bots, group } = await room();
     try {
       await api("PUT", "/api/config", { box: { token: "box_fixture" } });
-      await api("PATCH", `/api/bots/${bots[0].id}`, { computer: "cloud" });
+      await api("PATCH", `/api/bots/${bots[0].id}`, { computer: "cloud", cloudBackend: "box" });
       const environmentId = readFileSync(join(fixtureHome, "data", "environment-id"), "utf8").trim();
       const scope = createHash("sha256").update(environmentId).digest("hex").slice(0, 12);
       const prefix = bots[0].id.slice(0, 8).replace(/[^a-z0-9]/g, "");

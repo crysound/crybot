@@ -24,7 +24,7 @@ beforeEach(async () => {
   fake = await fakeInstaboxSnapshots();
   const route = createInstaboxSnapshotRoutes({
     request: () => configured ? fake.request : null,
-    machines: () => configured ? { ensureRunning } as unknown as InstaboxMachines : null,
+    machines: () => configured ? { ensureRunning, find: async () => null } as unknown as InstaboxMachines : null,
     machineIdFor: async () => machineId,
     botExists: (id) => id === botId,
     claim: () => () => {},
@@ -149,6 +149,17 @@ describe("isolated InstaBox snapshot HTTP routes", () => {
     expect(fake.calls).toHaveLength(0);
   });
 
+  it("lists an empty set before a machine exists but still reports a real provider failure", async () => {
+    machineId = null;
+    expect(await (await send()).json()).toEqual({ snapshots: [] });
+    expect(fake.calls).toHaveLength(0);
+    machineId = "machine-one";
+    fake.failNext();
+    const response = await send();
+    expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({ code: "instabox_snapshot_upstream" });
+  });
+
   it("does not expose provider errors and unlocks for retry", async () => {
     fake.failNext();
     const response = await send(basePath, "POST", {});
@@ -157,12 +168,19 @@ describe("isolated InstaBox snapshot HTTP routes", () => {
     expect((await send(basePath, "POST", {})).status).toBe(201);
   });
 
+  it.each([["busy", "instabox_snapshot_busy"], ["refused", "instabox_snapshot_conflict"]] as const)("distinguishes an upstream %s conflict", async (kind, code) => {
+    fake.conflict(kind);
+    const response = await send(basePath, "POST", {});
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code });
+  });
+
   it("reports failed snapshots and restore operations without starting the desktop", async () => {
     fake.failSnapshot();
     expect((await send(basePath, "POST", {})).status).toBe(502);
     ownSnapshot();
     fake.failOperation();
     expect((await send(`${basePath}/own/restore`, "POST")).status).toBe(502);
-    expect(ensureRunning).not.toHaveBeenCalled();
+    expect(ensureRunning).toHaveBeenCalled();
   });
 });

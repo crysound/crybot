@@ -68,8 +68,8 @@ it("is one queue: the Simple mode popup first, then What's new, the product-upda
   expect(nextNotice(facts(false, false, false, false), none)).toBeNull();
 });
 
-it("Boat's credit offer and the Grok Bot move are ones the desktop keeps for its every page, as What's new is", () => {
-  expect(DESKTOP_NOTICES).toEqual([WHATS_NEW_NOTICE, BOAT_OFFER_NOTICE, GROK_MOVE_NOTICE, MODELGO_OFFER_NOTICE]);
+it("desktop notices exclude the retired provider promotion", () => {
+  expect(DESKTOP_NOTICES).toEqual([WHATS_NEW_NOTICE, GROK_MOVE_NOTICE, MODELGO_OFFER_NOTICE]);
 });
 
 it("one notice a launch: What's new goes first and Boat's credit offer waits for a later launch; only the product-updates question may follow", () => {

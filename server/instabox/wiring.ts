@@ -6,7 +6,8 @@ import { createInstaboxRequest } from "./client.ts";
 import { instaboxApiKey } from "./key.ts";
 import type { InstaboxMachine, InstaboxMachines, InstaboxRequest } from "./machine.ts";
 import { createInstaboxMachines } from "./machines.ts";
-import { requireInstabox } from "./power.ts";
+import { createInstaboxMachineRecords } from "./machine-records.ts";
+import { instaboxStatus, requireInstabox } from "./power.ts";
 import { instaboxDesktopTarget } from "./vnc.ts";
 
 export function createInstaboxWiring(deps: { cfg(): AppConfig; eligible(botId: string): boolean; claim(botId: string, allowPreview?: boolean): () => void; inUse(botId: string): boolean; snapshotTimeoutMs?: number }) {
@@ -15,13 +16,14 @@ export function createInstaboxWiring(deps: { cfg(): AppConfig; eligible(botId: s
   const fixture = /^http:\/\/127\.0\.0\.1:[1-9]\d{0,4}$/.test(fixtureApi ?? "");
   let cached: { key: string; machines: InstaboxMachines; request: InstaboxRequest } | undefined;
   const current = new Map<string, string>();
+  const records = createInstaboxMachineRecords();
   function service() {
     const key = instaboxApiKey(deps.cfg());
     if (!key) { cached = undefined; current.clear(); return null; }
     if (cached?.key !== key) {
       current.clear();
       const request = createInstaboxRequest(key, fixture ? fixtureApi : undefined);
-      const machines = createInstaboxMachines(request);
+      const machines = createInstaboxMachines(request, records, key);
       const remember = (botId: string, machine: InstaboxMachine | null) => {
         if (machine && machine.state !== "deleted") current.set(botId, machine.id);
         else current.delete(botId);
@@ -38,6 +40,12 @@ export function createInstaboxWiring(deps: { cfg(): AppConfig; eligible(botId: s
   const machines = () => service()?.machines ?? null;
   return {
     machines,
+    hasMachine: records.has,
+    previewStatus(botId: string) {
+      const key = instaboxApiKey(deps.cfg());
+      const probe = key ? createInstaboxMachines(createInstaboxRequest(key, fixture ? fixtureApi : undefined, 2_500), records, key) : null;
+      return instaboxStatus(probe, botId);
+    },
     allowInsecureLoopbackUpstream: fixture,
     tools(boxId: string | null | undefined) {
       if (!boxId?.startsWith("instabox/")) return undefined;
@@ -59,6 +67,6 @@ export function createInstaboxWiring(deps: { cfg(): AppConfig; eligible(botId: s
       }, { live: () => deps.eligible(botId) && service() === active });
       return target;
     },
-    routes: createSnapshotWiring({ ...deps, baseUrl: fixture ? fixtureApi : undefined }),
+    routes: createSnapshotWiring({ ...deps, records, baseUrl: fixture ? fixtureApi : undefined }),
   };
 }

@@ -145,7 +145,7 @@ describe("the keys page", () => {
   });
 
   it("opens a section that holds a saved key, and counts what is connected", () => {
-    setConfig({ ...fx.config, box: { configured: true, last4: "c3d4" } });
+    setConfig({ ...fx.config, instabox: { configured: true, last4: "c3d4" } });
     page();
     expect(expanded("computers")).toBe("true");
     expect(section("computers").textContent).toContain("1 connected");
@@ -157,7 +157,7 @@ describe("the keys page", () => {
     type(search, "fish");
     expect(rowsShown()).toEqual(["fishAudio"]);
     type(search, "Computers and browser");
-    expect(rowsShown()).toEqual(["box", "instabox", "vps", "onePassword"]);
+    expect(rowsShown()).toEqual(["instabox", "vps", "onePassword"]);
     type(search, "research");
     expect(rowsShown()).toEqual(["treg"]);
     type(search, "zzz");
@@ -210,8 +210,8 @@ describe("the keys page", () => {
   it("clears a search that would hide the row a link asks for", async () => {
     page();
     type(host.querySelector<HTMLInputElement>("[data-keys-search]")!, "fish");
-    flushSync(() => { openKeySettings("box"); });
-    await vi.waitFor(() => expect(document.activeElement).toBe(row("box")!.querySelector("[data-key-input]")));
+    flushSync(() => { openKeySettings("instabox"); });
+    await vi.waitFor(() => expect(document.activeElement).toBe(row("instabox")!.querySelector("[data-key-input]")));
     expect(host.querySelector<HTMLInputElement>("[data-keys-search]")!.value).toBe("");
   });
 
@@ -240,15 +240,15 @@ describe("the keys page", () => {
   });
 
   it("confirms a key the server checked on save as Connected", async () => {
-    fx.api.mockImplementation(async () => ({ ...fx.config, box: { configured: true, last4: "c3d4" } }));
+    fx.api.mockImplementation(async () => ({ ...fx.config, instabox: { configured: true, last4: "c3d4" } }));
     setConfig({ ...fx.config });
     page();
     flushSync(() => section("computers").querySelector<HTMLButtonElement>("button[aria-expanded]")!.click());
-    const input = row("box")!.querySelector<HTMLInputElement>("[data-key-input]")!;
-    type(input, "boat_dummy_fixture_key_c3d4");
+    const input = row("instabox")!.querySelector<HTMLInputElement>("[data-key-input]")!;
+    type(input, "instabox_dummy_fixture_key_c3d4");
     flushSync(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
-    await vi.waitFor(() => expect(row("box")!.querySelector("[data-key-masked]")?.textContent).toContain("••••••••c3d4"));
-    expect(row("box")!.textContent).toContain("Connected");
+    await vi.waitFor(() => expect(row("instabox")!.querySelector("[data-key-masked]")?.textContent).toContain("••••••••c3d4"));
+    expect(row("instabox")!.textContent).toContain("Saved");
     expect(fx.api).toHaveBeenCalledOnce();
   });
 });
@@ -348,13 +348,13 @@ it("removes AI keys and Boat when provider lock is enabled, including focused li
   expect(row("anthropic")).toBeNull();
 });
 
-it.each([false, true])("shows the Boat row and search result only without provider lock: %s", (providerLock) => {
+it.each([false, true])("keeps the legacy cloud row hidden: %s", (providerLock) => {
   setConfig({ ...fx.config, providerLock });
   openKeySettings("box");
   page();
-  expect(row("box") === null).toBe(providerLock);
+  expect(row("box")).toBeNull();
   expect(row("vps")).not.toBeNull();
-  expect(host.textContent?.includes("Boat")).toBe(!providerLock);
+  expect(host.textContent?.includes("Boat")).toBe(false);
 });
 
 it.each([false, true])("uses a Chinese computers purpose without cloud desktops when locked: %s", providerLock => {

@@ -11,10 +11,10 @@ export const CREDENTIAL_TARGETS = {
     helpUrl: "https://console.x.ai/",
   },
   boxToken: {
-    label: "Boat API key",
-    description: "Gives bots an isolated cloud computer when Boat is selected.",
-    placeholder: "Paste your Boat API key",
-    helpUrl: "https://docs.boat.dev/api-keys",
+    label: "Cloud computer key",
+    description: "Gives bots an isolated cloud computer.",
+    placeholder: "Paste your cloud computer key",
+    helpUrl: "",
   },
   opencodeGoApiKey: {
     label: "OpenCode API key",

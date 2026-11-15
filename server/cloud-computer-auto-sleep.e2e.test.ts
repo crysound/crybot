@@ -67,7 +67,7 @@ describe("a cloud computer goes to sleep after use and wakes on the next", () =>
   const send = (botId: string, text: string) => apiOk("POST", `/api/bots/${botId}/messages`, { text });
   const newBot = async (name: string, patch: Record<string, unknown>) => {
     const { bot } = await apiOk("POST", "/api/bots", { name });
-    await apiOk("PATCH", `/api/bots/${bot.id}`, { browser: false, ...patch });
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { browser: false, cloudBackend: "box", ...patch });
     return bot as { id: string; name: string; threadId: string };
   };
   const model = (instanceId: string) => ({ modelSelection: { instanceId, model: "claude-sonnet-5" } });

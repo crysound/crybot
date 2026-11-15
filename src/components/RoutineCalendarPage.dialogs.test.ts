@@ -1,20 +1,20 @@
 import { Children, createElement, isValidElement, type ReactElement, type ReactNode, type RefObject } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Bot } from "@/state/store";
+import type { Bot, ConfigStatus } from "@/state/store";
 import type { Routine, RoutineRun } from "../../shared/routines";
 
 const fixture = vi.hoisted(() => {
   vi.stubGlobal("window", {});
   vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {} });
-  return { calls: [] as { ref: RefObject<unknown>; onClose: () => void }[] };
+  return { calls: [] as { ref: RefObject<unknown>; onClose: () => void }[], config: null as Partial<ConfigStatus> | null };
 });
 vi.mock("@/hooks/use-modal-dialog", () => ({
   useModalDialog: (ref: RefObject<unknown>, onClose: () => void) => { fixture.calls.push({ ref, onClose }); },
 }));
 vi.mock("@/state/store", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/state/store")>();
-  return { ...original, useStore: () => ({ state: original.initialState, dispatch: vi.fn() }) };
+  return { ...original, useStore: () => ({ state: { ...original.initialState, config: fixture.config }, dispatch: vi.fn() }) };
 });
 vi.mock("./DesktopCapabilities", async (importOriginal) => ({
   ...await importOriginal<typeof import("./DesktopCapabilities")>(),
@@ -47,7 +47,7 @@ function render(element: () => ReactNode) {
   return nodes(tree);
 }
 
-beforeEach(() => { fixture.calls = []; });
+beforeEach(() => { fixture.calls = []; fixture.config = null; });
 afterAll(() => vi.unstubAllGlobals());
 afterEach(() => setLocale("en"));
 
@@ -82,6 +82,24 @@ describe("calendar event details drawer", () => {
   const drawer = (onClose: () => void) => EventDetails({
     item: { kind: "routine", id: routine.id, at: 1, durationMinutes: 30, routine, run: null },
     bots: [bot], onClose, onEdit: vi.fn(), onCallChanged: vi.fn(), onOpenRoom: vi.fn(),
+  });
+
+  describe.each([false, true])("run location with provider lock %s", (providerLock) => {
+    it.each([
+      ["cloud", "instabox", "bot", true],
+      ["cloud", undefined, "bot", true],
+      ["cloud", "vps", "bot", true],
+      ["cloud", "box", "bot", false],
+      ["local", "box", "bot", true],
+      ["local", "instabox", "cloud", false],
+    ] as const)("computer %s, backend %s, runOn %s", (computer, cloudBackend, runOn, visibleWhenLocked) => {
+      fixture.config = { providerLock };
+      const html = renderToStaticMarkup(createElement(EventDetails, {
+        item: { kind: "routine", id: routine.id, at: 1, durationMinutes: 30, routine: { ...routine, runOn }, run: null },
+        bots: [{ ...bot, computer, cloudBackend }], onClose: vi.fn(), onEdit: vi.fn(), onCallChanged: vi.fn(), onOpenRoom: vi.fn(),
+      }));
+      expect(html.includes(t("routines.drawer.runsOn"))).toBe(!providerLock || visibleWhenLocked);
+    });
   });
 
   it("is a labelled drawer beside the calendar, not a focus-trapping modal", () => {
