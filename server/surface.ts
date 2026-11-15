@@ -214,7 +214,7 @@ function ownComputerSentence(lent: ReadonlyArray<{ name: string; platform: LentP
  * `ownComputer`: on a Cloud home, the person's lent computers (newest first) when this turn has the shared-computer tools. */
 export function surfacePrompt(
   mounted: MountedSurfaces,
-  opts: { pinned?: Surface | null; note?: string; canSelect?: boolean; cloudHome?: boolean; botOpened?: boolean;
+  opts: { screen?: number; pinned?: Surface | null; note?: string; canSelect?: boolean; cloudHome?: boolean; botOpened?: boolean;
     ownComputer?: ReadonlyArray<{ name: string; platform: LentPlatform | null }> } = {},
 ): string {
   const reportBack = opts.botOpened && !opts.canSelect;
@@ -256,5 +256,6 @@ export function surfacePrompt(
     for (const [nowhere, places] of OWN_COMPUTER_WORDING) text = text.replace(nowhere, places);
     text = text.replace(UNREACHABLE_OWN, `${theirComputer(opts.ownComputer).theirs} is not one of these places`) + ownComputerSentence(opts.ownComputer, computer);
   }
+  if (mounted.computer === "vm" && opts.screen) text += ` You are on screen ${opts.screen}; other screens belong to other agents. Keep your files and browser work on your own screen. To install packages, run crybot-pkg followed by package names through vm_exec; sudo is unavailable.`;
   return text + (opts.note ?? "");
 }

@@ -1,3 +1,4 @@
+import { localVmWorkspace } from "../local-vm-screen-layout.ts";
 import type { ScreenFileAccess } from "../screen-files.ts";
 import { userError, userErrorFields, userErrorThrown } from "../user-errors.ts";
 // The secure credential cards request_credential adds: the card on the conversation's visible branch, settling it,
@@ -24,7 +25,7 @@ import {
 import { EMAIL_CREDENTIAL, outgoingFieldsOf, type EmailAccountView, type EmailConnectAnswer, type EmailConnectRequest, type EmailOutgoingAnswer, type EmailOutgoingFields, type EmailServerFields } from "../../shared/email.ts";
 import type { SecretRequestCardData } from "../../shared/wire.ts";
 import type { AppConfig } from "../config.ts";
-import { perBotLocalVmTarget, poolLocalVmTarget, SHARED_LOCAL_VM_TARGET, VM_WORKSPACE_GUEST } from "../container-computer.ts";
+import { perBotLocalVmTarget, poolLocalVmTarget, SHARED_LOCAL_VM_TARGET } from "../container-computer.ts";
 import { HOSTED_PROVIDER_SETTINGS_ERROR } from "../hosted-models.ts";
 import { addHeldSecretScrubber } from "../redact.ts";
 import { SECRET_VALUE_MAX_BYTES, SecretVault, type SavedSecret, type SecretFileHome } from "../secret-vault.ts";
@@ -131,7 +132,9 @@ function vmFileHome(botId: string, vm: string): SecretFileHome | null {
   const target = vm === SHARED_LOCAL_VM_TARGET.key ? SHARED_LOCAL_VM_TARGET
     : pool ? poolLocalVmTarget(Number(pool[1]))
       : perBotLocalVmTarget(botId).key === vm ? perBotLocalVmTarget(botId) : null;
-  return target ? { host: target.workspaceDir, shown: VM_WORKSPACE_GUEST } : null;
+  if (!target) return null;
+  const workspace = localVmWorkspace(target);
+  return { host: workspace.host, shown: workspace.root };
 }
 
 /** What the bot hears when the mailbox card settles; it never hears the password. */

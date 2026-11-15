@@ -11,9 +11,7 @@ it.each([undefined, () => null])("does not use the container password when a scr
   const deps = { status, touch: vi.fn(), screenPassword };
   for (const screen of [1, 2, 3, 4]) {
     const target = { ...SHARED_LOCAL_VM_TARGET, key: `shared:s${screen}` };
-    expect(await localDesktopTarget(target, deps).resolve()).toMatchObject({
-      password: null, path: `/websockify?token=s${screen}`,
-    });
+    await expect(localDesktopTarget(target, deps).resolve()).rejects.toMatchObject({ status: 409 });
   }
   expect(await localDesktopTarget(SHARED_LOCAL_VM_TARGET, deps).resolve()).toMatchObject({ password: "container-secret" });
 });

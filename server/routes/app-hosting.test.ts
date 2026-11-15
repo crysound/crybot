@@ -17,11 +17,11 @@ function fakePublisher() {
   } satisfies AppPublisher;
 }
 
-async function call(publisher: AppPublisher, input: { path?: string; method?: string; body?: unknown; vmWorkspace?: string | null; access?: ScreenFileAccess } = {}) {
+async function call(publisher: AppPublisher, input: { path?: string; method?: string; body?: unknown; vmWorkspace?: string | null; vmGuestRoot?: string; access?: ScreenFileAccess } = {}) {
   const sent: { status?: number; body?: any } = {};
   const json = ((_res: unknown, status: number, body: unknown) => { sent.status = status; sent.body = body; }) as AppHostingContext["json"];
   const out = await createAppHostingInternalRoutes(publisher)({ method: input.method ?? "POST", path: input.path ?? "/api/internal/apps/publish", res: {} as AppHostingContext["res"], json, botId: "bot-1",
-    readBody: async () => input.body ?? {}, folders: async () => ({ roots: ["/work/bot-1"], vmWorkspace: input.vmWorkspace ?? null, ...(input.access ? { access: input.access } : {}) }) });
+    readBody: async () => input.body ?? {}, folders: async () => ({ roots: ["/work/bot-1"], vmWorkspace: input.vmWorkspace ?? null, vmGuestRoot: input.vmGuestRoot, ...(input.access ? { access: input.access } : {}) }) });
   return { out, ...sent };
 }
 
@@ -67,6 +67,16 @@ describe("publish_app's internal route", () => {
     expect(publisher.publish).toHaveBeenCalledWith({ botId: "bot-1", roots: [vmWorkspace, "/work/bot-1"], path: join(vmWorkspace, "shop"), title: "Shop" });
   });
 
+  it("maps screen guest paths and projects without access for publish, status and delete", async () => {
+    const publisher = fakePublisher(), vmWorkspace = join("/vm", "screens", "s2"), vmGuestRoot = "/home/crybot-s2/workspace";
+    for (const action of ["publish", "status", "delete"]) {
+      await call(publisher, { body: { action, path: `${vmGuestRoot}/site/dist`, project: `${vmGuestRoot}/site` }, vmWorkspace, vmGuestRoot });
+    }
+    for (const invoke of [publisher.publish, publisher.status, publisher.remove]) {
+      expect(invoke).toHaveBeenCalledWith(expect.objectContaining({ path: join(vmWorkspace, "site/dist"), project: join(vmWorkspace, "site") }));
+    }
+  });
+
   it("is closed to a turn that came in from outside", () => {
     expect(outsideRouteRefused("POST", "/api/internal/apps/publish")).toBe(true);
   });
@@ -76,12 +86,12 @@ it.skipIf(process.platform === "win32")("forwards screen file access with guest 
   const f = await screenFilesFixture();
   try {
     const publisher = fakePublisher();
-    const path = "/home/cua/workspace/screens/s2/site";
+    const vmGuestRoot = "/home/crybot-s2/workspace", path = `${vmGuestRoot}/site`;
     for (const action of ["publish", "status", "delete"]) {
-      await call(publisher, { body: { action, path, title: "Screen page" }, vmWorkspace: f.workspace, access: f.access });
+      await call(publisher, { body: { action, path, project: vmGuestRoot, title: "Screen page" }, vmWorkspace: f.workspace, vmGuestRoot, access: f.access });
     }
     for (const invoke of [publisher.publish, publisher.status, publisher.remove]) {
-      expect(invoke).toHaveBeenCalledWith(expect.objectContaining({ path, access: f.access, vmWorkspace: f.workspace }));
+      expect(invoke).toHaveBeenCalledWith(expect.objectContaining({ path, project: vmGuestRoot, access: f.access, vmWorkspace: f.workspace }));
     }
   } finally { await f.cleanup(); }
 });

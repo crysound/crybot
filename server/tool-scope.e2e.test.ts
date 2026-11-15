@@ -106,6 +106,8 @@ it.each(["direct", "preview", "room", "goal"] as const)("keeps a corrupt persist
     const loaded = await fetch(`${fixture.info.url}/api/bots?messages=0`).then((response) => response.json()) as { bots: Array<{ id: string; toolScope?: unknown }> };
     expect(loaded.bots.find((row) => row.id === bot.id)?.toolScope).toEqual({ allow: "all" });
     if (surface === "preview") {
+      expect((await fetch(`${fixture.info.url}/api/config`, { method: "PATCH",
+        headers: { "content-type": "application/json" }, body: JSON.stringify({ localVm: { screens: 1 } }) })).status).toBe(200);
       const preview = await fetch(`${fixture.info.url}/api/bots/${bot.id}/local-computer?threadId=${storedBot.threadId}`);
       expect(preview.status).toBe(200);
       expect(await preview.json()).not.toHaveProperty("error");

@@ -15,6 +15,7 @@ export function localDesktopTarget(target: LocalVmTarget, deps: {
   status: (target: LocalVmTarget) => Promise<ContainerComputerStatus>;
   touch: (target: LocalVmTarget) => void;
   screenPassword?: (screen: number) => string | null;
+  screenReady?: (screen: number) => boolean;
 }): DesktopTarget {
   return {
     key: target.key,
@@ -25,11 +26,15 @@ export function localDesktopTarget(target: LocalVmTarget, deps: {
         throw Object.assign(new Error("Local VM unavailable"), { status: 409 });
       }
       const screen = screenOfViewerTarget(viewerTargetId(target));
+      const screenPassword = screen === null ? null : deps.screenPassword?.(screen) ?? null;
+      if (screen !== null && (!screenPassword || (deps.screenReady && !deps.screenReady(screen)))) {
+        throw Object.assign(new Error("Screen unavailable"), { status: 409 });
+      }
       const statusPassword = new URLSearchParams(new URL(status.viewer_url).hash.slice(1)).get("password");
       return {
         port: status.viewer_port ?? 0,
-        password: screen === null ? statusPassword : deps.screenPassword?.(screen) ?? null,
-        live: true,
+        password: screen === null ? statusPassword : screenPassword,
+        live: screen === null ? true : () => deps.screenReady?.(screen) ?? true,
         touch: () => deps.touch(target),
         ...(screen === null ? {} : { path: `/websockify?token=s${screen}` }),
       };

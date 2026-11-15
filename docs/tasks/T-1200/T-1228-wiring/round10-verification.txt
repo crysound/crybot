@@ -1,0 +1,442 @@
+Round 10 verification, 2026-11-15; Node v24.22.3. Vitest files ran sequentially.
+Dependency preparation: crybot-link-deps: linked 73 entries.
+Baseline comparisons temporarily restored only the three changed product modules from HEAD, retained the final tests, and restored all edits in finally. No git commit/stage/reset.
+
+$ Baseline product files + final delayed-screen regression: pnpm exec vitest run server/local-vm-screen-runtime.test.ts -t "binds the first Auto tool call"
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-f27ccf1f9142
+
+ ❯ server/local-vm-screen-runtime.test.ts (16 tests | 3 failed | 13 skipped) 39ms
+     × binds the first Auto tool call after a 2000 ms screen startup (gate budget 500 ms) 16ms
+     × binds the first Auto tool call after a 7000 ms screen startup (gate budget 45000 ms) 6ms
+     × binds the first Auto tool call after a 47000 ms screen startup (gate budget 45000 ms) 16ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/local-vm-screen-runtime.test.ts > screen runtime lifecycle > binds the first Auto tool call after a 2000 ms screen startup (gate budget 500 ms)
+ FAIL  server/local-vm-screen-runtime.test.ts > screen runtime lifecycle > binds the first Auto tool call after a 47000 ms screen startup (gate budget 45000 ms)
+AssertionError: {"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"Another thread is using this computer. This call was not performed. This turn gets the computer as soon as it is free: to keep waiting, take a screenshot (each computer call waits up to 45 seconds) instead of ending your turn."}],"isError":true}}: expected { jsonrpc: '2.0', id: 3, …(1) } to not have property "result.isError" with value true
+ ❯ server/local-vm-screen-runtime.test.ts:200:50
+    198|       await vi.advanceTimersByTimeAsync(501);
+    199|       const result = await pending;
+    200|       expect(result, JSON.stringify(result)).not.toHaveProperty("resul…
+       |                                                  ^
+    201|       expect(result).toHaveProperty("result.content", [{ type: "text",…
+    202|       expect(f.runtime.ready(2)).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  server/local-vm-screen-runtime.test.ts > screen runtime lifecycle > binds the first Auto tool call after a 7000 ms screen startup (gate budget 45000 ms)
+AssertionError: {"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"This computer is free now, but this call had to wait for it, so it was NOT performed. Call again: the next call goes through at once. If you meant to click or type from an earlier screenshot, take a fresh one first — the screen may have changed while you waited."}],"isError":true}}: expected { jsonrpc: '2.0', id: 3, …(1) } to not have property "result.isError" with value true
+ ❯ server/local-vm-screen-runtime.test.ts:200:50
+    198|       await vi.advanceTimersByTimeAsync(501);
+    199|       const result = await pending;
+    200|       expect(result, JSON.stringify(result)).not.toHaveProperty("resul…
+       |                                                  ^
+    201|       expect(result).toHaveProperty("result.content", [{ type: "text",…
+    202|       expect(f.runtime.ready(2)).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 13 skipped (16)
+   Start at  02:47:36
+   Duration  2.15s (transform 1.57s, setup 752ms, import 1.24s, tests 39ms, environment 0ms)
+
+
+exit 1
+
+$ pnpm exec vitest run server/local-vm-screen-runtime.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-f27ccf1f9142
+
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  02:47:52
+   Duration  2.16s (transform 1.50s, setup 759ms, import 1.14s, tests 132ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/lazy-container-mcp.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-f27ccf1f9142
+
+
+ Test Files  1 passed (1)
+      Tests  27 passed (27)
+   Start at  02:45:18
+   Duration  1.26s (transform 666ms, setup 657ms, import 188ms, tests 306ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/computer-call-gate.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-f27ccf1f9142
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  02:48:07
+   Duration  1.15s (transform 762ms, setup 743ms, import 235ms, tests 68ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/computer-control-client.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-f27ccf1f9142
+
+ ❯ server/computer-control-client.test.ts (25 tests | 2 failed) 30025ms
+     × waits out a harness that holds the check longer than the old 2 s, and keeps its contention reason 10005ms
+     × says it could not confirm, not that a person took control, when its own timeout fires 20003ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/computer-control-client.test.ts > computer control client > waits out a harness that holds the check longer than the old 2 s, and keeps its contention reason
+Error: Test timed out in 10000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ server/computer-control-client.test.ts:42:3
+     40|   });
+     41|
+     42|   it("waits out a harness that holds the check longer than the old 2 s…
+       |   ^
+     43|     // The gate holds a check while the computer is busy; an early cli…
+     44|     const busy = { held: true, helpOpen: false, blockedReason: "Anothe…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  server/computer-control-client.test.ts > computer control client > says it could not confirm, not that a person took control, when its own timeout fires
+Error: Test timed out in 20000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ server/computer-control-client.test.ts:73:3
+     71|   });
+     72|
+     73|   it("says it could not confirm, not that a person took control, when …
+       |   ^
+     74|     const control = await slowControl(null, null);
+     75|     try {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 2 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+Error: listen EPERM: operation not permitted 127.0.0.1
+ ❯ Server.setupListenHandle [as _listen2] node:net:2368:21
+ ❯ listenInCluster node:net:2499:12
+ ❯ node:net:2728:7
+ ❯ processTicksAndRejections node:internal/process/task_queues:90:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'EPERM', errno: -1, syscall: 'listen', address: '127.0.0.1' }
+This error originated in "server/computer-control-client.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "waits out a harness that holds the check longer than the old 2 s, and keeps its contention reason". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+Error: listen EPERM: operation not permitted 127.0.0.1
+ ❯ Server.setupListenHandle [as _listen2] node:net:2368:21
+ ❯ listenInCluster node:net:2499:12
+ ❯ node:net:2728:7
+ ❯ processTicksAndRejections node:internal/process/task_queues:90:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'EPERM', errno: -1, syscall: 'listen', address: '127.0.0.1' }
+This error originated in "server/computer-control-client.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "says it could not confirm, not that a person took control, when its own timeout fires". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 23 passed (25)
+     Errors  2 errors
+   Start at  02:46:33
+   Duration  30.85s (transform 531ms, setup 687ms, import 20ms, tests 30.03s, environment 0ms)
+
+
+exit 1
+
+$ pnpm exec vitest run server/local-vm-screens.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-f27ccf1f9142
+
+ ❯ server/local-vm-screens.e2e.test.ts (13 tests | 13 failed) 24ms
+     × 1: assigns two agents different resources, exec users, displays and sockets 8ms
+     × 2: queues the fifth agent with position 1 and acquires a screen automatically 2ms
+     × 3: taking and handing back one screen leaves the other agent and its hold alone 1ms
+     × 4: screens=1 keeps the original resource, MCP socket, viewer and control key 1ms
+     × 5: retires only the idle screen, preserves affinity and starts container idle only after all screens stop 1ms
+     × Auto text completes without claiming or queueing when 0 screens are busy 1ms
+     × Auto text completes without claiming or queueing when 4 screens are busy 1ms
+     × Auto text proceeds without a computer while the multi-screen desktop update is pending 1ms
+     × an Auto routine never creates a missing multi-screen VM (imageMissing=false) 1ms
+     × an Auto routine never creates a missing multi-screen VM (imageMissing=true) 1ms
+     × Auto binds its MCP to the assigned screen only on its first tool call (screen startup delay: 0 ms) 1ms
+     × Auto binds its MCP to the assigned screen only on its first tool call (screen startup delay: 2000 ms) 1ms
+     × automatically resumes a parked fifth turn after an idle screen is released 1ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 13 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > 1: assigns two agents different resources, exec users, displays and sockets
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:117:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > 2: queues the fifth agent with position 1 and acquires a screen automatically
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:148:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/13]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > 3: taking and handing back one screen leaves the other agent and its hold alone
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:162:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/13]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > 4: screens=1 keeps the original resource, MCP socket, viewer and control key
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:178:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/13]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > 5: retires only the idle screen, preserves affinity and starts container idle only after all screens stop
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:201:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/13]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > Auto text completes without claiming or queueing when 0 screens are busy
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > Auto text completes without claiming or queueing when 4 screens are busy
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:221:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/13]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > Auto text proceeds without a computer while the multi-screen desktop update is pending
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:239:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/13]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > an Auto routine never creates a missing multi-screen VM (imageMissing=false)
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > an Auto routine never creates a missing multi-screen VM (imageMissing=true)
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:252:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/13]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > Auto binds its MCP to the assigned screen only on its first tool call (screen startup delay: 0 ms)
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > Auto binds its MCP to the assigned screen only on its first tool call (screen startup delay: 2000 ms)
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:266:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/13]⎯
+
+ FAIL  server/local-vm-screens.e2e.test.ts > shared Local VM screens through the server > automatically resumes a parked fifth turn after an idle screen is released
+Error: no free port block for offsets 0,1 in 19600..22600
+ ❯ freePortBlock server/testing/ports.ts:25:9
+     23|     if (checks.every(Boolean)) return base;
+     24|   }
+     25|   throw new Error(`no free port block for offsets ${offsets.join(",")}…
+       |         ^
+     26| }
+     27|
+ ❯ fixture server/local-vm-screens.e2e.test.ts:39:16
+ ❯ server/local-vm-screens.e2e.test.ts:280:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/13]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  13 failed (13)
+   Start at  02:46:10
+   Duration  1.16s (transform 810ms, setup 760ms, import 266ms, tests 24ms, environment 0ms)
+
+
+exit 1
+
+$ pnpm exec vitest run server/drivers/chat-mcp-lazy-container.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-f27ccf1f9142
+
+ ❯ server/drivers/chat-mcp-lazy-container.test.ts (1 test | 1 failed) 32ms
+   × retains lazy computer discovery while applying tool selection and approvals to the inner call 30ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/drivers/chat-mcp-lazy-container.test.ts > retains lazy computer discovery while applying tool selection and approvals to the inner call
+Error: MCP server "computer" didn't start: MCP server exited before the session closed.
+ ❯ mountChatTools server/drivers/chat-mcp-tools.ts:685:15
+    683|       if (mount.status === "rejected") {
+    684|         if (index >= builtIns || (OPTIONAL_BUILT_INS.has(name) && !mus…
+    685|         throw new Error(`MCP server "${name}" didn't start: ${mount…
+       |               ^
+    686|       }
+    687|       if (index < builtIns) {
+ ❯ server/drivers/chat-mcp-lazy-container.test.ts:11:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  02:48:16
+   Duration  1.43s (transform 843ms, setup 740ms, import 540ms, tests 32ms, environment 0ms)
+
+
+exit 1
+
+$ Baseline product files: pnpm exec vitest run server/drivers/chat-mcp-lazy-container.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-f27ccf1f9142
+
+ ❯ server/drivers/chat-mcp-lazy-container.test.ts (1 test | 1 failed) 34ms
+   × retains lazy computer discovery while applying tool selection and approvals to the inner call 33ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/drivers/chat-mcp-lazy-container.test.ts > retains lazy computer discovery while applying tool selection and approvals to the inner call
+Error: MCP server "computer" didn't start: MCP server exited before the session closed.
+ ❯ mountChatTools server/drivers/chat-mcp-tools.ts:685:15
+    683|       if (mount.status === "rejected") {
+    684|         if (index >= builtIns || (OPTIONAL_BUILT_INS.has(name) && !mus…
+    685|         throw new Error(`MCP server "${name}" didn't start: ${mount…
+       |               ^
+    686|       }
+    687|       if (index < builtIns) {
+ ❯ server/drivers/chat-mcp-lazy-container.test.ts:11:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  02:49:05
+   Duration  1.40s (transform 924ms, setup 798ms, import 446ms, tests 34ms, environment 0ms)
+
+
+exit 1
+
+$ pnpm exec vitest run server/auto-vm-claims.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-f27ccf1f9142
+
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  02:48:18
+   Duration  916ms (transform 594ms, setup 762ms, import 26ms, tests 9ms, environment 0ms)
+
+
+exit 0
+
+$ pnpm exec vitest run server/local-vm-resume.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1228-wiring-f27ccf1f9142
+
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  02:48:19
+   Duration  1.73s (transform 1.23s, setup 780ms, import 822ms, tests 17ms, environment 0ms)
+
+
+exit 0
+
+$ Isolated fake-Docker hook smoke (temporary vm.json; start screen-s2, status before/after ready-at-2)
+isolated fake-Docker smoke: start exit 0; pending status exit 1 (screen socket is still starting); ready status exit 0 ({})
+
+exit 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+
+exit 0
+
+$ pnpm exec oxlint --deny-warnings server/computer-call-gate.ts server/computer-call-gate.test.ts server/computer-control-client.ts server/computer-control-client.test.ts server/lazy-container-mcp.ts server/lazy-container-mcp.test.ts server/local-vm-screen-runtime.test.ts server/local-vm-screens.e2e.test.ts server/testing/local-vm-screens-hooks.mjs
+
+exit 0
+

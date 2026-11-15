@@ -1,12 +1,17 @@
 import { allowsTool, parseToolScope, type ToolScope } from "../shared/tool-scope.ts";
 import { createInterface } from "node:readline";
 import type { Readable, Writable } from "node:stream";
-import { createControlClient, controlRefusal, type ControlState } from "./computer-control-client.ts";
+import { CONTROL_READ_TIMEOUT_MS, createControlClient, controlRefusal, type ControlState, type ControlClient } from "./computer-control-client.ts";
 import type { AppClient } from "./mcp-app-connections.ts";
 import { CALL_TOOL, DESCRIBE_TOOL, SEARCH_TOOL, ToolDirectory, type CatalogTool } from "./mcp-directory.ts";
 import { listsComputerTool } from "./computer-tool-list.ts";
 import { textOnlyErrorResult } from "./mcp-error-result.ts";
 import { MAX_INPUT_BYTES, failure } from "./harness-mcp-request.ts";
+import { screenExecArgs, screenSocket, sharedScreenTarget } from "./container-computer.ts";
+import { settledWithin } from "./auto-vm-claims.ts";
+
+const TOOL_CALL_TIMEOUT_MS = 120_000;
+const SCREEN_READINESS_TIMEOUT_MS = Math.min(CONTROL_READ_TIMEOUT_MS, TOOL_CALL_TIMEOUT_MS - CONTROL_READ_TIMEOUT_MS);
 
 export function lazyContainerRequests(deps: {
   toolScope?: ToolScope;
@@ -21,7 +26,7 @@ export function lazyContainerRequests(deps: {
     ? { ...tool, description: "Find tools on the assigned Linux desktop by what you want to do. This waits for the computer to wake. Use describe_tool for exact inputs and call_tool to run a match." }
     : tool);
   const connect = () => connection ??= (async () => {
-    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(120_000)]);
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(TOOL_CALL_TIMEOUT_MS)]);
     const client = await deps.connect(signal);
     try {
       const tools: Array<CatalogTool & { inputSchema: Record<string, unknown> }> = [];
@@ -63,7 +68,7 @@ export function lazyContainerRequests(deps: {
       active.set(id, requestController);
       try {
         if (closed) throw new Error("Computer connection closed.");
-        const signal = AbortSignal.any([controller.signal, requestController.signal, AbortSignal.timeout(120_000)]);
+        const signal = AbortSignal.any([controller.signal, requestController.signal, AbortSignal.timeout(TOOL_CALL_TIMEOUT_MS)]);
         const gate = await abortable(deps.gate(name === CALL_TOOL, signal), signal);
         signal.throwIfAborted();
         if (gate.held) return failure(id, method, controlRefusal(gate));
@@ -88,14 +93,62 @@ export function lazyContainerRequests(deps: {
   };
 }
 
+export function gatedContainerRequests(command: string, args: string[], gate: ControlClient, options: {
+  toolScope?: ToolScope;
+  dynamicScreen: boolean;
+  open(command: string, args: string[], signal: AbortSignal): Promise<AppClient>;
+}) {
+  let screen: number | undefined;
+  return lazyContainerRequests({
+    toolScope: options.toolScope,
+    gate: async (action, signal) => {
+      if (options.dynamicScreen && screen === undefined) {
+        const readiness = await waitForScreenReadiness(gate, signal);
+        if (readiness.held) return readiness;
+        screen = readiness.localVmScreen;
+        if (!action) return readiness;
+      }
+      const state = await gate.state(true, action ? undefined : { readinessOnly: "1" }, signal);
+      if (!state.held) screen = state.localVmScreen;
+      return state;
+    },
+    connect: async signal => {
+      if (options.dynamicScreen) {
+        if (screen === undefined) throw new Error("No screen was assigned to this turn");
+        if (screen > 0) args = screenExecArgs(sharedScreenTarget(screen), ["mcp", "--socket", screenSocket(screen)], { interactive: true });
+      }
+      return options.open(command, args, signal);
+    },
+  });
+}
+
+async function waitForScreenReadiness(gate: ControlClient, signal: AbortSignal): Promise<ControlState> {
+  const deadline = new AbortController();
+  const timer = setTimeout(() => deadline.abort(), SCREEN_READINESS_TIMEOUT_MS);
+  const readinessSignal = AbortSignal.any([signal, deadline.signal]);
+  let pending: ControlState | undefined;
+  try {
+    for (;;) {
+      readinessSignal.throwIfAborted();
+      const state = await abortable(gate.state(true, { readinessOnly: "1" }, readinessSignal), readinessSignal);
+      readinessSignal.throwIfAborted();
+      if (!state.held || !state.readinessPending) return state;
+      pending = state;
+      await settledWithin(null, 250, readinessSignal);
+    }
+  } catch (error) {
+    signal.throwIfAborted();
+    if (deadline.signal.aborted && pending) return pending;
+    throw error;
+  } finally { clearTimeout(timer); }
+}
+
 export function runLazyContainerMcp(command: string, args: string[], control: { url: string; token: string }): void {
   const parsed = parseToolScope(JSON.parse(process.env.CRYBOT_CONTAINER_TOOL_SCOPE ?? "{}"));
   if (!parsed.ok) throw new Error(parsed.error);
-  const gate = createControlClient(control);
-  const requests = lazyContainerRequests({
-    toolScope: parsed.scope,
-    gate: (action, signal) => gate.state(true, action ? undefined : { readinessOnly: "1" }, signal),
-    connect: async signal => {
+  const requests = gatedContainerRequests(command, args, createControlClient(control), {
+    toolScope: parsed.scope, dynamicScreen: process.env.CRYBOT_CONTAINER_DYNAMIC_SCREEN === "1",
+    open: async (command, args, signal) => {
       const { openAppClient } = await import("./mcp-app-connections.ts");
       return openAppClient({ command, args, env: {} }, { onNotification() {} }, false, signal);
     },
