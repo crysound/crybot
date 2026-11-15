@@ -76,7 +76,7 @@ describe("Feishu identity for a person", () => {
     feishuSession();
     const pairing = registry.openPairing({ scopes: ["client"], ...(kind === "token"
       ? { tokenTtlMs: 60_000 } : { browser: true, owner: email }) });
-    const issued = registry.exchange({ code: pairing.credential, source: "fixture", browser: kind === "owner" });
+    const issued = registry.exchange({ code: pairing.credential, label: "Non-Feishu session", source: "fixture", browser: kind === "owner" });
     expect(issued.ok).toBe(true);
     if (!issued.ok) throw new Error("Pairing failed");
     const session = registry.authenticate(issued.token)!;

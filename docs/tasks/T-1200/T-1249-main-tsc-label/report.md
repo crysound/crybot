@@ -1,0 +1,11 @@
+- 改了什么：
+  - server/sessions 的测试文件：为第 79 行的 registry 的 exchange 调用 补上 `label: "Non-Feishu session"`，断言不变。
+  - `docs/tasks/T-1200/T-1249-main-tsc-label/report.md`：本报告。
+  - `docs/tasks/T-1200/T-1249-main-tsc-label/verification.txt`：搜索及验证完整输出。
+- 为什么：满足 `exchange` 参数的必填 `label` 类型要求，修复 TS2741；全仓库测试搜索未发现其他同类遗漏。
+- 测试命令与结果：
+  - 依赖准备脚本：成功链接 73 项依赖。
+  - `rg -n -U '\bexchange\s*\(' --glob '*test*' --glob '*spec*' .`：已检查全部匹配调用。
+  - `pnpm exec tsc -p tsconfig.server.json`：通过，退出码 0；按沙箱要求去掉 `systemd-run`。
+  - `pnpm exec vitest run server/sessions 的测试文件 --maxWorkers=1`：87/87 通过，使用每例独立临时目录。本次仅修改单测输入，无涉及的 e2e。仓库缺少 `docs/verification/README.md`。
+  - `git diff --check`：通过。
