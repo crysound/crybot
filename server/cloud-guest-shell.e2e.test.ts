@@ -63,13 +63,15 @@ function probing(name: string, fake: string, extra: string): string {
   const cli = fixtureEnginePath(join(home, ".crybot"), `${name}-cli.mjs`);
   writeFileSync(cli, `#!/usr/bin/env node
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 const environ = (pid) => { try {
   return process.platform === "linux" ? readFileSync("/proc/" + pid + "/environ", "utf8")
     : execFileSync("ps", ["eww", "-p", String(pid), "-o", "command="]).toString();
 } catch (error) { return "unreadable: " + error.message; } };
 if (process.argv[2] !== "--version" && process.argv[2] !== "auth") {
-  writeFileSync(${JSON.stringify(probeOf(name))}, JSON.stringify({ parent: environ(process.ppid), own: JSON.stringify(process.env) }));
+  const probe = { argv: process.argv.slice(2), pid: process.pid, ppid: process.ppid, parent: environ(process.ppid), own: JSON.stringify(process.env) };
+  appendFileSync(${JSON.stringify(probeOf(name) + ".jsonl")}, JSON.stringify(probe) + "\\n");
+  if (process.argv[process.argv.indexOf("--input-format") + 1] === "stream-json") writeFileSync(${JSON.stringify(probeOf(name))}, JSON.stringify(probe));
 }
 ${extra}
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", fake)).href)});
@@ -193,7 +195,8 @@ it("no engine a bot runs finds the Cloud's secrets: not in its own environment, 
   const mine = await ownThread(bot);
   expect((await say(owner, bot, "Hello.", mine)).status).toBe(202);
   await expect.poll(() => existsSync(probeOf("claude")), { timeout: hostTimeout(15_000) }).toBe(true);
-  const probe = JSON.parse(readFileSync(probeOf("claude"), "utf8")) as { parent: string; own: string };
+  const probe = JSON.parse(readFileSync(probeOf("claude"), "utf8")) as { argv: string[]; pid: number; ppid: number; parent: string; own: string };
+  expect(probe.argv[probe.argv.indexOf("--input-format") + 1]).toBe("stream-json");
   for (const where of [probe.parent, probe.own]) {
     expect(where).not.toContain(secret);
     expect(where).not.toContain(relayToken);
