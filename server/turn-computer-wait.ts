@@ -1,5 +1,7 @@
 import { computerFreeAfterText, computerParkedText, computerStoppedWaitingText, computerWaitingText } from "./computer-wait.ts";
 import type { ComputerHolder } from "./computer-wait.ts";
+import { noticeTool } from "./chat-notices.ts";
+import type { WireMessage } from "../shared/wire.ts";
 import type { TurnOwner } from "./turn-resources.ts";
 
 export const COMPUTER_WAIT_MAX_MS = Math.max(1_000, Number(process.env.CRYBOT_COMPUTER_WAIT_MAX_MS) || 30 * 60_000);
@@ -25,7 +27,7 @@ export interface ComputerQueue {
 export interface ComputerWaitHooks {
   active(owner: TurnOwner): boolean;
   cancelled(): Error;
-  row(threadId: string, text: string, threadRef?: { botId: string; threadId: string; title: string }, ended?: boolean): void;
+  row(threadId: string, tool: string | NonNullable<WireMessage["tool"]>, threadRef?: { botId: string; threadId: string; title: string }, ended?: boolean): void;
   started(threadId: string, resource: string, position: number, holder?: ComputerHolder): void;
   ended(threadId: string, resource: string, outcome: "acquired" | "parked" | "stopped", waitedMs: number, holder?: ComputerHolder): void;
   park(owner: TurnOwner, resource: string): void;
@@ -44,7 +46,10 @@ export async function waitForComputer(owner: TurnOwner, resource: string, queue:
       if (since === undefined) {
         const position = queue.position();
         ({ holder, threadRef } = queue.holder?.() ?? {});
-        hooks.row(owner.threadId, computerWaitingText(holder, { position, estimateMs: queue.estimateMs() ?? undefined }), threadRef);
+        hooks.row(owner.threadId, {
+          ...noticeTool("chat.notice.waitingForScreen", position > 0 ? { position } : undefined, {}),
+          name: computerWaitingText(holder, { position, estimateMs: queue.estimateMs() ?? undefined }),
+        }, threadRef);
         since = Date.now();
         hooks.started(owner.threadId, resource, position, holder);
       }

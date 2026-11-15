@@ -44,3 +44,14 @@ it("answers a refused route's later reads without asking, and leaves other route
   expect(await unlessRefused("/api/live/call", async () => ({ call: null }), null)).toEqual({ call: null });
   await expect(unlessRefused("/api/live/call", async () => { throw new Error("offline"); }, null)).rejects.toThrow("offline");
 });
+
+it("remembers an admin_only response without relying on its message", async () => {
+  const { lacksAdminScope, unlessRefused } = await import("./admin-scope");
+  const error = { status: 403, body: { code: "admin_only" } };
+  expect(lacksAdminScope(error)).toBe(true);
+  expect(lacksAdminScope({ ...error, status: 500 })).toBe(false);
+  const request = vi.fn().mockRejectedValue(error);
+  expect(await unlessRefused("/api/updates/server", request, null)).toBeNull();
+  expect(await unlessRefused("/api/updates/server", request, null)).toBeNull();
+  expect(request).toHaveBeenCalledTimes(1);
+});

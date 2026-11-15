@@ -169,15 +169,21 @@ function liveStatusPhrases(status: LiveStatus): LiveActivityPhrases | null {
   }
 }
 
-type ActivityTool = { name: string; spoken?: string; step?: LiveStep };
+type ActivityTool = Pick<NonNullable<Message["tool"]>, "name" | "nameCode" | "nameParams" | "spoken" | "step">;
 
 export function toolActivityPhrases(tool: ActivityTool): LiveActivityPhrases {
+  if (tool.nameCode === "chat.notice.waitingForScreen") {
+    const position = tool.nameParams?.position;
+    const key = position === undefined ? "vm.screens.queue" : "vm.screens.queued";
+    return { phase: `${key}:${position ?? ""}`, phrases: [t(key, position === undefined ? undefined : { position })] };
+  }
   const step = tool.step ? liveStatusPhrases(stepStatus(tool.step)) : null;
   if (step) return step;
   const spoken = tool.spoken?.trim();
   if (spoken) return { phase: `spoken:${spoken}`, phrases: [sentenceCase(spoken)] };
 
   const toolName = tool.name.replace(/^mcp__[^_]+__/, "").split(":", 1)[0] ?? "";
+  if (/\s/.test(toolName)) return phaseOf("chat.activity.working");
   for (const [pattern, key] of FALLBACK_LABELS) {
     if (pattern.test(toolName)) return phaseOf(key);
   }

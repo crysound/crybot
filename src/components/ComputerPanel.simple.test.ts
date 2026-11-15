@@ -746,3 +746,9 @@ it.each([false, true])("offers VPS and private desktops while hiding Boat only w
     expect(fixture.dispatch).toHaveBeenCalledWith({ type: "updateBot", botId: "scout", patch: { computer: "cloud", cloudBackend: "vps" } });
   }
 });
+
+it.each([undefined, 2])("labels a VM preview by its assigned screen: %s", screen => {
+  fixture.seed = { phase: "vm", vmStatus: { mode: "shared", container: "running", ready: true, ...(screen ? { screen: { screen, viewerTarget: "local/shared-s2" } } : {}) } };
+  const html = render(makeBot({ computer: "vm" })).html;
+  expect(html).toContain(screen ? "Screen 2" : "Private desktop");
+});

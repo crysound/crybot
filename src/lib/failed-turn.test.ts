@@ -102,3 +102,10 @@ describe("a failed turn the server words as a notice", () => {
     }
   });
 });
+
+it("translates a stalled turn in Chinese", () => {
+  setLocale("zh");
+  try {
+    expect(activityPreview({ name: "error: no activity for 20 minutes — the turn was stopped", nameCode: "chat.notice.stalled", nameParams: { minutes: 20 }, ok: false }, undefined)).toBe("已有 20 分钟没有活动，回合已停止");
+  } finally { setLocale("en"); }
+});
