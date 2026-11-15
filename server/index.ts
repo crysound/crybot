@@ -11648,7 +11648,7 @@ const { fillLoginForTurn } = createFillLoginTurn({
 async function localVmPayload(target: LocalVmTarget, auth: RequestAuth) {
   const status = localVmUpdates.describe(target, await containerComputerStatus(undefined, undefined, target));
   if (isScreenTarget(target)) { status.viewer_url = `/desktop-viewer#target=${encodeURIComponent(viewerTargetId(target))}`; status.ready &&= localVmScreensHost.ready(target.screen); }
-  else if (target.key === "shared" && localVmScreensHost.enabled()) status.viewer_url = "";
+  else if (target.key === "shared" && localVmScreensHost.enabled()) { status.viewer_url = ""; status.ready = false; }
   return {
     ...localVmViewerStatus(status, auth),
     stop_reason: localVmStopReason(target.key, status),

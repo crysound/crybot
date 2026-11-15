@@ -295,3 +295,53 @@ exit 0
 public-scan 的另外 37 项均由既有测试辅助函数以 `spawn blocked` 跳过，不能记为全部通过。最初的 `node --test scripts/public-scan/scan.node-test.mjs` 只显示文件级汇总，因此最终用 `--test-isolation=none` 展开用例结果；这不会访问外部应用，CLI 用例仍使用各自的临时仓库。
 
 group-local-vm E2E 已尝试启动独立 fixture，但沙箱禁止监听 TCP，beforeAll 超时，未完成场景验证；以 Actions 或复审员在可监听端口主机上的结果为准，本轮未获取 Actions 结果。`server/index.ts` 为 15398 行，低于 ratchet 上限 15515，未改上限。
+
+## 第 8 轮：全量 CI 失败复核
+
+日期：2026-11-14。本轮先运行 依赖准备脚本（`linked 73 entries`），未提交、暂存或推送 git。依照沙箱约束没有使用 systemd；每次只运行一个 Vitest 文件。`docs/verification/README.md` 在当前检出仍不存在，无法执行其中未提供的步骤。
+
+### 修复
+
+1. `createSharedVmControl().armed()` 在没有多屏依赖时明确按 `false` 处理，避免把缺失依赖泄漏成 `undefined`，同时保留共享多屏的授权门禁。
+2. 多屏状态查询在机器人尚未分配屏幕时恢复 `409 { error: "screen_not_assigned" }`。这项检查阻止未分配机器人读取或操作屏幕状态，保持屏之间的隔离；没有删除检查或放宽目标校验。
+3. 共享模式未提供 `screens` 时的配置断言改为规格要求的默认 4 屏。`local-vm-settings.ts` 的默认值未改动。
+4. `server/index.test.ts` 中两个只验证旧共享单屏兼容端点的场景，在请求前显式设置 `screens: 1`，清理时恢复 `screens: 4`。这些测试验证的是单屏兼容路径；多屏未分配屏幕的 409 行为由路由测试覆盖。
+
+### 验证输出
+
+可执行的相关单测和静态检查如下：
+
+| 命令 | 输出 |
+| --- | --- |
+| `server/host/shared-vm-control.test.ts` | `Test Files 1 passed; Tests 101 passed` |
+| `server/routes/computers.test.ts` | `Test Files 1 passed; Tests 14 passed` |
+| `server/local-vm-screen-runtime.test.ts` | `Test Files 1 passed; Tests 13 passed` |
+| `server/parked-local-vm-wiring.test.ts` | `Test Files 1 passed; Tests 2 passed` |
+| `server/turn-watchdog.test.ts` | `Test Files 1 passed; Tests 37 passed` |
+| `server/managed-policy.test.ts` | `Test Files 1 passed; Tests 20 passed` |
+| `src/locales/server-lines.test.ts` | `Test Files 1 passed; Tests 8 passed` |
+| `scripts/testing/file-size-ratchet.test.ts` | `Test Files 1 passed; Tests 1 passed` |
+| `pnpm exec tsc -p tsconfig.server.json --pretty false` | exit 0，无诊断 |
+| `pnpm exec oxlint --deny-warnings server/config.test.ts server/host/shared-vm-control.ts server/index.test.ts server/routes/computers.ts` | exit 0 |
+| `git diff --check` | exit 0 |
+
+`server/config.test.ts` 为 253 项通过、3 项失败；3 项均在测试本身启动 Node 子进程时收到沙箱 `spawnSync /usr/local/bin/node EPERM`，不是配置断言失败。`server/index.ts` 当前 15406 行，低于 15515 的 ratchet 上限。
+
+按要求逐个尝试本轮失败清单中的文件，实际输出摘要如下。所有涉及 fixture 监听的文件都未完成服务行为验收：
+
+| 文件 | 实际输出 |
+| --- | --- |
+| `evals/evals.test.ts` | 6 个场景在 `freePortBlock` 报 `no free port block for offsets 0,1 in 19600..22600`，其余 1 个非端口场景通过 |
+| `server/cloud-lending-browser.e2e.test.ts` | 10 项跳过；fixture 报 `no free port block for offsets 0,1` |
+| `server/computer-take-control.e2e.test.ts` | fixture 监听报 `listen EPERM: operation not permitted 127.0.0.1`，hook 超时 |
+| `server/index.test.ts` | `338 skipped`；beforeAll hook 超时并报 `listen EPERM: operation not permitted 127.0.0.1` |
+| `server/local-vm-resume.fixture.test.ts` | `7 skipped`；报 `no free port block for offsets 0,1 in 19600..22600` |
+| `server/local-vm-screens.e2e.test.ts` | 12 项均在 `no free port block for offsets 0,1` 失败 |
+| `server/managed-policy.test.ts` | 20 项通过 |
+| `server/opencode-provider-keys.e2e.test.ts` | 2 项跳过；监听报 `listen EPERM` |
+| `server/surface-pins.e2e.test.ts` | `11 skipped`；beforeAll hook 超时，未处理的监听错误为 `listen EPERM: operation not permitted 127.0.0.1` |
+| `server/tool-scope.e2e.test.ts` | 9 项均报 `no free port block for offsets 0,1 in 19600..22600` |
+| `src/locales/server-lines.test.ts` | 8 项通过 |
+| `server/turn-watchdog.test.ts` | 37 项通过 |
+
+本沙箱禁止 TCP 监听且限制子进程，故端口型 E2E 不能据此判定实现失败或通过；须由 Actions 在可监听端口的主机复跑。工作区最终只有本轮四个代码/测试文件的未提交改动：`server/config.test.ts`、`server/host/shared-vm-control.ts`、`server/index.test.ts`、`server/routes/computers.ts`。

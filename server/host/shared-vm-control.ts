@@ -68,6 +68,10 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
     : store.tasks(bot.id).map(task => screenNumber(deps.turnVmTargets.get(task.threadId)?.key ?? "")).find(n => n !== null) ?? null;
   const screenFor = (bot: BotRecord, threadId?: string): number | null =>
     (threadId ? screenNumber(deps.turnVmTargets.get(threadId)?.key ?? "") : null) ?? assigned(bot);
+  const localKey = (bot: BotRecord, threadId?: string): string => {
+    const screen = screenFor(bot, threadId);
+    return screen === null ? (deps.multiScreen?.() ? bot.id : SHARED_VM_CONTROL_KEY) : screenControlKey(screen);
+  };
   /** Whether a conversation works on a Local VM: its chosen place; while Auto has not chosen, the shared VM its running
    * turn is on, else the bot's default, where an Auto bot with a VPS works on the VPS. */
   const onLocalVm = (bot: BotRecord, threadId?: string): boolean => {
@@ -89,9 +93,8 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
   /** The team's cloud computer, the shared Local VM, or the bot's own key. Without a conversation it follows the bot's
    * default place. */
   const keyFor = (bot: BotRecord, threadId?: string): string => {
-    const screen = screenFor(bot, threadId);
     return teamKey(bot, threadId) ?? (sharedDesk() && onLocalVm(bot, threadId)
-      ? (screen === null ? SHARED_VM_CONTROL_KEY : screenControlKey(screen))
+      ? localKey(bot, threadId)
       : bot.id);
   };
 
@@ -104,7 +107,7 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
     for (const [threadId, turnBot] of deps.turnBots.entries()) if (turnBot.id === bot.id) keys.push(keyFor(turnBot, threadId), keyFor(turnBot));
     for (const turn of deps.teamTurns.values()) if (turn.botId === bot.id) keys.push(teamComputerOwner(turn.computerId));
     if (sharedDesk() && !deps.teamComputer(bot) && bot.computer !== "off" &&
-      store.tasks(bot.id).some(task => task.surface === "vm" || (task.surface === undefined && bot.computer === undefined))) keys.push(screen === null ? SHARED_VM_CONTROL_KEY : screenControlKey(screen));
+      store.tasks(bot.id).some(task => task.surface === "vm" || (task.surface === undefined && bot.computer === undefined))) keys.push(localKey(bot));
     return [...new Set(keys)];
   };
 
@@ -157,7 +160,7 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
     /** The key a take or a hand-back without a lease holds: the desktop a panel names, else the conversation's own. Only the
      * shared VM names more than the bot's own key, so only it is checked: null when this conversation cannot show it. */
     holdKey: (bot: BotRecord, threadId: string | undefined, target?: string): string | null => {
-      if (target === undefined) return deps.multiScreen?.() && sharedDesk() && onLocalVm(bot, threadId) && screenFor(bot, threadId) === null ? null : keyFor(bot, threadId);
+      if (target === undefined) return keyFor(bot, threadId);
       const screen = /^local\/shared-s([1-4])$/.exec(target)?.[1];
       if (screen !== undefined) {
         const n = Number(screen);
@@ -187,8 +190,7 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
     /** The key a phone's lease must own to open this conversation's Local VM: the shared desktop's in shared mode. */
     leaseKey: (bot: BotRecord, threadId?: string): string => {
       if (!sharedDesk()) return keyFor(bot, threadId);
-      const screen = screenFor(bot, threadId);
-      return screen === null ? SHARED_VM_CONTROL_KEY : screenControlKey(screen);
+      return localKey(bot, threadId);
     },
     heldOnTarget: (target: LocalVmTarget): boolean => {
       const screen = screenNumber(target.key);
@@ -209,7 +211,7 @@ export function createSharedVmControl(deps: SharedVmControlDeps) {
     armed: (auth: RequestAuth, bot: BotRecord, threadId: string | undefined, key: string, target?: string): boolean => {
       const phone = auth.kind === "loopback" ? Boolean(auth.companionDevice) : auth.via === "bearer";
       return phone && !(target?.startsWith("vps/") && bot.cloudBackend === "vps") && (sharedControlKey(key) ||
-        (key === bot.id && deps.mode() === "per-bot" && onLocalVm(bot, threadId)));
+        (key === bot.id && (deps.mode() === "per-bot" || (sharedDesk() && deps.multiScreen?.() === true)) && !teamKey(bot, threadId) && onLocalVm(bot, threadId)));
     },
     release: (bot: BotRecord, threadId: string | undefined, lease: string) =>
       control.releaseLease(leaseHolder(bot, threadId, lease), lease),
