@@ -218,6 +218,7 @@ export const MascotAvatar = memo(forwardRef(MascotAvatarComponent));
 
 export type BotAvatarProps = Omit<MascotAvatarProps, "color" | "gradient"> & {
   readable?: boolean;
+  rasterSource?: string;
   bot: {
     name?: string;
     color: BotColor;
@@ -246,7 +247,7 @@ export function resolveBotAvatarOutcome(params: {
   return "flatImage";
 }
 
-export function BotAvatar({ bot, size = 44, label, readable = false, ...mascotProps }: BotAvatarProps) {
+export function BotAvatar({ bot, size = 44, label, readable = false, rasterSource, ...mascotProps }: BotAvatarProps) {
   const profile = botAvatarProfile(bot);
   const festival = useFestivalDress();
   const [imageFailed, setImageFailed] = useState(false);
@@ -284,7 +285,7 @@ export function BotAvatar({ bot, size = 44, label, readable = false, ...mascotPr
       style={{ width: size, height: size, borderRadius: radius }}
     >
       <img
-        src={profile.avatarUrl}
+        src={rasterSource && /^data:image\/(png|jpeg|gif|webp);base64,/.test(rasterSource) ? rasterSource : profile.avatarUrl}
         alt={label ?? (bot.name ? t("avatar.alt", { name: bot.name }) : t("avatar.altFallback"))}
         width={size}
         height={size}

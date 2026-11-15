@@ -1,6 +1,9 @@
+import { ISLAND_PAGE, ISLAND_SCHEME, installIslandPage } from "./island-page.mjs";
+import { createIsland, isIslandWindow, openIslandChat } from "./island.mjs";
+import { islandSource } from "./island-model.mjs";
 import { loadDesktopWindow, remoteOnlyLoadFailed, reloadDesktopWindow, desktopEnvironmentsToSave, desktopEnvironmentSaveFailure, workspaceActionsAllowed, workspaceHandler, desktopStartupUrl } from "./remote-only.mjs";
 import { readDesktopBuildConfig, defaultServerEnvironment, localServerEnvironment, loginNavigationAllowed } from "./desktop-build-config.mjs";
-import { app, autoUpdater as nativeAutoUpdater, BrowserWindow, Tray, WebContentsView, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, net, powerMonitor, powerSaveBlocker, safeStorage, screen, session, shell, systemPreferences, utilityProcess, nativeTheme } from "electron";
+import { app, autoUpdater as nativeAutoUpdater, BrowserWindow, Tray, WebContentsView, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, net, protocol, powerMonitor, powerSaveBlocker, safeStorage, screen, session, shell, systemPreferences, utilityProcess, nativeTheme } from "electron";
 import { createRequire } from "node:module";
 import { randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -114,6 +117,7 @@ import { installServerSessions, reportOwnListeners } from "./server-session.mjs"
 
 const { desktopCapabilities, nativeDesktopActions } = capabilitiesModule;
 const nativeActions = nativeDesktopActions(process.platform);
+protocol.registerSchemesAsPrivileged([{ scheme: ISLAND_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 const require = createRequire(import.meta.url);
 const { createDisplayMediaGuard, invokeDisplayMediaCallback, selectCaptureSource } = require(
   "./screen-preview.cjs",
@@ -137,7 +141,7 @@ let desktopWorkspaceManager = null;
 let desktopWorkspaceOwner = null;
 let pendingOrganizationEntry = takeOrganizationDeepLink(process.argv);
 function appWindows() {
-  return BrowserWindow.getAllWindows().filter((win) => !isTalkPanel(win));
+  return BrowserWindow.getAllWindows().filter((win) => !isTalkPanel(win) && !isIslandWindow(win));
 }
 const cloudEntry = createCloudEntry({
   reveal: () => { if (!desktopTray?.show()) activateExistingWindow(appWindows()); },
@@ -266,6 +270,7 @@ let desktopDataDirLease = null;
 let runningDataDir = null;
 let localSwitchInFlight = false;
 let managedDesktop = null;
+let island = null, islandPageRevision = 0, islandPageLoading = false;
 let cloudAccount = null, desktopPrefs = null, ownHome = null, twoPlaces = null, windowFrameMade = null;
 const cloudAccountStarted = Promise.resolve();
 const cloudAccountRestoring = false;
@@ -1941,6 +1946,13 @@ function createWindow({ deferNavigation = false } = {}) {
     });
     void workspaceMenuAction(() => switchEnvironment(LOCAL_ID));
   });
+  win.webContents.on("did-start-navigation", (_event, _url, isInPlace, isMainFrame) => {
+    if (!isMainFrame || isInPlace) return;
+    islandPageLoading = true;
+    islandPageRevision++;
+    island?.refresh();
+  });
+  win.webContents.on("did-stop-loading", () => { islandPageLoading = false; island?.refresh(); });
   win.webContents.on("did-navigate", (_event, url) => homeWindow.navigated(url));
   // Not did-finish-load: Electron still reports the main frame as loading then.
   win.webContents.on("did-stop-loading", () => {
@@ -2800,6 +2812,7 @@ app.whenReady().then(async () => {
   registerUpdaterIpc({ pageAllowed: updaterPageAllowed, serverPage: event => activePageOrigin(event), confirmRestart: async (version, server) => Boolean(mainWindow && !mainWindow.isDestroyed()) && (await dialog.showMessageBox(mainWindow, { type: "question", message: nativeT("native.update.forServer", { version, server }), detail: nativeT("native.update.forServerDetail"), buttons: [nativeT("native.update.restartNow"), nativeT("native.update.notNow")], defaultId: 0, cancelId: 1, noLink: true })).response === 0 });
   desktopPrefs = nativeText.prefs;
   registerDesktopPrefs({ ipcMain, cloudAccount: () => cloudAccount, prefs: desktopPrefs, localConfig: jsonFile(path.join(desktopDataDir(), "config.json")).read, cloudOffered: () => cloudAccountRestored().then(cloudOffersReady),
+    islandChanged: () => island?.refresh(),
     frame: { made: () => windowFrameMade, restarts: process.platform === "win32", changed: () => void broadcastDesktopCapabilities() },
     languageChanged: (language, sender) => {
       for (const win of appWindows()) if (!win.isDestroyed() && win.webContents !== sender) win.webContents.send("desktop-language:changed", language);
@@ -2808,6 +2821,18 @@ app.whenReady().then(async () => {
     onLanguage: language => { if (nativeText.set(language)) { applyNativeLanguage(); talk.relabel(); } }, onShown: (language, sender) => { if (sender === mainWindow?.webContents && nativeText.follow(language)) { applyNativeLanguage(); talk.relabel(); } },
     page: event => senderIsLocal(event) ? "local" : cloudPageAsking(event) ?? (workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin()) ? "server" : null) });
   talk.start({ globalShortcut, screen, prefs: desktopPrefs, remote: () => Boolean(desktopRemoteAccess), away: () => homeWindow.current().kind !== "computer", starting: () => !serverReady, localRequest: localServerRequest, dataDir: () => runningDataDir });
+  island = createIsland({ BrowserWindow, screen, ipcMain, prefs: desktopPrefs,
+    page: app.isPackaged ? ISLAND_PAGE : `${DEV_URL}/island.html`,
+    panelSession: process.platform === "darwin" && app.isPackaged ? installIslandPage({ session: session.fromPartition("island"), net, directory: path.join(process.resourcesPath, "ui") }) : undefined,
+    language: () => nativeText.language(),
+    source: () => islandSource({ url: mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents.getURL() : "",
+      localOrigin: rendererOrigin(), activeId: environmentsState.activeId, localKey: runningDataDir,
+      remoteOrigin: activeEnvironment(environmentsState)?.origin ?? desktopBuild.defaultServerUrl, revision: islandPageRevision,
+      ready: !islandPageLoading && !localSwitchInFlight && !startupScreen && !mainWindow?.webContents.isLoadingMainFrame() }),
+    request: (place, route, init) => place.local && app.isPackaged && !desktopRemoteAccess ? localServerRequest(route, init)
+      : (mainWindow?.webContents.session ?? session.defaultSession).fetch(`${place.origin}${route}`, { ...init, credentials: "include", redirect: "error", cache: "no-store", headers: { ...init?.headers, origin: place.origin } }),
+    openChat: (chat, place) => openIslandChat({ window: () => mainWindow, reveal: revealForLink }, chat, place),
+  });
   // Before the window, so the harness has the CUA descriptor on first render.
   cuaReady =
     !desktopRemoteAccess && (process.platform === "darwin" || process.platform === "linux" || process.platform === "win32")
@@ -2950,6 +2975,7 @@ process.once("SIGTERM", requestSignalQuit);
 
 app.on("before-quit", (e) => {
   talk.close();
+  island?.close();
   desktopShutdownStarted = true;
   startupScreen?.dispose();
   companyBackupSchedule?.close();
