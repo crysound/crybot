@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { json, readBody } from "../harness/http.ts";
 import type { InstaboxRequest } from "../instabox/machine.ts";
 
-export interface FakeSnapshot { id: string; name: string; state: string; metadata?: { app?: string; botId?: string } }
+export interface FakeSnapshot { id: string; name: string; status: "pending" | "ready" | "failed"; sourceMachineId: string; metadata?: { app?: string; botId?: string } }
 type CreateResponseShape = "operation" | "snapshot";
 
 export async function fakeInstaboxSnapshots(options: { createResponse?: CreateResponseShape } = {}) {
@@ -25,7 +25,7 @@ export async function fakeInstaboxSnapshots(options: { createResponse?: CreateRe
     if (url.pathname === "/v1/snapshots") return json(res, 200, { snapshots: [...snapshots.values()] });
     const id = url.pathname.split("/").at(-1)!;
     if (method === "POST" && url.pathname.endsWith("/snapshots")) {
-      const snapshot = { id: randomUUID(), name: body.name, state: "creating" };
+      const snapshot = { id: randomUUID(), name: body.name, status: "pending" as const, sourceMachineId: "machine-one" };
       snapshots.set(snapshot.id, snapshot);
       if (createResponse === "snapshot") return json(res, 202, snapshot);
       const operation = { id: randomUUID(), machineId: "machine-one", type: "create", state: "pending", phase: "snapshotting", error: null };
@@ -35,7 +35,7 @@ export async function fakeInstaboxSnapshots(options: { createResponse?: CreateRe
     if (method === "GET" && url.pathname.startsWith("/v1/snapshots/")) {
       const snapshot = snapshots.get(id);
       if (!snapshot) return json(res, 404, { error: "not found" });
-      if (snapshot.state === "creating") snapshot.state = snapshotFails ? "failed" : "ready";
+      if (snapshot.status === "pending") snapshot.status = snapshotFails ? "failed" : "ready";
       return json(res, 200, snapshot);
     }
     if (method === "DELETE" || (method === "POST" && url.pathname.endsWith("/restore"))) {

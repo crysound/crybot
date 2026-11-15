@@ -48,7 +48,7 @@ function SnapshotPanel({ botId }: { botId: string }) {
     setError(null);
     try {
       const path = chosen ? `${base}/${encodeURIComponent(chosen.snapshot.id)}${chosen.kind === "restore" ? "/restore" : ""}` : base;
-      await api(path, { method: chosen?.kind === "delete" ? "DELETE" : "POST", ...(!chosen ? { body: "{}" } : {}) });
+      await api(path, { timeoutMs: 720_000, method: chosen?.kind === "delete" ? "DELETE" : "POST", ...(!chosen ? { body: "{}" } : {}) });
       const data = await api<{ snapshots: Snapshot[] }>(base);
       if (mounted.current) { setSnapshots(data.snapshots); setAction(null); }
     } catch (cause) {

@@ -32,11 +32,12 @@ describe("CloudBackendPicker", () => {
   });
 
   it.each(["box", "vps", "instabox"] as const)("offers all three backends whichever is chosen (%s)", (value) => {
+    fixture.config = { instabox: { configured: true } };
     const markup = picker(value);
     expect(markup).toContain("Boat");
     expect(markup).toContain("InstaBox");
     expect(markup).toContain("Self-hosted VPS");
-    expect(markup).not.toContain("disabled");
+    expect(markup).not.toContain('disabled=""');
     expect(markup).not.toMatch(/ACP model provider/);
   });
 
@@ -46,8 +47,9 @@ describe("CloudBackendPicker", () => {
   });
 });
 
-it("prompts for an InstaBox key without disabling selection", () => {
-  expect(picker("instabox")).toContain("Add your InstaBox key in Settings first");
+it("disables InstaBox and prompts for a key even when another backend is selected", () => {
+  expect(picker("box")).toContain("Add your InstaBox key in Settings first");
+  expect(picker("box")).toContain('disabled=""');
   fixture.config = { instabox: { configured: true } };
   expect(picker("instabox")).not.toContain("Add your InstaBox key in Settings first");
 });

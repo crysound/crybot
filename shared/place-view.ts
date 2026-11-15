@@ -88,7 +88,7 @@ export interface PlaceFacts {
   /** Boat desktops are unavailable in provider-locked installations. */
   providerLock?: boolean;
   /** The cloud computer's provider: Boat, or the person's own server. */
-  backend?: "box" | "vps";
+  backend?: "box" | "vps" | "instabox";
   engine: {
     name: string;
     model?: string;

@@ -17,7 +17,7 @@ function fixture(reported?: unknown) {
     providerConfigs: () => ({}), registry: { forgetSnapshots: vi.fn() }, lendingEnabled: () => true,
     revokeEngineCapabilities: vi.fn(), broadcast,
     configStatus: () => ({ instabox: reported ?? { ...keyStatus(cfg.instabox?.apiKey), fromEnv: false } }),
-    configForAccess: (status, auth) => auth.scopes.includes("admin") ? status : withoutKeyHints(status),
+    configForAccess: (status: Parameters<ConfigRouteDeps["configForAccess"]>[0], auth: Parameters<ConfigRouteDeps["configForAccess"]>[1]) => auth.scopes.includes("admin") ? status : withoutKeyHints(status),
   } as unknown as ConfigRouteDeps);
   return { cfg, broadcast, request: async (method = "GET", body?: unknown, admin = true) => {
     let response!: { status: number; body: Record<string, unknown> };
