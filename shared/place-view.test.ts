@@ -274,3 +274,20 @@ it("omits Boat setup and team desktop hints under provider lock while retaining 
   expect(placeView(facts({ providerLock: true, backend: "vps" })).state).toBe("vps");
   expect(placeView(facts({ providerLock: true, place: "vm" })).state).toBe("vm");
 });
+
+
+it("describes shared VM screens without changing the private desktop view", () => {
+  const shared = placeView(facts({ place: "vm", sharedVmScreen: true }));
+  expect(shared).toMatchObject({
+    state: "vm", short: "A screen in a shared computer",
+    line: "A screen assigned to this bot in a shared computer, separate from your own screen.",
+  });
+  expect(shared.action).toEqual({ id: "open-vm-settings", label: "Shared computer settings" });
+  for (const sharedVmScreen of [false, undefined]) {
+    expect(placeView(facts({ place: "vm", sharedVmScreen }))).toMatchObject({
+      short: en["place.view.vm.short"], line: en["place.view.vm.line"], action: { id: "open-vm-settings", label: en["place.action.openVmSettings"] },
+    });
+  }
+  expect(placeView(facts({ place: "vm", sharedVmScreen: true, engine: { ...facts().engine, computer: false } })).line)
+    .toContain("can't use a shared computer");
+});

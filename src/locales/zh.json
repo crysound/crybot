@@ -1,4 +1,9 @@
 {
+  "place.action.openSharedVmSettings": "共用电脑设置",
+  "vm.dest.shared": "共用电脑",
+  "place.view.vmScreen.short": "共用电脑里的一块屏幕",
+  "place.view.vmScreen.line": "共用电脑里分给它的一块屏幕，与你自己的屏幕分开。",
+  "place.view.vmScreenCannot.line": "{model} 无法使用共用电脑。请选择支持使用电脑的模型。",
   "task.incidents": "待处理的问题",
   "computer.dest.vmScreenDesc": "共享容器里的一块虚拟屏",
   "chat.notice.waitingForScreen": "正在排队等待屏幕",

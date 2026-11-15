@@ -52,7 +52,7 @@ export function AssignLocalVmScreen({ path, position, visible = true, onAssigned
     await poll(true);
   };
   if (!visible && !pending && !error) return null;
-  return <div>
+  return <div className="mb-3">
     <p role="status" className="mb-3 rounded-lg bg-card p-3 text-[13px] text-ink-secondary">
       {queuePosition ? t("vm.screens.queued", { position: queuePosition }) : t(pending ? "settings.updates.opening" : "vm.screens.unassignedBot")}
       {queuePosition ? ` ${t("vm.screens.queueDetail")}` : null}

@@ -11,7 +11,7 @@ import { api, ApiError, currentTaskBot, useStore, type Bot, type ConfigStatus } 
 import { setAdvancedMode, useAdvancedMode } from "@/lib/interface-mode";
 import { SIMPLE_ONLY } from "@/lib/simple-only";
 import { ComputerFilesPane } from "./ComputerFilesPane";
-import { effectivePlace, personPin, placeLabelKey, placeOffered } from "@/lib/place";
+import { effectivePlace, personPin, placeLabelKey, placeOffered, vmLabelKey } from "@/lib/place";
 import type { CloudBackend } from "../../shared/wire";
 import { KeyRow } from "./keys/KeyRow"; import { openKeySettings } from "./keys/key-focus";
 import { cn } from "@/lib/cn";
@@ -1129,7 +1129,7 @@ export function ComputerPanel({
     const disabled = Boolean(managedBy) || placeBlocked(view);
     const issue = !managedBy && placeHasIssue(view);
     const unavailableTitle = managedBy ?? (issue ? view.line : mode === "browser" ? t("computer.browserOnlyTitle") : undefined);
-    return { mode, labelKey, descriptionKey, Icon, simpleLabel: providerLock && mode === "cloud" ? t("botAccess.cloud.selfHostedVps") : worksOnSimpleLabel(mode ?? undefined, capabilities.host.platform), selected, managedBy, disabled, unavailableTitle, view, issue };
+    return { mode, labelKey, descriptionKey, Icon, simpleLabel: providerLock && mode === "cloud" ? t("botAccess.cloud.selfHostedVps") : worksOnSimpleLabel(mode ?? undefined, capabilities.host.platform, state.config), selected, managedBy, disabled, unavailableTitle, view, issue };
   });
   const worksOnView = placeOptions.find(({ selected }) => selected)?.view ?? autoView;
   const runPlaceAction = (id: PlaceActionId) => {
@@ -1294,7 +1294,7 @@ export function ComputerPanel({
             {currentTeamComputer && <span className="text-[11px]">{autoView.short}</span>}
             {phase === "local" && <span className="text-[11px]">{t("computer.badge.local")}</span>}
             {liveHere && <span className="flex items-center gap-1.5 text-[11px] font-medium text-ink"><span className="size-1.5 rounded-full bg-success" />{t("computer.inControl")}</span>}
-            {phase === "vm" && !liveHere && <span className="text-[11px]">{vmStatus?.screen?.screen ? t("vm.screens.number", { screen: vmStatus.screen.screen }) : t("vm.dest.vm")}</span>}
+            {phase === "vm" && !liveHere && <span className="text-[11px]">{vmStatus?.screen?.screen ? t("vm.screens.number", { screen: vmStatus.screen.screen }) : t(vmLabelKey(state.config))}</span>}
             {(phase === "show-ready-boat" || phase === "show-sleeping-boat" || phase === "show-pending-boat") && (
               <span className="text-[11px]">{t("computer.badge.autoBoat")}</span>
             )}
@@ -1367,7 +1367,7 @@ export function ComputerPanel({
               ) : (
                 <Monitor size={22} />
               )}
-              <span className="text-[12px]">
+              {phase !== "vm-waiting" && <span className="text-[12px]">
                 {currentTeamComputer
                   ? autoView.line
                   : cloudPreviewReady
@@ -1385,7 +1385,7 @@ export function ComputerPanel({
                     : vmResumable
                       ? t(pending === "vm-start" ? "vm.setup.starting" : "computer.phase.vmStopped")
                       : emptyState[phase]}
-              </span>
+              </span>}
               {currentTeamComputer && placeActionButton(autoView)}
               {bot.computer === "cloud" && (phase === "unconfigured" || phase === "error") && cloudView.action?.id !== "add-boat-key" && placeActionButton(cloudView)}
               <ResetCloudComputerButton botId={bot.id} botName={bot.name} onReset={() => { setError(null); setRetry((n) => n + 1); }} view={{ computer: bot.computer, cloudBackend, canManage: canManageCloud, busy: profileBot.busy === true, pending: pending !== null, phase, boatState, refusal: cloudRefused?.state }} />

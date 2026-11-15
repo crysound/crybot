@@ -25,8 +25,16 @@ export function isComputerPlace(place: EffectivePlace): place is "cloud" | "vm" 
   return place === "cloud" || place === "vm" || place === "local";
 }
 
+export function usesSharedVmScreens(config: Partial<Pick<ConfigStatus, "localVm">> | null | undefined): boolean {
+  return config?.localVm?.mode === "shared" && (config.localVm.screens ?? 1) > 1;
+}
+
+export function vmLabelKey(config: Partial<Pick<ConfigStatus, "localVm">> | null | undefined): LocaleKey {
+  return usesSharedVmScreens(config) ? "vm.dest.shared" : "vm.dest.vm";
+}
+
 export function vmDescriptionKey(config: Partial<Pick<ConfigStatus, "localVm">> | null | undefined): LocaleKey {
-  return config?.localVm?.mode === "shared" && (config.localVm.screens ?? 1) > 1
+  return usesSharedVmScreens(config)
     ? "computer.dest.vmScreenDesc" : "computer.dest.vmDesc";
 }
 
