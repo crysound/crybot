@@ -318,7 +318,7 @@ group-local-vm E2E 已尝试启动独立 fixture，但沙箱禁止监听 TCP，b
 
 ## 第 9 轮：语义合并与复审修改
 
-日期：2026-11-15。开工执行 依赖准备脚本，输出 `linked 73 entries`；Node `v24.22.3`。所有 Vitest 文件逐个串行运行，没有 systemd 或 Docker。验证只使用隔离服务 fixture、临时目录和假容器运行时，没有操作用户 live app 或数据。`AGENTS.md` 引用的 `docs/verification/README.md` 仍不存在，无法声称执行了该文档中未提供的步骤。未提交、暂存或推送 git。
+日期：2026-11-15。开工执行 依赖准备脚本，输出 `linked 73 entries`；Node `v24.22.3`。所有 Vitest 文件逐个串行运行，没有 systemd 或 Docker。验证只使用隔离服务 fixture、临时目录和假容器运行时，没有操作用户 live app 或数据。仓库约定里引用的验证说明文档仍不存在，无法声称执行了该文档中未提供的步骤。未提交、暂存或推送 git。
 
 ### 实际改动文件及根因
 
