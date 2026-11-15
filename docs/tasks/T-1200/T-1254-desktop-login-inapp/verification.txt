@@ -336,3 +336,292 @@ exit=0
 
 $ git diff --check
 exit=0
+
+# 第 5 轮
+
+已运行 crybot-link-deps。docs/verification/README.md 缺失；Electron 验证使用独立临时 profile 和本地假服务。以下测试逐文件串行执行。
+
+$ pnpm exec vitest run src/components/published-apps/preview.security.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNode (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13688:63)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13735:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[connectedToNode] (<redacted-url>)
+    at HTMLElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNode (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13688:63)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13735:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNode (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13688:63)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13735:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[connectedToNode] (<redacted-url>)
+    at HTMLElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNode (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13688:63)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13735:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[connectedToNode] (<redacted-url>)
+    at HTMLElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+DOMException [NotSupportedError]: Failed to load iframe page "<redacted-url>". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (<redacted-url>)
+    at HTMLIFrameElement.[connectedToDocument] (<redacted-url>)
+    at HTMLIFrameElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[connectedToNode] (<redacted-url>)
+    at HTMLElement.[connectedToNode] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.[appendChild] (<redacted-url>)
+    at HTMLDivElement.appendChild (<redacted-url>)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  14:55:29
+   Duration  2.78s (transform 1.41s, setup 1.60s, import 334ms, tests 113ms, environment 497ms)
+
+
+exit=0
+
+$ node --test electron/login-navigation.node-test.mjs
+✔ keeps an active login inside the app when a redirect is outside the allowlist (2.109702ms)
+✔ rejects credentialed server URLs in main, login, and popup navigation (1.216141ms)
+✔ will-navigate ignores subframes in both main and login windows (0.30061ms)
+✔ will-redirect ignores subframes in both main and login windows (0.15105ms)
+✔ server navigation is preserved until the main frame finishes loading (0.965011ms)
+✔ closing the main window closes every managed login window (0.503201ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 74.178323
+
+exit=0
+
+$ node --test electron/main-navigation.node-test.mjs
+✔ a navigation retires the launch recovery, except the recovery's own (2.730732ms)
+✔ login popups and the return to the server stay inside (remoteOnly=false) (3.909202ms)
+✔ login popups and the return to the server stay inside (remoteOnly=true) (2.730052ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 74.697713
+
+exit=0
+
+$ node --test electron/app-permissions.node-test.mjs
+✔ grants notifications, clipboard, and fullscreen to the local renderer page (1.149191ms)
+✔ accepts a bare origin or a full URL on either side (0.19484ms)
+✔ allows media for audio (microphone) and guarded display-capture, denies video (camera) (0.35553ms)
+✔ refuses permissions to any other origin (0.12336ms)
+✔ keeps every privileged capability off even for the local renderer page (0.16083ms)
+✔ rejects mixed, unknown, and conflicting media details (0.09908ms)
+✔ web links reject embedded credentials and non-web schemes (1.623551ms)
+✔ an email link opens only as a draft to one address with a subject and a body (0.822441ms)
+✔ both external-link entry points use the policy and IPC retains the local-origin gate (1.426541ms)
+✔ fails closed on unparsable or opaque origins (1.042931ms)
+✔ the verified Cloud open in this window may use the microphone (0.783401ms)
+✔ the Cloud never gets the camera, screen capture or any other capability but clipboard writes (1.331421ms)
+✔ the Cloud's microphone is decided by this computer's media rule, never a copy of it (1.09396ms)
+✔ a server that is not the verified Cloud never hears the microphone (1.479171ms)
+✔ signed out of Cloud, or the Cloud not running, its page loses the microphone at once (0.659741ms)
+✔ the verified Cloud open in this window may write the clipboard, by the remote server's rule (0.32133ms)
+✔ once My Cloud is home its page may show notifications and go fullscreen, in the main window's main frame only; any other page still may not (0.587881ms)
+✔ this computer's own page keeps its permissions through the same handlers (0.14308ms)
+✔ the app installs these handlers with its one origin rule and hosted sign-in disabled (1.868131ms)
+✔ a Live call placed while the saved sign-in is still restoring hears the microphone once it has (12.470889ms)
+✔ a restore that ends without this Cloud, or outlasts the wait, refuses rather than waiting on (0.34457ms)
+✔ with CryBot Cloud unreachable past the verified window, the same account's Cloud keeps the microphone (0.17615ms)
+✔ signed out, the Cloud's page never hears the microphone (0.120361ms)
+✔ a Cloud remembered for another account is not this account's Cloud (0.09775ms)
+✔ companion client mode has no Cloud of its own, so no Cloud page hears the microphone (0.08788ms)
+✔ a check that finds no Cloud for this account ends it, for the microphone and the Plan channels alike (0.13112ms)
+✔ a stopped Cloud named without its address is still this account's Cloud (0.08393ms)
+✔ after the sign-in has ended or expired, the same account's Cloud keeps the microphone until sign-out (1.412091ms)
+✔ a page asking about its microphone hears whether this app lets it use it (0.31508ms)
+✔ the Cloud's page is refused where its microphone request would be (0.13696ms)
+✔ the page's answer is the request handler's answer for its microphone (1.099611ms)
+✔ a remote server may write clipboard text only as the active origin's main frame (0.23134ms)
+✔ the base policy itself still grants a remote origin nothing (0.06471ms)
+✔ the active remote server's page may show notifications and go fullscreen, in the main window's main frame only (0.339121ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 98.841101
+
+exit=0
+
+$ pnpm exec vitest run electron/login-navigation.electron.test.mjs
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:55:33
+   Duration  2.71s (transform 1.21s, setup 1.49s, import 14ms, tests 1.03s, environment 0ms)
+
+
+exit=0
+
+$ pnpm exec vitest run electron/login-navigation.electron.test.mjs
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:55:37
+   Duration  2.33s (transform 1.10s, setup 1.42s, import 12ms, tests 730ms, environment 0ms)
+
+
+exit=0
+
+$ pnpm exec vitest run electron/login-navigation.electron.test.mjs
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:55:40
+   Duration  2.44s (transform 1.17s, setup 1.46s, import 17ms, tests 773ms, environment 0ms)
+
+
+exit=0
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:55:43
+   Duration  1.69s (transform 1.10s, setup 1.34s, import 15ms, tests 124ms, environment 0ms)
+
+
+exit=0
+
+$ pnpm exec oxlint --deny-warnings src/components/published-apps/preview.security.test.ts
+
+exit=0
+
+输出中的 URL 已脱敏；preview 的 happy-dom iframe 禁载诊断未导致测试失败。
+
+$ git diff --check
+exit=0

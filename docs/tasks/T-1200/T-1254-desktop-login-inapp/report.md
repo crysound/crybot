@@ -60,3 +60,25 @@
 导航分类先拒绝非 http/https 或带用户名、密码的地址；补测主窗口、登录窗口和弹窗均不加载、不打开外部，并确认日志只记主机名。
 
 测试命令与结果见 `verification.txt`。
+
+## 第 5 轮
+
+改动文件（与本轮 git status 一致）：
+
+- `src/components/published-apps/preview.security.test.ts`
+- `docs/tasks/T-1200/T-1254-desktop-login-inapp/report.md`
+- `docs/tasks/T-1200/T-1254-desktop-login-inapp/verification.txt`
+
+核实主窗口全部四处返回均为 `deny`，无需修改生产代码。源码断言精确定位 `login-navigation.mjs` 的 `win.webContents` 完整处理函数，检查所有显式返回及末尾返回均为 `deny`，区分允许弹窗的登录窗口；补查 `main.mjs` 导入并对主窗口调用 `attachLoginNavigation`。全仓排查未发现其他依赖已迁走代码的旧断言。测试示例域名统一为 `.test`。
+
+测试命令与结果（逐文件串行）：
+
+- `pnpm exec vitest run src/components/published-apps/preview.security.test.ts`：12 项通过；happy-dom 有 iframe 禁载诊断，测试无失败。
+- `node --test electron/login-navigation.node-test.mjs`：6 项通过。
+- `node --test electron/main-navigation.node-test.mjs`：3 项通过。
+- `node --test electron/app-permissions.node-test.mjs`：34 项通过。
+- `pnpm exec vitest run electron/login-navigation.electron.test.mjs`：隔离 fixture 连续 3 次通过，每次 1 项，无跳过。
+- `pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts`：1 项通过。
+- `pnpm exec oxlint --deny-warnings src/components/published-apps/preview.security.test.ts`、`git diff --check`：通过。
+
+完整输出见 `verification.txt`（URL 已脱敏）。仓库缺少 `docs/verification/README.md`；验证使用独立临时 profile 与本地假服务。未提交 git。
