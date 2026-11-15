@@ -1,4 +1,5 @@
 import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -108,11 +109,19 @@ it.each([
 it.each([
   ["\u001b[31m失败\r\n\t 请重试\u0000\u007f\u0080\u0085\u009f", "[31m失败 请重试"],
   ["请\u200b\u200c\u200d\u200e\u200f重新\u202a\u202b\u202c\u202d\u202e授权\u2066\u2067\u2068\u2069", "请重新授权"],
+  ["请\u061c\u180e重新\u2060\u2061\u2062\u2063\u2064授\ufeff权", "请重新授权"],
+  ["请访问 https://evil.example/x 重新授权", "请访问 [链接已移除] 重新授权"],
+  ["ht\u200btps://evil.example www.evil.example HTTPS://EVIL.EXAMPLE http://evil.example WWW.EVIL.EXAMPLE", "[链接已移除] [链接已移除] [链接已移除] [链接已移除] [链接已移除]"],
+  ["ht\u061ct\u180ep\u2060s\u2061:\u2062/\u2063/\u2064evil\ufeff.example", "[链接已移除]"],
+  ["请\t访问\r\n https://evil.example/" + "x".repeat(400) + " 重新授权", "请 访问 [链接已移除] 重新授权"],
+  ["😀".repeat(292) + " https://evil.example", "😀".repeat(292) + " [链接已移除]"],
+  ["😀".repeat(293) + " https://evil.example", "😀".repeat(293) + " [链接已移…"],
   ["\u001b[31m失败\n" + "文".repeat(400), "[31m失败 " + "文".repeat(292) + "…"],
   ["文".repeat(300), "文".repeat(300)],
   ["文".repeat(301), "文".repeat(299) + "…"],
   ["😀".repeat(301), "😀".repeat(299) + "…"],
   ["\u001b\u0000\u007f\u0080\u009f\n\t ", "飞书代领服务不可用"],
+  ["\u061c\u180e\u2060\u2061\u2062\u2063\u2064\ufeff", "飞书代领服务不可用"],
   ["", "飞书代领服务不可用"],
 ])("sanitizes broker failure text before writing stderr (%#)", async (message, expected) => {
   environment.CRYBOT_FEISHU_EXPIRES_AT = "1";
@@ -136,4 +145,42 @@ it("keeps an empty broker message separate from an untrusted authorization link"
   vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("", "https://evil.example/phish"));
   expect(await runLarkCli(["calendar", "list"], environment)).toBe(1);
   expect(error.mock.calls).toEqual([["飞书代领服务不可用 https://good.example/authorize"]]);
+});
+
+it("uses the original broker message even when the Error message no longer ends with the authorization URL", async () => {
+  environment.CRYBOT_FEISHU_EXPIRES_AT = "1";
+  environment.CRYBOT_FEISHU_BROKER_SOCKET = "/fixture/token.sock";
+  environment.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://good.example/authorize";
+  const message = "请访问 https://evil.example/x 重新授权";
+  const failure = new BrokerAuthorizationError(message, "https://good.example/reauthorize");
+  failure.message = `${failure.authorizationUrl}: ${message}（拒绝访问）`;
+  expect(failure.brokerMessage).toBe(message);
+  vi.mocked(brokerToken).mockRejectedValue(failure);
+  expect(await runLarkCli(["calendar", "list"], environment)).toBe(1);
+  expect(error.mock.calls).toEqual([["请访问 [链接已移除] 重新授权 https://good.example/reauthorize"]]);
+});
+
+it.skipIf(process.platform === "win32")("removes message URLs from a broker 401 before writing stderr", async () => {
+  environment.CRYBOT_FEISHU_EXPIRES_AT = "1";
+  environment.CRYBOT_FEISHU_BROKER_SOCKET = join(directory, "token.sock");
+  environment.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://good.example/authorize";
+  const protocol = await vi.importActual<typeof import("./protocol.ts")>("./protocol.ts");
+  vi.mocked(brokerToken).mockImplementation(protocol.brokerToken);
+  const broker = createServer((_request, response) => {
+    response.writeHead(401, { "content-type": "application/json" });
+    response.end(JSON.stringify({ message: "请访问 https://evil.example/x 重新授权", authorization_url: "https://good.example/reauthorize" }));
+  });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      broker.once("error", reject);
+      broker.listen(environment.CRYBOT_FEISHU_BROKER_SOCKET, resolve);
+    });
+    expect(await runLarkCli(["calendar", "list"], environment)).toBe(1);
+    expect(error.mock.calls).toEqual([["请访问 [链接已移除] 重新授权 https://good.example/reauthorize"]]);
+    expect(JSON.stringify(error.mock.calls)).not.toContain("evil.example");
+    await expect(readFile(environment.FIXTURE_DUMP!)).rejects.toMatchObject({ code: "ENOENT" });
+  } finally {
+    broker.closeAllConnections();
+    await new Promise<void>(resolve => broker.close(() => resolve()));
+  }
 });
