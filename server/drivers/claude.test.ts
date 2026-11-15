@@ -2831,6 +2831,17 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     expect(order.map((e) => e.type)).toEqual(["turn.completed", "turn.started"]);
   });
 
+  it.skipIf(process.platform === "win32")("waits for a live turn's process before disposing", async () => {
+    const dump = join(scratch, "dispose-dump.json");
+    process.env.FAKE_CLAUDE_DUMP = dump;
+    await create("hang", {}, { permissionMode: "bypassPermissions" });
+    const turn = await instance.adapter.sendTurn({ threadId: "t-dispose-live", text: "first", approvalMode: "full" });
+    await recorder.until((event) => event.type === "session.started" && event.turnId === turn.turnId);
+    const pid = dumpedPid(dump);
+    await instance.dispose();
+    expect(() => process.kill(pid, 0)).toThrow();
+  });
+
   it("resumes the next turn on a fresh process when the warm one is gone before it takes it", async () => {
     const gone = join(scratch, "gone-after-turn");
     const dump = join(scratch, "gone-after-turn-dump.json");

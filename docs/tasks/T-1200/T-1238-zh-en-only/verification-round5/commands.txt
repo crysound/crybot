@@ -1,0 +1,382 @@
+Round 5: sequential files; isolated fixture homes and fake providers; sanitized complete command output.
+Browser fixture uses system Chromium with sandbox disabled inside this sandbox.
+
+$ unit: pnpm exec vitest run src/lib/i18n.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  42 passed (42)
+   Start at  09:44:00
+   Duration  2.47s (transform 1.21s, setup 1.36s, import 60ms, tests 845ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run src/locales/server-lines.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  09:44:03
+   Duration  5.27s (transform 899ms, setup 1.05s, import 3.34s, tests 729ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run shared/languages.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  09:44:09
+   Duration  1.19s (transform 806ms, setup 1.03s, import 11ms, tests 4ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run server/user-errors.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  09:44:11
+   Duration  1.23s (transform 841ms, setup 1.02s, import 70ms, tests 12ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run server/instabox/client.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  09:44:13
+   Duration  1.27s (transform 800ms, setup 1.03s, import 27ms, tests 82ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run server/instabox/key.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  09:44:15
+   Duration  1.35s (transform 903ms, setup 1.15s, import 26ms, tests 20ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run server/instabox/machines.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  09:44:17
+   Duration  2.07s (transform 871ms, setup 1.08s, import 42ms, tests 794ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run server/instabox/persistence.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  09:44:19
+   Duration  1.87s (transform 1.31s, setup 1.21s, import 464ms, tests 54ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run server/instabox/power.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  09:44:22
+   Duration  1.33s (transform 908ms, setup 1.14s, import 31ms, tests 9ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run server/instabox/vnc.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  09:44:24
+   Duration  1.24s (transform 839ms, setup 1.08s, import 13ms, tests 8ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run src/components/InstaboxSnapshots.test.tsx --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  09:44:26
+   Duration  2.25s (transform 990ms, setup 1.06s, import 290ms, tests 63ms, environment 683ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run src/components/CloudBackendPicker.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  09:44:28
+   Duration  1.89s (transform 1.28s, setup 996ms, import 727ms, tests 28ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run src/components/keys/key-catalog.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  09:44:31
+   Duration  1.46s (transform 952ms, setup 1.15s, import 151ms, tests 20ms, environment 0ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run src/components/keys/KeysPage.dom.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  09:44:33
+   Duration  4.10s (transform 1.49s, setup 1.05s, import 920ms, tests 1.80s, environment 169ms)
+
+
+Exit: 0
+
+$ unit: pnpm exec vitest run server/routes/config-instabox.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  09:44:38
+   Duration  3.24s (transform 2.38s, setup 1.06s, import 1.95s, tests 76ms, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-1: pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  09:44:42
+   Duration  11.08s (transform 990ms, setup 959ms, import 420ms, tests 9.57s, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-2: pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  09:44:53
+   Duration  10.94s (transform 934ms, setup 945ms, import 282ms, tests 9.60s, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-3: pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  09:45:05
+   Duration  10.93s (transform 933ms, setup 930ms, import 290ms, tests 9.56s, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-1: pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  09:45:16
+   Duration  61.39s (transform 1.72s, setup 994ms, import 1.55s, tests 58.72s, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-2: pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  09:46:18
+   Duration  58.47s (transform 1.86s, setup 1.02s, import 1.41s, tests 55.89s, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-3: pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  09:47:17
+   Duration  63.35s (transform 1.96s, setup 1.08s, import 1.51s, tests 60.63s, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-1: pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  09:48:21
+   Duration  4.31s (transform 1.52s, setup 1.13s, import 834ms, tests 2.20s, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-2: pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  09:48:26
+   Duration  4.36s (transform 1.64s, setup 1.08s, import 987ms, tests 2.12s, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-3: pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  09:48:31
+   Duration  4.29s (transform 1.56s, setup 968ms, import 1.02s, tests 2.15s, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-1: pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  09:48:36
+   Duration  4.15s (transform 2.67s, setup 1.12s, import 2.22s, tests 664ms, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-2: pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  09:48:41
+   Duration  4.85s (transform 3.23s, setup 1.33s, import 2.71s, tests 649ms, environment 0ms)
+
+
+Exit: 0
+
+$ e2e-run-3: pnpm exec vitest run server/routes/instabox-snapshots.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  09:48:47
+   Duration  4.68s (transform 3.09s, setup 1.26s, import 2.62s, tests 658ms, environment 0ms)
+
+
+Exit: 0
+
+$ check: node mobile/ios/scripts/gen-strings.mjs --check
+Out of date: mobile/ios/CryBot/Strings/ServerText.xcstrings; run node mobile/ios/scripts/gen-strings.mjs to update.
+
+Exit: 1
+
+$ check: node scripts/generate-locale.mjs --check
+zh.json: 79% (8439/10636)
+locale catalogs valid (2 languages, 10636 English strings)
+
+Exit: 0
+
+$ check: pnpm exec tsc -b --pretty false
+
+Exit: 0
+
+$ check: pnpm exec tsc -p tsconfig.server.json --pretty false
+server/routes/config-instabox.test.ts(20,23): error TS7006: Parameter 'status' implicitly has an 'any' type.
+server/routes/config-instabox.test.ts(20,31): error TS7006: Parameter 'auth' implicitly has an 'any' type.
+
+Exit: 1
+
+$ check: pnpm exec oxlint --deny-warnings src/lib/i18n.test.ts src/locales/zh.json
+
+Exit: 0
+
+$ check: git diff --check
+
+Exit: 0

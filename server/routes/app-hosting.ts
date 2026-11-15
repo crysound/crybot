@@ -34,9 +34,9 @@ export function createAppHostingInternalRoutes(publisher: AppPublisher) {
     if (ctx.method !== "POST" || ctx.path !== ROUTE) return PASS;
     const parsed = body.safeParse(await ctx.readBody() ?? {});
     if (!parsed.success) return void ctx.json(ctx.res, 400, { error: "publish_app takes action (publish or delete), path, project and title, all text." });
-    const { roots, vmWorkspace, access: folderAccess } = await ctx.folders();
+    const { roots, vmWorkspace, vmGuestRoot, access: folderAccess } = await ctx.folders();
     const access = ctx.access ?? folderAccess;
-    const hostPath = (path: string | undefined) => (path && vmWorkspace && !access ? guestWorkspaceToHost(path, VM_WORKSPACE_GUEST, vmWorkspace) ?? path : path);
+    const hostPath = (path: string | undefined) => (path && vmWorkspace && !access ? guestWorkspaceToHost(path, vmGuestRoot ?? VM_WORKSPACE_GUEST, vmWorkspace) ?? path : path);
     const { action = "publish", title } = parsed.data, path = hostPath(parsed.data.path), project = hostPath(parsed.data.project);
     const input = { ...(access ? { access, vmWorkspace } : {}), botId: ctx.botId, roots: vmWorkspace ? [vmWorkspace, ...roots] : roots, ...(project ? { project } : {}) };
     if (action !== "status" && !path?.trim()) return void ctx.json(ctx.res, 400, { error: `publish_app ${action} needs path: the folder to ${action}.` });

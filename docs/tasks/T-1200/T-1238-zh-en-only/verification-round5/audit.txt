@@ -1,0 +1,18 @@
+Catalog merge: 8439 unique Chinese keys; both sides preserved; English key order matched.
+All 19 InstaBox keys from the removed Portuguese catalog exist in English and Chinese.
+All 19 incoming conflict-side keys exist in all three source catalogs before Portuguese deletion.
+Portuguese locale file removed; supported interface languages remain English and Simplified Chinese.
+Snapshot contains one baseline commit and no incoming parent or remote branch; a historical Portuguese diff cannot be reconstructed.
+Verification README absent in this snapshot; existing test setup and server launchers use disposable homes and fake providers.
+
+$ grep -rn ^<<<<<<<\|^>>>>>>> src server shared electron mobile scripts
+No conflict markers; search exit 1.
+
+$ rg -n ^(<<<<<<<|>>>>>>>) --hidden -g !node_modules/** -g !.git/** .
+No conflict markers; search exit 1.
+
+Final verification text scan: no network endpoints, hostnames, identifiers or object assertion source.
+$ git diff --check
+Passed.
+$ grep -rn ^<<<<<<<\|^>>>>>>> src server shared electron mobile scripts
+No conflict markers.

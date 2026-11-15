@@ -1,0 +1,21 @@
+$ pnpm exec vitest run server/routes/config-instabox.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [workspace]
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  09:50:01
+   Duration  3.19s (transform 2.33s, setup 982ms, import 1.98s, tests 76ms, environment 0ms)
+
+Exit: 0
+
+$ pnpm exec tsc -p tsconfig.server.json --pretty false
+Exit: 0
+
+$ pnpm exec oxlint --deny-warnings src/lib/i18n.test.ts server/routes/config-instabox.test.ts src/locales/zh.json mobile/ios/CryBot/Strings/ServerText.xcstrings
+Exit: 0
+
+$ git diff --check
+Exit: 0
+

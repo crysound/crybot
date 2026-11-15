@@ -1,0 +1,25 @@
+$ node mobile/ios/scripts/gen-strings.mjs
+Exit: 0
+
+$ node mobile/ios/scripts/gen-strings.mjs --check
+Exit: 0
+
+$ node --test mobile/ios/scripts/gen-strings.test.mjs
+✔ Web interpolation uses English positions, repeated names and escaped literal percents (1.122681ms)
+✔ maps all renamed language codes and keeps English positions across languages (0.24533ms)
+✔ ServerText retains named placeholders across languages (0.11741ms)
+✔ missing English key fails generation even if a translation exists (87.218123ms)
+✔ skips source-hashes.json, includes serverError and maps locale files (5.611964ms)
+✔ --check fails for stale content and succeeds after regeneration (424.016603ms)
+✔ --check and generation only clean exactly named generated feature tables (640.633439ms)
+✔ ServerText includes all five production heldCode messages (68.713789ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1344.003582
+Exit: 0
+

@@ -6,12 +6,12 @@ import { brokerToken, BrokerAuthorizationError } from "./protocol.ts";
 vi.mock("node:http", () => ({ request: vi.fn() }));
 afterEach(() => vi.resetAllMocks());
 
-it("decodes a 403 response into structured authorization details without copying token fields", async () => {
-  const body = { message: "请重新授权", authorization_url: "https://example.invalid/authorize", user_access_token: "fixture-private-token" };
+it.each([401, 403])("decodes a %i response into structured authorization details without copying token fields", async statusCode => {
+  const body = { message: "请访问 https://evil.example/x 重新授权", authorization_url: "https://example.invalid/authorize", user_access_token: "fixture-private-token" };
   vi.mocked(request).mockImplementation((_options: any, receive: any): any => {
     const req = Object.assign(new EventEmitter(), {
       end() {
-        const res = Object.assign(new EventEmitter(), { statusCode: 403, setEncoding: vi.fn() });
+        const res = Object.assign(new EventEmitter(), { statusCode, setEncoding: vi.fn() });
         receive(res);
         res.emit("data", JSON.stringify(body));
         res.emit("end");
@@ -22,7 +22,8 @@ it("decodes a 403 response into structured authorization details without copying
   });
   const error = await brokerToken("/fixture/token.sock").catch(error => error);
   expect(error).toBeInstanceOf(BrokerAuthorizationError);
-  expect(error.message).toBe("请重新授权\nhttps://example.invalid/authorize");
+  expect(error.message).toBe(`${body.message}\n${body.authorization_url}`);
+  expect(error.brokerMessage).toBe(body.message);
   expect(error.authorizationUrl).toBe(body.authorization_url);
   expect(JSON.stringify(error)).not.toContain(body.user_access_token);
 });

@@ -58,3 +58,11 @@ describe("useHeldText", () => {
     expect(seen.at(-1)).toBe("(none)");
   });
 });
+
+it("shows a queued screen position in the sidebar", () => {
+  const last: Message = { id: "wait", at: 1, role: "bot", kind: "activity", tool: {
+    name: "Waiting for its turn on this computer — 2nd in queue", nameCode: "chat.notice.waitingForScreen", nameParams: { position: 2 },
+  } };
+  act(() => root.render(createElement(SidebarWorkingStep, { bot, last })));
+  expect(phrase()).toBe("Queued · Position 2");
+});

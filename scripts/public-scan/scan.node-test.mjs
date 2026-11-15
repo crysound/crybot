@@ -616,6 +616,11 @@ test("code host literals exclude filenames, translation keys, and all bare expre
   }
 });
 
+test("code strings containing supervisor pid paths are allowed", () => {
+  const diff = 'diff --git a/fixture.ts b/fixture.ts\n--- a/fixture.ts\n+++ b/fixture.ts\n@@ -0,0 +1,2 @@\n+const pidPath = "/run/x/supervisord.pid";\n+const pidFile = "supervisord.pid";\n';
+  assert.deepEqual(scanDiff(diff), []);
+});
+
 test("shell and prose keep bare hosts and filename-shaped host strings", (t) => {
   const repo = repository(t);
   const body = `DOMAIN=x.y.internal\nhost: ${["build", "fictional", "sh"].join(".")}\n"README.md"\n`;

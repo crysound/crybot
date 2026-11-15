@@ -20,6 +20,7 @@ type Fixture = {
   /** threadId → the Local VM its running turn works on */
   vmTurns?: Record<string, LocalVmTarget>;
   busy?: boolean;
+  assigned?: Record<string, number>;
 };
 
 function fixture(f: Fixture = {}) {
@@ -48,6 +49,7 @@ function fixture(f: Fixture = {}) {
     place: (bot, threadId) => { places++; return f.tasks?.[threadId]?.[1] ?? bot.computer; },
     turnVmTargets: { get: (threadId) => f.vmTurns?.[threadId] },
     busy: () => f.busy ?? false,
+    ...(f.assigned ? { assigned: (id: string) => f.assigned?.[id] ?? null, multiScreen: () => true } : {}),
   });
   const bot = (id: string) => bots.find(candidate => candidate.id === id)!;
   return { control, vm, bot, setMode: (next: typeof mode) => { mode = next; }, places: () => places };
@@ -95,7 +97,7 @@ describe("the one control key", () => {
 
   it.each(keyRows)("the bot list tells the bot about every hold a take through its panels lands on: $row", ({ f, thread }) => {
     const { control, vm, bot } = fixture(f);
-    for (const key of [vm.keyFor(bot("ada"), thread), ...[thread, undefined].flatMap(t => [vm.holdKey(bot("ada"), t, "local/shared"), vm.holdKey(bot("ada"), t, "vps/ada")])]) {
+    for (const key of [vm.keyFor(bot("ada"), thread), ...[thread, undefined].flatMap(t => [vm.holdKey(bot("ada"), t, "local/shared"), vm.holdKey(bot("ada"), t, "vps/ada"), ...[1, 2, 3, 4].map(n => vm.holdKey(bot("ada"), t, screenViewer(n)))])]) {
       if (!key) continue;
       control.take(key);
       expect(vm.botSnapshot("ada").held, key).toBe(true);
@@ -333,5 +335,40 @@ describe("what a hold on the shared desktop reaches", () => {
     setMode("shared");
     changed();
     expect([control.snapshot("ada").held, control.snapshot("cy").held, control.snapshot(DESK).held]).toEqual([false, true, false]);
+  });
+});
+
+describe("screen holds between turns", () => {
+  it("reports and renews a panel's assigned screen without a running turn", () => {
+    const { vm, bot, control } = fixture({ assigned: { ada: 2 }, tasks: { t: ["ada", undefined] } });
+    for (const thread of [undefined, "t"]) {
+      const key = vm.holdKey(bot("ada"), thread, screenViewer(2));
+      expect(key).toBe(screenControlKey(2));
+      const lease = "screen-lease-without-turn";
+      control.acquireLease(key!, lease);
+      expect(vm.botSnapshot("ada").held).toBe(true);
+      expect(vm.leaseKey(bot("ada"), thread)).toBe(key);
+      expect(vm.check(bot("ada"), thread, lease).owned).toBe(true);
+      vm.release(bot("ada"), thread, lease);
+    }
+  });
+  it("rejects unassigned and foreign screens with or without a thread", () => {
+    const { vm, bot } = fixture({ assigned: { ada: 2 }, tasks: { t: ["ada", undefined] } });
+    for (const thread of [undefined, "t"]) {
+      expect(vm.holdKey(bot("ada"), thread, screenViewer(1))).toBeNull();
+      expect(vm.holdKey(bot("ada"), thread, "local/shared")).toBeNull();
+    }
+    const empty = fixture({ assigned: {}, tasks: { t: ["ada", undefined] } });
+    for (const thread of [undefined, "t"]) expect(empty.vm.holdKey(empty.bot("ada"), thread, screenViewer(2))).toBeNull();
+  });
+  it("releases by lease only on the original screen after a panel switches", () => {
+    const assignments = { ada: 1, bea: 2 };
+    const { vm, bot, control } = fixture({ assigned: assignments, bots: [{ id: "ada" }, { id: "bea" }] });
+    control.acquireLease(screenControlKey(1), "original-panel-screen-lease");
+    control.acquireLease(screenControlKey(2), "other-panel-screen-lease");
+    assignments.ada = 2;
+    vm.release(bot("ada"), undefined, "original-panel-screen-lease");
+    expect(control.snapshot(screenControlKey(1)).held).toBe(false);
+    expect(control.snapshot(screenControlKey(2)).held).toBe(true);
   });
 });

@@ -216,6 +216,11 @@ export function verificationServerEnvironment(parentEnv: NodeJS.ProcessEnv, data
   // @devs reports reach a loopback fake only, else a closed port: never the CryBot team.
   const bugReportUrl = parentEnv.CRYBOT_BUG_REPORT_URL?.trim() ?? "";
   childEnv.CRYBOT_BUG_REPORT_URL = /^http:\/\/127\.0\.0\.1:\d{1,5}\/[A-Za-z0-9/_-]*$/.test(bugReportUrl) ? bugReportUrl : "http://127.0.0.1:9/api/bug-reports";
+  const instaboxFixture = parentEnv.CRYBOT_TEST_INSTABOX_API?.trim() ?? "";
+  if (/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(instaboxFixture)) {
+    childEnv.CRYBOT_TEST_INSTABOX_API = instaboxFixture;
+    if (parentEnv.INSTABOX_API_KEY) childEnv.INSTABOX_API_KEY = parentEnv.INSTABOX_API_KEY;
+  }
   const tregUrl = parentEnv.CRYBOT_TREG_URL?.trim() ?? "";
   if (/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(tregUrl)) childEnv.CRYBOT_TREG_URL = tregUrl;
   // Loopback only, for harness mechanics: a fake ElevenLabs the measurement
@@ -254,6 +259,8 @@ export function verificationServerEnvironment(parentEnv: NodeJS.ProcessEnv, data
     childEnv.CRYBOT_DESKTOP_PARENT = "1";
     if (parentEnv.CRYBOT_TEST_DESKTOP_PAGES_ACCESS) childEnv.CRYBOT_TEST_DESKTOP_PAGES_ACCESS = parentEnv.CRYBOT_TEST_DESKTOP_PAGES_ACCESS;
     if (parentEnv.CRYBOT_TEST_DESKTOP_TAILNET_SHARE) childEnv.CRYBOT_TEST_DESKTOP_TAILNET_SHARE = parentEnv.CRYBOT_TEST_DESKTOP_TAILNET_SHARE;
+    if (parentEnv.CRYBOT_TEST_DESKTOP_POLICY) childEnv.CRYBOT_TEST_DESKTOP_POLICY = parentEnv.CRYBOT_TEST_DESKTOP_POLICY;
+    if (parentEnv.CRYBOT_TEST_DESKTOP_POLICY_DELAY_MS) childEnv.CRYBOT_TEST_DESKTOP_POLICY_DELAY_MS = parentEnv.CRYBOT_TEST_DESKTOP_POLICY_DELAY_MS;
   }
   // The driver record the app hands its own server: without it, no server may use this computer.
   if (parentEnv.CRYBOT_TEST_DESKTOP_CUA_CONNECTION) childEnv.CRYBOT_TEST_DESKTOP_CUA_CONNECTION = parentEnv.CRYBOT_TEST_DESKTOP_CUA_CONNECTION;
@@ -432,7 +439,7 @@ export async function launchVerificationServer(
     const renameTimeout = AbortSignal.timeout(Math.max(1, deadline - Date.now()));
     const rename = await fetch(`${url}/api/bots/${seeded[0].id}/profile`, {
       method: "PATCH",
-      headers: { "content-type": "application/json", origin: url },
+      headers: { "content-type": "application/json", origin: url, ...(parentEnv.CRYBOT_TEST_DESKTOP_OWNER_TOKEN ? { "x-crybot-desktop-owner": parentEnv.CRYBOT_TEST_DESKTOP_OWNER_TOKEN } : {}) },
       body: JSON.stringify({ name: FIXTURE_STARTER_BOT_NAME }),
       signal: signal ? AbortSignal.any([signal, renameTimeout]) : renameTimeout,
     });

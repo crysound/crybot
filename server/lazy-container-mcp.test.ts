@@ -1,8 +1,9 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { PassThrough } from "node:stream";
-import { lazyContainerRequests, serveLazyContainerRequests } from "./lazy-container-mcp.ts";
+import { gatedContainerRequests, lazyContainerRequests, serveLazyContainerRequests } from "./lazy-container-mcp.ts";
 import type { AppClient } from "./mcp-app-connections.ts";
-import type { ControlState } from "./computer-control-client.ts";
+import { CONTROL_BUSY, CONTROL_READ_TIMEOUT_MS, CONTROL_HANDED_BACK, CONTROL_TURN_ENDED, CONTROL_UNCONFIRMED, createControlClient, type ControlState } from "./computer-control-client.ts";
+import { cuaExecArgs, CUA_SOCKET } from "./container-computer.ts";
 import { startAutoVmClaim, type AutoVmClaimTable } from "./auto-vm-claims.ts";
 
 const request = (method: string, name?: string, args?: unknown) => ({ id: 1, method, params: { name, arguments: args } });
@@ -14,7 +15,131 @@ function fixture(gate: (action: boolean, signal: AbortSignal) => Promise<Control
   const connect = vi.fn(async () => client);
   return { call, connect, proxy: lazyContainerRequests({ gate, connect, toolScope }) };
 }
-afterEach(() => vi.useRealTimers());
+function screenFixture(fetchImpl: typeof fetch) {
+  const control = createControlClient({ url: "http://fixture/control", token: "fixture", fetchImpl });
+  const call = vi.fn(async (method: string) => method === "tools/list" ? { tools: [click] } : { content: [{ type: "text", text: "clicked" }] });
+  const open = vi.fn(async (): Promise<AppClient> => ({ request: call, close: async () => {}, extensions: undefined, serverInfo: undefined, closed: false }));
+  const proxy = gatedContainerRequests("docker", cuaExecArgs(["mcp", "--socket", CUA_SOCKET], { interactive: true }), control, { dynamicScreen: true, open });
+  return { proxy, open, call };
+}
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
+
+it.each([
+  { reason: "person", blockedReason: undefined },
+  { blockedReason: "screen startup failed" },
+  { blockedReason: CONTROL_UNCONFIRMED },
+  { blockedReason: CONTROL_TURN_ENDED },
+  { blockedReason: CONTROL_HANDED_BACK },
+])("stops waiting for screen readiness on a refusal: $blockedReason $reason", async refusal => {
+  vi.useFakeTimers();
+  const fetchImpl = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json({ held: true, helpOpen: false, readinessPending: true }))
+    .mockImplementation(async () => Response.json({ held: true, helpOpen: false, ...refusal }));
+  const { proxy, open, call } = screenFixture(fetchImpl);
+  try {
+    const pending = proxy.request(request("tools/call", "call_tool", { name: "click", arguments: { x: 1 } }));
+    await vi.advanceTimersByTimeAsync(250);
+    expect(await pending).toHaveProperty("result.isError", true);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(open).not.toHaveBeenCalled();
+    expect(call).not.toHaveBeenCalled();
+  } finally { await proxy.close(); }
+});
+
+it.each([false, true])("cancels pending screen readiness without opening MCP or polling again (blocked read: %s)", async blockedRead => {
+  vi.useFakeTimers();
+  const fetchImpl = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json({ held: true, helpOpen: false, readinessPending: true, blockedReason: CONTROL_BUSY }))
+    .mockImplementation(async (_url, init) => {
+      await new Promise<void>((resolve) => init?.signal?.addEventListener("abort", () => resolve(), { once: true }));
+      return Response.json({ held: true, helpOpen: false, readinessPending: true, blockedReason: CONTROL_BUSY });
+    });
+  const { proxy, open } = screenFixture(fetchImpl);
+  try {
+    const pending = proxy.request(request("tools/call", "search_tools", { query: "click" }));
+    await vi.advanceTimersByTimeAsync(blockedRead ? 250 : 0);
+    await proxy.request({ method: "notifications/cancelled", params: { requestId: 1 } });
+    expect(JSON.stringify(await pending)).toContain("cancelled");
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(fetchImpl).toHaveBeenCalledTimes(blockedRead ? 2 : 1);
+    expect(open).not.toHaveBeenCalled();
+  } finally { await proxy.close(); }
+});
+
+it.each([false, true])("returns the last pending reason within the readiness budget (blocked read: %s)", async blockedRead => {
+  vi.useFakeTimers();
+  vi.spyOn(AbortSignal, "timeout").mockImplementation(ms => {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(new DOMException("fixture deadline", "TimeoutError")), ms);
+    return controller.signal;
+  });
+  const lastReason = "Queued for screen 2: keep waiting with a screenshot.";
+  const fetchImpl = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json({ held: true, helpOpen: false, readinessPending: true, blockedReason: CONTROL_BUSY }))
+    .mockResolvedValueOnce(Response.json({ held: true, helpOpen: false, readinessPending: true, blockedReason: lastReason }))
+    .mockImplementation(async (_url, init) => {
+      if (blockedRead) await new Promise<void>((resolve) => init?.signal?.addEventListener("abort", () => resolve(), { once: true }));
+      return Response.json({ held: true, helpOpen: false, readinessPending: true, blockedReason: lastReason });
+    });
+  const { proxy, open } = screenFixture(fetchImpl);
+  try {
+    let finished = false;
+    const pending = proxy.request(request("tools/call", "search_tools", { query: "click" })).then(result => { finished = true; return result; });
+    await vi.advanceTimersByTimeAsync(CONTROL_READ_TIMEOUT_MS - 1);
+    expect(finished).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    const result = await pending;
+    expect(result).toHaveProperty("result.isError", true);
+    expect(result).toHaveProperty("result.content", [{ type: "text", text: lastReason }]);
+    expect(CONTROL_READ_TIMEOUT_MS * 2).toBeLessThan(120_000);
+    const checks = fetchImpl.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(fetchImpl).toHaveBeenCalledTimes(checks);
+    expect(open).not.toHaveBeenCalled();
+  } finally { await proxy.close(); }
+});
+
+it.each([1, 2])("rechecks action permission after readiness and connection (refused check: %i)", async refusedCheck => {
+  let actionChecks = 0;
+  const fetchImpl = vi.fn<typeof fetch>(async url => {
+    if (new URL(String(url)).searchParams.get("readinessOnly") !== "1") actionChecks++;
+    return Response.json(actionChecks === refusedCheck
+      ? { held: true, helpOpen: false, reason: "person" }
+      : { held: false, helpOpen: false, localVmScreen: 2 });
+  });
+  const { proxy, open, call } = screenFixture(fetchImpl);
+  try {
+    const result = await proxy.request(request("tools/call", "call_tool", { name: "click", arguments: { x: 1 } }));
+    expect(result).toHaveProperty("result.isError", true);
+    expect(open).toHaveBeenCalledTimes(refusedCheck - 1);
+    expect(call.mock.calls.filter(([method]) => method === "tools/call")).toHaveLength(0);
+  } finally { await proxy.close(); }
+});
+
+it.each([0, 1, 2, 3, 4, undefined, 9])("resolves the lazy MCP identity from the authorized gate screen %s", async screen => {
+  const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ held: false, helpOpen: false, localVmScreen: screen })));
+  const control = createControlClient({ url: "http://fixture/control", token: "fixture", fetchImpl });
+  const open = vi.fn(async (): Promise<AppClient> => ({
+    request: async () => ({ tools: [click] }), close: vi.fn(async () => {}),
+    extensions: undefined, serverInfo: undefined, closed: false,
+  }));
+  const legacy = cuaExecArgs(["mcp", "--socket", CUA_SOCKET], { interactive: true });
+  const proxy = gatedContainerRequests("docker", legacy, control, { dynamicScreen: true, open });
+  await proxy.request(request("tools/list"));
+  expect(fetchImpl).not.toHaveBeenCalled();
+  expect(open).not.toHaveBeenCalled();
+  const result = await proxy.request(request("tools/call", "search_tools", { query: "click" }));
+  if (screen === undefined || screen === 9) {
+    expect(result).toHaveProperty("result.isError", true);
+    expect(open).not.toHaveBeenCalled();
+  } else if (screen === 0) {
+    expect(open).toHaveBeenCalledWith("docker", legacy, expect.any(AbortSignal));
+  } else {
+    expect(open).toHaveBeenCalledWith("docker", expect.arrayContaining(["-u", `crybot-s${screen}`, `DISPLAY=:${screen}`, `/run/user/6100${screen}/crybot-cua.sock`]), expect.any(AbortSignal));
+    expect(JSON.stringify(open.mock.calls)).not.toContain(CUA_SOCKET);
+  }
+  await proxy.close();
+});
 
 it("initializes and lists tools immediately while a five-second wake is in progress, then calls successfully", async () => {
   vi.useFakeTimers();

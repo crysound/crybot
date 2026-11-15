@@ -129,8 +129,11 @@ describe("activePackComplete", () => {
     expect(activePackComplete()).toBe(false);
     setLocale("zh");
     expect(activePackComplete()).toBe(false);
-    locales["zz"] = { "approval.held.native": "x" };
+    locales["zz"] = { ...en };
     try {
+      setLocale("zz");
+      expect(activePackComplete()).toBe(true);
+      locales["zz"] = { "approval.held.native": "x" };
       setLocale("zz");
       expect(activePackComplete()).toBe(false);
     } finally {

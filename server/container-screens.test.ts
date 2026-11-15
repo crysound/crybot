@@ -1,6 +1,6 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { hostname, tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -36,10 +36,11 @@ describe("container screen layout", () => {
     const args = screenExecArgs(sharedScreenTarget(2), ["mcp", "--socket", screenSocket(2)], { interactive: true });
     expect(args).toEqual([
       "exec", "-i", "-u", "crybot-s2", "-e", "HOME=/home/crybot-s2", "-e", "DISPLAY=:2",
+      "-e", "XAUTHORITY=/run/crybot/screens/s2/Xauthority",
       "-e", "XDG_RUNTIME_DIR=/run/user/61002", "-e", "TMPDIR=/run/user/61002/tmp",
       "-e", "CUA_DRIVER_INSTALL_CHANNEL=python_package", "-e", "CUA_DRIVER_RS_TELEMETRY_ENABLED=0",
       "crybot-computer", "env", "-u", "VNC_PW", "prlimit", "--nproc=1500", "--",
-      "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
+      "/usr/local/libexec/crybot/screen-program", "sh", "-c", 'umask 007; exec "$@"', "crybot-screen-exec",
       "/usr/local/libexec/crybot/cua-driver", "mcp", "--socket", "/run/user/61002/crybot-cua.sock",
     ]);
   });
@@ -89,10 +90,77 @@ describe("container screen layout", () => {
     for (const setting of ["CUA_DRIVER_WINDOW_CHANGE_TIMEOUT_MS=200", "NO_COLOR=1", "--cursor-reduced-motion on"]) expect(conf).toContain(setting);
   });
 
+  it("does not put screen user environment in supervisor program sections", () => {
+    const conf = screensSupervisorConf(4);
+    const sections = conf.split(/(?=\[program:screen-s\d-)/).filter(part => part.startsWith("[program:screen-s"));
+    expect(sections).toHaveLength(16);
+    for (const section of sections) {
+      expect(section).not.toMatch(/^environment=/m);
+    }
+  });
+
+  it("requires a separate X authority on every display and disables X TCP listeners", () => {
+    for (let n = 1; n <= 4; n++) {
+      expect(screenSupervisorConf(n)).toContain(`/usr/bin/Xvnc :${n} -auth /run/crybot/screens/s${n}/Xauthority -nolisten tcp`);
+      expect(screenExecArgs(sharedScreenTarget(n), ["status"])).toContain(`XAUTHORITY=/run/crybot/screens/s${n}/Xauthority`);
+    }
+  });
+
+  it("generates private, fresh X cookies on initialization without following existing symlinks", () => {
+    const dir = mkdtempSync(join(tmpdir(), "crybot-xauthority-"));
+    const cookies: string[] = [];
+    try {
+      const script = multiScreenInitScript({ maxScreens: 4 });
+      const blocks = [...script.matchAll(/env -u VNC_PW HOME=\/root PYTHONNOUSERSITE=1 \/usr\/bin\/python3 -I - ([^\n]+) <<'XAUTH'\n[\s\S]*?\nXAUTH/g)];
+      expect(blocks).toHaveLength(4);
+      for (let n = 1; n <= 4; n++) {
+        const uid = 61000 + n;
+        const path = `/run/crybot/screens/s${n}/Xauthority`;
+        expect(blocks[n - 1]![1]).toBe(`${path} ${uid} ${uid} ${n}`);
+        expect(script).toContain(`install -d -o root -g root -m 0711 /run/crybot/screens/s${n}\n${blocks[n - 1]![0]}`);
+        const file = join(dir, `s${n}`);
+        const sentinel = join(dir, `sentinel-${n}`);
+        writeFileSync(sentinel, "unchanged", { mode: 0o600 });
+        symlinkSync(sentinel, file);
+        const fixture = blocks[n - 1]![0].replace(path, file).replace(`${uid} ${uid} ${n}`, `${process.getuid!()} ${process.getgid!()} ${n}`);
+        for (let boot = 0; boot < 2; boot++) {
+          const result = spawnSync("sh", ["-eu", "-c", fixture], { encoding: "utf8", timeout: 3000 });
+          expect({ status: result.status, stdout: result.stdout, stderr: result.stderr }).toEqual({ status: 0, stdout: "", stderr: "" });
+          const stat = statSync(file);
+          expect(stat.uid).toBe(process.getuid!());
+          expect(stat.gid).toBe(process.getgid!());
+          expect(stat.mode & 0o777).toBe(0o400);
+          const bytes = readFileSync(file);
+          expect(bytes.readUInt16BE(0)).toBe(256);
+          const fields: Buffer[] = [];
+          let offset = 2;
+          while (offset < bytes.length) {
+            const length = bytes.readUInt16BE(offset);
+            fields.push(bytes.subarray(offset + 2, offset + 2 + length));
+            offset += 2 + length;
+          }
+          expect(offset).toBe(bytes.length);
+          expect(fields).toHaveLength(4);
+          expect(fields.slice(0, 3).map(field => field.toString())).toEqual([hostname(), String(n), "MIT-MAGIC-COOKIE-1"]);
+          expect(fields[3]).toHaveLength(16);
+          cookies.push(fields[3]!.toString("hex"));
+        }
+        expect(readFileSync(sentinel, "utf8")).toBe("unchanged");
+        expect(statSync(sentinel).mode & 0o777).toBe(0o600);
+      }
+      expect(new Set(cookies).size).toBe(8);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("keeps signal supervision at root and permanently drops the desktop child identity", () => {
     const script = screenProcessScript();
     expect(script.startsWith("#!/usr/bin/python3 -I\n")).toBe(true);
     expect(script).toContain("os.setgroups([])\n    os.setgid(user.pw_gid)\n    os.setuid(user.pw_uid)");
+    expect(script.indexOf("os.setuid(user.pw_uid)")).toBeLessThan(script.indexOf('os.environ.update({'));
+    expect(script).toContain('"XAUTHORITY": f"/run/crybot/screens/s{suffix}/Xauthority"');
+    expect(script.indexOf("os.setuid(user.pw_uid)")).toBeLessThan(script.indexOf('"XAUTHORITY"'));
     expect(script).toContain("os.seteuid(user.pw_uid)\n        os.killpg(pid, signum)");
     expect(script).toContain("finally:\n        os.seteuid(0)");
     expect(screenSupervisorConf(2)).toContain("screen-process crybot-s2 /usr/bin/Xvnc");
@@ -112,6 +180,9 @@ describe("container screen layout", () => {
     expect(script).not.toContain("/proc/$(id");
     expect(script).toContain("choom -n 500 --");
     expect(script).toContain("echo 500 > /proc/self/oom_score_adj\nexec env -u VNC_PW");
+    expect(script).toContain("for path in /home/cua /home/cua/workspace /home/cua/.vnc;");
+    expect(script).toContain('if [ -L "$path" ]; then echo "refusing symlink path: $path" >&2; exit 1; fi');
+    expect(script).toContain("if [ -L /home/cua/workspace/screens ]; then rm -f /home/cua/workspace/screens; fi\ninstall -d -o root -g root -m 0711 /home/cua/workspace/screens\nchmod 0711 /home/cua /home/cua/workspace");
     for (let n = 1; n <= 4; n++) {
       expect(script).toContain(`groupadd -g ${61000 + n} crybot-s${n}`);
       expect(script).toContain(`useradd -u ${61000 + n} -g ${61000 + n}`);
@@ -214,10 +285,34 @@ for failure in [ProcessLookupError(), PermissionError("denied"), OSError("failed
     }).status).toBe(0);
   });
 
+  it("updates apt before installing and records update and install separately", () => {
+    const script = crybotPkgScript();
+    expect(script.indexOf("apt-get update")).toBeLessThan(script.indexOf("apt-get install"));
+    expect(script).toContain("operation=update");
+    expect(script).toContain("operation=install");
+  });
+
+  it("does not install when apt update fails", () => {
+    const dir = mkdtempSync(join(tmpdir(), "crybot-package-update-"));
+    try {
+      writeFileSync(join(dir, "apt-get"), '#!/bin/sh\n[ "$1" = update ] && exit 9\nexit 99\n', { mode: 0o700 });
+      const script = crybotPkgScript().replace('[ "$(id -u)" = 0 ]', '[ 0 = 0 ]')
+        .replaceAll("/var/log/crybot", join(dir, "audit")).replace("install -d -o root -g root ", "install -d ");
+      const result = spawnSync("sh", ["-c", script, "fixture", "python3-pip"], {
+        stdio: "ignore", env: { ...process.env, HOME: dir, PATH: `${dir}:${process.env.PATH}`, CRYBOT_PACKAGE_SCREEN: "s1" }, timeout: 3000,
+      });
+      expect(result.status).toBe(9);
+      expect(readFileSync(join(dir, "audit/packages.log"), "utf8")).toMatch(/operation=update/);
+      expect(readFileSync(join(dir, "audit/packages.log"), "utf8")).not.toMatch(/operation=install/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("records failed installations in a protected audit file", () => {
     const dir = mkdtempSync(join(tmpdir(), "crybot-package-audit-"));
     try {
-      writeFileSync(join(dir, "apt-get"), '#!/bin/sh\n[ "$HOME" = /root ] && [ "$PYTHONNOUSERSITE" = 1 ] && [ -z "${VNC_PW+x}" ] || exit 99\nexit 7\n', { mode: 0o700 });
+      writeFileSync(join(dir, "apt-get"), '#!/bin/sh\n[ "$HOME" = /root ] && [ "$PYTHONNOUSERSITE" = 1 ] && [ -z "${VNC_PW+x}" ] || exit 99\ncase "$1" in update) exit 0;; install) exit 7;; *) exit 98;; esac\n', { mode: 0o700 });
       const script = crybotPkgScript()
         .replace('[ "$(id -u)" = 0 ]', '[ 0 = 0 ]')
         .replaceAll("/var/log/crybot", join(dir, "audit"))
@@ -226,7 +321,7 @@ for failure in [ProcessLookupError(), PermissionError("denied"), OSError("failed
         stdio: "ignore", env: { ...process.env, HOME: dir, PYTHONNOUSERSITE: "", VNC_PW: "fixture", PATH: `${dir}:${process.env.PATH}`, CRYBOT_PACKAGE_SCREEN: "s2" }, timeout: 3000,
       });
       expect(result.status).toBe(7);
-      expect(readFileSync(join(dir, "audit/packages.log"), "utf8")).toMatch(/^\d{4}-.*Z screen=s2 packages=python3-pip g\+\+ result=7\n$/);
+      expect(readFileSync(join(dir, "audit/packages.log"), "utf8")).toMatch(/^\d{4}-.*Z operation=update screen=s2 result=0\n\d{4}-.*Z operation=install screen=s2 packages=python3-pip g\+\+ result=7\n$/);
       expect(statSync(join(dir, "audit")).mode & 0o777).toBe(0o700);
       expect(statSync(join(dir, "audit/packages.log")).mode & 0o777).toBe(0o600);
     } finally {
@@ -239,6 +334,6 @@ for failure in [ProcessLookupError(), PermissionError("denied"), OSError("failed
     expect(() => validateScreenPackages([])).toThrow();
     expect(() => validateScreenPackages(Array(21).fill("vim"))).toThrow();
     expect(crybotPkgScript()).toContain('install -d -o root -g root -m 0700 /var/log/crybot');
-    expect(crybotPkgScript()).toContain('screen=%s packages=%s result=%s');
+    expect(crybotPkgScript()).toContain('operation=install screen=%s packages=%s result=%s');
   });
 });

@@ -43,3 +43,13 @@ it("still renames any other conversation", async () => {
   await draw({ threadId: "own", title: "Quarter numbers" });
   expect((await openMenu()).join(" ")).toMatch(/rename/i);
 });
+
+it.each(["Problems to look at", "Team incidents"])("translates the incidents title %s in Chinese", async title => {
+  setLocale("zh");
+  try {
+    expect(localizedTaskTitle(title)).toBe("待处理的问题");
+    await draw({ threadId: "incidents", title });
+    expect(host.textContent).toContain("待处理的问题");
+    expect(localizedTaskTitle("Custom problem list")).toBe("Custom problem list");
+  } finally { setLocale("en"); }
+});

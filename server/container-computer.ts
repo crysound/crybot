@@ -256,6 +256,7 @@ export interface ContainerComputerStatus {
   persistence: "durable" | "unsafe" | "unknown";
   desktopReady: boolean;
   screens_layout?: "single" | "multi";
+  screens_fallback?: boolean;
   desktop_error: string | null;
   stopped_at?: string | null;
   /** A stopped desktop whose only problem is that it is stopped. */
@@ -562,10 +563,11 @@ async function probeContainerComputerStatus(
   } catch {
   }
 
-  if (options.probeDesktop !== false && status.runtime !== "container" && status.screens_layout === "multi" && status.container === "running") {
+  if (status.runtime !== "container" && status.screens_layout === "multi" && status.container === "running") {
     try {
       const fallback = await runner(status.runtime, rootContainerExecArgs(target.containerName, ["sh", "-c", `if [ -f ${SCREENS_FALLBACK_FILE} ]; then echo single; else echo multi; fi`]), 8000);
       status.screens_layout = fallback.stdout.trim() === "multi" ? "multi" : "single";
+      status.screens_fallback = status.screens_layout === "single";
     } catch (error) {
       status.desktop_error = error instanceof Error ? `screen layout probe failed: ${error.message.slice(0, 280)}` : "screen layout probe failed";
     }
@@ -830,10 +832,11 @@ export async function containerComputerAction(
   platform: NodeJS.Platform = process.platform,
   target: LocalVmTarget = SHARED_LOCAL_VM_TARGET,
   resources: DesktopResources = DEFAULT_DESKTOP_RESOURCES,
+  screensLayout: "single" | "multi" = "single",
 ): Promise<ContainerComputerStatus> {
   const finish = changingContainerStatus(target, action === "pull");
   try {
-    return await performContainerComputerAction(action, runner, platform, target, resources);
+    return await performContainerComputerAction(action, runner, platform, target, resources, screensLayout);
   } finally {
     finish();
   }
@@ -845,6 +848,7 @@ async function performContainerComputerAction(
   platform: NodeJS.Platform,
   target: LocalVmTarget,
   resources: DesktopResources,
+  screensLayout: "single" | "multi",
 ): Promise<ContainerComputerStatus> {
   const before = await containerComputerStatus(runner, platform, target);
   const runtime = before.runtime;
@@ -888,7 +892,7 @@ async function performContainerComputerAction(
         ? containerRunArgs(runtime, randomBytes(6).toString("base64url"), target, {
           platform,
           resources,
-          hostUser: currentHostUser(platform),
+          hostUser: currentHostUser(platform), screensLayout,
         })
         : action === "remove"
           ? ["rm", runtime === "container" ? "--force" : "-f", target.containerName]

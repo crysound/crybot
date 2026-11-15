@@ -1,3 +1,4 @@
+import { InstaboxSnapshots } from "./InstaboxSnapshots";
 import { boatCapableEngine, cloudEngineOf } from "@/lib/remote-desktop";
 import { canWorkOnCloud } from "../../shared/cloud-computer";
 import { ComputerBrowserSwitch } from "./ComputerBrowserSwitch";
@@ -342,10 +343,9 @@ export function ComputerPanel({
   if (lastVmScreenTarget.current.botId !== bot.id || lastVmScreenTarget.current.computer !== bot.computer) {
     lastVmScreenTarget.current = { botId: bot.id, computer: bot.computer, target: null };
   }
-  const vmSupported = Boolean(
-    selectedInstance?.snapshot.state === "available" &&
-      selectedInstance.capabilities?.computerMcp,
-  );
+  const vmSupported = Boolean(selectedInstance?.capabilities?.computerMcp);
+  const engineUnavailable = selectedInstance !== undefined && selectedInstance.snapshot.state !== "available";
+  const engineReason = selectedInstance?.snapshot.reason?.trim().replace(/[.。\s]+$/, "");
   const cloudSupported = canWorkOnCloud(cloudEngineOf(selectedInstance));
   const botRoutines = state.routines
     .filter((routine) => routine.botId === bot.id)
@@ -395,6 +395,11 @@ export function ComputerPanel({
       return;
     }
     if (bot.computer === "vm") {
+      if (engineUnavailable) {
+        setError(new LocalizedPanelError("computer.err.engineUnavailable", engineReason, "computer.err.engineUnknown"));
+        setPhase("vm-unavailable");
+        return;
+      }
       if (!vmSupported) {
         setError(new LocalizedPanelError("computer.err.vmEngine"));
         setPhase("vm-unavailable");
@@ -591,6 +596,8 @@ export function ComputerPanel({
     providerSupportsLocal,
     selectedInstance?.driverKind,
     vmSupported,
+    engineUnavailable,
+    engineReason,
     cloudSupported,
     providerLock,
     state.config?.vps?.sshAlias,
@@ -1276,7 +1283,7 @@ export function ComputerPanel({
             {currentTeamComputer && <span className="text-[11px]">{autoView.short}</span>}
             {phase === "local" && <span className="text-[11px]">{t("computer.badge.local")}</span>}
             {liveHere && <span className="flex items-center gap-1.5 text-[11px] font-medium text-ink"><span className="size-1.5 rounded-full bg-success" />{t("computer.inControl")}</span>}
-            {phase === "vm" && !liveHere && <span className="text-[11px]">{t("vm.dest.vm")}</span>}
+            {phase === "vm" && !liveHere && <span className="text-[11px]">{vmStatus?.screen?.screen ? t("vm.screens.number", { screen: vmStatus.screen.screen }) : t("vm.dest.vm")}</span>}
             {(phase === "show-ready-boat" || phase === "show-sleeping-boat" || phase === "show-pending-boat") && (
               <span className="text-[11px]">{t("computer.badge.autoBoat")}</span>
             )}
@@ -1406,7 +1413,14 @@ export function ComputerPanel({
                 <p className="text-[12px]">{t(vmStatus?.stop_reason === "idle" ? "vm.stopped.idle" : "vm.stopped.detail")}</p>
               )}
               {phase === "vm-unavailable" && (
-                canWakeVm ? (
+                engineUnavailable ? (
+                  <button
+                    onClick={() => dispatch({ type: "toggleAppSettings", open: true, section: "engines" })}
+                    className="mt-1 rounded-lg bg-control px-3 py-1.5 text-[12px] text-ink hover:bg-raised-hover"
+                  >
+                    {t("computer.checkEngineSettings")}
+                  </button>
+                ) : canWakeVm ? (
                   <button
                     onClick={() => void runVmAction("vm-start")}
                     disabled={pending !== null}
@@ -1495,6 +1509,7 @@ export function ComputerPanel({
             />
           </div>
         )}
+        {cloudBackend === "instabox" && profileBot.computer === "cloud" && phase !== "team-boat" && <InstaboxSnapshots botId={bot.id} />}
         {advanced && phase === "vps-unconfigured" && (
           <div className="mt-3 rounded-xl bg-card p-4">
             <div className="mb-3 text-[13px] text-ink-secondary">

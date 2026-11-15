@@ -21,11 +21,11 @@ function sink() {
   return { sent, json, res: {} as PagesInternalContext["res"] };
 }
 
-async function internal(handler: ReturnType<typeof createPagesInternalRoutes>, input: { path?: string; method?: string; body?: unknown; vmWorkspace?: string | null; access?: ScreenFileAccess } = {}) {
+async function internal(handler: ReturnType<typeof createPagesInternalRoutes>, input: { path?: string; method?: string; body?: unknown; vmWorkspace?: string | null; vmGuestRoot?: string; access?: ScreenFileAccess } = {}) {
   const { sent, json, res } = sink();
   const post = vi.fn(() => "message-1");
   const out = await handler({ method: input.method ?? "POST", path: input.path ?? "/api/internal/pages/publish", res, json, botId: "bot-1", threadId: "thread-1",
-    readBody: async () => input.body ?? {}, folders: async () => ({ roots: ["/work/bot-1"], vmWorkspace: input.vmWorkspace ?? null, ...(input.access ? { access: input.access } : {}) }), post,
+    readBody: async () => input.body ?? {}, folders: async () => ({ roots: ["/work/bot-1"], vmWorkspace: input.vmWorkspace ?? null, vmGuestRoot: input.vmGuestRoot, ...(input.access ? { access: input.access } : {}) }), post,
     requireActive: () => {}, signal: new AbortController().signal });
   return { out, post, ...sent };
 }
@@ -93,13 +93,21 @@ describe("the card's Unpublish", () => {
   });
 });
 
-it.skipIf(process.platform === "win32")("passes screen access to both page publishing and path-based unpublishing", async () => {
+it.each(["/home/cua/workspace/screens/s2", "/home/crybot-s2/workspace"])("maps publishing and unpublishing beneath the assigned workspace for %s", async (vmGuestRoot) => {
+  const publisher = fakePublisher();
+  await internal(createPagesInternalRoutes(publisher), { body: { path: `${vmGuestRoot}/site`, title: "Site" }, vmWorkspace: "/vm/screens/s2", vmGuestRoot });
+  expect(publisher.publish).toHaveBeenCalledWith(expect.objectContaining({ path: join("/vm/screens/s2", "site"), roots: ["/vm/screens/s2", "/work/bot-1"] }));
+  await internal(createPagesInternalRoutes(publisher), { path: "/api/internal/pages/unpublish", body: { path: `${vmGuestRoot}/site` }, vmWorkspace: "/vm/screens/s2", vmGuestRoot });
+  expect(publisher.unpublish).toHaveBeenCalledWith(expect.objectContaining({ path: join("/vm/screens/s2", "site") }));
+});
+
+it.skipIf(process.platform === "win32").each(["/home/cua/workspace/screens/s2", "/home/crybot-s2/workspace"])("passes screen access to publishing and unpublishing for %s", async (vmGuestRoot) => {
   const f = await screenFilesFixture();
   try {
     const publisher = fakePublisher(), handler = createPagesInternalRoutes(publisher);
-    const path = "/home/cua/workspace/screens/s2/site";
-    await internal(handler, { body: { path, title: "Screen page" }, vmWorkspace: f.workspace, access: f.access });
-    await internal(handler, { path: "/api/internal/pages/unpublish", body: { path }, access: f.access, vmWorkspace: f.workspace });
+    const path = `${vmGuestRoot}/site`;
+    await internal(handler, { body: { path, title: "Screen page" }, vmWorkspace: f.workspace, vmGuestRoot, access: f.access });
+    await internal(handler, { path: "/api/internal/pages/unpublish", body: { path }, access: f.access, vmGuestRoot, vmWorkspace: f.workspace });
     expect(publisher.publish).toHaveBeenCalledWith(expect.objectContaining({ path, access: f.access, vmWorkspace: f.workspace }));
     expect(publisher.unpublish).toHaveBeenCalledWith(expect.objectContaining({ path, access: f.access, vmWorkspace: f.workspace }));
   } finally { await f.cleanup(); }

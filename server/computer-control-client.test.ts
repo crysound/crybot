@@ -28,6 +28,17 @@ async function slowControl(delayMs: number | null, body: unknown) {
 afterEach(() => vi.restoreAllMocks());
 
 describe("computer control client", () => {
+  it.each([
+    { held: true, readinessPending: true, expected: true },
+    { held: false, readinessPending: true, expected: undefined },
+    { held: true, readinessPending: "true", expected: undefined },
+  ])("validates the pending readiness status $held/$readinessPending", async ({ held, readinessPending, expected }) => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => Response.json({ held, helpOpen: false, readinessPending }));
+    const state = await createControlClient({ ...options, fetchImpl }).state(true);
+    expect(state.readinessPending).toBe(expected);
+    expect(state.held).toBe(held);
+  });
+
   it("waits out a harness that holds the check longer than the old 2 s, and keeps its contention reason", async () => {
     // The gate holds a check while the computer is busy; an early client abort would turn this answer into "A person has taken control".
     const busy = { held: true, helpOpen: false, blockedReason: "Another thread is using this computer." };

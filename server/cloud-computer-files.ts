@@ -13,14 +13,14 @@ import { boatProviderApi } from "./included-services.ts";
 import { inSecretFolder, SECRET_FILE_REFUSAL } from "./secret-folder.ts";
 import { isInside, resolveThroughLinks } from "./sentinel/paths.ts";
 
-const MiB = 1024 * 1024;
-const COPY_MAX_BYTES = 2 * 1024 * MiB;
+export const MiB = 1024 * 1024;
+export const COPY_MAX_BYTES = 2 * 1024 * MiB;
 /** Left free on the folder's disk, so a download never fills it. */
-const DISK_RESERVE_BYTES = 256 * MiB;
+export const DISK_RESERVE_BYTES = 256 * MiB;
 const LINK_TTL_SECONDS = 300;
 const OLD_RELAY = "This Cloud's computer service can't hand out file transfer links yet, so files can't be copied to or from the cloud computer until it updates. Use exec in the meantime.";
 const UNUSABLE_LINK = "The cloud computer answered with a transfer link that can't be used. Try the copy again in a minute.";
-const noFollow = typeof constants.O_NOFOLLOW === "number" ? constants.O_NOFOLLOW : 0;
+export const noFollow = typeof constants.O_NOFOLLOW === "number" ? constants.O_NOFOLLOW : 0;
 
 export type CopyOutcome = { path: string; bytes: number } | { error: string };
 export interface CopyOptions {
@@ -29,10 +29,10 @@ export interface CopyOptions {
 }
 
 const sized = (bytes: number) => bytes >= 1024 * MiB ? `${(bytes / 1024 / MiB).toFixed(1)} GiB` : `${(bytes / MiB).toFixed(1)} MiB`;
-const diskFree = (dir: string) => { const disk = statfsSync(dir); return Number(disk.bavail) * Number(disk.bsize); };
-const tooBig = (path: string, bytes: number, atLeast = false) =>
+export const diskFree = (dir: string) => { const disk = statfsSync(dir); return Number(disk.bavail) * Number(disk.bsize); };
+export const tooBig = (path: string, bytes: number, atLeast = false) =>
   `${path} is ${atLeast ? "over " : ""}${sized(bytes)}; a copy moves at most 2 GiB. Make it smaller on the cloud computer first (filter, compress or split it), then copy the parts.`;
-const noSpace = (path: string, bytes: number, free: number, atLeast = false) =>
+export const noSpace = (path: string, bytes: number, free: number, atLeast = false) =>
   `Not enough space for ${path}: it needs ${atLeast ? "more than " : ""}${sized(bytes)} with ${sized(DISK_RESERVE_BYTES)} kept free, and the working folder's disk has ${sized(free)} free.`;
 
 /** What the sandbox's own answer means; its body is never read, since it could carry the link. */
@@ -44,7 +44,7 @@ function linkRefusal(status: number, path: string): string {
 
 type Placed = { root: string; file: string } | { error: string };
 
-function placeInFolder(folder: string, wanted: string): Placed {
+export function placeInFolder(folder: string, wanted: string): Placed {
   if (isAbsolute(wanted) || win32.isAbsolute(wanted) || wanted.split(/[\\/]/).includes("..")) {
     return { error: `${wanted} must be a path relative to your working folder, without "..".` };
   }
@@ -58,7 +58,7 @@ function placeInFolder(folder: string, wanted: string): Placed {
 }
 
 /** Checked again once the download has begun: a link made in the folder meanwhile would lead the file out. */
-function land(placed: { root: string; file: string }, wanted: string): { parent: string; target: string } | { error: string } {
+export function land(placed: { root: string; file: string }, wanted: string): { parent: string; target: string } | { error: string } {
   let parent: string;
   try {
     mkdirSync(dirname(placed.file), { recursive: true });

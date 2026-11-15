@@ -4,7 +4,7 @@
 import { createHash } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { assertBoatNotDeleting, boatAccount, boatErrorMessage, boatFetch, isolatedRemoteCommand } from "./boat.ts";
-import type { CloudComputerResult } from "./cloud-computer-tools.ts";
+import type { CloudComputerResult } from "./cloud-computer-tool-shared.ts";
 import type { AppConfig } from "./config.ts";
 
 const PROCESS_ID = /^bg-([1-9][0-9]{0,15})-([0-9a-f]{8})$/;
@@ -12,7 +12,7 @@ export const PROCESS_ID_PATTERN = PROCESS_ID.source;
 export const STATUS_WAIT_MAX_SECONDS = 60;
 export const STDOUT_TAIL_CHARS = 4_000;
 export const STDERR_TAIL_CHARS = 2_000;
-const POLL_MS = 2_000;
+export const POLL_MS = 2_000;
 const MAX_LAST_READ_WINDOW_MS = 1_000;
 /** Bounds what a forgotten background server can cost: Boat bills while a computer is on. */
 export const BACKGROUND_KEEPS_AWAKE_MS = 2 * 60 * 60_000;
@@ -27,12 +27,13 @@ export const EXEC_LATE = "The command did not finish within this call's time lim
   + "Start a command that may run long (downloads, installs, builds, data jobs) with background: true, then follow it with exec_status.";
 const START_LATE = `The cloud computer did not confirm the start in time. The command may have started. ${CHECK_BEFORE_RERUN}.`;
 const STATUS_LATE = "The cloud computer did not answer in time. Nothing was changed; call exec_status again.";
-const OTHER_COMPUTER = "That process_id is not from this cloud computer. Use the process_id that exec with background: true returned on this computer.";
-const UNKNOWN_PROCESS = "This cloud computer has no background command with that process_id; it may have restarted since. "
+export const OTHER_COMPUTER = "That process_id is not from this cloud computer. Use the process_id that exec with background: true returned on this computer.";
+export const UNKNOWN_PROCESS = "This cloud computer has no background command with that process_id; it may have restarted since. "
   + "Look at the files the command writes to see how far it got.";
-const LOST = "The cloud computer restarted or lost track of this command, so its exit code may be unknown. Look at the files it writes to see how far it got.";
-const CUT = "Only the end of the output is shown. Write long output to a file and read the part you need with exec.";
-const STALE = "No newer status was confirmed before the wait ended. This is the last observed status; it may have changed. Call exec_status again.";
+export const LOST = "The cloud computer restarted or lost track of this command, so its exit code may be unknown. Look at the files it writes to see how far it got.";
+export const CUT = "Only the end of the output is shown. Write long output to a file and read the part you need with exec.";
+export const STALE = "No newer status was confirmed before the wait ended. This is the last observed status; it may have changed. Call exec_status again.";
+export const BACKGROUND_NEXT = "It keeps running after this call, but its completion will not automatically resume this turn or notify a delegator. If its result is needed for this task, use exec_status with wait_seconds in this turn until it finishes, then check its exit code and output. If you cannot finish checking in this turn, report it as unfinished with the process_id; do not start another copy blindly.";
 
 type StatusClock = {
   now: () => number;
@@ -126,10 +127,10 @@ export async function startInBackground(cfg: AppConfig, boxId: string, command: 
   if (Number.isInteger(body?.exitCode) && processId === undefined) return ranInForeground(body);
   if (!Number.isSafeInteger(processId) || processId < 1) return text(`The cloud computer did not say which process it started. The command may have started. ${CHECK_BEFORE_RERUN}.`, true);
   track(boxId, processId);
-  return text(JSON.stringify({ processId: processIdOn(boxId, processId), status: "running", next: "It keeps running after this call, but its completion will not automatically resume this turn or notify a delegator. If its result is needed for this task, use exec_status with wait_seconds in this turn until it finishes, then check its exit code and output. If you cannot finish checking in this turn, report it as unfinished with the process_id; do not start another copy blindly." }));
+  return text(JSON.stringify({ processId: processIdOn(boxId, processId), status: "running", next: BACKGROUND_NEXT }));
 }
 
-function describeStatus(processId: string, body: any, observedAt?: number): CloudComputerResult {
+export function describeStatus(processId: string, body: any, observedAt?: number): CloudComputerResult {
   const stdout = tail(body.stdout, STDOUT_TAIL_CHARS), stderr = tail(body.stderr, STDERR_TAIL_CHARS);
   const status = body.running ? "running" : body.status === "lost" ? "lost" : "finished";
   return text(JSON.stringify({
@@ -143,7 +144,7 @@ function describeStatus(processId: string, body: any, observedAt?: number): Clou
   }));
 }
 
-function statusError(message: string, processId: string, last?: { body: any; observedAt: number }): CloudComputerResult {
+export function statusError(message: string, processId: string, last?: { body: any; observedAt: number }): CloudComputerResult {
   if (!last) return text(message, true);
   const stdout = tail(last.body.stdout, STDOUT_TAIL_CHARS), stderr = tail(last.body.stderr, STDERR_TAIL_CHARS);
   return text(JSON.stringify({

@@ -2074,11 +2074,10 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
       generateText: (prompt, options) => generateReview(prompt, options?.signal, options?.onUsage, options?.timeoutMs, options?.model),
       reviewPermission: generateReview,
       dispose: async () => {
-        try {
-          await login.dispose();
-        } finally {
+        try { await login.dispose(); } finally {
           for (const { stop } of active.values()) stop();
           for (const threadId of Array.from(sessions.keys())) closeSession(threadId, "dispose");
+          await Promise.all([...sessions.values()].map((session) => killCliTree(session.child)));
           listeners.clear();
         }
       },

@@ -5,7 +5,7 @@ import { useMenuMotion } from "./MenuMotion";
 import { MENU_HEADING, MENU_SHEET } from "./menu-recipe";
 import { t } from "@/lib/i18n";
 import { instanceSupportsLocalComputer, localComputerDisabledReason, localComputerSelectable, pageOnRemoteServer } from "@/lib/local-computer";
-import { effectivePlace, personPin, PLACES, placeLabelKey, placeOffered, type Place } from "@/lib/place";
+import { effectivePlace, personPin, PLACES, vmDescriptionKey, placeLabelKey, placeOffered, type Place } from "@/lib/place";
 import { placeBlocked, placeFacts, placeHasIssue, placeViewFor, usePlaceSeat } from "@/lib/place-view";
 import { useStore, type Bot, type Task } from "@/state/store";
 import type { PlaceView } from "../../shared/place-view";
@@ -48,6 +48,7 @@ export function usePlaceMenuItem({ bot, task, disabled = false, onPin }: {
   disabled?: boolean;
   onPin: (surface: Place | null) => void;
 }): SidebarMenuItem {
+  const { state } = useStore();
   const places = usePlaceViews(bot);
   const hideCloud = !places.cloud.listed;
   const current = effectivePlace(bot, task);
@@ -81,7 +82,7 @@ export function usePlaceMenuItem({ bot, task, disabled = false, onPin }: {
         return {
           key: `place:${place}`,
           label: t(placeLabelKey(place)),
-          note: !policy ? t("place.unavailable") : placeHasIssue(view) ? view.short : t(DESCRIPTION[place]),
+          note: !policy ? t("place.unavailable") : placeHasIssue(view) ? view.short : t(place === "vm" ? vmDescriptionKey(state.config) : DESCRIPTION[place]),
           icon: <PlaceIcon place={place} size={16} aria-hidden="true" />,
           active: pin === place,
           trailing: pin === place ? check : undefined,
@@ -107,6 +108,7 @@ export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
   const [open, setOpen] = useState(false);
   const motion = useMenuMotion(open);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const { state } = useStore();
   const places = usePlaceViews(bot);
   const hideCloud = !places.cloud.listed;
   const current = effectivePlace(bot, task);
@@ -174,7 +176,7 @@ export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
             {PLACES.filter((place) => places[place].listed).map((place) => {
               const selected = pin === place;
               const { view, reachable, policy } = places[place];
-              const detail = !policy ? t("place.unavailable") : placeHasIssue(view) ? view.short : t(DESCRIPTION[place]);
+              const detail = !policy ? t("place.unavailable") : placeHasIssue(view) ? view.short : t(place === "vm" ? vmDescriptionKey(state.config) : DESCRIPTION[place]);
               return (
                 <button
                   key={place}

@@ -1,3 +1,5 @@
+import { z } from "zod";
+import { localVmConfigSchema, localVmScreens } from "../local-vm-settings.ts";
 import { liveSavePatch } from "../live-config.ts";
 import { signInEnvRefusal } from "../sign-in-env.ts";
 import * as boat from "../boat.ts";
@@ -33,6 +35,7 @@ import { DECIDER_KEY_ERROR, deciderIncludedHere, deciderPatchKey, deciderSavePat
 import type { ProviderRegistry } from "../harness/registry.ts";
 import { HOSTED_PROVIDER_SETTINGS_ERROR } from "../hosted-models.ts";
 import { forgetKey } from "../key-rejections.ts";
+import { keyHint } from "../key-hint.ts";
 import type { ComputerIdleTimer } from "../computer-idle.ts";
 import { PROVIDER_KEY_KINDS } from "../provider-key-check.ts";
 import type { SessionRegistry } from "../sessions.ts";
@@ -52,7 +55,7 @@ export interface BusyFlag {
   set(busy: boolean): void;
 }
 
-export type RemoteComputerProvider = "box" | "vps";
+export type RemoteComputerProvider = "box" | "vps" | "instabox";
 
 export type ModelSelectionCheck = { ok: true; selection: ModelSelection } | ({ ok: false; status: number } & ServerErrorBody);
 
@@ -87,6 +90,8 @@ export interface ConfigRouteDeps {
   localVmModeChangeBusy: Pick<BusyFlag, "set">;
   /** Called before a Local VM mode change is saved; once it is saved, the returned call ends the holds no path reads any more. */
   localVmModeChanging(): () => void;
+  localVmScreensChanged?(layoutChanged: boolean): Promise<void>;
+  localVmTurnsBusy?(): boolean;
   providerConfigBusy: BusyFlag;
   computerProviderConfigTransitions: Pick<Set<RemoteComputerProvider>, "add" | "delete">;
   managedBoatOwners(): boat.ManagedBoatOwner[];
@@ -119,9 +124,17 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
     closeBrowser, browserEngineSwitched, sharedComputers, sharedComputerControl, hostedModels, cloudHome: CLOUD_HOME, sharedMembership, lendingEnabled, providerConfigs,
     localVmIdleMs, localVmIdles, localVmActiveThreads, localVmLifecycleBusy, localVmImageBusy, localVmModeChangeBusy, localVmModeChanging,
     providerConfigBusy, computerProviderConfigTransitions, managedBoatOwners, providerOperationConflict,
-    perBotLocalVmCountForModeChange, checkedModelSelection, policyModelRefusal, browserSessionSpec, configStatus,
+    perBotLocalVmCountForModeChange, checkedModelSelection, policyModelRefusal, browserSessionSpec,
     configForAccess, resyncOpenCodeProviderKeys, revokeEngineCapabilities, reloadProviders, broadcast, drainQueuedSends, ownProfile, ownHints, postiz,
   } = deps;
+  const configStatus = () => {
+    const status = deps.configStatus(), reported = status.instabox;
+    const fromEnv = !!process.env.INSTABOX_API_KEY?.trim(), key = process.env.INSTABOX_API_KEY?.trim() || cfg.instabox?.apiKey?.trim();
+    const hint = keyHint(key);
+    const safeHint = reported && typeof reported === "object" && "configured" in reported && reported.configured === true
+      && "last4" in reported && reported.last4 === hint.last4 ? hint : {};
+    return { ...status, instabox: { configured: !!key, fromEnv, ...safeHint } };
+  };
   return async ({ req, res, url, path, method, auth, json, readBody }) => {
     // API keys are never echoed back: booleans only.
     if (method === "GET" && path === "/api/config") {
@@ -130,7 +143,13 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
     if ((method === "PUT" || method === "PATCH") && path === "/api/config") {
       const body = await readBody(req);
       if (hostedModels && ["instances", "anthropic", "openai", "openrouter", "openaiCompat", "xai", "mistral", "cerebras", "groq", "greenference", "modelgo", "meta", "opencodeGo"].some(key => Object.hasOwn(body, key))) return json(res, 403, { error: HOSTED_PROVIDER_SETTINGS_ERROR });
+      if (Object.hasOwn(body, "instabox")) {
+        if (process.env.INSTABOX_API_KEY?.trim()) return json(res, 409, { error: "InstaBox key is provided by the environment", code: "instabox_key_env" });
+        const key = z.object({ apiKey: z.string().trim().max(8192) }).strict().safeParse(body.instabox);
+        if (!key.success) return json(res, 400, { error: "Invalid InstaBox key", code: "instabox_key_invalid" });
+      }
       const patch = parseConfigPatchForPerson(body);
+      if (patch.localVm) localVmConfigSchema.parse({ ...cfg.localVm, ...patch.localVm });
       if (patch.profile && ownProfile) {
         // The address is the verified claim's; a profile names no other.
         const { email: _email, ...own } = patch.profile;
@@ -259,10 +278,13 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
       const changingVpsAlias = patch.vps !== undefined && nextVpsAlias !== currentVpsAlias;
       const transitioningProviders: RemoteComputerProvider[] = [
         ...(changingBoatToken ? ["box" as const] : []),
-        ...(changingVpsAlias ? ["vps" as const] : []),
+        ...(changingVpsAlias ? ["vps" as const] : []), ...(patch.instabox ? ["instabox" as const] : []),
       ];
       providerConfigBusy.set(true);
-      const changingLocalVmMode = patch.localVm?.mode !== undefined && patch.localVm.mode !== localVmMode(cfg);
+      const nextVmConfig = { ...cfg, localVm: { ...cfg.localVm, ...patch.localVm } };
+      const changingScreenCount = localVmScreens(nextVmConfig) !== localVmScreens(cfg);
+      const changingScreenLayout = (localVmScreens(nextVmConfig) > 1) !== (localVmScreens(cfg) > 1);
+      const changingLocalVmMode = (patch.localVm?.mode !== undefined && patch.localVm.mode !== localVmMode(cfg)) || changingScreenLayout;
       if (changingLocalVmMode) localVmModeChangeBusy.set(true);
       try {
         for (const provider of transitioningProviders) {
@@ -357,7 +379,7 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
         }
 
         if (changingLocalVmMode) {
-          if (localVmActiveThreads.size > 0 || localVmLifecycleBusy.size > 0 || localVmImageBusy.get()) {
+          if ((changingScreenLayout && deps.localVmTurnsBusy?.()) || localVmActiveThreads.size > 0 || localVmLifecycleBusy.size > 0 || localVmImageBusy.get()) {
             return json(res, 409, { error: "stop Local VM turns and setup actions before changing the Local VM isolation mode" });
           }
           if (localVmMode(cfg) === "per-bot" && patch.localVm?.mode === "shared") {
@@ -538,6 +560,9 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
       });
       let configWriteCommitted = false;
       const enginesBefore = engineLaunches(providerConfigs());
+      if (changingLocalVmMode && ((changingScreenLayout && deps.localVmTurnsBusy?.()) || localVmActiveThreads.size > 0 || localVmLifecycleBusy.size > 0 || localVmImageBusy.get())) {
+        return json(res, 409, { error: "stop Local VM turns and setup actions before changing the Local VM layout" });
+      }
       const localVmModeChanged = changingLocalVmMode ? localVmModeChanging() : null;
       const externalSecretStorage = url.searchParams.get("secretStorage") === "external";
       try {
@@ -598,6 +623,11 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
       }
       for (const key of resetKeys) if (key) forgetKey(key);
       localVmModeChanged?.();
+      let localVmWarning: string | undefined;
+      if (patch.localVm && changingScreenCount) {
+        try { await deps.localVmScreensChanged?.(changingScreenLayout); }
+        catch { localVmWarning = "Settings saved, but Local VM screens could not be reconfigured. Retry or restart the app."; console.warn(localVmWarning); }
+      }
       postiz?.configSaved(patch);
       // A saved key reaches an engine through the environment its status read uses, often with no reload.
       registry.forgetSnapshots();
@@ -676,7 +706,7 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
         finalized.acknowledgements.every(Boolean),
         removedBrowserProfileIds.length === 1 ? "The browser profile" : "The browser profiles",
       );
-      return json(res, 200, configForAccess(finalized.value, auth));
+      return json(res, 200, { ...configForAccess(finalized.value, auth) as Record<string, unknown>, ...(localVmWarning ? { warning: localVmWarning } : {}) });
       } finally {
         for (const provider of transitioningProviders) computerProviderConfigTransitions.delete(provider);
         if (changingLocalVmMode) localVmModeChangeBusy.set(false);

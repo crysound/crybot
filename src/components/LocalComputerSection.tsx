@@ -1,3 +1,4 @@
+import type { ScreenListPayload } from "../../shared/local-vm-screens";
 import { DEFAULT_LOCAL_VM_IDLE_TIMEOUT_MINUTES } from "@/lib/local-vm-idle-timeout";
 export { parseLocalVmIdleTimeoutMinutes } from "@/lib/local-vm-idle-timeout";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,7 +24,7 @@ import { localizeComputerProblem } from "@/lib/computer-messages";
 import { computerInventoryRequest, jsonPostRequest, type ComputerApiRequest } from "@/lib/computer-requests";
 import { useStore } from "@/state/store";
 import { VpsComputersCard } from "./VpsComputersCard"; import { KeysLink } from "./keys/KeysLink";
-import { LocalVmScreenSetting, LocalVmScreens, saveScreens, type ScreenListPayload } from "./LocalVmScreens";
+import { LocalVmScreenSetting, LocalVmScreens, saveScreens } from "./LocalVmScreens";
 import { localVmSetupStep4Title } from "./local-vm-setup-step";
 import { LocalVmIdleTimeoutSetting } from "./LocalVmIdleTimeoutSetting";
 export { LocalVmIdleTimeoutSetting } from "./LocalVmIdleTimeoutSetting";

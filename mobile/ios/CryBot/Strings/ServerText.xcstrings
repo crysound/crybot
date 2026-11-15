@@ -2133,6 +2133,23 @@
         }
       }
     },
+    "chat.notice.waitingForScreen": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for its turn on this computer"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在排队等待屏幕"
+          }
+        }
+      }
+    },
     "chat.notice.wakingComputer": {
       "extractionState": "manual",
       "localizations": {
@@ -3335,6 +3352,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "There is no inbox here."
+          }
+        }
+      }
+    },
+    "serverError.instabox.keyMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add an InstaBox API key to use this computer."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请添加 InstaBox 钥匙以使用此电脑。"
+          }
+        }
+      }
+    },
+    "serverError.instabox.template": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a Linux or Android computer."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择 Linux 或安卓电脑。"
+          }
+        }
+      }
+    },
+    "serverError.instabox.unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This InstaBox computer is unavailable."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 InstaBox 电脑暂时不可用。"
           }
         }
       }

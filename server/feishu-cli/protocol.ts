@@ -17,9 +17,11 @@ export function validToken(value: unknown, now = Date.now()): value is FeishuTok
 export const needsToken = (token: FeishuToken, now = Date.now()): boolean => token.expires_at * 1000 - now <= 300_000;
 
 export class BrokerAuthorizationError extends Error {
+  readonly brokerMessage: string;
   readonly authorizationUrl: string | undefined;
   constructor(message: string, authorizationUrl?: string) {
     super([message, authorizationUrl].filter(Boolean).join("\n"));
+    this.brokerMessage = message;
     this.authorizationUrl = authorizationUrl;
   }
 }
