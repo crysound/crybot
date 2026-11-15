@@ -1,7 +1,7 @@
 import { Check, ChevronRight, Circle, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/state/api";
-import type { Message } from "@/state/store";
+import type { ConfigStatus, Message } from "@/state/store";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { placeLabelKey, type Place } from "@/lib/place";
@@ -14,7 +14,7 @@ import { PlaceIcon } from "./PlaceIcon";
 import { WorkingDots } from "./WorkingIndicator";
 
 /** Which stored message a step is: a clipped step (its output cut short in conversation pages) loads the rest from it. */
-export function ToolActivity({ tool, place = null, live = false, source }: { tool: NonNullable<Message["tool"]>; place?: Place | null; live?: boolean; source?: MessageAttachmentContext }) {
+export function ToolActivity({ tool, place = null, live = false, source, config }: { tool: NonNullable<Message["tool"]>; place?: Place | null; config?: Partial<Pick<ConfigStatus, "localVm">> | null; live?: boolean; source?: MessageAttachmentContext }) {
   const [expanded, setExpanded] = useState(false);
   const full = useFullOutput(expanded && tool.clipped ? source : undefined, tool.output);
   const output = full.output ?? tool.output;
@@ -34,7 +34,7 @@ export function ToolActivity({ tool, place = null, live = false, source }: { too
         className={cn("flex min-h-8 cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-1.5 hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden", failed ? "text-danger" : "text-ink-secondary")}
       >
         <span className="shrink-0" aria-hidden="true">{tool.ok === undefined ? (live ? <WorkingDots size={3.5} /> : <Circle size={13} />) : failed ? <X size={13} /> : <Check size={13} className="text-success" />}</span>
-        {place && <PlaceIcon place={place} size={13} className="shrink-0 opacity-70" role="img" aria-label={t(placeLabelKey(place))} data-testid="tool-place" />}
+        {place && <PlaceIcon place={place} size={13} className="shrink-0 opacity-70" role="img" aria-label={t(placeLabelKey(place, config))} data-testid="tool-place" />}
         <span className={cn("min-w-0 max-w-[30rem]", !problem && "truncate", "leading-5", advanced && !notice && !problem ? "font-mono" : "font-medium")}>{label}</span>
         {advanced && tool.summary && tool.summary !== tool.name && !nameIsCommand(tool.name) && <span className="min-w-0 flex-1 truncate font-mono" title={summary}>{summary}</span>}
         <ChevronRight size={13} className="ml-auto shrink-0 group-open/tool:rotate-90" aria-hidden="true" />

@@ -10,6 +10,7 @@ import { isRemoteScreenshotContention, localVmScreenshotSource, remoteScreenshot
 import type { Routine } from "@/lib/routines";
 import { dayName, scheduleLabel } from "@/lib/schedule-label";
 import { intlLocale, t } from "@/lib/i18n";
+import { vmLabelKey } from "@/lib/place";
 import { api, ApiError, useStore, type Bot } from "@/state/store";
 import { releaseComputerPanelFocus, takeComputerPanelBrowserView, useComputerPanelEntry } from "@/lib/computer-panel-focus";
 import { RoutineEditor } from "./RoutinesPage";
@@ -263,7 +264,7 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
         <div>
           <div className="text-[14px] font-medium text-ink">{t("remoteDesktop.title", { name: bot.name })}</div>
           <div className="mt-0.5 text-[11px] text-ink-secondary">
-            {localVm && screenNumber ? t("vm.screens.number", { screen: screenNumber }) : t(localVm ? "vm.dest.vm" : bot.cloudBackend === "vps" ? "botAccess.cloud.selfHostedVps" : "remoteDesktop.cloudDesktop")}
+            {localVm && screenNumber ? t("vm.screens.number", { screen: screenNumber }) : t(localVm ? vmLabelKey(state.config) : bot.cloudBackend === "vps" ? "botAccess.cloud.selfHostedVps" : "remoteDesktop.cloudDesktop")}
           </div>
         </div>
         <div className="flex items-center gap-1">

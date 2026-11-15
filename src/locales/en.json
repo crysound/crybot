@@ -1,4 +1,9 @@
 {
+  "place.action.openSharedVmSettings": "Shared computer settings",
+  "vm.dest.shared": "Shared computer",
+  "place.view.vmScreen.short": "A screen in a shared computer",
+  "place.view.vmScreen.line": "A screen assigned to this bot in a shared computer, separate from your own screen.",
+  "place.view.vmScreenCannot.line": "{model} can't use a shared computer. Choose a model that supports computer use.",
   "task.incidents": "Problems to look at",
   "computer.dest.vmScreenDesc": "A screen in a shared container",
   "chat.notice.waitingForScreen": "Waiting for its turn on this computer",

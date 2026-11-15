@@ -8013,7 +8013,12 @@
       "settings.island.enabled": "832b4305834ed3502ca8b7d481c683fbb30a15bdda98f8a9ecb9fc5623d40a26",
       "settings.island.fullscreen": "47330fba52fc4f1fce3b55ea5fa0e28649b2eaf7b70bcc373550837f7124804a",
       "settings.island.width": "bd7e1ab647abf2cd96d7d1d73618f392ce6d84feea11bcc8b5f36e8f252c6476",
-      "settings.island.widthHint": "06d600f97a416741dd94502e5aae8762b098890d1df898a61c189024af7fafd5"
+      "settings.island.widthHint": "06d600f97a416741dd94502e5aae8762b098890d1df898a61c189024af7fafd5",
+      "vm.dest.shared": "ed16499ddaa145e26723f3b113f56ca6723e923fbe512fce579e365190b690d2",
+      "place.view.vmScreen.short": "cff7cd0bc8dff65582be394cdfb17c0236c9be05e23b6ff97184c8d8d5c3a4da",
+      "place.view.vmScreen.line": "d9676ec40ec0ce02cbf63df1adfb80c009857cc264fbc9c5689c1394fcabd8d4",
+      "place.view.vmScreenCannot.line": "0fdbebf5d34e847a0d29e628c0b2c7fba01759fc248f285ad3dfc52863b2b0ec",
+      "place.action.openSharedVmSettings": "ad0307120d91c3a717825ee7cfe0df61d1975419505e164e825ac777ecaa0ee8"
     }
   }
 }

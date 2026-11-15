@@ -68,3 +68,17 @@ describe("where a conversation works", () => {
     expect(toolSurfaceKind("mcp__agents__list_bots")).toBeNull();
   });
 });
+
+
+it.each([
+  ["shared", 4, "vm.dest.shared"],
+  ["shared", 1, "vm.dest.vm"],
+  ["shared", undefined, "vm.dest.vm"],
+  ["per-bot", 4, "vm.dest.vm"],
+] as const)("names VM places for %s / %s screens", (mode, screens, key) => {
+  const config = { localVm: { mode, screens, maxInstances: 1 } };
+  expect(placeLabelKey("vm", config)).toBe(key);
+  for (const place of ["cloud", "browser", "local", "auto", "off"] as const) {
+    expect(placeLabelKey(place, config)).toBe(`place.${place}`);
+  }
+});
