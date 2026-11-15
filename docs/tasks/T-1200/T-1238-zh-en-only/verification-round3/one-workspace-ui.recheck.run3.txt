@@ -1,0 +1,13 @@
+ENV: CRYBOT_UI_E2E=1; AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium; CRYBOT_AGENT_BROWSER_PATH=/tmp/t1238-ui-tools/tools/agent-browser/0.37.0/agent-browser
+COMMAND: pnpm exec vitest run scripts/testing/one-workspace-ui.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  09:11:34
+   Duration  110.17s (transform 1.32s, setup 765ms, import 1.05s, tests 108.23s, environment 0ms)
+
+
+EXIT: 0

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { setLanguageChoice } from "./language-preference";
 import { duePing, openTarget, PRESENCE_MIN_INTERVAL_MS, presenceBody, shownLanguage } from "./presence-client";
 
 describe("presence client", () => {
@@ -11,9 +10,9 @@ describe("presence client", () => {
   });
 
   it("names the pack the app shows: the device's pick, else the server's language", () => {
-    expect(shownLanguage("pt-BR")).toBe("pt-br");
-    setLanguageChoice("es");
-    expect(shownLanguage("pt-br")).toBe("es");
+    expect(shownLanguage("pt-BR")).toBe("en");
+    expect(shownLanguage("zh-TW")).toBe("zh");
+    expect(shownLanguage("pt-br", "zh")).toBe("zh");
   });
 
   it("pings once a minute at most, and at once the first time", () => {

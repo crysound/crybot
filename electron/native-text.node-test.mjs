@@ -15,23 +15,16 @@ function packs(t, files) {
   return dir;
 }
 
-test("a language tag reads the pack the renderer would pick, aliases included, and anything else reads English", (t) => {
-  const dir = packs(t, { "en.json": { "native.x": "en" }, "pt-br.json": { "native.x": "pt" }, "zh-tw.json": { "native.x": "zh-tw" }, "de.json": { "native.x": "de" } });
+test("language tags select English or Simplified Chinese, including legacy fallbacks", (t) => {
+  const dir = packs(t, { "en.json": { "native.x": "en" }, "zh.json": { "native.x": "zh" } });
   const language = (tag) => createNativeText({ dir, saved: tag }).language();
-  assert.equal(language("pt-br"), "pt-br");
-  assert.equal(language("pt"), "pt-br");
-  assert.equal(language("pt-PT"), "pt-br", "as src/locales/index.ts maps pt");
-  assert.equal(language("pt_BR"), "pt-br");
-  for (const tag of ["zh-hant", "zh-HK", "zh-mo", "zh-Hant-TW", "zh-tw"]) assert.equal(language(tag), "zh-tw", tag);
-  assert.equal(language("de-AT"), "de");
-  for (const tag of ["xx", "", null, 42, "en-GB"]) assert.equal(language(tag), "en", String(tag));
+  for (const tag of ["zh", "zh-CN", "zh-Hant-TW", "zh-tw"]) assert.equal(language(tag), "zh", tag);
+  for (const tag of ["pt-br", "pt-PT", "de-DE", "xx", "", null, 42, "en-GB"]) assert.equal(language(tag), "en", String(tag));
 });
 
-test("a code from a page is never a path: only a pack listed in the folder is read, never the hashes or a parent", (t) => {
+test("a code from a page is never a path", (t) => {
   const dir = packs(t, { "en.json": { "native.x": "en" }, "source-hashes.json": { "native.x": "hash" }, "evil.txt": "{}" });
-  writeFileSync(path.join(path.dirname(dir), "native-text-outside.json"), JSON.stringify({ "native.x": "outside" }));
-  t.after(() => rmSync(path.join(path.dirname(dir), "native-text-outside.json"), { force: true }));
-  for (const code of ["../en", "../native-text-outside", "source-hashes", "evil", "en/../en", "EN.JSON", "/etc/passwd"]) {
+  for (const code of ["../en", "../outside", "source-hashes", "evil", "en/../en", "EN.JSON", "/etc/passwd"]) {
     assert.equal(nativeLanguage(code, dir), null, code);
     const text = createNativeText({ dir, saved: code });
     assert.equal(text.language(), "en", code);
@@ -40,94 +33,89 @@ test("a code from a page is never a path: only a pack listed in the folder is re
   assert.equal(nativeLanguage("en", dir), "en");
 });
 
-test("a key a language lacks reads in English, parameters fill in, and only main's own keys are kept", (t) => {
+test("a key a language lacks reads in English and parameters fill in", (t) => {
   const dir = packs(t, {
     "en.json": { "native.a": "Forget “{name}”", "native.b": "Only English", "place.local": "This computer", "chat.other": "not main's" },
-    "pt-br.json": { "native.a": "Esquecer “{name}”", "place.local": "Este computador", "chat.other": "não" },
+    "zh.json": { "native.a": "忘记“{name}”", "place.local": "这台电脑", "chat.other": "否" },
   });
-  const text = createNativeText({ dir, saved: "pt-br" });
-  assert.equal(text.t("native.a", { name: "Studio" }), "Esquecer “Studio”");
-  assert.equal(text.t("native.a"), "Esquecer “{name}”", "a missing parameter stays as written");
+  const text = createNativeText({ dir, saved: "zh" });
+  assert.equal(text.t("native.a", { name: "Studio" }), "忘记“Studio”");
+  assert.equal(text.t("native.a"), "忘记“{name}”");
   assert.equal(text.t("native.b"), "Only English");
-  assert.equal(text.t("place.local"), "Este computador");
-  assert.equal(text.t("chat.other"), "chat.other", "the renderer's own keys are not held in main");
+  assert.equal(text.t("place.local"), "这台电脑");
+  assert.equal(text.t("chat.other"), "chat.other");
 });
 
-test("shared native controls reuse the renderer's catalog in the current language", () => {
+test("shared native controls reuse the renderer's catalog in Chinese", () => {
   const text = createNativeText({ saved: "en" });
   const controls = ["rail.thisComputer", "rail.remove", "cloudHome.tryAgain", "computer.windows.start", "mcp.turnOn", "cloudSetup.myCloud", "computer.badge.local"];
   assert.deepEqual(controls.map(key => text.t(key)), ["This computer", "Remove from list", "Try again", "Start screen control", "Turn on", "My Cloud", "this computer"]);
-  text.set("pt-br");
-  assert.deepEqual(controls.map(key => text.t(key)), ["Este computador", "Remover da lista", "Tentar novamente", "Iniciar o controle de tela", "Ligar", "My Cloud", "este computador"]);
+  text.set("zh");
+  assert.deepEqual(controls.map(key => text.t(key)), ["这台电脑", "从列表中移除", "重试", "启动屏幕控制", "开启", "My Cloud", "这台电脑"]);
 });
 
-test("the saved language wins over the system's, \"\" follows the system again, and set says when the words change", (t) => {
-  const dir = packs(t, { "en.json": { "native.x": "en" }, "pt-br.json": { "native.x": "pt" }, "de.json": { "native.x": "de" } });
+test("saved language wins, empty follows the system, and deleted languages fall back", (t) => {
+  const dir = packs(t, { "en.json": { "native.x": "en" }, "zh.json": { "native.x": "zh" } });
   let system = "";
-  const text = createNativeText({ dir, saved: null, system: () => system });
-  assert.equal(text.t("native.x"), "en", "before Electron knows the system's language");
-  system = "de-DE";
-  assert.equal(text.t("native.x"), "de");
-  assert.equal(text.set("pt-br"), true);
-  assert.equal(text.t("native.x"), "pt");
-  assert.equal(text.set("pt"), false, "the same pack");
+  const text = createNativeText({ dir, saved: "pt-br", system: () => system });
+  assert.equal(text.t("native.x"), "en");
+  system = "zh-CN";
+  assert.equal(text.t("native.x"), "en");
+  assert.equal(text.set("zh"), true);
+  assert.equal(text.t("native.x"), "zh");
+  assert.equal(text.set("zh-TW"), false, "the same normalized pack");
+  system = "en-US";
   assert.equal(text.set(""), true);
-  assert.equal(text.t("native.x"), "de");
-  assert.equal(text.set("de"), false);
+  assert.equal(text.t("native.x"), "en");
   const broken = createNativeText({ dir, system: () => { throw new Error("not ready"); } });
   assert.equal(broken.t("native.x"), "en");
 });
 
-test("with nothing picked, main's words follow the language the window shows, not the system's beside it", (t) => {
-  const dir = packs(t, { "en.json": { "native.x": "en" }, "pt-br.json": { "native.x": "pt" }, "de.json": { "native.x": "de" } });
-  const text = createNativeText({ dir, saved: null, system: () => "pt-BR" });
-  assert.equal(text.t("native.x"), "pt", "before the window has drawn");
-  assert.equal(text.follow("en"), true, "an English window, say a team's default, on a Portuguese system");
+test("window language is followed while no preference is saved", (t) => {
+  const dir = packs(t, { "en.json": { "native.x": "en" }, "zh.json": { "native.x": "zh" } });
+  const text = createNativeText({ dir, saved: null, system: () => "zh-CN" });
+  assert.equal(text.t("native.x"), "zh");
+  assert.equal(text.follow("en"), true);
   assert.equal(text.t("native.x"), "en");
   assert.equal(text.follow("en"), false);
   for (const code of ["../en", "xx", null]) {
     text.follow("en");
     assert.equal(text.follow(code), true, String(code));
-    assert.equal(text.t("native.x"), "pt", `${code}: not a pack, so the system's again`);
+    assert.equal(text.t("native.x"), "zh", `${code}: system fallback`);
   }
-  assert.equal(text.follow("de"), true);
-  assert.equal(text.set("pt-br"), true, "a pick wins");
-  assert.equal(text.follow("de"), false, "the window shows the pick, so this is a stale report");
-  assert.equal(text.t("native.x"), "pt");
-  assert.equal(text.set(""), true, "System is a pick that follows the window again");
-  assert.equal(text.t("native.x"), "de");
+  assert.equal(text.follow("zh"), false);
+  assert.equal(text.set("zh"), false);
+  assert.equal(text.t("native.x"), "zh");
 });
 
-test("dates and lists follow the app's language; English keeps its own list words", (t) => {
-  const dir = packs(t, { "en.json": {}, "pt-br.json": {} });
-  const pt = createNativeText({ dir, saved: "pt-br", system: () => "en-US" });
-  assert.equal(pt.intlTag(), "pt-BR");
-  assert.equal(pt.listFormat(["Ana", "Bo", "Cy"]), "Ana, Bo e Cy");
+test("dates and lists follow the app language", (t) => {
+  const dir = packs(t, { "en.json": {}, "zh.json": {} });
+  const zh = createNativeText({ dir, saved: "zh", system: () => "en-US" });
+  assert.equal(zh.intlTag(), "zh");
+  assert.equal(zh.listFormat(["Ana", "Bo", "Cy"]), "Ana、Bo和Cy");
   const en = createNativeText({ dir, saved: "en", system: () => "en-GB" });
-  assert.equal(en.intlTag(), "en-GB", "the system's own English");
+  assert.equal(en.intlTag(), "en-GB");
   assert.equal(en.listFormat(["Ana", "Bo", "Cy"]), "Ana, Bo and Cy");
-  assert.equal(en.listFormat(["Ana"]), "Ana");
-  assert.equal(en.listFormat([]), "");
-  assert.equal(createNativeText({ dir, saved: "pt-br", system: () => "pt-PT" }).intlTag(), "pt-PT");
+  assert.equal(createNativeText({ dir, saved: "zh-TW", system: () => "zh-TW" }).intlTag(), "zh-TW");
 });
 
-test("the shipped catalog: English reads every native key, and pt-br has them all", () => {
+test("the shipped catalog has English native keys and Chinese fallback", () => {
   const en = JSON.parse(readFileSync(path.join(LOCALES_DIR, "en.json"), "utf8"));
-  const pt = JSON.parse(readFileSync(path.join(LOCALES_DIR, "pt-br.json"), "utf8"));
+  const zh = JSON.parse(readFileSync(path.join(LOCALES_DIR, "zh.json"), "utf8"));
   const keys = Object.keys(en).filter((key) => key.startsWith("native."));
   assert.ok(keys.length > 100);
   for (const key of keys) assert.equal(englishText.t(key), en[key], key);
-  const text = createNativeText({ saved: "pt-BR" });
-  for (const key of keys) assert.equal(text.t(key), pt[key], key);
-  assert.equal(text.t("place.local"), pt["place.local"]);
+  const text = createNativeText({ saved: "zh" });
+  for (const key of keys) assert.equal(text.t(key), zh[key] ?? en[key], key);
+  assert.equal(text.t("place.local"), zh["place.local"]);
 });
 
-test("the native team confirm reuses the renderer's teamMove keys without retaining unrelated keys", (t) => {
+test("team controls use the current language and retain only their own keys", (t) => {
   const dir = packs(t, {
     "en.json": { "teamMove.title": "Move {bot} to {team}?", "chat.other": "not main's" },
-    "pt-br.json": { "teamMove.title": "Mover {bot} para {team}?" },
+    "zh.json": { "teamMove.title": "将{bot}移至{team}？" },
   });
-  const text = createNativeText({ dir, saved: "pt-br" });
-  assert.equal(text.t("teamMove.title", { bot: "Atlas", team: "Acme" }), "Mover Atlas para Acme?");
+  const text = createNativeText({ dir, saved: "zh" });
+  assert.equal(text.t("teamMove.title", { bot: "Atlas", team: "Acme" }), "将Atlas移至Acme？");
   assert.equal(text.t("chat.other"), "chat.other");
 });

@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/setup-suggestions.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  08:25:52
+   Duration  1.96s (transform 1.18s, setup 1.00s, import 552ms, tests 258ms, environment 0ms)
+
+
+EXIT: 0

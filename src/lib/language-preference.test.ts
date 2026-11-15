@@ -61,23 +61,23 @@ describe("app language preference", () => {
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);
     let preference = await import("./language-preference");
-    preference.setLanguageChoice("de");
-    expect(local.getItem(preference.LANGUAGE_KEY)).toBe("de");
-    expect(preference.effectiveLanguage(preference.useLanguageChoice(), "fr")).toBe("de");
+    preference.setLanguageChoice("zh");
+    expect(local.getItem(preference.LANGUAGE_KEY)).toBe("zh");
+    expect(preference.effectiveLanguage(preference.useLanguageChoice(), "fr")).toBe("zh");
     expect(fetch).not.toHaveBeenCalled();
 
     vi.resetModules();
     preference = await import("./language-preference");
-    expect(preference.languageChoice()).toBe("de");
+    expect(preference.languageChoice()).toBe("zh");
   });
 
   it("starts the pairing and sign-in pages in the saved language, not the browser's", async () => {
-    local.setItem("cry-language", "pt-br");
+    local.setItem("cry-language", "zh");
     const preference = await import("./language-preference");
-    expect(preference.startupLocaleTag("en-US")).toBe("pt-br");
+    expect(preference.startupLocaleTag("en-US")).toBe("zh");
     const { loadLocale, setLocale, t } = await import("./i18n");
-    expect(await loadLocale(preference.startupLocaleTag("en-US"))).toBe("pt-br");
-    expect(t("pair.signIn")).toBe("Entrar");
+    expect(await loadLocale(preference.startupLocaleTag("en-US"))).toBe("zh");
+    expect(t("pair.signIn")).toBe("Sign in");
     setLocale("en");
   });
 
@@ -86,6 +86,16 @@ describe("app language preference", () => {
     expect(preference.startupLocaleTag("de-DE")).toBe("de-DE");
     preference.setLanguageChoice("");
     expect(preference.startupLocaleTag("de-DE")).toBe("de-DE");
+  });
+
+  it.each([["de", "en"], ["ar", "en"], ["zh-TW", "zh"]])("keeps saved %s while loading the %s interface", async (language, pack) => {
+    local.setItem("cry-language", language);
+    const preference = await import("./language-preference");
+    expect(preference.languageChoice()).toBe(language);
+    expect(await preference.loadPageLanguage()).toBe(pack);
+    const { activeLanguage } = await import("./i18n");
+    expect(activeLanguage()).toBe(language);
+    expect(local.getItem("cry-language")).toBe(language);
   });
 
   it("keeps an explicit follow-the-system choice over the server's language", async () => {
@@ -100,14 +110,14 @@ describe("app language preference", () => {
     preference.useLanguageChoice();
     const listener = vi.fn();
     const unsubscribe = hook.subscribe!(listener);
-    preference.setLanguageChoice("ja");
+    preference.setLanguageChoice("en");
     expect(listener).toHaveBeenCalledOnce();
-    expect(hook.snapshot!()).toBe("ja");
+    expect(hook.snapshot!()).toBe("en");
 
-    local.setItem(preference.LANGUAGE_KEY, "es");
+    local.setItem(preference.LANGUAGE_KEY, "en");
     storageEvent(preference.LANGUAGE_KEY);
     expect(listener).toHaveBeenCalledTimes(2);
-    expect(hook.snapshot!()).toBe("es");
+    expect(hook.snapshot!()).toBe("en");
 
     storageEvent("other-key");
     expect(listener).toHaveBeenCalledTimes(2);
@@ -117,8 +127,8 @@ describe("app language preference", () => {
   it("keeps the choice for this session when storage is blocked", async () => {
     local.setItem.mockImplementation(() => { throw new Error("blocked"); });
     const preference = await import("./language-preference");
-    preference.setLanguageChoice("uk");
-    expect(preference.languageChoice()).toBe("uk");
+    preference.setLanguageChoice("en");
+    expect(preference.languageChoice()).toBe("en");
   });
 
   it("keeps the current language when loading the page language fails", async () => {
@@ -185,7 +195,7 @@ describe("app language in the desktop app", () => {
     expect(team.preference.effectiveLanguage(team.preference.useLanguageChoice(), "de")).toBe("en");
 
     team.preference.setLanguageChoice("");
-    const myCloud = await openPage(app, "ja");
+    const myCloud = await openPage(app, "en");
     expect(myCloud.preference.languageChoice(), "System, picked on the team's page").toBe("");
     expect(myCloud.preference.effectiveLanguage(myCloud.preference.languageChoice(), "de")).toBe("");
   });
@@ -217,24 +227,36 @@ describe("app language in the desktop app", () => {
   it("tells the app the language the window shows, so its menus read in that one too, never the rail's or a stale one", async () => {
     const page = await openPage(desktopApp());
     page.preference.usePageLanguage("", false);
-    page.preference.usePageLanguage(page.preference.effectiveLanguage(page.preference.languageChoice(), "pt-br"), true);
+    page.preference.usePageLanguage(page.preference.effectiveLanguage(page.preference.languageChoice(), "zh"), true);
     await vi.waitFor(() => expect(page.bridge.shown).toHaveBeenCalledOnce());
-    expect(page.bridge.shown).toHaveBeenCalledWith("pt-br");
-    page.preference.usePageLanguage("xx-unknown", true);
+    expect(page.bridge.shown).toHaveBeenCalledWith("zh");
+    page.preference.usePageLanguage("de-DE", true);
     await vi.waitFor(() => expect(page.bridge.shown).toHaveBeenLastCalledWith("en"));
     expect(page.bridge.set, "showing a language is not a pick").not.toHaveBeenCalled();
   });
 
+  it("keeps an old desktop preference for the model while showing English", async () => {
+    const app = desktopApp("de");
+    const page = await openPage(app);
+    expect(page.preference.languageChoice()).toBe("de");
+    await page.preference.loadPageLanguage();
+    const { activeLanguage, activeLocale } = await import("./i18n");
+    expect(activeLanguage()).toBe("de");
+    expect(activeLocale()).toBe("en");
+    expect(app.saved()).toBe("de");
+    expect(page.bridge.set).not.toHaveBeenCalled();
+  });
+
   it("carries a pick saved in a page's own storage into the app once", async () => {
     const app = desktopApp();
-    const thisComputer = await openPage(app, "es");
-    expect(thisComputer.preference.languageChoice()).toBe("es");
-    expect(thisComputer.preference.languageChoice()).toBe("es");
+    const thisComputer = await openPage(app, "en");
+    expect(thisComputer.preference.languageChoice()).toBe("en");
+    expect(thisComputer.preference.languageChoice()).toBe("en");
     expect(thisComputer.bridge.set).toHaveBeenCalledOnce();
-    expect(app.saved()).toBe("es");
-    expect((await openPage(app)).preference.languageChoice()).toBe("es");
+    expect(app.saved()).toBe("en");
+    expect((await openPage(app)).preference.languageChoice()).toBe("en");
     const stale = await openPage(app, "fr");
-    expect(stale.preference.languageChoice(), "the app's pick outranks a page's older one").toBe("es");
+    expect(stale.preference.languageChoice(), "the app's pick outranks a page's older one").toBe("en");
     expect(stale.bridge.set).not.toHaveBeenCalled();
   });
 });

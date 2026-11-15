@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/workspace-banner.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  05:21:40
+   Duration  8.95s (transform 1.27s, setup 1.19s, import 458ms, tests 7.14s, environment 0ms)
+

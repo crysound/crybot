@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/OptionCard.i18n.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  05:15:22
+   Duration  2.65s (transform 1.75s, setup 1.21s, import 1.04s, tests 71ms, environment 171ms)
+

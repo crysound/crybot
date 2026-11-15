@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/connector-stayed.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  08:29:55
+   Duration  8.82s (transform 1.21s, setup 1.11s, import 452ms, tests 7.09s, environment 0ms)
+
+
+EXIT: 0

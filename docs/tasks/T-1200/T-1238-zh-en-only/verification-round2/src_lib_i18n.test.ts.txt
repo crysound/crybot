@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/i18n.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  39 passed (39)
+   Start at  05:17:40
+   Duration  2.31s (transform 1.22s, setup 1.29s, import 81ms, tests 774ms, environment 0ms)
+

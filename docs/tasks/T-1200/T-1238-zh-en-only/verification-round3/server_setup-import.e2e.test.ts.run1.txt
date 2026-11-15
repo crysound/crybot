@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/setup-import.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  08:28:19
+   Duration  7.08s (transform 1.10s, setup 794ms, import 673ms, tests 5.49s, environment 0ms)
+
+
+EXIT: 0

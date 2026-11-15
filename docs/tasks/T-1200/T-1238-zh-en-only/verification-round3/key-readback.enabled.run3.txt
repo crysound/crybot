@@ -1,0 +1,13 @@
+ENV: CRYBOT_UI_E2E=1; AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium; CRYBOT_AGENT_BROWSER_PATH=/tmp/t1238-ui-tools/tools/agent-browser/0.37.0/agent-browser
+COMMAND: pnpm exec vitest run scripts/testing/key-readback.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  08:50:34
+   Duration  8.30s (transform 2.02s, setup 1.10s, import 1.64s, tests 5.41s, environment 0ms)
+
+
+EXIT: 0

@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/routes/setup-request.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  08:25:17
+   Duration  2.17s (transform 1.49s, setup 842ms, import 1.09s, tests 104ms, environment 0ms)
+
+
+EXIT: 0

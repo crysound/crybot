@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/chat-notices.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  05:12:24
+   Duration  1.85s (transform 1.30s, setup 1.38s, import 264ms, tests 18ms, environment 0ms)
+

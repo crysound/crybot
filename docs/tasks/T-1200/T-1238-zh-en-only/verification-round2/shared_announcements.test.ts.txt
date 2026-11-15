@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run shared/announcements.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  05:14:04
+   Duration  1.49s (transform 944ms, setup 1.20s, import 51ms, tests 61ms, environment 0ms)
+

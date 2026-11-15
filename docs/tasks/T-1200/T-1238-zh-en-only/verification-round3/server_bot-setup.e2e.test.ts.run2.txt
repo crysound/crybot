@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/bot-setup.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  08:26:13
+   Duration  4.47s (transform 1.18s, setup 819ms, import 731ms, tests 2.79s, environment 0ms)
+
+
+EXIT: 0

@@ -68,17 +68,17 @@ afterEach(() => {
 
 describe("approval summary from driver event through persisted card to renderer", () => {
   it.each([
-    ["github", "", "github asks to continue", "github pede para continuar"],
-    ["", "", "An MCP server asks to continue", "Um servidor MCP pede para continuar"],
-    ["", "External words", "An MCP server: External words", "Um servidor MCP: External words"],
+    ["github", "", "github asks to continue", "github 请求继续"],
+    ["", "", "An MCP server asks to continue", "一个 MCP 服务器请求继续"],
+    ["", "External words", "An MCP server: External words", "MCP 服务器：External words"],
     ["github", "External words", "github: External words", "github: External words"],
-  ])("renders and speaks Claude's %s / %s without rewriting provider text", (server, words, english, portuguese) => {
+  ])("renders and speaks Claude's %s / %s without rewriting provider text", (server, words, english, chinese) => {
     const event = claudeRequest(server!, words!);
     const message = persistedRequest(event);
     expect(message.card?.subtitle).toBe(english);
     expectDetails(message, english!);
-    setLocale("pt-br");
-    expectDetails(message, portuguese!);
+    setLocale("zh");
+    expectDetails(message, chinese!);
     expect(message.card?.subtitle).toBe(english);
   });
 
@@ -104,8 +104,8 @@ describe("approval summary from driver event through persisted card to renderer"
       const received = persistedRequest(event);
       expect(received.card?.summaryCode).toBe(message ? undefined : "chat.notice.appAccessRequested");
       expectDetails(received, message ?? "App access requested");
-      setLocale("pt-br");
-      expectDetails(received, message ?? "Pedido de acesso ao app");
+      setLocale("zh");
+      expectDetails(received, message ?? "已请求应用访问权限");
       expect(received.card?.subtitle).toBe(message ?? "App access requested");
       await instance.adapter.respondToRequest(threadId, event.requestId!, { behavior: "deny" });
       await recorder.until((candidate) => candidate.type === "turn.completed");
@@ -118,16 +118,16 @@ describe("approval summary from driver event through persisted card to renderer"
   it("rewords an already collected pending approval when the language changes", () => {
     const message = persistedRequest(claudeRequest("github", ""));
     const [pending] = pendingApprovals([message]);
-    setLocale("pt-br");
-    expect(spokenApprovalPrompt(pending!, "Scout")).toContain("github pede para continuar");
+    setLocale("zh");
+    expect(spokenApprovalPrompt(pending!, "Scout")).toContain("github 请求继续");
     expect(renderToStaticMarkup(createElement(PendingApprovalPanel, { pending: pending!, count: 1, index: 0 })))
-      .toContain("github pede para continuar");
+      .toContain("github 请求继续");
   });
 
   it.each([undefined, "chat.notice.unknown", "approval.someone", "chat.notice.elicitationContinue"])("keeps the English fallback for a legacy, unknown, out-of-namespace or incomplete code %j", (summaryCode) => {
     const message = persistedRequest(claudeRequest("", ""));
     message.card!.summaryCode = summaryCode;
-    setLocale("pt-br");
+    setLocale("zh");
     expectDetails(message, "An MCP server asks to continue");
   });
 
@@ -139,8 +139,8 @@ describe("approval summary from driver event through persisted card to renderer"
     const message = persistedRequest(event);
     expect(JSON.stringify(message)).not.toContain(secret);
     expect(message.card?.summaryParams?.message).toBe("«redacted 27 chars»");
-    setLocale("pt-br");
-    expectDetails(message, "Um servidor MCP: «redacted 27 chars»");
+    setLocale("zh");
+    expectDetails(message, "MCP 服务器：«redacted 27 chars»");
   });
 
   it("keeps secrets out of both the stored fallback and its params", () => {
@@ -149,7 +149,7 @@ describe("approval summary from driver event through persisted card to renderer"
     const message = persistedRequest(event);
     expect(JSON.stringify(message)).not.toContain(secret);
     expect(message.card?.summaryParams?.message).toBe("«redacted 27 chars»");
-    setLocale("pt-br");
-    expectDetails(message, "Um servidor MCP: «redacted 27 chars»");
+    setLocale("zh");
+    expectDetails(message, "MCP 服务器：«redacted 27 chars»");
   });
 });

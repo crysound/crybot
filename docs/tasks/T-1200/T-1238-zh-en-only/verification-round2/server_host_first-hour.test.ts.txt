@@ -1,0 +1,31 @@
+COMMAND: pnpm exec vitest run server/host/first-hour.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+ ❯ server/host/first-hour.test.ts (17 tests | 1 failed) 541ms
+     × greets by name in the person's language once they arrive, only while nobody has answered 21ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/host/first-hour.test.ts > a new Cloud's first hour > greets by name in the person's language once they arrive, only while nobody has answered
+AssertionError: expected 'Hi Sam! I\'m Cry Bot, your Chief of S…' to be 'Hallo Sam! Ich bin Cry Bot, dein Chie…' // Object 相等 equality
+
+Expected: "Hallo Sam! Ich bin Cry Bot, dein Chief of Staff. Ich lebe in deiner Cloud und arbeite weiter, auch wenn dein Computer aus ist. Was soll ich dir abnehmen?"
+Received: "Hi Sam! I'm Cry Bot, your Chief of Staff. I live on the Cloud, so I keep working while your computer is off. What do you want off your plate?"
+
+ ❯ server/host/first-hour.test.ts:104:26
+    102|     fh.arrived();
+    103|     fh.stop();
+    104|     expect(s.texts()[0]).toBe("Hallo Sam! Ich bin Cry Bot, dein Chief …
+       |                          ^
+    105|     s.write("Mein Postfach");
+    106|     s.world.language = "fr";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 passed (17)
+   Start at  05:12:43
+   Duration  3.38s (transform 2.08s, setup 1.58s, import 1.02s, tests 541ms, environment 0ms)
+

@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/saved-steps/computer-client.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  05:18:41
+   Duration  2.70s (transform 1.70s, setup 1.34s, import 863ms, tests 279ms, environment 0ms)
+

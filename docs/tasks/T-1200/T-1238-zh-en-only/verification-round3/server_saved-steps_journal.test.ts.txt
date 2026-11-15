@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/saved-steps/journal.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  08:25:30
+   Duration  2.07s (transform 1.47s, setup 883ms, import 1.05s, tests 10ms, environment 0ms)
+
+
+EXIT: 0

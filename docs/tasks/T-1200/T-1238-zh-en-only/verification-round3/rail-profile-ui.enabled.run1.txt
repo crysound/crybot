@@ -1,0 +1,179 @@
+ENV: CRYBOT_UI_E2E=1; AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium; CRYBOT_AGENT_BROWSER_PATH=/tmp/t1238-ui-tools/tools/agent-browser/0.37.0/agent-browser
+COMMAND: pnpm exec vitest run scripts/testing/rail-profile-ui.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > removing the last workspace of this computer's own lands on My Cloud, whose ＋ still offers a new one
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > removing the last workspace of this computer's own lands on My Cloud, whose ＋ still offers a new one
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- [worktree]
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- [worktree]
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts (13 tests | 8 failed) 281548ms
+     × ＋ → New workspace → Work, in a colour: it opens fresh, This Mac keeps its data, and the window and the line call it Work 63022ms
+     × This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops 12460ms
+     × a switch while a turn runs: the circle says it opens once the bot finishes, the turn finishes there, and its reply is there on return 70100ms
+     × two quick clicks on two tiles: only the last opens, and the rail and the window agree 40ms
+     × a workspace's menu: Rename, its colour, and Remove asked first; Cancel changes nothing; removing the open one goes to My Cloud first 3ms
+     × an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud 15199ms
+     × past eight tiles: ⋯ lists every place, a row opens its place and its right-click opens its menu 137ms
+     × removing the last workspace of this computer's own lands on My Cloud, whose ＋ still offers a new one 19748ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > ＋ → New workspace → Work, in a colour: it opens fresh, This Mac keeps its data, and the window and the line call it Work
+Error: Fixture Chrome Page.captureScreenshot timed out
+ ❯ Timeout._onTimeout scripts/testing/one-workspace-fixture.ts:78:69
+     76|       const id = ++next;
+     77|       return new Promise((resolve, reject) => {
+     78|         const timer = setTimeout(() => { pending.delete(id); reject(ne…
+       |                                                                     ^
+     79|         pending.set(id, { resolve: (value) => { clearTimeout(timer); r…
+     80|         socket.send(JSON.stringify({ id, method, params, ...(sessionId…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+Error: timed out waiting for [data-rail-place="profile:work"]: false at [redacted-url]
+ ❯ until scripts/testing/rail-profile-ui.e2e.test.ts:39:15
+     37|       if (Date.now() > deadline) {
+     38|         await get().world.window.screenshot(join(get().shots, `failure…
+     39|         throw new Error(`timed out waiting for ${what}: ${JSON.stringi…
+       |               ^
+     40|       }
+     41|       await new Promise((resolve) => setTimeout(resolve, 100));
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts:238:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > a switch while a turn runs: the circle says it opens once the bot finishes, the turn finishes there, and its reply is there on return
+Error: timed out waiting for [data-rail-place="profile:work"]: false at [redacted-url]
+ ❯ until scripts/testing/rail-profile-ui.e2e.test.ts:39:15
+     37|       if (Date.now() > deadline) {
+     38|         await get().world.window.screenshot(join(get().shots, `failure…
+     39|         throw new Error(`timed out waiting for ${what}: ${JSON.stringi…
+       |               ^
+     40|       }
+     41|       await new Promise((resolve) => setTimeout(resolve, 100));
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts:249:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > two quick clicks on two tiles: only the last opens, and the rail and the window agree
+Error: TypeError: Cannot read properties of null (reading 'click')
+    at <anonymous>:1:191
+ ❯ TabWindow.evaluate scripts/testing/one-workspace-fixture.ts:149:39
+    147|   async evaluate<T = any>(expression: string): Promise<T> {
+    148|     const value = await this.cdp.request("Runtime.evaluate", { express…
+    149|     if (value.exceptionDetails) throw new Error(value.exceptionDetails…
+       |                                       ^
+    150|     return value.result.value as T;
+    151|   }
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts:274:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > a workspace's menu: Rename, its colour, and Remove asked first; Cancel changes nothing; removing the open one goes to My Cloud first
+Error: TypeError: Cannot read properties of null (reading 'dispatchEvent')
+    at <anonymous>:1:59
+ ❯ TabWindow.evaluate scripts/testing/one-workspace-fixture.ts:149:39
+    147|   async evaluate<T = any>(expression: string): Promise<T> {
+    148|     const value = await this.cdp.request("Runtime.evaluate", { express…
+    149|     if (value.exceptionDetails) throw new Error(value.exceptionDetails…
+       |                                       ^
+    150|     return value.result.value as T;
+    151|   }
+ ❯ menu scripts/testing/rail-profile-ui.e2e.test.ts:72:5
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts:287:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+Error: timed out waiting for ＋'s choices: false at [redacted-url]
+ ❯ until scripts/testing/rail-profile-ui.e2e.test.ts:39:15
+     37|       if (Date.now() > deadline) {
+     38|         await get().world.window.screenshot(join(get().shots, `failure…
+     39|         throw new Error(`timed out waiting for ${what}: ${JSON.stringi…
+       |               ^
+     40|       }
+     41|       await new Promise((resolve) => setTimeout(resolve, 100));
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts:323:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > past eight tiles: ⋯ lists every place, a row opens its place and its right-click opens its menu
+AssertionError: expected false to be true // Object 相等 equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts:377:95
+    375|     for (const name of ["Lab", "Studio", "Garden", "Kitchen", "Travel"…
+    376|     await until(() => tiles(), (seen) => seen.length === 8, 30_000, "e…
+    377|     expect(await rail<boolean>("Boolean(document.querySelector('[data-…
+       |                                                                                               ^
+    378|     await click("[data-rail-more-button]");
+    379|     await until(() => rail<number>("document.querySelectorAll('[data-r…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > removing the last workspace of this computer's own lands on My Cloud, whose ＋ still offers a new one
+Error: timed out waiting for ＋'s choices: false at [redacted-url]
+ ❯ until scripts/testing/rail-profile-ui.e2e.test.ts:39:15
+     37|       if (Date.now() > deadline) {
+     38|         await get().world.window.screenshot(join(get().shots, `failure…
+     39|         throw new Error(`timed out waiting for ${what}: ${JSON.stringi…
+       |               ^
+     40|       }
+     41|       await new Promise((resolve) => setTimeout(resolve, 100));
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts:405:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed | 5 passed (13)
+   Start at  08:36:18
+   Duration  284.58s (transform 2.09s, setup 1.12s, import 1.72s, tests 281.55s, environment 0ms)
+
+
+EXIT: 1

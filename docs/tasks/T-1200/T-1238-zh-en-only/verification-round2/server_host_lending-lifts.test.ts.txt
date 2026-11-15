@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/host/lending-lifts.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  36 passed (36)
+   Start at  05:12:47
+   Duration  2.99s (transform 2.06s, setup 1.48s, import 1.11s, tests 240ms, environment 0ms)
+

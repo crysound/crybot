@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/lib/language-preference.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  08:26:02
+   Duration  1.19s (transform 691ms, setup 870ms, import 20ms, tests 167ms, environment 0ms)
+
+
+EXIT: 0

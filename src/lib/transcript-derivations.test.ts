@@ -36,9 +36,9 @@ const q2 = msg("q2", { role: "user", text: "second", at: 20, parentId: "root" })
 const a3 = msg("a3", { text: "answer", at: 31, parentId: "q3" });
 const follow = msg("f", { role: "user", text: "and this?", at: 32, parentId: "a3", replyToId: "a1" });
 const chip = msg("c", { kind: "activity", tool: { name: "Read", ok: true }, at: 33, parentId: "f" });
-const pick = msg("o", { role: "user", kind: "options", at: 34, parentId: "c", replyToId: "gone" });
-const digest = msg("d", { kind: "digest", text: "did things", at: 35, parentId: "o" });
-const compaction = msg("k", { kind: "compaction", at: 36, parentId: "d" });
+const pick = msg("或", { role: "user", kind: "options", at: 34, parentId: "c", replyToId: "gone" });
+const digest = msg("天", { kind: "digest", text: "did things", at: 35, parentId: "或" });
+const compaction = msg("k", { kind: "compaction", at: 36, parentId: "天" });
 const all = [root, q1, a1, q3, q2, a3, follow, chip, pick, digest, compaction];
 const branch = [root, q3, a3, follow, chip, pick, digest, compaction];
 
@@ -64,7 +64,7 @@ describe("transcriptLookups", () => {
 
   it("puts Retry on the last conversational row, past digests and compactions", () => {
     expect(lookups.retryableId).toBe(retryableBefore(branch));
-    expect(lookups.retryableId).toBe("o");
+    expect(lookups.retryableId).toBe("或");
     expect(transcriptLookups([], []).retryableId).toBeUndefined();
     expect(transcriptLookups([digest], [digest]).retryableId).toBeUndefined();
   });
@@ -77,7 +77,7 @@ describe("transcriptLookups", () => {
       parentId: "k",
       call: { callId: "c1", botId: "ada", client: "ios", startedAt: 0, endedAt: 37, seconds: 102, endReason: "hung-up" },
     });
-    expect(transcriptLookups([...all, record], [...branch, record]).retryableId).toBe("o");
+    expect(transcriptLookups([...all, record], [...branch, record]).retryableId).toBe("或");
     expect(transcriptLookups([root, record, digest], [root, record, digest]).retryableId).toBe("root");
     expect(transcriptLookups([root, digest, record], [root, digest, record]).retryableId).toBe("root");
     expect(transcriptLookups([record], [record]).retryableId).toBeUndefined();
@@ -107,11 +107,11 @@ describe("dayLabel", () => {
   it("follows the app language when it changes", () => {
     const at = Date.UTC(2025, 0, 6, 12);
     expect(dayLabel(at)).toBe(dayLabelBefore(at, "en"));
-    setLocale("de");
-    expect(dayLabel(at)).toBe(dayLabelBefore(at, "de"));
+    setLocale("zh");
+    expect(dayLabel(at)).toBe(dayLabelBefore(at, "zh"));
     expect(dayLabel(at)).not.toBe(new Date(at).toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric" }));
-    setLocale("fr");
-    expect(dayLabel(at)).toBe(dayLabelBefore(at, "fr"));
+    setLocale("zh");
+    expect(dayLabel(at)).toBe(dayLabelBefore(at, "zh"));
   });
 });
 

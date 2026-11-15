@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/mascot-names.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  05:17:45
+   Duration  1.43s (transform 957ms, setup 1.11s, import 132ms, tests 12ms, environment 0ms)
+

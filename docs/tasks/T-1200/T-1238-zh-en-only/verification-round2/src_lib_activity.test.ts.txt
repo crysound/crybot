@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/activity.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  05:17:00
+   Duration  1.37s (transform 921ms, setup 1.14s, import 48ms, tests 24ms, environment 0ms)
+

@@ -1,0 +1,239 @@
+Round 2 failure audit: 39 files / 59 failed tests.
+Command for each file: pnpm exec vitest run FILE --maxWorkers=1
+The first per-file rerun of all 39 files passed. Existing round-2 fixes were already present in the starting checkout.
+
+server/cloud-team-crybot-own-chat.e2e.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  3 passed (3)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - moves earlier notes to their person's layer in pt-br when the server is English
+    Logged evidence: AssertionError: expected { id: 'old-pt-br', …(8) } to match object { Object (before, canRevert, ...) }
+server/connector-stayed.e2e.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  1 passed (1)
+  Cause: Environment: installed uvx invalidated the missing-uvx fixture assumption; round 2 excluded its directory from fixture PATH. Origin comparison recorded separately.
+  - what stayed on the computer is told when the move ends and in the first conversation with each bot, and the move never says everything is here
+    Logged evidence: AssertionError: expected { phase: 'done', …(5) } to match object { phase: 'done', …(1) }
+server/parked-cards.e2e.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  3 passed (3)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - at start, work left parked on a card nothing can answer is let go, and work on an open card stays (pt-br)
+    Logged evidence: AssertionError: expected false to be true // Object 相等 equality
+src/components/AboutDialog.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  5 passed (5)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - About > names the server as it was saved, in the person's language
+    Logged evidence: AssertionError: expected [ '版本 0.1.127 · macOS', …(1) ] to deeply equal [ 'Version 0.1.127 · macOS', …(1) ]
+src/components/AppNotices.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  63 passed (63)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - cards from the announcements file > follows the person's language, falling back to English
+    Logged evidence: AssertionError: expected '<aside aria-labelledby="announcement-…' to contain 'Deutscher Titel'
+src/components/ApprovalCard.i18n.test.ts
+  Old failures: 3; current: Test Files  1 passed (1) | Tests  10 passed (10)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - localized structured approval actions > localizes the spoken and visible MCP enable actions while preserving wire options
+    Logged evidence: AssertionError: expected 'Mochi：打开 linear? 请查看详情，选择「开启」或「取消」。' to be 'Mochi：打开 linear? 请查看详情，选择「打开」或「取消」。' // Object 相等 equality
+  - localized structured approval actions > localizes the spoken and visible MCP update actions while preserving wire options
+    Logged evidence: AssertionError: expected 'Mochi：更改 linear? 请查看详情，选择「Change」或「取消…' to be 'Mochi：更改 linear? 请查看详情，选择「更改」或「取消」。' // Object 相等 equality
+  - localized structured approval actions > localizes the spoken and visible MCP remove actions while preserving wire options
+    Logged evidence: AssertionError: expected 'Mochi：移除 linear? 请查看详情，选择「Remove」或「取消…' to be 'Mochi：移除 linear? 请查看详情，选择「移除」或「取消」。' // Object 相等 equality
+src/components/ApprovalCard.wait-details.test.ts
+  Old failures: 4; current: Test Files  1 passed (1) | Tests  8 passed (8)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - zh wait details > opens after the bot is renamed, with persisted author false
+    Logged evidence: AssertionError: expected '然后 Renamed Pepper 将会：Deploy it.' to be 'Depois da espera, Renamed Pepper fará…' // Object 相等 equality
+  - zh wait details > opens after the bot is missing, with persisted author false
+    Logged evidence: AssertionError: expected '然后 有人 将会：Deploy it.' to be 'Depois da espera, 有人 fará o seguinte:…' // Object 相等 equality
+  - zh wait details > opens after the bot is renamed, with persisted author true
+    Logged evidence: Grouped failure uses the following shared assertion.
+  - zh wait details > opens after the bot is missing, with persisted author true
+    Logged evidence: AssertionError: expected '然后 Pepper 将会：Deploy it.' to be 'Depois da espera, Pepper fará o segui…' // Object 相等 equality
+src/components/BrowserProfilesManager.test.ts
+  Old failures: 3; current: Test Files  1 passed (1) | Tests  15 passed (15)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - browser profile manager > localizes a shared Chrome's computer device without changing its wire value
+    Logged evidence: AssertionError: expected '<div class="flex min-w-0 flex-col gap…' to contain 'este é o Chrome de Studio, seu 电脑. El…'
+  - browser profile manager > localizes a shared Chrome's Mac device without changing its wire value
+    Logged evidence: AssertionError: expected '<div class="flex min-w-0 flex-col gap…' to contain 'este é o Chrome de Studio, seu Mac. E…'
+  - browser profile manager > localizes a shared Chrome's PC device without changing its wire value
+    Logged evidence: AssertionError: expected '<div class="flex min-w-0 flex-col gap…' to contain 'este é o Chrome de Studio, seu PC. El…'
+src/components/ChatMarkdown.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  140 passed (140)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - ChatMarkdown attachments > says an image with no source is unavailable in the person's language
+    Logged evidence: AssertionError: expected '<div class="chat-md min-w-0 [&amp;&gt…' to contain 'Bild nicht verfügbar'
+src/components/DecisionModelSettings.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  28 passed (28)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - DecisionModelSettings > uses an invariable status for missing decisions and extraction in pt-BR
+    Logged evidence: AssertionError: expected 'Decisions: not set up · Extraction: n…' to be 'Decisões: sem configuração · Extração…' // Object 相等 equality
+src/components/LocalComputerSection.test.ts
+  Old failures: 2; current: Test Files  1 passed (1) | Tests  52 passed (52)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - cloud computer inventory UI > keeps cloud badge meaning and delete requests stable when the language changes
+    Logged evidence: AssertionError: expected '<div class="rounded-xl bg-card p-4 ma…' to contain 'bg-success/15 text-success">Em execuç…'
+  - VPS computer inventory UI > keeps running and paused VPS badge colors when labels are translated
+    Logged evidence: AssertionError: expected '<div class="rounded-xl bg-card p-4 ma…' to contain 'bg-success/15 text-success">Em execuç…'
+src/components/SecretRequestCard.test.ts
+  Old failures: 6; current: Test Files  1 passed (1) | Tests  36 passed (36)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - SecretRequestCard Greenference copy > localizes the Greenference title, description and password field without changing the saved card
+    Logged evidence: AssertionError: expected '<div role="group" aria-label="Greenfe…' to contain 'Roda modelos do Greenference com sua …'
+  - SecretRequestCard Gemini copy > localizes the Gemini title, description and password field without changing the saved card
+    Logged evidence: AssertionError: expected '<div role="group" aria-label="Gemini …' to contain 'Gera respostas faladas, mensagens de …'
+  - SecretRequestCard custom secrets > localizes the stopped file delivery using its recorded author, not the saved description's words
+    Logged evidence: AssertionError: expected '<div role="group" aria-label="OpenAI …' to contain 'Os comandos de Scout podem ler'
+  - SecretRequestCard custom secrets > localizes the stopped ref delivery using its recorded author, not the saved description's words
+    Logged evidence: AssertionError: expected '<div role="group" aria-label="OpenAI …' to contain 'Scout recebe uma referência de uso ún…'
+  - SecretRequestCard custom secrets > uses the direct chat's bot name for stopped file delivery without a group author
+    Logged evidence: AssertionError: expected '<div role="group" aria-label="OpenAI …' to contain 'Os comandos de Scout podem ler'
+  - SecretRequestCard custom secrets > uses the direct chat's bot name for stopped ref delivery without a group author
+    Logged evidence: AssertionError: expected '<div role="group" aria-label="OpenAI …' to contain 'Scout recebe uma referência de uso ún…'
+src/components/Sidebar.i18n.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  8 passed (8)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - sidebar rows > translates the row's own copy and its actions
+    Logged evidence: AssertionError: expected '<div class="group relative"><div role…' to contain '幕僚长'
+src/components/Sidebar.rows.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  8 passed (8)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - sidebar rows > re-renders every row when the app language changes
+    Logged evidence: AssertionError: expected [] to have a length of 3 but got +0
+src/components/SidebarThreadRow.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  62 passed (62)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - threadUpdatedLabel > translates through the locale catalog
+    Logged evidence: AssertionError: expected '5 min ago' to be 'há 5 min' // Object 相等 equality
+src/components/XCard.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  10 passed (10)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - the X card in Apps > speaks the app's language
+    Logged evidence: AssertionError: expected 'X (Twitter)已包含在你的套餐中本月已用 312 / 5,000 …' to contain '本月已用 312 / 5.000 次 X 调用。'
+src/components/app/app-blocked.test.ts
+  Old failures: 2; current: Test Files  1 passed (1) | Tests  4 passed (4)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - why an app cannot run > says it in the app language
+    Logged evidence: AssertionError: expected 'This app is too large to store' not to be 'This app is too large to store' // Object 相等 equality
+  - an app's size > writes decimals the app language's way
+    Logged evidence: AssertionError: expected '1.2 KB' to be '1,2 KB' // Object 相等 equality
+src/components/browser/ChromeRow.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  4 passed (4)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - browser window controls > distinguishes the app window from the whole display in zh
+    Logged evidence: AssertionError: expected '<div class="shrink-0 border-b border-…' to contain 'title="最大化（填满应用窗口）" aria-label="最大化"'
+src/components/live-panels.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  18 passed (18)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - Activity on the app's live stream > shows the email app in pt-br without translating the tool identifier
+    Logged evidence: AssertionError: expected 'Email' to be 'E-mail' // Object 相等 equality
+src/components/model-picker-reasoning.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  2 passed (2)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - a thinking choice's words > are the app's own on the chat engine, in the reader's language
+    Logged evidence: AssertionError: expected 'On' to be '已打开' // Object 相等 equality
+src/components/send-key.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  30 passed (30)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - the send key in hints > names the key in Japanese hints too
+    Logged evidence: AssertionError: expected 'Pepper is working. Ctrl+Enter sends t…' to be 'Pepper が作業中です — Ctrl+Enter で実行中のターンに送…' // Object 相等 equality
+src/hooks/use-presence.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  13 passed (13)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - usePresence > sends a newly picked language at once, without waiting for activity or the once-a-minute cooldown
+    Logged evidence: AssertionError: expected [ 'en' ] to deeply equal [ 'en', 'pt-br' ]
+src/lib/activity-runs.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  32 passed (32)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - describeRun > words a server notice in the person's language and leaves real tool names as they are
+    Logged evidence: AssertionError: expected '2 步 · 正在从重启中恢复, Bash' to be '2 步 · Retomando após uma reinicializa…' // Object 相等 equality
+src/lib/activity.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  12 passed (12)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - activityLabel > translates the email app's presentation key but keeps its English fallback and wire tool
+    Logged evidence: AssertionError: expected '邮件' to be '邮箱' // Object 相等 equality
+src/lib/automations.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  28 passed (28)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - times in plain words > in pt-BR > writes a 24-hour clock with two-digit hours and the minutes, and “às” before a weekday's time
+    Logged evidence: AssertionError: expected '星期一 09:00' to be 'segunda-feira às 09:00' // Object 相等 equality
+src/lib/bot-overview-text.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  15 passed (15)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - an overview routine line > is worded from its data in the reader's language, with two-digit 24-hour times
+    Logged evidence: AssertionError: expected 'Every hour：Triage。 下次运行：18:20。 上次运行于 …' to be '每小时：Triage。 下次运行：18:20。 上次运行于 18:20 完…' // Object 相等 equality
+src/lib/chat-copy.i18n.test.ts
+  Old failures: 4; current: Test Files  1 passed (1) | Tests  5 passed (5)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - live activity label > translates the fallback table, which is built once at import time
+    Logged evidence: AssertionError: expected '工作中' to be '在干活' // Object 相等 equality
+  - live activity label > leaves the server's own narration alone
+    Logged evidence: AssertionError: expected 'Editando um arquivo' to be '正在编辑文件' // Object 相等 equality
+  - the memo key the transcript uses > reports the locale that took effect, after fallback
+    Logged evidence: AssertionError: expected 'en' to be 'zh' // Object 相等 equality
+  - usage chip > translates the units and the cost caption
+    Logged evidence: AssertionError: expected '2k 输入（缓存 + 未缓存） · 500 输出' to contain 'entrada'
+src/lib/cron-text.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  4 passed (4)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - a cron schedule in words > says familiar presets in Chinese, with Intl's weekday and month names and the ordinal agreeing with the weekday
+    Logged evidence: AssertionError: expected [ …(10) ] to deeply equal [ …(10) ]
+src/lib/engine-name.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  1 passed (1)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - engineDisplayName > translates only the server's own default names
+    Logged evidence: AssertionError: expected 'Claude (API key)' to be 'Claude（API 密钥）' // Object 相等 equality
+src/lib/fixed-server-lines.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  59 passed (59)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - fixed server words > resolves only declared reference params, and scrubs both params and fallbacks
+    Logged evidence: AssertionError: expected 'Scout 的回合未能正常结束（服务商出错），正在重试一次。' to be 'Scout 的回合未能正常结束（o provedor 失败），正在重试一次。' // Object 相等 equality
+src/lib/i18n.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  42 passed (42)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - tFromServer > fills the params, and keeps the English when one the template needs is missing
+    Logged evidence: AssertionError: expected 'Scout 因重启中断，正在继续' to be 'Scout was cut off by a restart; resum…' // Object 相等 equality
+src/lib/presence-client.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  4 passed (4)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - presence client > names the pack the app shows: the device's pick, else the server's language
+    Logged evidence: AssertionError: expected 'en' to be 'pt-br' // Object 相等 equality
+src/lib/ready-bots.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  12 passed (12)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - readyBotCopy > reads each bot's words from the catalog, and keeps a bot's own English when the catalog has none
+    Logged evidence: AssertionError: expected 'Humanizer' not to be 'Humanizer' // Object 相等 equality
+src/lib/routine-calendar.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  27 passed (27)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - calendarRangeLabel > names one day, a week inside a month and a week across a year in the app language
+    Logged evidence: AssertionError: expected '2026年5月3日' to be '3 de maio de 2026' // Object 相等 equality
+src/lib/send-key.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  23 passed (23)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - the local send key choice > makes Ctrl/⌘+Enter the default in Japanese, and a stored choice still wins
+    Logged evidence: AssertionError: expected 'enter' to be 'mod-enter' // Object 相等 equality
+src/lib/usage-trace.test.ts
+  Old failures: 2; current: Test Files  1 passed (1) | Tests  7 passed (7)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - trace helpers > formats durations the way the waterfall labels them
+    Logged evidence: AssertionError: expected [ '450ms', '6.9秒', '51秒', …(3) ] to deeply equal [ '450 ms', '6,9 s', '51 s', …(3) ]
+  - trace helpers > opens turns and keeps groups shut until toggled, and names each browser step by its action
+    Logged evidence: AssertionError: expected [ 'Click', '获取网址', 'Type text', …(1) ] to deeply equal [ 'Clicar', '获取网址', '输入文字', …(1) ]
+src/lib/usage.test.ts
+  Old failures: 2; current: Test Files  1 passed (1) | Tests  18 passed (18)
+  Cause: Old Portuguese number expectations after switching to Chinese; first failure prevented resetting the locale, causing the second English assertion to fail. Current Chinese expectations pass.
+  - usage formatting > keeps small dollar amounts visible
+    Logged evidence: AssertionError: expected [ 'US$0.02', 'US$0.004', 'US$0' ] to deeply equal [ 'US$ 0,02', 'US$ 0,004', 'US$ 0' ]
+  - usage formatting > in English, the cost keeps its own rounding and symbol whatever the region > matches toFixed exactly, before and after an en-GB region
+    Logged evidence: AssertionError: expected [ 'US$0.02', 'US$0.005', …(4) ] to deeply equal [ '$0.01', '$0.005', '$1234.50', …(3) ]
+src/lib/verify-steps.test.ts
+  Old failures: 1; current: Test Files  1 passed (1) | Tests  78 passed (78)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - runSummary > translates unverified and status labels using the active locale
+    Logged evidence: AssertionError: expected '2 个步骤 · 2 项已验证 · 1 项没有结果' to be '2 步 · 2 verificados · 1 项没有结果' // Object 相等 equality
+src/lib/widget-text.test.ts
+  Old failures: 2; current: Test Files  1 passed (1) | Tests  4 passed (4)
+  Cause: Old locale assertions and/or missing Chinese keys; retained round-2 migration now passes.
+  - a server card in the person's language > keeps an Ideas caption's English for 3 chats through persistence and translates it for the reader
+    Logged evidence: AssertionError: expected false to be true // Object 相等 equality
+  - a server card in the person's language > words titles, nested keys and moments in the reader's locale
+    Logged evidence: AssertionError: expected '10月22日星期四' to be 'quinta-feira, 22 de outubro' // Object 相等 equality

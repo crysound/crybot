@@ -250,7 +250,7 @@ describe("buildNotificationOptions", () => {
 describe("notification titles", () => {
   afterEach(() => setLocale("en"));
 
-  it.each(["en", "pt-br"] as const)("displays the server's title unchanged with client language %s", (language) => {
+  it.each(["en", "zh"] as const)("displays the server's title unchanged with client language %s", (language) => {
     const { notices } = installNotification("granted");
     setLocale(language);
     for (const title of ["Bot em Launch tem uma pergunta", "Bot in Launch has a question", "Bot in Launch hat eine Frage"]) {

@@ -1,0 +1,12 @@
+COMMAND: /tmp/t1238-node/bin/node node_modules/vitest/vitest.mjs run server/verification-fixture.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  08:32:52
+   Duration  9.82s (transform 1.43s, setup 958ms, import 955ms, tests 7.77s, environment 0ms)
+
+
+EXIT: 0

@@ -1,4 +1,4 @@
-/** Words another app shows in the person's own language, for each language this app ships its interface in. A word
+/** Words another app shows in the person's own language, independent of this app's interface language. A word
  * names a whole word or phrase; `word*` also matches longer words that start with it; `=word` matches only a label that
  * is exactly that. Languages written without spaces match anywhere in the label. */
 export interface LanguageWords { words: readonly string[]; unspaced?: true }
@@ -122,8 +122,8 @@ function matcher(table: Readonly<Record<string, LanguageWords>>): (text: string 
   };
 }
 
-/** True when a label or title names a final, can't-undo action in any language this app ships. */
+/** True when a label or title names a final, can't-undo action in any recognized screen language. */
 export const namesFinalAction = matcher(FINAL_ACTIONS);
 
-/** True when a field's label says it holds a password, PIN, code or card number in any language this app ships. */
+/** True when a field's label says it holds a password, PIN, code or card number in any recognized screen language. */
 export const namesSecret = matcher(SECRET_FIELDS);

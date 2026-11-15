@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/connector-card-text.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  05:12:29
+   Duration  1.96s (transform 1.38s, setup 1.53s, import 235ms, tests 8ms, environment 0ms)
+

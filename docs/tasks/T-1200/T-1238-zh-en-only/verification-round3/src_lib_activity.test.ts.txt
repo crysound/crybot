@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/lib/activity.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  07:46:12
+   Duration  1.24s (transform 840ms, setup 1.06s, import 27ms, tests 22ms, environment 0ms)
+
+
+EXIT: 0

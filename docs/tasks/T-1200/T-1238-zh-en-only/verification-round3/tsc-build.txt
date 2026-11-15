@@ -1,0 +1,3 @@
+COMMAND: pnpm exec tsc -b --pretty false
+
+EXIT: 0

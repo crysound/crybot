@@ -583,17 +583,25 @@ describe("Store", () => {
       "Bookings, shopping and errands", "Data, spreadsheets and reports",
     ]);
     expect(greeting(store.createBot({ description: "Files bugs." }))?.setupChoices).toBeUndefined();
+    language = "zh";
+    expect(greeting(store.createBot())?.setupChoices).toEqual([
+      "研究与深入探索主题", "帮我留意各种事情", "电子邮件、日历和消息",
+      "预约、购物和跑腿", "数据、电子表格和报告",
+    ]);
     language = "es-MX";
-    expect(greeting(store.createBot())?.setupChoices?.[0]).toBe("Investigar y profundizar en temas");
+    expect(greeting(store.createBot())?.setupChoices?.[0]).toBe("Research and digging into topics");
   });
 
   it("reads the current language when creating a bot", () => {
     let language = "en";
     const store = new Store(selection, undefined, undefined, () => language);
-    language = "pt-BR";
+    language = "zh";
 
     const bot = store.createBot();
-    expect(store.messagesFor(bot.threadId)[0]?.text).toBe(`Oi, eu sou ${bot.name}. O que você gostaria que eu fizesse?`);
+    expect(store.messagesFor(bot.threadId)[0]?.text).toBe(`你好，我是 ${bot.name}。你想让我帮你做什么？`);
+    language = "pt-BR";
+    const fallbackBot = store.createBot();
+    expect(store.messagesFor(fallbackBot.threadId)[0]?.text).toBe(`Hi, I'm ${fallbackBot.name}. What would you like me to do?`);
   });
 
   it("greets the person by the first name they have given by the time the bot is created", () => {

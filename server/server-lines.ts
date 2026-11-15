@@ -4,6 +4,7 @@
 // bundles only the "server." keys (scripts/server-locale-plugin.mjs). Text only a model reads stays English and never
 // comes from here. A guard beside the packs (server-lines.test.ts) fails on an English line written straight into one.
 import en from "../src/locales/en.json" with { type: "json" };
+import legacy from "./legacy-server-lines.json" with { type: "json" };
 import { byLanguage } from "./language.ts";
 
 export type ServerLineKey = Extract<keyof typeof en, `server.${string}`>;
@@ -12,7 +13,7 @@ type Pack = Partial<Record<string, string>>;
 const ENGLISH: Pack = en;
 const packs: { en: Pack } & Record<string, Pack> = { en: ENGLISH };
 
-/** The other languages' packs, by code ("de", "pt-br", "zh-tw"); server-line-packs.ts adds them once, at start. */
+/** The non-English packs, by code; server-line-packs.ts adds them once, at start. */
 export function addServerLinePacks(more: Readonly<Record<string, Pack>>): void {
   Object.assign(packs, more, { en: ENGLISH });
 }
@@ -39,7 +40,8 @@ function matcherOf(template: string): RegExp {
 /** Whether `text` is this line in any language the server has, whatever its `{names}` were filled with: code that reads
  * a line back (a monitor skipping its own notes) matches every language, never the English alone. */
 export function isServerLine(key: ServerLineKey, text: string): boolean {
-  return Object.values(packs).some((pack) => {
+  const historical: Partial<Record<ServerLineKey, readonly string[]>> = legacy;
+  return (historical[key] ?? []).some((template) => matcherOf(template).test(text)) || Object.values(packs).some((pack) => {
     const template = pack[key];
     return template !== undefined && matcherOf(template).test(text);
   });

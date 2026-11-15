@@ -1,6 +1,6 @@
 import { preparePreviewLocale } from "./testing/preview-locale";
 // Dev-only gallery of the room card, served at /room-card-preview.html; not in the packaged app.
-// ?state=memory|stopped|disk|tip|trial|upgraded|restarting|confirm&layout=desktop|phone&skin=midnight|daylight&lang=de
+// ?state=memory|stopped|disk|tip|trial|upgraded|restarting|confirm&layout=desktop|phone&skin=midnight|daylight&lang=zh
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Bot, CalendarClock, Gauge, LayoutGrid, MessageSquare, Plus, Search, Settings } from "lucide-react";

@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/saved-steps/replay.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  08:25:34
+   Duration  1.23s (transform 766ms, setup 929ms, import 84ms, tests 73ms, environment 0ms)
+
+
+EXIT: 0

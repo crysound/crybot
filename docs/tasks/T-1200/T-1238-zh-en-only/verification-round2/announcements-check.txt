@@ -1,0 +1,4 @@
+COMMAND: node scripts/check-announcements.mjs
+announcements: valid
+
+EXIT: 0

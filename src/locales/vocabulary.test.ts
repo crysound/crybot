@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import ts from "@typescript/typescript6";
 import { describe, expect, it } from "vitest";
 
+import { SUPPORTED_LANGUAGE_CODES } from "../../shared/languages";
 import en from "./en.json";
 import { locales } from "./index";
 
@@ -40,7 +41,7 @@ function retiredIn(text: string, boat: RegExp = BOAT): string[] {
 }
 
 const PENDING_KEY_PREFIXES: string[] = [];
-const CHECKED_PACKS = ["pt-br"];
+const CHECKED_PACKS = SUPPORTED_LANGUAGE_CODES.filter((code) => code !== "en");
 const EN_ALLOWED: Record<string, string> = {
   "botAccess.cloud.boat": "the own-key provider picker names its two providers, Boat and a VPS",
   "botAccess.cloud.hostedBackendDescription": "the own-key provider picker names its two providers, Boat and a VPS",
@@ -166,24 +167,26 @@ describe("one name per thing", () => {
     const label = (key: string) => (text: Text) => text(key);
     const settings = (section: string) => (text: Text) => `${text("settings.title")} → ${text(section)}`;
     const withoutEllipsis = (key: string) => (text: Text) => text(key).replace(/…$/, "");
-    const pointers: Array<[string, Array<(text: Text) => string>]> = [
-      ["cloudAccount.onCloudSignIn", [label("cloudAccount.signInAgain")]],
-      ["cloudAccount.storageFailed", [label("settings.account.signOutShort")]],
-      ["cloudAccount.codeExpired", [label("settings.account.signIn")]],
-      ["computer.routines.offWarning", [label("routines.runsOn.boat")]],
-      ["native.dialog.org.consHosted", [label("native.menu.server")]],
-      ["native.dialog.unreachable.detail", [label("native.menu.server")]],
-      ["native.boot.folderMissing.body", [label("native.menu.server")]],
-      ["native.boot.unhealthy.body", [label("native.menu.server")]],
-      ["native.dialog.connectFailed.detail", [withoutEllipsis("native.menu.connect")]],
-      ["native.dialog.share.detail", [settings("settings.app.computers")]],
+    const pointers: Array<[string, Array<(text: Text) => string>, string[]]> = [
+      ["cloudAccount.onCloudSignIn", [label("cloudAccount.signInAgain")], ["cloudAccount.signInAgain"]],
+      ["cloudAccount.storageFailed", [label("settings.account.signOutShort")], ["settings.account.signOutShort"]],
+      ["cloudAccount.codeExpired", [label("settings.account.signIn")], ["settings.account.signIn"]],
+      ["computer.routines.offWarning", [label("routines.runsOn.boat")], ["routines.runsOn.boat"]],
+      ["native.dialog.org.consHosted", [label("native.menu.server")], ["native.menu.server"]],
+      ["native.dialog.unreachable.detail", [label("native.menu.server")], ["native.menu.server"]],
+      ["native.boot.folderMissing.body", [label("native.menu.server")], ["native.menu.server"]],
+      ["native.boot.unhealthy.body", [label("native.menu.server")], ["native.menu.server"]],
+      ["native.dialog.connectFailed.detail", [withoutEllipsis("native.menu.connect")], ["native.menu.connect"]],
+      ["native.dialog.share.detail", [settings("settings.app.computers")], ["settings.title", "settings.app.computers"]],
     ];
-    const staleIn = (text: Text, prefix: string) => pointers.flatMap(([key, labels]) => labels.map((of) => of(text))
+    const staleIn = (text: Text, prefix: string, pack?: Record<string, string | undefined>) => pointers
+      .filter(([key, , required]) => !pack || [key, ...required].every((name) => Object.hasOwn(pack, name)))
+      .flatMap(([key, labels]) => labels.map((of) => of(text))
       .filter((shown) => !text(key).includes(shown)).map((shown) => `${prefix}${key} → ${shown}`));
     expect(staleIn((key) => e[key]!, "")).toEqual([]);
     for (const code of CHECKED_PACKS) {
       const pack = locales[code] as Record<string, string | undefined>;
-      expect(staleIn((key) => pack[key] ?? e[key]!, `${code}: `)).toEqual([]);
+      expect(staleIn((key) => pack[key] ?? e[key]!, `${code}: `, pack)).toEqual([]);
     }
   });
 

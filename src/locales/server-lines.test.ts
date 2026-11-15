@@ -14,7 +14,6 @@ import { fileURLToPath } from "node:url";
 import ts from "@typescript/typescript6";
 import { describe, expect, it } from "vitest";
 
-import de from "./de.json";
 import en from "./en.json";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
@@ -506,7 +505,7 @@ describe("lines the server writes for a person", () => {
     const offending = findings
       .filter((finding) => !ALLOWED.some((one) => listed(finding, one.file, one.snippet)) && !pending.some(([file, snippet]) => listed(finding, file, snippet)))
       .map((finding) => `${finding.file}:${finding.line}: ${JSON.stringify(finding.text.slice(0, 140))} (${finding.sink})`);
-    // A line a person reads: add its words under "server." in en.json (and de.json), and write it with serverLine() in
+    // A line a person reads: add its words under "server." in en.json and zh.json, and write it with serverLine() in
     // the language lineLanguage gives for the person it is for. Text only a model reads: add it to ALLOWED with why.
     expect(offending).toEqual([]);
   });
@@ -520,10 +519,11 @@ describe("lines the server writes for a person", () => {
     expect(stale).toEqual([]);
   });
 
-  it("every server line has German words, and the server uses each one", () => {
+  it("every English server line has non-empty Chinese text, and the server uses each English key", () => {
     const keys = Object.keys(en).filter((key) => key.startsWith("server."));
     expect(keys.length).toBeGreaterThan(0);
-    expect(keys.filter((key) => !Object.hasOwn(de, key))).toEqual([]);
+    const zh = JSON.parse(readFileSync(join(ROOT, "src/locales/zh.json"), "utf8")) as Record<string, string>;
+    expect(keys.filter((key) => !zh[key]?.trim())).toEqual([]);
     const code = SCANNED.flatMap((top) => [...sources(join(ROOT, top))]).map((path) => readFileSync(path, "utf8")).join("\n");
     expect(keys.filter((key) => !code.includes(`"${key}"`))).toEqual([]);
   });

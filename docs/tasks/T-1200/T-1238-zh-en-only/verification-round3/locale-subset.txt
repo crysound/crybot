@@ -1,0 +1,1949 @@
+COMMAND: pnpm exec vitest run src/ electron/cua-launch.test.mjs electron/cua-watch-restart.test.mjs electron/cua-windows-isolation.test.mjs electron/menu.test.mjs electron/updater.test.mjs scripts/generate-locale.test.mjs scripts/testing/bot-tools-ui.e2e.test.ts scripts/testing/key-readback.e2e.test.ts scripts/testing/one-workspace-ui.e2e.test.ts scripts/testing/rail-profile-ui.e2e.test.ts scripts/testing/secret-card-descriptions.test.ts scripts/testing/team-conversation-share-ui.e2e.test.ts scripts/testing/team-own-chat.e2e.test.ts scripts/testing/team-private-default-ui.e2e.test.ts scripts/testing/team-side-switch-ui.e2e.test.ts server/body-thread-guards.e2e.test.ts server/client-notifications.e2e.test.ts server/cloud-connections.e2e.test.ts server/cloud-lending-browser.e2e.test.ts server/cloud-lending-chrome.e2e.test.ts server/cloud-lending-memory.e2e.test.ts server/cloud-lending.e2e.test.ts server/cloud-lent-mcp.e2e.test.ts server/cloud-send-kinds.e2e.test.ts server/cloud-send-move.e2e.test.ts server/cloud-send-rooms.e2e.test.ts server/cloud-send-routine-merge.e2e.test.ts server/cloud-send-store.e2e.test.ts server/cloud-send.e2e.test.ts server/cloud-sync.e2e.test.ts server/cloud-team-asker-owns.e2e.test.ts server/cloud-team-away.e2e.test.ts server/cloud-team-browser.e2e.test.ts server/cloud-team-connections.e2e.test.ts server/cloud-team-conversation-share.e2e.test.ts server/cloud-team-engine-homes.e2e.test.ts server/cloud-team-gateway-mcp.e2e.test.ts server/cloud-team-inbox.e2e.test.ts server/cloud-team-included-hosting.e2e.test.ts server/cloud-team-crybot-reach.e2e.test.ts server/cloud-team-member-secrets.e2e.test.ts server/cloud-team-new-chat-private.e2e.test.ts server/cloud-team-open-reach.e2e.test.ts server/cloud-team-own-key-apps.e2e.test.ts server/cloud-team-owners.e2e.test.ts server/cloud-team-people.e2e.test.ts server/cloud-team-per-person.e2e.test.ts server/cloud-team-phones.e2e.test.ts server/cloud-team-pictures.e2e.test.ts server/cloud-team-presence.e2e.test.ts server/cloud-team-privacy-holes.e2e.test.ts server/cloud-team-private-default.e2e.test.ts server/cloud-team-private.e2e.test.ts server/cloud-team-profile.e2e.test.ts server/cloud-team-published-apps.e2e.test.ts server/cloud-team-requests.e2e.test.ts server/cloud-team-routines.e2e.test.ts server/cloud-team-setup-request.e2e.test.ts server/cloud-team.e2e.test.ts server/host/brief-words.test.ts server/host/lending-lifts.test.ts server/lent-folders.e2e.test.ts server/move-chosen-bots.e2e.test.ts server/one-home-keep.e2e.test.ts server/one-home-outdated.e2e.test.ts server/one-home-retry.e2e.test.ts server/one-home-session.e2e.test.ts server/one-home-trial-key.e2e.test.ts server/one-home-two-desks.e2e.test.ts server/one-home.e2e.test.ts server/parked-cards.e2e.test.ts server/question-cards.e2e.test.ts server/shared-computers.e2e.test.ts server/shared-computers.gate.test.ts server/team-move.e2e.test.ts server/team-welcome.e2e.test.ts server/use-my-mac.e2e.test.ts server/workspace-banner.e2e.test.ts scripts/server-locale-plugin.test.ts server/server-lines.test.ts server/host/devs-reports.test.ts server/automation-reports.test.ts server/incidents.test.ts server/routine-run-card.test.ts server/host/chief-notices-retry.test.ts server/connector-card-text.test.ts server/host/secret-cards.test.ts server/notify.test.ts server/room-lines.test.ts server/post-to-room.test.ts server/teammate-lines.test.ts server/chat-notices.test.ts server/recall-disclosure.test.ts server/routine-cron-text.test.ts server/routine-requests.test.ts server/cloud-send-arrived.test.ts server/cloud-team-bot-access.e2e.test.ts server/cloud-team-one-answer.e2e.test.ts server/cloud-team-preference.e2e.test.ts server/cloud-team-rules.e2e.test.ts server/cloud-team-rules-running-turn.e2e.test.ts server/outside-work-threads.e2e.test.ts server/own-home.e2e.test.ts server/places-elsewhere.e2e.test.ts server/question-routing.e2e.test.ts server/team-protocol.e2e.test.ts server/team-small-fixes.e2e.test.ts server/team-crybot-followup.e2e.test.ts server/team-no-ai.e2e.test.ts server/team-refused-handoff.e2e.test.ts server/two-places.e2e.test.ts scripts/ci-workflow.test.ts scripts/pre-push-check.test.ts server/host/wait-words.test.ts server/place-inbox.e2e.test.ts server/bot-api-team.e2e.test.ts server/cloud-team-conversation-share.e2e.test.ts server/cloud-team-first-look.e2e.test.ts server/cloud-team-crybot-own-chat.e2e.test.ts server/connector-stayed.e2e.test.ts server/email/host.test.ts server/email/inline-images.test.ts server/host/outside-lineage.test.ts server/memory-move.test.ts server/outside-lineage.e2e.test.ts server/same-name-mentions.e2e.test.ts server/skill-switch.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+DOMException [NotSupportedError]: Failed to load iframe page "about:blank". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at setup ([worktree]/src/components/app/app-frame-host.test.ts:200:15)
+    at [worktree]/src/components/app/app-frame-host.test.ts:206:36
+    at file:///opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+DOMException [NotSupportedError]: Failed to load iframe page "about:blank". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at setup ([worktree]/src/components/app/app-frame-host.test.ts:200:15)
+    at [worktree]/src/components/app/app-frame-host.test.ts:227:36
+    at file:///opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+DOMException [NotSupportedError]: Failed to load iframe page "about:blank". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at setup ([worktree]/src/components/app/app-frame-host.test.ts:200:15)
+    at [worktree]/src/components/app/app-frame-host.test.ts:241:36
+    at file:///opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+DOMException [NotSupportedError]: Failed to load iframe page "about:blank". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at setup ([worktree]/src/components/app/app-frame-host.test.ts:200:15)
+    at [worktree]/src/components/app/app-frame-host.test.ts:266:36
+    at file:///opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNode (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13688:63)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13735:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNode (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13688:63)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13735:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNode (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13688:63)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13735:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNode (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13688:63)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13735:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLDivElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[onSetAttribute] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:258:27)
+    at NamedNodeMap.[setNamedItem] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/NamedNodeMap.js:178:77)
+    at HTMLIFrameElement.setAttribute (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:594:73)
+    at setProp (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:20003:22)
+    at updateProperties (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:21128:13)
+    at commitUpdate (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:22168:7)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHostUpdate (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13601:9)
+    at commitMutationEffectsOnFiber (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:14842:13)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:793:58)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLDivElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLDivElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13662:22)
+    at insertOrAppendPlacementNodeIntoContainer (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13676:11)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13745:11)
+DOMException [NotSupportedError]: Failed to load iframe page "[redacted-url]". Iframe page loading is disabled.
+    at HTMLIFrameElement.#loadPage (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:334:27)
+    at HTMLIFrameElement.[connectedToDocument] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/html-iframe-element/HTMLIFrameElement.js:230:23)
+    at HTMLIFrameElement.[connectedToNode] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:801:53)
+    at HTMLElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:421:45)
+    at HTMLElement.[appendChild] (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/element/Element.js:1102:62)
+    at HTMLElement.appendChild (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/nodes/node/Node.js:314:48)
+    at insertOrAppendPlacementNode (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13688:63)
+    at commitPlacement (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:13735:11)
+    at runWithFiberInDEV (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitReconciliationEffects (/opt/crybot-deps/node_modules/.pnpm/[redacted-email]@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:15139:11)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:331:22)
+    at Object.teardown (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:392:10)
+    at file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/base.B6Opl8PE.js:168:65
+    at Traces.$ (file:///opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]@2._e1863e8544b106673873d37d7ac717f9/node_modules/vitest/dist/chunks/traces.DT5aQ62U.js:142:27)
+AggregateError: 
+    at internalConnectMultiple (node:net:1492:18)
+    at afterConnectMultiple (node:net:2161:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    },
+    Error: connect ECONNREFUSED [redacted-address]
+        at createConnectionError (node:net:2124:14)
+        at afterConnectMultiple (node:net:2154:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '[redacted-address]',
+      port: 3000
+    }
+  ]
+}
+
+ Test Files  1043 passed | 7 skipped (1050)
+      Tests  11248 passed | 69 skipped | 3 todo (11320)
+   Start at  07:47:55
+   Duration  2230.29s (transform 35.07s, setup 197.07s, import 179.60s, tests 1688.88s, environment 55.58s)
+
+
+EXIT: 0

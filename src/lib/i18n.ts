@@ -1,9 +1,10 @@
 import { productName } from "@/lib/brand";
+import { supportedLanguage } from "../../shared/languages";
 import { en, packComplete, loadLocalePack, localeChoices, localePacks, locales, type LocaleKey, type LocalePack } from "@/locales";
 
 export function resolveLocale(tag: string | undefined, available: ReadonlySet<string>): string {
   if (!tag) return "en";
-  let candidate = tag.toLowerCase();
+  let candidate = tag.toLowerCase().replaceAll("_", "-");
   while (candidate) {
     if (available.has(candidate)) return candidate;
     const separator = candidate.lastIndexOf("-");
@@ -22,6 +23,7 @@ export function knownLocales(): Set<string> {
 
 /** Shows `tag`'s language when its pack is loaded (loadLocale), English otherwise; returns the locale that took effect. */
 export function setLocale(tag: string | undefined): string {
+  requestedLanguage = tag || globalThis.navigator?.language || "en";
   switches += 1;
   return show(resolveLocale(tag, new Set(Object.keys(locales))));
 }
@@ -29,6 +31,7 @@ export function setLocale(tag: string | undefined): string {
 /** Loads `tag`'s pack and shows it, unless another language was asked for meanwhile; until then the page keeps the
  * language it shows. Resolves to the locale shown. */
 export async function loadLocale(tag: string | undefined): Promise<string> {
+  requestedLanguage = tag || globalThis.navigator?.language || "en";
   const asked = ++switches;
   let resolved = resolveLocale(tag, knownLocales());
   try {
@@ -53,7 +56,8 @@ function show(resolved: string): string {
 }
 
 export function documentLanguage(code: string): string {
-  const pack = localePacks[code];
+  const normalized = supportedLanguage(code) ?? "en";
+  const pack = localePacks[normalized];
   const shown = (pack && localeChoices.find((choice) => localePacks[choice.code] === pack)?.code) || code;
   return shown
     .split("-")
@@ -70,6 +74,10 @@ export function activeLocale(): string {
   return active;
 }
 
+export function activeLanguage(): string {
+  return requestedLanguage;
+}
+
 export function intlLocale(system: string | undefined = globalThis.navigator?.language): string {
   const tag = documentLanguage(active);
   if (tag.includes("-") || !system) return tag;
@@ -82,6 +90,7 @@ export function intlLocale(system: string | undefined = globalThis.navigator?.la
   return canonical?.toLowerCase().split("-")[0] === tag ? canonical : tag;
 }
 
+let requestedLanguage = globalThis.navigator?.language || "en";
 let active = "en";
 let activePack: LocalePack = en;
 let switches = 0;

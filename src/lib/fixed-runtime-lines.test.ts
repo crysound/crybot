@@ -22,10 +22,10 @@ const secret = `sk-ant-${"Ab1c".repeat(9)}`;
 
 describe("fixed runtime notices", () => {
   it.each([
-    ["refusal", "chat.notice.stop.refusal", "Grok refused to go on with this request (stop reason: refusal). Try again, reword the request, or switch this bot to another AI.", "se recusou a continuar"],
-    ["max_tokens", "chat.notice.stop.maxTokens", "Grok's reply reached its maximum length before it finished (stop reason: max_tokens). Ask it to continue, or ask for a shorter answer.", "atingiu o tamanho máximo"],
-    ["max_turn_requests", "chat.notice.stop.maxRequests", "The turn made as many model requests as one turn may before it finished (stop reason: max_turn_requests). Ask it to carry on from where it stopped, or split the task.", "limite de pedidos"],
-  ])("keeps the complete English and codes ACP stop %s", (reason, key, english, portuguese) => {
+    ["refusal", "chat.notice.stop.refusal", "Grok refused to go on with this request (stop reason: refusal). Try again, reword the request, or switch this bot to another AI.", "拒绝继续"],
+    ["max_tokens", "chat.notice.stop.maxTokens", "Grok's reply reached its maximum length before it finished (stop reason: max_tokens). Ask it to continue, or ask for a shorter answer.", "达到了长度上限"],
+    ["max_turn_requests", "chat.notice.stop.maxRequests", "The turn made as many model requests as one turn may before it finished (stop reason: max_turn_requests). Ask it to carry on from where it stopped, or split the task.", "模型请求次数上限"],
+  ])("keeps the complete English and codes ACP stop %s", (reason, key, english, chinese) => {
     const failed = acpStopFailure({ stopReason: reason }, "Grok");
     expect(failed.message).toBe(english);
     expect(failed.text?.key).toBe(key);
@@ -33,8 +33,8 @@ describe("fixed runtime notices", () => {
     const tool = runtimeNoticeTool(failed);
     expect(tool.name).toBe(`notice: ${english.slice(0, 240)}`);
     expect(activityText(tool, tool.name)).toBe(tool.name);
-    setLocale("pt-br");
-    expect(activityText(tool, tool.name)).toContain(portuguese);
+    setLocale("zh");
+    expect(activityText(tool, tool.name)).toContain(chinese);
     expect(activityText(tool, tool.name)).toContain(reason);
   });
 
@@ -46,7 +46,7 @@ describe("fixed runtime notices", () => {
     expect(acpStopFailure({ message: "vendor message" }, "Grok")).toEqual({ message: "vendor message" });
     expect(stopCause("rpc_error")).toBe("The engine stopped without saying why (stop reason: rpc_error).");
     expect(stopFailure(" ")).toBeUndefined();
-    setLocale("pt-br");
+    setLocale("zh");
     expect(noticeText("chat.notice.future", "Future English")).toBe("Future English");
     expect(noticeText("native.update.installing", "Wrong namespace")).toBe("Wrong namespace");
     expect(noticeText("chat.notice.cutOffByRestart", "Missing params")).toBe("Missing params");
@@ -61,47 +61,47 @@ describe("fixed runtime notices", () => {
     expect(failed.message).toBe(english);
     expect(unsupportedCallsNotice(tools)).toBe(english);
     expect(failed.text.key).toBe(count > 6 ? "chat.notice.codexUnsupportedMore" : count === 1 ? "chat.notice.codexUnsupportedOne" : "chat.notice.codexUnsupportedMany");
-    setLocale("pt-br");
+    setLocale("zh");
     const tool = runtimeNoticeTool(failed);
-    expect(activityText(tool, tool.name)).toContain(count === 1 ? "a ferramenta app.TOOL_0" : "as ferramentas app.TOOL_0");
+    expect(activityText(tool, tool.name)).toContain("工具 app.TOOL_0");
     expect(activityText(tool, tool.name)).not.toContain("app.TOOL_6");
-    if (count > 6) expect(activityText(tool, tool.name)).toContain("e mais 1");
+    if (count > 6) expect(activityText(tool, tool.name)).toContain("及另外 1 个工具");
   });
 
   it("keeps cancellation quotes and redacts parameters before they reach the transcript", () => {
     expect(unaskedStopMessage('  Request\nwas "aborted".  ')).toBe('The AI\'s request was cut off before it finished, and nobody stopped it (it said only "Request was \'aborted\'."). Send the message again to try once more.');
     const failed = unaskedStopFailure(`Request was aborted. ${secret}`);
     expect(JSON.stringify(failed)).not.toContain(secret);
-    setLocale("pt-br");
-    expect(noticeText(failed.text.key, failed.message, failed.text.params)).toContain("sem que ninguém o parasse");
+    setLocale("zh");
+    expect(noticeText(failed.text.key, failed.message, failed.text.params)).toContain("但没有人停止它");
     expect(JSON.stringify(runtimeNoticeTool(noticeFailure("chat.notice.acpEmpty", { provider: secret })))).not.toContain(secret);
   });
 
   it.each([
-    ["chat.notice.acpEmpty", { provider: "Grok" }, "Grok finished without replying.", "Grok terminou sem responder."],
-    ["chat.notice.piSessionSlow", undefined, "Pi is taking longer than usual to start this conversation's session. The turn goes on when Pi answers. Press Stop to cancel it.", "Clique em “Parar” para cancelar."],
-    ["chat.notice.unreadMessage", undefined, "This turn ended before the model read a message sent while it ran. Send that message again.", "Envie essa mensagem novamente."],
-  ] as const)("persists and renders %s", (key, params, english, portuguese) => {
+    ["chat.notice.acpEmpty", { provider: "Grok" }, "Grok finished without replying.", "Grok 已结束，但没有回复。"],
+    ["chat.notice.piSessionSlow", undefined, "Pi is taking longer than usual to start this conversation's session. The turn goes on when Pi answers. Press Stop to cancel it.", "点击「停止」可取消。"],
+    ["chat.notice.unreadMessage", undefined, "This turn ended before the model read a message sent while it ran. Send that message again.", "请重新发送那条消息。"],
+  ] as const)("persists and renders %s", (key, params, english, chinese) => {
     const failed = noticeFailure(key, params);
     expect(failed.message).toBe(english);
-    setLocale("pt-br");
+    setLocale("zh");
     const tool = runtimeNoticeTool(failed);
-    expect(activityText(tool, tool.name)).toContain(portuguese);
+    expect(activityText(tool, tool.name)).toContain(chinese);
   });
 });
 
 describe("handoffs and team relay bodies", () => {
   it.each([
-    ["reply", "Ana replied", "Ana respondeu"],
-    ["assistant", "Ana&#x27;s assistant answered", "O assistente de Ana respondeu"],
+    ["reply", "Ana replied", "Ana 回复了"],
+    ["assistant", "Ana&#x27;s assistant answered", "Ana 的助理回答了"],
     ["told", "", ""],
-  ] as const)("labels a %s without translating the sender's message", (kind, english, portuguese) => {
+  ] as const)("labels a %s without translating the sender's message", (kind, english, chinese) => {
     const message: Message = { id: "relay-1", role: "user", kind: "text", at: 1, text: "Keep English", relay: { kind, email: "ana@example.test", name: "Ana" } };
     const render = () => renderToStaticMarkup(createElement("div", null, createElement(RelayLabel, { message }), message.text));
     expect(render()).toContain(english);
     expect(render()).toContain("Keep English");
-    setLocale("pt-br");
-    expect(render()).toContain(portuguese);
+    setLocale("zh");
+    expect(render()).toContain(chinese);
     expect(render()).toContain("Keep English");
     if (kind === "told") expect(render()).not.toContain("data-relay");
   });
@@ -111,9 +111,9 @@ describe("handoffs and team relay bodies", () => {
     const row = sentRow({ sender, recipient, threadId: "t", via: "room", room: { id: "r", name: "Sales", here: false } });
     expect(row.tool).toMatchObject({ name: "Sent to Scout · Sales" });
     expect(row.tool?.nameCode).toBeUndefined();
-    setLocale("pt-br");
-    const translated = sentRow({ sender, recipient, threadId: "t", via: "room", room: { id: "r", name: "Sales", here: false }, language: "pt-br" });
-    expect(activityText(translated.tool!, translated.tool!.name)).toBe("Enviado para Scout · Sales");
+    setLocale("zh");
+    const translated = sentRow({ sender, recipient, threadId: "t", via: "room", room: { id: "r", name: "Sales", here: false }, language: "zh" });
+    expect(activityText(translated.tool!, translated.tool!.name)).toBe("已发送给 Scout · Sales");
     const direct = sentRow({ sender, recipient, threadId: "t", via: "direct", room: { id: "r", name: "Sales", here: false } });
     expect(direct.tool?.nameCode).toBeUndefined();
     expect(direct.sentDirectly).toEqual({ name: "Scout", room: "Sales" });
@@ -124,13 +124,13 @@ it("rerenders an engine-check timeout and setup/approval refusals from the store
   const body = userError("serverError.engineCheck.timeout", { name: "Grok", seconds: "90" });
   const render = () => renderToStaticMarkup(createElement(EngineCheckLine, { name: "Grok", check: { state: "failed", ...body }, onRetry() {} }));
   expect(render()).toContain("Grok didn&#x27;t answer within 90 seconds.");
-  setLocale("pt-br");
-  expect(render()).toContain("Grok não respondeu em 90 segundos.");
+  setLocale("zh");
+  expect(render()).toContain("Grok 在 90 秒内没有回应。");
   for (const key of ["serverError.setup.noTools", "serverError.setup.missingConversation", "serverError.setup.stopOwner", "serverError.setup.hasInstructions", "serverError.setup.started", "serverError.setup.someoneElse", "serverError.approval.allThreads", "serverError.approval.pending", "serverError.approval.provider"] as const) {
     const refusal = userError(key);
     expect(serverErrorText(refusal, refusal.error)).not.toBe(refusal.error);
     setLocale("en");
     expect(serverErrorText(refusal, refusal.error)).toBe(refusal.error);
-    setLocale("pt-br");
+    setLocale("zh");
   }
 });

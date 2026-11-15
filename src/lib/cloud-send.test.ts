@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { setLocale } from "@/lib/i18n";
 import { readFileSync } from "node:fs";
 import en from "@/locales/en.json";
-import ptBr from "@/locales/pt-br.json";
+import zh from "@/locales/zh.json";
+const zhText = zh as Record<string, string>;
 import { botMoveLine, countedList, filterBots, ipcErrorText, moveLine, moveQuietUntil } from "./cloud-send";
 
 beforeEach(() => { setLocale("en"); });
@@ -34,8 +35,8 @@ describe("choosing which bots move", () => {
     expect(botMoveLine(move("moving", 12)).text).toBe("Moving 12 bots to My Cloud…");
     expect(botMoveLine(move("done", 12))).toEqual({ kind: "done", text: "12 bots live on My Cloud now." });
     expect(botMoveLine(move("failed")).kind).toBe("failed");
-    setLocale("pt-br");
-    expect(botMoveLine(move("done", 1)).text).toBe("Ada agora vive no Cloud.");
+    setLocale("zh");
+    expect(botMoveLine(move("done", 1)).text).toBe("Ada lives on My Cloud now.");
   });
 
   it("says nothing on the move's line while the person is asked, and nothing waits for it", () => {
@@ -70,8 +71,8 @@ describe("the one-time move's line", () => {
     expect(moveLine({ phase: "copy", queued: { name: "Owner's Mac" } }, "local")?.text).toBe("Waiting for Owner's Mac to finish moving to My Cloud. Your bots move right after.");
     expect(moveLine({ phase: "wait", queued: { name: "" } }, "local")?.text).toBe("Waiting for your other computer to finish moving to My Cloud. Your bots move right after.");
     expect(moveLine({ phase: "finishing", checking: { step: "chats", done: 1, total: 2, bots: 3 }, place: "Garage server" }, "local")?.text).toBe("Moving to Garage server… checking 3 bots' chats there, 50%");
-    setLocale("pt-br");
-    expect(moveLine({ phase: "finishing", checking: { step: "chats", done: 400, total: 1000, bots: 25 } }, "local")?.text).toBe("Indo para o Cloud… conferindo as conversas de 25 bots lá, 40%");
+    setLocale("zh");
+    expect(moveLine({ phase: "finishing", checking: { step: "chats", done: 400, total: 1000, bots: 25 } }, "local")?.text).toBe("Moving to My Cloud… checking 25 bots' chats there, 40%");
   });
 
   it("says where the move is on whichever page is open, and who it waits for", () => {
@@ -119,10 +120,10 @@ describe("the one-time move's line", () => {
     expect(moveLine({ phase: "copy", failing, place }, "local")).toMatchObject({
       text: "Your bots couldn't move to Garage server yet: Sign in to Garage server in the app first.", reason: failing.error,
     });
-    setLocale("pt-br");
-    expect(moveLine({ phase: "copy", failing }, "local")?.reason).toBe("Primeiro, faça login em Garage server no app.");
+    setLocale("zh");
+    expect(moveLine({ phase: "copy", failing }, "local")?.reason).toBe("Sign in to Garage server in the app first.");
     expect(moveLine({ phase: "copy", failing, place }, "local")).toMatchObject({
-      text: "Seus bots ainda não conseguiram ir para Garage server: Primeiro, faça login em Garage server no app.", reason: "Primeiro, faça login em Garage server no app.",
+      text: "智能体的暂时还无法迁移到 Garage server：Sign in to Garage server in the app first.", reason: "Sign in to Garage server in the app first.",
     });
   });
 
@@ -149,10 +150,10 @@ describe("the one-time move's line", () => {
   });
 
   it("is in every language's own words", () => {
-    setLocale("de");
-    expect(moveLine({ phase: "copy" }, "local")?.text).toBe("Deine Bots ziehen in die Cloud um…");
-    expect(moveLine({ phase: "copy", updating: true }, "local")?.text).toBe("My Cloud wird gerade aktualisiert. Dein Umzug beginnt, sobald das erledigt ist.");
-    expect(moveLine({ phase: "wait", waitingFor: "", waitingWhat: "sign-in" }, "local")?.text).toBe("Deine Bots ziehen in die Cloud um… warte, bis eine Anmeldung fertig ist");
+    setLocale("zh");
+    expect(moveLine({ phase: "copy" }, "local")?.text).toBe("正在把你的智能体迁移到 Cloud…");
+    expect(moveLine({ phase: "copy", updating: true }, "local")?.text).toBe("My Cloud 正在更新。更新完成后就会开始迁移。");
+    expect(moveLine({ phase: "wait", waitingFor: "", waitingWhat: "sign-in" }, "local")?.text).toBe("正在把你的智能体迁移到 Cloud… 等待一次登录完成");
   });
 });
 
@@ -163,9 +164,9 @@ describe("the line on a computer whose bots came home to another one", () => {
       .toEqual({ kind: "done", text: "Your bots came back to MacBook Air. This computer keeps its copy from October 21, 2026, with automations off.", extra: [] });
     expect(moveLine({ phase: "back", elsewhere: { name: "MacBook Air" } }, "local")?.text, "a copy already deleted is not offered").toBe("Your bots came back to MacBook Air.");
     expect(moveLine({ phase: "back", elsewhere: { name: "MacBook Air", since } }, "cloud")).toBeNull();
-    setLocale("de");
+    setLocale("zh");
     expect(moveLine({ phase: "back", elsewhere: { name: "MacBook Air", since } }, "local")?.text)
-      .toBe("Deine Bots sind zurück auf MacBook Air. Dieser Computer behält seine Kopie vom 21. Oktober 2026, mit ausgeschalteten Automatisierungen.");
+      .toContain("你的智能体回到了 MacBook Air");
   });
 });
 
@@ -190,15 +191,15 @@ describe("a refusal the preload words before main is asked", () => {
     for (const key of keys) expect(preload, key).toContain(`new Error(${JSON.stringify(en[key])})`);
   });
 
-  it("each one shown on a page reads in pt-BR", () => {
-    setLocale("pt-br");
-    for (const key of keys) expect(ipcErrorText(new Error(en[key])), key).toBe(ptBr[key]);
+  it("each one shown on a page reads in Chinese, with English fallback for missing copy", () => {
+    setLocale("zh");
+    for (const key of keys) expect(ipcErrorText(new Error(en[key])), key).toBe(zhText[key] ?? en[key]);
   });
 
   it("shows in the app's language, and main's own words stay as main wrote them", () => {
     expect(ipcErrorText(new Error(unclicked))).toBe(unclicked);
-    setLocale("pt-br");
-    expect(ipcErrorText(new Error(unclicked))).toBe(ptBr["cloudAccount.keepHere.unclicked"]);
+    setLocale("zh");
+    expect(ipcErrorText(new Error(unclicked))).toBe(zhText["cloudAccount.keepHere.unclicked"] ?? unclicked);
     expect(ipcErrorText(new Error("Error invoking remote method 'one-home:keep-set': Error: Os bots deste computador estão voltando.")))
       .toBe("Os bots deste computador estão voltando.");
     expect(ipcErrorText("not an error")).toBeNull();

@@ -266,20 +266,20 @@ describe("automation reports", () => {
 
   it("says a failed run and its recovery in the language of the chat's person", () => {
     const asked = new Set<string>();
-    const f = fixture({ threadLanguage: (threadId) => { asked.add(threadId); return "de"; } });
-    const failed = f.finished(null, "Posteingang", { status: "failed", error: "Timed out" });
+    const f = fixture({ threadLanguage: (threadId) => { asked.add(threadId); return "zh"; } });
+    const failed = f.finished(null, "收件箱", { status: "failed", error: "Timed out" });
     f.reports.runFailed(failed, "it ran past its 25-minute limit.");
     const finishedAt = Date.UTC(2026, 9, 26, 2, 40);
-    const ok = f.finished("NOTHING NEW", "Posteingang", { finishedAt });
+    const ok = f.finished("NOTHING NEW", "收件箱", { finishedAt });
     f.reports.runSettled(ok, `turn-${ok.id}`);
-    const plain = f.finished(null, "Posteingang", { status: "failed" });
+    const plain = f.finished(null, "收件箱", { status: "failed" });
     f.reports.runFailed(plain, "");
     expect(f.lines().map((line) => line.text)).toEqual([
-      "Diese Ausführung wurde nicht beendet: it ran past its 25-minute limit.",
-      recoveredText("Posteingang", finishedAt, "de"),
-      "Diese Ausführung wurde nicht beendet.",
+      "这次执行没有完成：it ran past its 25-minute limit.",
+      recoveredText("收件箱", finishedAt, "zh"),
+      "这次执行没有完成。",
     ]);
-    expect(recoveredText("Posteingang", finishedAt, "de")).toMatch(/^Wieder in Ordnung: Posteingang wurde um \d{1,2}:\d\d \S+ erfolgreich beendet$/);
+    expect(recoveredText("收件箱", finishedAt, "zh")).toMatch(/^已恢复：收件箱 已于 \S+ \d{1,2}:\d\d 正常完成$/);
     expect([...asked]).toEqual([f.main]);
   });
 
@@ -398,15 +398,15 @@ describe("automation reports", () => {
   });
 
   it("names a card the run waits on in the language of the chat's person", () => {
-    const f = fixture({ threadLanguage: () => "de" });
+    const f = fixture({ threadLanguage: () => "zh" });
     const run = f.finished(null, "Dashboard check", { status: "running" });
     f.store.appendMessage(run.threadId!, { role: "bot", kind: "signin", text: "Sign in", signIn: { url: "https://example.com", site: "example.com", place: "browser", reason: "das Dashboard braucht eine Anmeldung" } });
     f.store.appendMessage(run.threadId!, { role: "bot", kind: "connector", connector: { slug: "clarity", label: "Microsoft Clarity", description: "", status: "required", resumeKey: "resume-key-1" } });
     f.store.appendMessage(run.threadId!, { role: "bot", kind: "secret", secret: { target: "xaiApiKey", label: "xAI API key", description: "", placeholder: "", helpUrl: "", requestKey: "secret-1" } });
     expect(f.lines().map((line) => line.text)).toEqual([
-      "Bitte melde dich bei example.com an: das Dashboard braucht eine Anmeldung.",
-      "Bitte verbinde Microsoft Clarity.",
-      "Bitte hinterlege xAI API key.",
+      "请登录 example.com：das Dashboard braucht eine Anmeldung.",
+      "请连接 Microsoft Clarity。",
+      "我需要你的 xAI API key。",
     ]);
   });
 

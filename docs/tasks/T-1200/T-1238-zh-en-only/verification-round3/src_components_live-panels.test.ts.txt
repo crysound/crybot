@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/components/live-panels.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  07:45:50
+   Duration  4.14s (transform 1.25s, setup 947ms, import 696ms, tests 2.21s, environment 144ms)
+
+
+EXIT: 0

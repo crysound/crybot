@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/setup-import.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  05:20:11
+   Duration  9.59s (transform 2.07s, setup 1.40s, import 1.25s, tests 6.74s, environment 0ms)
+

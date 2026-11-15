@@ -1,7 +1,7 @@
 import { preparePreviewLocale } from "./testing/preview-locale";
 // Dev-only gallery of the question and approval cards on a Team Cloud, served at /question-cards-preview.html; not in
 // the packaged app. It mounts the real chat and inbox components over a fixed store, with no server behind it.
-// ?state=question|approval|open|answered|others&surface=chat|inbox|panel&skin=midnight|daylight&mode=simple|advanced&lang=de
+// ?state=question|approval|open|answered|others&surface=chat|inbox|panel&skin=midnight|daylight&mode=simple|advanced&lang=zh
 import { StrictMode, useMemo, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import type { InboxRow, InboxView } from "../shared/inbox";

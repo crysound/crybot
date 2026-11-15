@@ -1,0 +1,5 @@
+COMMAND: node scripts/generate-locale.mjs --check
+zh.json: 79% (8411/10608)
+locale catalogs valid (2 languages, 10608 English strings)
+
+EXIT: 0

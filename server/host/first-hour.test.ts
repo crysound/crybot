@@ -98,15 +98,15 @@ describe("a new Cloud's first hour", () => {
     fh.begin();
     expect(s.texts()[0]).toBe("Hi! I'm Cry Bot, your Chief of Staff. I live on the Cloud, so I keep working while your computer is off. What do you want off your plate?");
     s.world.person = { email: "sam.lee@example.test" };
-    s.world.language = "de";
+    s.world.language = "zh";
     fh.arrived();
     fh.stop();
-    expect(s.texts()[0]).toBe("Hallo Sam! Ich bin Cry Bot, dein Chief of Staff. Ich lebe in deiner Cloud und arbeite weiter, auch wenn dein Computer aus ist. Was soll ich dir abnehmen?");
+    expect(s.texts()[0]).toBe("你好，Sam！我是 Cry Bot，你的幕僚长。我在你的 Cloud 上，所以电脑关机时我也在工作。你想让我帮你分担什么？");
     s.write("Mein Postfach");
     s.world.language = "fr";
     fh.arrived();
     fh.stop();
-    expect(s.texts()[0]).toMatch(/^Hallo Sam!/);
+    expect(s.texts()[0]).toMatch(/^你好，Sam！/);
   });
 
   it("offers Gmail and Google Calendar once, after the Chief's first answer, with the reason first", async () => {
@@ -317,4 +317,8 @@ describe("the name it greets with", () => {
     expect(firstName({ email: "johnathansmith@example.test" })).toBeUndefined();
     expect(firstName({})).toBeUndefined();
   });
+});
+
+it.each([["de", "German"], ["ar", "Arabic"]])("keeps %s for the first model-written message", (language, name) => {
+  expect(lookPrompt({ apps: ["gmail"], language })).toContain(`one short, concrete message in ${name}:`);
 });

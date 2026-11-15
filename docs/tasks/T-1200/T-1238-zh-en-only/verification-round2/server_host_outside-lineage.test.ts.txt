@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/host/outside-lineage.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  05:12:51
+   Duration  2.05s (transform 1.44s, setup 1.59s, import 247ms, tests 20ms, environment 0ms)
+

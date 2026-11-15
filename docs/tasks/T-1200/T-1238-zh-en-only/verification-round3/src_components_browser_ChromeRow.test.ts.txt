@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/components/browser/ChromeRow.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  07:45:49
+   Duration  1.18s (transform 729ms, setup 898ms, import 134ms, tests 20ms, environment 0ms)
+
+
+EXIT: 0

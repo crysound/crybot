@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/cloud-team-crybot-own-chat.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  08:26:48
+   Duration  12.35s (transform 1.14s, setup 1.09s, import 415ms, tests 10.69s, environment 0ms)
+
+
+EXIT: 0

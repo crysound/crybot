@@ -96,12 +96,12 @@ describe("what is sent", () => {
     }
     expect(worthAsking(nothing, { known: ["Gmail"] })).toBe(true);
     expect(worthAsking(nothing, { known: [], later: new Promise(() => {}) })).toBe(true);
-    expect(hasSetupChoices("es")).toBe(true);
-    expect(worthAsking({ ...nothing, languageCode: "es" }, null)).toBe(false);
+    expect(hasSetupChoices("es")).toBe(false);
+    expect(worthAsking({ ...nothing, languageCode: "es" }, null)).toBe(true);
     expect(hasSetupChoices("de")).toBe(false);
     expect(hasSetupChoices("zh-tw")).toBe(true);
     expect(setupChoices("zh-hant")).toEqual([
-      "研究與深入探討主題", "幫我留意各種事情", "電子郵件、行事曆和訊息", "預約、購物和跑腿", "資料、試算表和報告",
+      "研究与深入探索主题", "帮我留意各种事情", "电子邮件、日历和消息", "预约、购物和跑腿", "数据、电子表格和报告",
     ]);
     expect(worthAsking({ ...nothing, languageCode: "de" }, null)).toBe(true);
   });

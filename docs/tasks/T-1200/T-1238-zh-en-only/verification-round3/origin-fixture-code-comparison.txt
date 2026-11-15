@@ -1,0 +1,3 @@
+COMMAND: git diff --exit-code origin/main -- scripts/control-cry.ts server/verification-fixture.e2e.test.ts
+EXIT: 0
+Node and the installed Codex launcher share one binary directory. The fixture PATH keeps that directory.

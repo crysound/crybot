@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/bot-overview-text.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  05:17:12
+   Duration  2.05s (transform 1.43s, setup 1.08s, import 792ms, tests 27ms, environment 0ms)
+

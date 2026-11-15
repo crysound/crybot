@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/keyboard-shortcuts.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  05:17:43
+   Duration  1.43s (transform 967ms, setup 1.20s, import 41ms, tests 21ms, environment 0ms)
+

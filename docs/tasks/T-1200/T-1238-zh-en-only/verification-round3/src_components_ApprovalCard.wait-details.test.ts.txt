@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/components/ApprovalCard.wait-details.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  07:45:12
+   Duration  2.06s (transform 1.08s, setup 720ms, import 708ms, tests 55ms, environment 447ms)
+
+
+EXIT: 0

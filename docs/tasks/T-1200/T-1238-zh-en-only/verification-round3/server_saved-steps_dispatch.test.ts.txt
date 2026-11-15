@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/saved-steps/dispatch.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  68 passed (68)
+   Start at  08:25:22
+   Duration  4.10s (transform 1.42s, setup 774ms, import 1.06s, tests 2.13s, environment 0ms)
+
+
+EXIT: 0

@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/components/BrowserProfilesManager.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  07:45:15
+   Duration  1.24s (transform 762ms, setup 829ms, import 231ms, tests 43ms, environment 0ms)
+
+
+EXIT: 0

@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/McpServersPanel.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  05:15:18
+   Duration  1.33s (transform 882ms, setup 1.07s, import 63ms, tests 17ms, environment 0ms)
+

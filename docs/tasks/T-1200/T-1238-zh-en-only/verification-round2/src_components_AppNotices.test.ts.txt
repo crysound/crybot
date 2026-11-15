@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/AppNotices.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  63 passed (63)
+   Start at  05:14:09
+   Duration  4.07s (transform 2.66s, setup 1.38s, import 2.05s, tests 467ms, environment 0ms)
+

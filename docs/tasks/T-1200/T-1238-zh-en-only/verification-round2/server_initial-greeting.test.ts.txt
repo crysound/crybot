@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/initial-greeting.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  05:13:02
+   Duration  1.59s (transform 1.06s, setup 1.34s, import 40ms, tests 12ms, environment 0ms)
+

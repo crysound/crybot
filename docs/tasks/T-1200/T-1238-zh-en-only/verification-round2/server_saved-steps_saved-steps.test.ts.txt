@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/saved-steps/saved-steps.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  66 passed (66)
+   Start at  05:19:09
+   Duration  6.24s (transform 2.34s, setup 1.20s, import 1.79s, tests 3.06s, environment 0ms)
+

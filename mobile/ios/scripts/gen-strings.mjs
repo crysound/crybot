@@ -2,11 +2,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SUPPORTED_LANGUAGE_CODES } from '../../../shared/languages.ts';
 
-export const LANGUAGE_CODES = {
-  de: 'de', en: 'en', es: 'es', fr: 'fr', hi: 'hi', it: 'it', ja: 'ja', ko: 'ko',
-  pl: 'pl', 'pt-br': 'pt-BR', ru: 'ru', tr: 'tr', uk: 'uk', vi: 'vi', zh: 'zh-Hans', 'zh-tw': 'zh-Hant',
-};
+export const LANGUAGE_CODES = Object.fromEntries(SUPPORTED_LANGUAGE_CODES.map(code => [code, code === 'zh' ? 'zh-Hans' : code]));
 
 const placeholder = /\{\{?([A-Za-z0-9_.-]+)\}?\}/g;
 

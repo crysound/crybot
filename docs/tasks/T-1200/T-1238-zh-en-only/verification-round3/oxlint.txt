@@ -1,0 +1,3 @@
+COMMAND: pnpm exec oxlint --deny-warnings server/routes/bots-create.test.ts src/components/AppSettingsRows.tsx src/lib/create-configured-bot.ts src/lib/i18n.test.ts src/lib/i18n.ts src/lib/language-preference.test.ts src/lib/language-preference.ts src/lib/new-bot.test.ts src/lib/new-bot.ts src/lib/presence-client.test.ts
+
+EXIT: 0

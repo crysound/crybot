@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/tool-step-label.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  21 passed (21)
+   Start at  05:18:07
+   Duration  1.35s (transform 888ms, setup 1.10s, import 43ms, tests 17ms, environment 0ms)
+

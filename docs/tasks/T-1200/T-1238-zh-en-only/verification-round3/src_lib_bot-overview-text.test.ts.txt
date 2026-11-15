@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/lib/bot-overview-text.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  07:46:17
+   Duration  1.81s (transform 1.24s, setup 1.05s, import 589ms, tests 18ms, environment 0ms)
+
+
+EXIT: 0

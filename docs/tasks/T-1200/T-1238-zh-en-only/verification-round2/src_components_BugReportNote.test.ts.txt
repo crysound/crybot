@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/BugReportNote.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  05:14:29
+   Duration  4.03s (transform 2.93s, setup 1.25s, import 2.58s, tests 22ms, environment 0ms)
+

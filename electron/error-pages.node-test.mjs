@@ -20,10 +20,10 @@ test("the page for a server that never came up keeps its English, link and all",
 });
 
 test("the page speaks the app's language, with the log's link where the sentence puts it", () => {
-  const text = nativeText.createNativeText({ saved: "pt-br" });
+  const text = nativeText.createNativeText({ saved: "zh" });
   const html = page(buildErrorPage({ allPortsOccupied: true, logDir }, text));
-  assert.ok(html.includes(">Não foi possível iniciar o servidor dos bots</h2>"));
+  assert.ok(html.includes(">Couldn't start the bot server</h2>"));
   assert.equal(html.slice(html.indexOf("<p "), html.indexOf("</p>") + 4),
-    '<p style="color:#fcfcfc99;line-height:1.5">Outro processo respondeu às verificações de integridade em todas as portas do Cry Bot — provavelmente uma segunda cópia do app ou outro programa nas portas 8799–28799. Feche esse programa. Depois, saia do Cry Bot e abra novamente. '
-    + `Se isso continuar acontecendo, confira ${logLink}.</p>`);
+    '<p style="color:#fcfcfc99;line-height:1.5">Every Cry Bot port answered health checks from another process — likely a second copy of the app, or another program on ports 8799–28799. Quit that program, then quit and reopen Cry Bot. '
+    + `If it keeps happening, check ${logLink}.</p>`);
 });

@@ -1,0 +1,3 @@
+COMMAND: pnpm exec tsc -p tsconfig.server.json --pretty false
+
+EXIT: 0

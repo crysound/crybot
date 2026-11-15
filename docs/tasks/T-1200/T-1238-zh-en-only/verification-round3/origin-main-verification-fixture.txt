@@ -1,0 +1,34 @@
+BASELINE: origin/main 0c8950353d5b6a6c729afa36373ed78a18db6f68
+COMMAND: pnpm exec vitest run server/verification-fixture.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /tmp/t1238-origin
+
+ ❯ server/verification-fixture.e2e.test.ts (2 tests | 1 failed) 8831ms
+   × keeps the fixture blind to this machine's installed CLIs (#2035) 2707ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/verification-fixture.e2e.test.ts > keeps the fixture blind to this machine's installed CLIs (#2035)
+AssertionError: expected 'available' to be 'unavailable' // Object 相等 equality
+
+Expected: "unavailable"
+Received: "available"
+
+ ❯ server/verification-fixture.e2e.test.ts:54:93
+     52|     };
+     53|     const { instances } = await get("/api/instances") as { instances: …
+     54|     expect(instances.find((instance) => instance.instanceId === "chatg…
+       |                                                                                             ^
+     55|     expect(instances.filter((instance) => instance.snapshot.state === …
+     56|       .toEqual(["claude"]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  07:47:26
+   Duration  11.37s (transform 1.81s, setup 796ms, import 1.60s, tests 8.83s, environment 0ms)
+
+
+EXIT: 1

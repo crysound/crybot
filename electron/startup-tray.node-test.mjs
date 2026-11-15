@@ -152,11 +152,11 @@ test("the tray's menu and the startup screen speak the app's language, and the t
   assert.deepEqual(trayInstance.menu.map(item => item.label), ["Open Cry Bot", undefined, "Quit Cry Bot"]);
   text.set("pt-br");
   tray.relabel();
-  assert.deepEqual(trayInstance.menu.map(item => item.label), ["Abrir o Cry Bot", undefined, "Sair do Cry Bot"]);
+  assert.deepEqual(trayInstance.menu.map(item => item.label), ["Open Cry Bot", undefined, "Quit Cry Bot"]);
   assert.equal(trayInstance.tooltip, "Cry Bot");
   const html = startupScreenHtml(iconPath, { t: text.t, lang: text.intlTag() });
-  assert.match(html, /<html lang="pt-BR">/);
-  assert.match(html, /<button aria-label="Fechar"/);
+  assert.match(html, /<html lang="en">/);
+  assert.match(html, /<button aria-label="Close"/);
   assert.match(startupScreenHtml(iconPath), /<html lang="en">.*<button aria-label="Close"/s);
 });
 

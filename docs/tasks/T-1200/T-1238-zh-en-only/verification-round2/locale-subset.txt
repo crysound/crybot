@@ -1,0 +1,6 @@
+# 第 2 轮原始日志过长且含本机地址与页面源码，已删去，仅保留汇总（59 项失败已在第 3 轮处理，见 report.md）。
+ Test Files  39 failed | 1004 passed | 7 skipped (1050)
+      Tests  59 failed | 11178 passed | 69 skipped | 3 todo (11309)
+   Start at  04:29:41
+   Duration  2546.42s (transform 45.33s, setup 262.44s, import 227.93s, tests 1855.35s, environment 60.63s)
+

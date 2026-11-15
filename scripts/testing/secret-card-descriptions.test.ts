@@ -49,9 +49,9 @@ const render = (message: Message) => renderToStaticMarkup(createElement(SecretRe
 const escapedText = (text: string) => renderToStaticMarkup(createElement("span", null, text)).slice(6, -7);
 
 const localizedTargets = [
-  ["greenferenceApiKey", "Roda modelos do Greenference com sua própria chave."],
-  ["modelgoApiKey", "Roda modelos do ModelGo com sua própria chave."],
-  ["geminiTtsKey", "Gera respostas faladas, mensagens de voz e a fala das chamadas com o Gemini."],
+  ["greenferenceApiKey", "使用你自己的密钥运行 Greenference 模型。"],
+  ["modelgoApiKey", "使用你自己的密钥运行 ModelGo 模型。"],
+  ["geminiTtsKey", "使用 Gemini 生成朗读回复、语音消息和通话语音。"],
 ] as const;
 
 describe("credential descriptions from the real producer to the renderer", () => {
@@ -65,7 +65,7 @@ describe("credential descriptions from the real producer to the renderer", () =>
     const legacy = { ...message, secret: { ...message.secret!, descriptionParts: undefined } };
     expect(english).toBe(render(legacy));
     if (!message.secret!.descriptionParts) {
-      setLocale("pt-br");
+      setLocale("zh");
       expect(render(message)).toContain(escapedText(description));
     }
   });
@@ -75,15 +75,15 @@ describe("credential descriptions from the real producer to the renderer", () =>
     const message = await producedCard(target, reason);
     const saved = JSON.stringify(message);
     const english = render(message);
-    setLocale("pt-br");
-    expect(render(message)).toContain(escapedText(`${base} ${reason} Scout pode usar o valor, mas nunca consegue lê-lo.`));
+    setLocale("zh");
+    expect(render(message)).toContain(escapedText(`${base} ${reason} Scout 可以使用它，但永远无法读取它。`));
     expect(JSON.stringify(message)).toBe(saved);
     setLocale("en");
     expect(render(message)).toBe(english);
   });
 
   it.each(localizedTargets)("uses the received English fallback verbatim for %s", async (target) => {
-    const message = await producedCard(target, "For the requested report.", "pt-br");
+    const message = await producedCard(target, "For the requested report.", "zh");
     message.secret!.description += " Additional server context.";
     message.secret!.label += " supplied label";
     message.secret!.placeholder += " supplied placeholder";
@@ -95,11 +95,11 @@ describe("credential descriptions from the real producer to the renderer", () =>
 
   it.each([
     ["greenferenceApiKey", "en"],
-    ["greenferenceApiKey", "pt-br"],
+    ["greenferenceApiKey", "zh"],
     ["modelgoApiKey", "en"],
-    ["modelgoApiKey", "pt-br"],
+    ["modelgoApiKey", "zh"],
     ["geminiTtsKey", "en"],
-    ["geminiTtsKey", "pt-br"],
+    ["geminiTtsKey", "zh"],
   ] as const)("keeps the raw description of an older %s card in %s", async (target, locale) => {
     const message = await producedCard(target, "For the requested report.");
     delete message.secret!.descriptionParts;
@@ -109,7 +109,7 @@ describe("credential descriptions from the real producer to the renderer", () =>
 
   it.each(localizedTargets)("keeps the guarantee without an optional reason for %s", async (target, base) => {
     const message = await producedCard(target, "");
-    setLocale("pt-br");
-    expect(render(message)).toContain(escapedText(`${base} Scout pode usar o valor, mas nunca consegue lê-lo.`));
+    setLocale("zh");
+    expect(render(message)).toContain(escapedText(`${base} Scout 可以使用它，但永远无法读取它。`));
   });
 });

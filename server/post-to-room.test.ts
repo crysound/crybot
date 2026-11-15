@@ -462,12 +462,12 @@ describe("post_to_room", () => {
     const poster = await makeBot("Herold", "Posting");
     const listener = await makeBot("Hoerer", "Posting");
     const room = await makeRoom("Morgenrunde", [poster.id, listener.id], "Posting", { kind: "member", botId: listener.id });
-    expect((await api("PATCH", "/api/config", { language: "de" })).status).toBe(200);
+    expect((await api("PATCH", "/api/config", { language: "zh" })).status).toBe(200);
     try {
       const posted = await post(poster.id, poster.threadId, room.id, "Deploy ist grün");
       expect(posted.status, JSON.stringify(posted.body)).toBe(201);
       const receipt = (await messagesOf(poster.threadId)).find((message) => message.comm?.groupId === room.id);
-      expect(receipt?.tool?.name).toBe(serverLine("de", "server.rooms.postedIn", { room: "Morgenrunde" }));
+      expect(receipt?.tool?.name).toBe(serverLine("zh", "server.rooms.postedIn", { room: "Morgenrunde" }));
       expect(receipt?.tool?.name).not.toBe("Posted in Morgenrunde");
     } finally {
       await api("PATCH", "/api/config", { language: "en" });

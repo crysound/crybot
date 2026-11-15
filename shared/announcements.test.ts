@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   audienceMatches, compareVersions, isAnnouncementImageUrl, isHttpsUrl, LIMITS, liveCards, localized, MAX_CARDS,
-  parseAnnouncementCard, parseAnnouncementFeed, type AnnouncementFacts,
+  MAX_REMOTE_LOCALES, parseAnnouncementCard, parseAnnouncementFeed, type AnnouncementFacts,
 } from "./announcements";
 
 const ANNOUNCEMENT_IMAGE_PREFIX = "https://feed.example.test/";
@@ -71,7 +71,7 @@ describe("a card", () => {
   it("holds every text to its length, in every language", () => {
     expect(parseAnnouncementCard(card({ title: "x".repeat(LIMITS.title) })).ok).toBe(true);
     expect(parseAnnouncementCard(card({ title: "x".repeat(LIMITS.title + 1) })).ok).toBe(false);
-    expect(parseAnnouncementCard(card({ body: { en: "Fine.", de: "x".repeat(LIMITS.body + 1) } })).ok).toBe(false);
+    expect(parseAnnouncementCard(card({ body: { en: "Fine.", zh: "x".repeat(LIMITS.body + 1) } })).ok).toBe(false);
     expect(parseAnnouncementCard(card({ label: "x".repeat(LIMITS.label + 1) })).ok).toBe(false);
     expect(parseAnnouncementCard(card({ primary: { label: "x".repeat(LIMITS.button + 1), action: { open: "api_keys" } } })).ok).toBe(false);
     expect(parseAnnouncementCard(card({ body: "One\nTwo\nThree" })).ok).toBe(true);
@@ -80,7 +80,7 @@ describe("a card", () => {
 
   it("refuses text that hides or reorders itself, and a map with no English", () => {
     for (const title of ["Pay ‮evil", "zero​width", "tab\there", "line\nbreak", " padded"]) expect(parseAnnouncementCard(card({ title })).ok, JSON.stringify(title)).toBe(false);
-    expect(parseAnnouncementCard(card({ title: { de: "Nur Deutsch" } })).ok).toBe(false);
+    expect(parseAnnouncementCard(card({ title: { zh: "仅中文" } })).ok).toBe(false);
   });
 
   it("is never markup: angle brackets stay text, nothing is read as HTML", () => {
@@ -114,12 +114,12 @@ it("an https address has a host and nothing hidden in it", () => {
 });
 
 it("a text falls back from the region to the language to English", () => {
-  const text = { en: "Hello", de: "Hallo", "pt-br": "Olá" };
-  expect(localized(text, "de")).toBe("Hallo");
-  expect(localized(text, "pt-BR")).toBe("Olá");
-  expect(localized(text, "de-at")).toBe("Hallo");
-  expect(localized(text, "ja")).toBe("Hello");
-  expect(localized("Plain", "ja")).toBe("Plain");
+  const text = { en: "Hello", zh: "你好" };
+  expect(localized(text, "zh")).toBe("你好");
+  expect(localized(text, "zh-TW")).toBe("你好");
+  expect(localized(text, "zh-at")).toBe("你好");
+  expect(localized(text, "de")).toBe("Hello");
+  expect(localized("Plain", "de")).toBe("Plain");
 });
 
 it("drops cards whose time has passed", () => {
@@ -155,9 +155,9 @@ describe("who a card is for", () => {
     expect(audienceMatches({ surfaces: ["cloud"] }, facts())).toBe(false);
     expect(audienceMatches({ people: "new" }, facts())).toBe(false);
     expect(audienceMatches({ people: "returning" }, facts())).toBe(false);
-    expect(audienceMatches({ languages: ["pt-br"] }, facts({ locale: "pt-br" }))).toBe(true);
-    expect(audienceMatches({ languages: ["de"] }, facts({ locale: "de-at" }))).toBe(true);
-    expect(audienceMatches({ languages: ["de"] }, facts())).toBe(false);
+    expect(audienceMatches({ languages: ["zh"] }, facts({ locale: "zh" }))).toBe(true);
+    expect(audienceMatches({ languages: ["zh"] }, facts({ locale: "zh-TW" }))).toBe(true);
+    expect(audienceMatches({ languages: ["zh"] }, facts())).toBe(false);
     expect(audienceMatches({ platforms: "mac" }, facts()), "not a list").toBe(false);
   });
 
@@ -174,4 +174,13 @@ describe("who a card is for", () => {
     expect(audienceMatches({ plans: ["cloud"] }, facts({ plan: undefined }))).toBe(false);
     expect(audienceMatches({ plans: ["team", "cloud"] }, facts({ plan: "team" }))).toBe(true);
   });
+});
+
+it("reads multilingual remote cards while publishing only the two interface languages", () => {
+  const title = { en: "Hello", zh: "你好", de: "Hallo", es: "Hola" };
+  expect(parseAnnouncementCard(card({ title })).ok).toBe(true);
+  expect(parseAnnouncementCard(card({ title }), { strict: true }).ok).toBe(false);
+  expect(parseAnnouncementCard(card({ title: { en: "Hello", zh: "你好" } }), { strict: true }).ok).toBe(true);
+  const many = Object.fromEntries(Array.from({ length: MAX_REMOTE_LOCALES }, (_, i) => [`en-${String(i).padStart(2, "0")}`, "Hello"]));
+  expect(parseAnnouncementCard(card({ title: { ...many, en: "Hello" } })).ok).toBe(false);
 });

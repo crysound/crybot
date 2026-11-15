@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/automations.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  28 passed (28)
+   Start at  05:17:09
+   Duration  2.03s (transform 1.40s, setup 1.02s, import 826ms, tests 40ms, environment 0ms)
+

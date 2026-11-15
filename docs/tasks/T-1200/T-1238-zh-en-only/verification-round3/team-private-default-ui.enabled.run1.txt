@@ -1,0 +1,64 @@
+ENV: CRYBOT_UI_E2E=1; AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium; CRYBOT_AGENT_BROWSER_PATH=/tmp/t1238-ui-tools/tools/agent-browser/0.37.0/agent-browser
+COMMAND: pnpm exec vitest run scripts/testing/team-private-default-ui.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+stderr | scripts/testing/team-private-default-ui.e2e.test.ts > a team bot is its maker's until they share it, in the real app > an admin's Templates form says who can use the new bot, preset to Just me; choosing Everyone in Acme shares it from the start
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- [worktree]
+- [worktree]/node_modules
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/team-private-default-ui.e2e.test.ts > a team bot is its maker's until they share it, in the real app > an admin's Templates form says who can use the new bot, preset to Just me; choosing Everyone in Acme shares it from the start
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+ ❯ scripts/testing/team-private-default-ui.e2e.test.ts (6 tests | 1 failed) 172829ms
+     × an admin's Templates form says who can use the new bot, preset to Just me; choosing Everyone in Acme shares it from the start 67895ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/testing/team-private-default-ui.e2e.test.ts > a team bot is its maker's until they share it, in the real app > an admin's Templates form says who can use the new bot, preset to Just me; choosing Everyone in Acme shares it from the start
+Error: document.querySelector("[data-ready-bot] button") never held for ada; page errors: [] at [redacted-url]
+ ❯ scripts/testing/team-private-default-ui.e2e.test.ts:64:11
+     62|     await browser("screenshot", join(SHOTS, `failed-${who}.png`)).catc…
+     63|     const errors = await evaluate<string>("JSON.stringify(window.__pag…
+     64|     throw new Error(`${js} never held for ${who}; page errors: ${error…
+       |           ^
+     65|   });
+     66|   const click = async (selector: string) => {
+ ❯ Object 点击 scripts/testing/team-private-default-ui.e2e.test.ts:67:5
+ ❯ addFromTemplates scripts/testing/team-private-default-ui.e2e.test.ts:350:7
+ ❯ scripts/testing/team-private-default-ui.e2e.test.ts:367:18
+
+Caused by: AssertionError: expected false to be true // Object 相等 equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ until scripts/testing/team-private-default-ui.e2e.test.ts:61:134
+ ❯ Object 点击 scripts/testing/team-private-default-ui.e2e.test.ts:67:11
+ ❯ addFromTemplates scripts/testing/team-private-default-ui.e2e.test.ts:350:17
+ ❯ scripts/testing/team-private-default-ui.e2e.test.ts:367:18
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ Object 点击 scripts/testing/team-private-default-ui.e2e.test.ts:67:5
+ ❯ addFromTemplates scripts/testing/team-private-default-ui.e2e.test.ts:350:7
+ ❯ scripts/testing/team-private-default-ui.e2e.test.ts:367:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 passed (6)
+   Start at  08:43:54
+   Duration  174.63s (transform 1.23s, setup 714ms, import 961ms, tests 172.83s, environment 0ms)
+
+
+EXIT: 1

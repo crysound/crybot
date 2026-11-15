@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/notify.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  05:13:09
+   Duration  1.80s (transform 1.26s, setup 1.33s, import 260ms, tests 25ms, environment 0ms)
+

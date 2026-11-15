@@ -135,29 +135,29 @@ test("the native confirm and IPC refusals follow the app's current language", as
     await move(OWN, "atlas-bot-1");
     assert.equal(asked[0].message, "Move Atlas to Acme?");
     assert.deepEqual(labels, ["Move to a team"]);
-    text.set("pt-br");
+    text.set("zh");
     await move(OWN, "atlas-bot-1");
     assert.deepEqual(asked[1], {
-      message: "Mover Atlas para Acme?",
+      message: "要把 Atlas 移到 Acme 吗？",
       detail: [
-        "Só você e os administradores de Acme podem usar Atlas até você compartilhar.",
-        "Vão com Atlas: instruções, habilidades, arquivos, rotinas e suas conversas com Atlas",
-        "Suas conversas continuam privadas lá: só você pode vê-las.",
-        "Ficam no My Cloud: o que Atlas lembra, suas conexões e o Cry Bot",
-        "Não é possível desfazer: você não pode mover o bot de volta para o My Cloud.",
+        "Only you and Acme's admins can use Atlas until you share it.",
+        "随 Atlas 一起移过去：指令、技能、文件、例行任务，以及你和 Atlas 的对话",
+        "你的对话在那里依然保密：只有你能看到。",
+        "留在 My Cloud：Atlas 记得的内容、你的连接和 Cry Bot",
+        "无法撤销：你不能把它移回 My Cloud。",
       ].join("\n\n"),
-      buttons: ["Mover para Acme", "Cancelar"],
+      buttons: ["移到 Acme", "Cancel"],
     });
-    await assert.rejects(move({}, "atlas-bot-1"), { message: "Abra a equipe para a qual você quer mover o bot." });
-    await assert.rejects(move(OWN, "bot-bot-1"), { message: "Escolha um dos seus bots para mover." });
+    await assert.rejects(move({}, "atlas-bot-1"), { message: "Open the team you're moving a bot into." });
+    await assert.rejects(move(OWN, "bot-bot-1"), { message: "Choose one of your bots to move." });
   } finally { done(); }
 });
 
 test("the new My Cloud read uses the app's language for its session and failure", async () => {
-  const text = nativeText.createNativeText({ saved: "pt-br" });
+  const text = nativeText.createNativeText({ saved: "zh" });
   const { handlers, labels, done } = fixture({ t: text.t, listedStatus: 503 });
   try {
-    await assert.rejects(handlers.get("cloud-send:team-bring-move")(OWN, "atlas-bot-1"), { message: "O Cloud não respondeu." });
-    assert.deepEqual(labels, ["Mover para uma equipe"]);
+    await assert.rejects(handlers.get("cloud-send:team-bring-move")(OWN, "atlas-bot-1"), { message: "My Cloud did not answer." });
+    assert.deepEqual(labels, ["Move to a team"]);
   } finally { done(); }
 });

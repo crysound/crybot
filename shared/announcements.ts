@@ -9,13 +9,15 @@
 // leniently, so a field a later version adds never hides a card from this one, while an unknown kind, action or
 // audience key does.
 import { z } from "zod";
+import { SUPPORTED_LANGUAGE_CODES } from "./languages.ts";
 
 export const ANNOUNCEMENTS_FILE = "announcements/announcements.json";
 export const ANNOUNCEMENTS_SCHEMA_FILE = "announcements/announcements.schema.json";
 
 /** An install reads at most this many cards, in file order; CI refuses a longer list. */
 export const MAX_CARDS = 20;
-export const MAX_LOCALES = 16;
+export const MAX_LOCALES = SUPPORTED_LANGUAGE_CODES.length;
+export const MAX_REMOTE_LOCALES = 16;
 export const LIMITS = { id: 40, label: 16, title: 60, body: 240, button: 24, alt: 120, url: 500, bodyLines: 3 } as const;
 
 export const ANNOUNCEMENT_KINDS = ["sponsor", "product", "tip"] as const;
@@ -48,7 +50,7 @@ export type AnnouncementPeople = (typeof ANNOUNCEMENT_PEOPLE)[number];
 export const ANNOUNCEMENT_CONDITIONS = ["no_api_key", "one_bot_only", "no_routine"] as const;
 export type AnnouncementCondition = (typeof ANNOUNCEMENT_CONDITIONS)[number];
 /** The app's languages, as its language menu lists them (localeChoices). */
-export const ANNOUNCEMENT_LOCALES = ["en", "de", "es", "fr", "hi", "ja", "pt-br", "zh", "zh-tw", "uk", "vi", "tr", "pl", "ru", "it", "ko"] as const;
+export const ANNOUNCEMENT_LOCALES = SUPPORTED_LANGUAGE_CODES;
 export const AUDIENCE_KEYS = ["minVersion", "maxVersion", "platforms", "surfaces", "plans", "people", "languages", "when"] as const;
 
 // Control characters, and the ones that reorder or hide text (bidi overrides and isolates, zero-width joiners).
@@ -94,12 +96,13 @@ function oneText(max: number, body: boolean) {
 /** Plain text: one string (English), or one per language with English among them. */
 function text(max: number, strict: boolean, body = false) {
   const one = oneText(max, body);
+  const maxLocales = strict ? MAX_LOCALES : MAX_REMOTE_LOCALES;
   // partialRecord: a record keyed by an enum would need every language.
   const map = (strict ? z.partialRecord(z.enum(ANNOUNCEMENT_LOCALES), one) : z.record(z.string().regex(LOCALE_KEY), one)) as z.ZodType<Record<string, string>>;
   return z.union([
     one,
     map.refine((map) => Object.hasOwn(map, "en"), "needs an \"en\" text")
-      .refine((map) => Object.keys(map).length <= MAX_LOCALES, `at most ${MAX_LOCALES} languages`),
+      .refine((map) => Object.keys(map).length <= maxLocales, `at most ${maxLocales} languages`),
   ]);
 }
 export type AnnouncementText = string | Record<string, string>;

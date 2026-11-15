@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/hooks/use-presence.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  07:46:08
+   Duration  1.79s (transform 1.20s, setup 967ms, import 631ms, tests 40ms, environment 0ms)
+
+
+EXIT: 0

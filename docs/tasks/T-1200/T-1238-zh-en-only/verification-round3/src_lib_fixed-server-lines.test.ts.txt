@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/lib/fixed-server-lines.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  59 passed (59)
+   Start at  07:46:24
+   Duration  2.53s (transform 1.79s, setup 1.04s, import 1.29s, tests 57ms, environment 0ms)
+
+
+EXIT: 0

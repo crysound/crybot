@@ -96,8 +96,8 @@ it("in This computer's own place, the line says it is separate from My Cloud, wh
   await vi.waitFor(() => expect(host.querySelector("[data-home-line='profile']")).not.toBeNull());
   expect(homeLineText({ kind: "profile" })).toBe("This computer starts fresh, separate from My Cloud. The bots you had here are on My Cloud; to bring in an older copy, import its backup in Settings → Backups.");
   expect(host.querySelector("[data-home-line-ai]")?.textContent, "a fresh place offers connecting an AI while none is ready").toBe("Connect an AI");
-  setLocale("pt-br");
-  expect(homeLineText({ kind: "profile" })).toMatch(/^Este computador começa do zero/);
+  setLocale("zh");
+  expect(homeLineText({ kind: "profile" })).toMatch(/^这台电脑 是一个全新的/);
 });
 
 it("in a workspace added from ＋, the line names it and says it is separate, with its own bots, chats and files", () => {
