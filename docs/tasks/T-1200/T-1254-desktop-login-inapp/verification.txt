@@ -1,0 +1,338 @@
+pnpm exec vitest run electron/desktop-build-config.test.mjs
+通过：1 个文件，14 个测试。
+
+node --test electron/main-navigation.node-test.mjs
+通过：3 个测试。
+
+node --test electron/login-navigation.node-test.mjs
+通过：2 个测试。
+
+node --test electron/preload.node-test.mjs
+通过：13 个测试。
+
+pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+通过：1 个测试。
+
+pnpm exec oxlint --deny-warnings electron/main.mjs electron/login-navigation.mjs electron/desktop-build-config.mjs electron/desktop-build-config.test.mjs scripts/desktop-build-config.cjs electron/main-navigation.node-test.mjs electron/login-navigation.node-test.mjs
+通过：无警告。
+
+pnpm exec tsc -b && pnpm exec tsc -p tsconfig.server.json
+通过。
+
+第 1 轮未运行 Electron 真机整链路测试；当时的字符串分类测试仅覆盖跳转分类，未覆盖导航事件、窗口生命周期或实际请求，不能视为同等集成覆盖。
+
+第 2 轮
+已运行 crybot-link-deps。
+仓库缺少 AGENTS.md 引用的 docs/verification/README.md。
+本轮 Electron 测试使用临时独立用户目录、随机监听端口和本地假服务，结束后销毁窗口、停止服务、删除目录；未访问用户应用或数据。
+首次试跑因测试入口等待应用就绪的时序导致超时；改为异步函数入口后通过。以下记录最终版本的完整命令输出。
+
+$ node --test electron/login-navigation.node-test.mjs
+✔ keeps an active login inside the app when a redirect is outside the allowlist (0.637391ms)
+✔ will-navigate ignores subframes in both main and login windows (2.076511ms)
+✔ will-redirect ignores subframes in both main and login windows (0.210601ms)
+✔ server navigation is preserved until the main frame finishes loading (0.24433ms)
+✔ closing the main window closes every managed login window (0.23511ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 53.905548
+
+exit=0
+
+$ node --test electron/main-navigation.node-test.mjs
+✔ a navigation retires the launch recovery, except the recovery's own (5.330334ms)
+✔ login popups and the return to the server stay inside (remoteOnly=false) (4.180033ms)
+✔ login popups and the return to the server stay inside (remoteOnly=true) (2.554252ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 77.073895
+
+exit=0
+
+$ node --test electron/preload.node-test.mjs
+✔ exposes the full local-shell bridge on window.cry (0.798851ms)
+✔ desktopNotices keeps shown() for a Cloud page on an older release, and asks main nothing (0.576801ms)
+✔ openLogsFolder asks main for its own logs folder and names no path (0.19159ms)
+✔ copyText forwards only the text over the explicit clipboard:write-text channel (0.09958ms)
+✔ browser control forwards a separate per-device capability, not the cloud grant (0.13168ms)
+✔ the talk bridge asks main over its own channels with only what it understands (0.20695ms)
+✔ account prepare asks for the secure address over its own channel and sends nothing from the page (0.1133ms)
+✔ onOpenAppSettings subscribes to the exact app:open-settings channel, forwards every emit, and unsubscribes cleanly (0.23843ms)
+✔ an organisation action arriving before React subscriptions is delivered exactly once after mount (0.182651ms)
+✔ a transient subscription cannot consume a cold-start action before the actual mount (0.20041ms)
+✔ native Settings requests accept only the fixed organisation section, Cloud link and plain Cloud settings (0.12878ms)
+✔ a Settings page name from Switch to This computer reaches Settings, also before React subscribes (1.656841ms)
+✔ a Cloud link arriving before React subscriptions is delivered exactly once after mount (0.27864ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 68.755209
+
+exit=0
+
+$ node --test electron/preload-contract.node-test.mjs
+✔ the bridge keeps every function a page of the last two releases calls (0.74012ms)
+✔ a Cloud or server page keeps the bridge keys it had, and the home page its own (0.37208ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62.710334
+
+exit=0
+
+$ node --test electron/home-navigation.node-test.mjs
+✔ while the window is on the place's own sign-in page, its 401s start no second sign-in (a team's and My Cloud's alike) (32.962514ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 151.541279
+
+exit=0
+
+$ node --test electron/remote-only.node-test.mjs
+✔ main-window loads enforce the build setting (false) (1.217791ms)
+✔ main-window loads enforce the build setting (true) (0.35058ms)
+✔ saved environments and write failures respect remoteOnly=false (0.314461ms)
+✔ saved environments and write failures respect remoteOnly=true (0.11667ms)
+✔ failed <redacted> shows retry without switching environments (24.658327ms)
+✔ failed <redacted> shows retry without switching environments (0.373031ms)
+✔ reload targets only the focused window (ignoreCache=false) (0.82476ms)
+✔ reload targets only the focused window (ignoreCache=true) (0.247181ms)
+✔ startup chooses the expected server (remoteOnly=false) (0.35691ms)
+✔ startup chooses the expected server (remoteOnly=true) (0.17347ms)
+✔ workspace IPC refuses before executing handlers (remoteOnly=false) (0.24081ms)
+✔ workspace IPC refuses before executing handlers (remoteOnly=true) (0.42457ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 91.895045
+
+exit=0
+
+抽取导航模块后，权限测试的一处源码匹配仍指向主入口，首次运行失败；已改为检查抽取后的模块，以下为复验输出。
+
+$ node --test electron/app-permissions.node-test.mjs
+✔ grants notifications, clipboard, and fullscreen to the local renderer page (3.134333ms)
+✔ accepts a bare origin or a full URL on either side (0.20961ms)
+✔ allows media for audio (microphone) and guarded display-capture, denies video (camera) (0.19291ms)
+✔ refuses permissions to any other origin (0.09654ms)
+✔ keeps every privileged capability off even for the local renderer page (0.15296ms)
+✔ rejects mixed, unknown, and conflicting media details (0.102001ms)
+✔ web links reject embedded credentials and non-web schemes (0.46627ms)
+✔ an email link opens only as a draft to one address with a subject and a body (0.65176ms)
+✔ both external-link entry points use the policy and IPC retains the local-origin gate (1.042581ms)
+✔ fails closed on unparsable or opaque origins (0.24763ms)
+✔ the verified Cloud open in this window may use the microphone (0.416181ms)
+✔ the Cloud never gets the camera, screen capture or any other capability but clipboard writes (0.42014ms)
+✔ the Cloud's microphone is decided by this computer's media rule, never a copy of it (0.35069ms)
+✔ a server that is not the verified Cloud never hears the microphone (0.324451ms)
+✔ signed out of Cloud, or the Cloud not running, its page loses the microphone at once (0.1669ms)
+✔ the verified Cloud open in this window may write the clipboard, by the remote server's rule (0.332ms)
+✔ once My Cloud is home its page may show notifications and go fullscreen, in the main window's main frame only; any other page still may not (0.58295ms)
+✔ this computer's own page keeps its permissions through the same handlers (0.165281ms)
+✔ the app installs these handlers with its one origin rule and hosted sign-in disabled (1.656061ms)
+✔ a Live call placed while the saved sign-in is still restoring hears the microphone once it has (7.557635ms)
+✔ a restore that ends without this Cloud, or outlasts the wait, refuses rather than waiting on (0.380761ms)
+✔ with CryBot Cloud unreachable past the verified window, the same account's Cloud keeps the microphone (0.20486ms)
+✔ signed out, the Cloud's page never hears the microphone (0.12995ms)
+✔ a Cloud remembered for another account is not this account's Cloud (0.11479ms)
+✔ companion client mode has no Cloud of its own, so no Cloud page hears the microphone (0.10115ms)
+✔ a check that finds no Cloud for this account ends it, for the microphone and the Plan channels alike (0.14022ms)
+✔ a stopped Cloud named without its address is still this account's Cloud (0.15013ms)
+✔ after the sign-in has ended or expired, the same account's Cloud keeps the microphone until sign-out (0.756421ms)
+✔ a page asking about its microphone hears whether this app lets it use it (0.19542ms)
+✔ the Cloud's page is refused where its microphone request would be (0.1772ms)
+✔ the page's answer is the request handler's answer for its microphone (1.022641ms)
+✔ a remote server may write clipboard text only as the active origin's main frame (0.21603ms)
+✔ the base policy itself still grants a remote origin nothing (0.06254ms)
+✔ the active remote server's page may show notifications and go fullscreen, in the main window's main frame only (0.33421ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 88.523624
+
+exit=0
+
+$ pnpm exec vitest run electron/desktop-build-config.test.mjs
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  13:40:19
+   Duration  1.62s (transform 898ms, setup 1.21s, import 141ms, tests 99ms, environment 0ms)
+
+
+exit=0
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  13:40:21
+   Duration  1.99s (transform 790ms, setup 1.01s, import 14ms, tests 817ms, environment 0ms)
+
+
+exit=0
+
+$ xvfb-run -a pnpm exec electron --no-sandbox --log-level=3 electron/login-navigation.electron.test.mjs
+PASS: real Electron redirect chain, managed popup, minimum size, no preload, subframes, POST body, shared session, all login windows closed, zero external opens
+
+exit=0
+
+$ xvfb-run -a pnpm exec electron --no-sandbox --log-level=3 electron/login-navigation.electron.test.mjs
+PASS: real Electron redirect chain, managed popup, minimum size, no preload, subframes, POST body, shared session, all login windows closed, zero external opens
+
+exit=0
+
+$ xvfb-run -a pnpm exec electron --no-sandbox --log-level=3 electron/login-navigation.electron.test.mjs
+PASS: real Electron redirect chain, managed popup, minimum size, no preload, subframes, POST body, shared session, all login windows closed, zero external opens
+
+exit=0
+
+将 Electron fixture 接入仓库既有 Vitest 入口后，最终入口连续复验三次：
+
+run=1
+$ pnpm exec vitest run electron/login-navigation.electron.test.mjs
+
+ RUN  v4.1.11 <worktree>
+
+ ❯ electron/login-navigation.electron.test.mjs (1 test | 1 failed) 45073ms
+   × completes a real login through a managed popup, subframes and a POST callback without external navigation 45069ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  electron/login-navigation.electron.test.mjs > completes a real login through a managed popup, subframes and a POST callback without external navigation
+Error: Command failed: /usr/bin/xvfb-run -a /opt/crybot-deps/node_modules/.pnpm/electron@43.7.9/node_modules/electron/dist/electron --no-sandbox --log-level=3 <worktree>/electron/fixtures/login-navigation.mjs
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  13:41:14
+   Duration  46.90s (transform 1.32s, setup 1.64s, import 13ms, tests 45.07s, environment 0ms)
+
+
+exit=1
+
+入口首次复验超时，随后复验通过；已加强 fixture 清理，主动关闭所有测试连接，并让超时保护覆盖清理阶段。以下是最终版本连续三次复验。
+
+final-run=1
+$ pnpm exec vitest run electron/login-navigation.electron.test.mjs
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  13:43:14
+   Duration  1.95s (transform 923ms, setup 1.16s, import 13ms, tests 620ms, environment 0ms)
+
+
+exit=0
+
+final-run=2
+$ pnpm exec vitest run electron/login-navigation.electron.test.mjs
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  13:43:16
+   Duration  1.91s (transform 846ms, setup 1.07s, import 12ms, tests 651ms, environment 0ms)
+
+
+exit=0
+
+final-run=3
+$ pnpm exec vitest run electron/login-navigation.electron.test.mjs
+
+ RUN  v4.1.11 <worktree>
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  13:43:19
+   Duration  1.74s (transform 754ms, setup 986ms, import 10ms, tests 594ms, environment 0ms)
+
+
+exit=0
+
+$ pnpm exec oxlint --deny-warnings electron/app-permissions.node-test.mjs electron/login-navigation.mjs electron/login-navigation.node-test.mjs electron/main-navigation.node-test.mjs electron/main.mjs electron/fixtures/login-navigation.mjs electron/login-navigation.electron.test.mjs
+exit=0（无输出表示无警告、无错误）
+
+# 第 4 轮
+
+$ node --test electron/login-navigation.node-test.mjs
+✔ 6 tests passed
+exit=0
+
+$ node --test electron/main-navigation.node-test.mjs
+✔ 3 tests passed
+exit=0
+
+$ pnpm exec vitest run electron/login-navigation.electron.test.mjs
+Test Files  1 passed (1)
+Tests  1 passed (1)
+exit=0
+
+$ pnpm exec vitest run electron/login-navigation.electron.test.mjs
+Test Files  1 passed (1)
+Tests  1 passed (1)
+exit=0
+
+$ pnpm exec vitest run electron/login-navigation.electron.test.mjs
+Test Files  1 passed (1)
+Tests  1 passed (1)
+exit=0
+
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts
+Test Files  1 passed (1)
+exit=0
+
+$ pnpm exec vitest run electron/desktop-build-config.test.mjs
+Test Files  1 passed (1)
+Tests  14 passed (14)
+exit=0
+
+$ pnpm exec oxlint --deny-warnings electron/login-navigation.mjs electron/login-navigation.node-test.mjs
+exit=0
+
+$ git diff --check
+exit=0

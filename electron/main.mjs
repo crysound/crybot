@@ -3,6 +3,7 @@ import { createIsland, isIslandWindow, openIslandChat } from "./island.mjs";
 import { islandSource } from "./island-model.mjs";
 import { loadDesktopWindow, remoteOnlyLoadFailed, reloadDesktopWindow, desktopEnvironmentsToSave, desktopEnvironmentSaveFailure, workspaceActionsAllowed, workspaceHandler, desktopStartupUrl } from "./remote-only.mjs";
 import { readDesktopBuildConfig, defaultServerEnvironment, localServerEnvironment, loginNavigationAllowed } from "./desktop-build-config.mjs";
+import { attachLoginNavigation } from "./login-navigation.mjs";
 import { app, autoUpdater as nativeAutoUpdater, BrowserWindow, Tray, WebContentsView, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, net, protocol, powerMonitor, powerSaveBlocker, safeStorage, screen, session, shell, systemPreferences, utilityProcess, nativeTheme } from "electron";
 import { createRequire } from "node:module";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -1880,37 +1881,11 @@ function createWindow({ deferNavigation = false } = {}) {
     if (mainWindow === win) mainWindow = null;
   });
 
-  const loginAllowed = (url, options) => loginNavigationAllowed(url, activeRemote(environmentsState), desktopBuild.loginHosts, { ...options, remoteOnly: desktopBuild.remoteOnly });
-  const externalOpenedAt = new Map();
-  const openNavigationExternal = url => {
-    try {
-      const external = externalLinkUrl(url);
-      const now = Date.now();
-      for (const [target, at] of externalOpenedAt) if (now - at >= 2_000) externalOpenedAt.delete(target);
-      if (externalOpenedAt.has(external)) return;
-      externalOpenedAt.set(external, now);
-      void shell.openExternal(external).catch(() => {
-        console.warn("The external web link could not be opened");
-      });
-    } catch {}
-  };
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (loginAllowed(url, { popup: true })) { void loadDesktopWindow(win, url, desktopBuild).catch(() => {}); return { action: "deny" }; }
-    openNavigationExternal(url);
-    return { action: "deny" };
+  attachLoginNavigation({
+    win, BrowserWindow, desktopBuild, loadDesktopWindow, shell, dialog, slog,
+    loginAllowed: (url, options) => loginNavigationAllowed(url, activeRemote(environmentsState), desktopBuild.loginHosts, { ...options, remoteOnly: desktopBuild.remoteOnly }),
+    workspaceAllowed: url => workspaceNavigationAllowed(url, environmentsState, rendererOrigin()),
   });
-  const guardNavigation = (event, url) => {
-    let origin = null;
-    try {
-      origin = new URL(url).origin;
-    } catch {}
-    if (workspaceNavigationAllowed(url, environmentsState, rendererOrigin()) || loginAllowed(url)) return;
-    event.preventDefault();
-    slog(`blocked navigation to ${origin ?? "an invalid address"}`);
-    openNavigationExternal(url);
-  };
-  win.webContents.on("will-navigate", guardNavigation);
-  win.webContents.on("will-redirect", guardNavigation);
   // No page may embed the local server, or any saved server, in this preload-bearing window.
   win.webContents.on("will-frame-navigate", (details) => {
     if (details.isMainFrame) return;
