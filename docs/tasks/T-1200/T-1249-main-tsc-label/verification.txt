@@ -1,0 +1,91 @@
+T-1249 verification
+Dependencies: crybot-link-deps succeeded (73 entries linked).
+No systemd in sandbox: commands run directly.
+docs/verification/README.md is absent in this checkout.
+sessions.test.ts uses an isolated mkdtempSync directory for each test.
+Only a unit-test input changed; no e2e behavior changes.
+
+$ rg -n -U \bexchange\s*\( --glob *test* --glob *spec* .
+./server/feishu-routes.unit.test.ts:58:  expect(await exchange()).toBe(true);
+./server/feishu-routes.unit.test.ts:74:  expect(await exchange()).toBe(true);
+./server/feishu-routes.unit.test.ts:96:  expect(await exchange()).toBe(true);
+./server/cloud-home-address.test.ts:137:  for (let i = 0; i < PAIRING_LOCKOUT.failures; i++) expect(sessions.exchange({ code: "AAAAAAAAAAAA", label: "", source: stranger }).ok).toBe(false);
+./server/cloud-home-address.test.ts:138:  expect(sessions.exchange({ code: "AAAAAAAAAAAA", label: "", source: stranger })).toMatchObject({ ok: false, status: 429 });
+./server/cloud-home-address.test.ts:144:  expect(sessions.exchange({ code: "AAAAAAAAAAAA", label: "", source: member })).toMatchObject({ ok: false, status: 401 });
+./server/cloud-home-address.test.ts:145:  expect(sessions.exchange({ code: String(admin.body.code), label: "Phone", source: member }).ok).toBe(true);
+./server/notification-routing.e2e.test.ts:364:      await expect.poll(() => exchange().map((node) => node.status), { timeout: 20_000 }).toEqual(["completed", "completed"]);
+./server/notification-routing.e2e.test.ts:365:      const [root, consult] = exchange() as [HandoffView, HandoffView];
+./server/headless/token.test.ts:36:      const paired = registry 的 exchange 调用({ code: body.code, label: body.label ?? "", source: "test" });
+./server/headless/token.test.ts:80:    const device = registry 的 exchange 调用({ code: registry.openPairing({ label: "Phone" }).code, label: "", source: "x" });
+./server/claude-account-api.test.ts:107:  const paired = sessions.exchange({ code: sessions.openPairing({ scopes: ["client"] }).code, label: "Fixture client", source: "fixture" });
+./server/sessions.test.ts:79:    const issued = registry 的 exchange 调用({ code: pairing.credential, label: "Non-Feishu session", source: "fixture", browser: kind === "owner" });
+./server/sessions.test.ts:156:    expect(registry 的 exchange 调用({ code: trap, label: "", source: "attacker" }).ok).toBe(false);
+./server/sessions.test.ts:157:    expect(registry 的 exchange 调用({ code: credential, label: "", source: "friend" }).ok).toBe(true);
+./server/sessions.test.ts:172:    expect(registry 的 exchange 调用({ code: credential, label: "", source: "b" }).ok).toBe(false);
+./server/sessions.test.ts:175:      registry 的 exchange 调用({ code: generatePairingCredential(), label: "", source: "attacker" });
+./server/sessions.test.ts:177:    const locked = registry 的 exchange 调用({ code: registry.openPairing().credential, label: "", source: "attacker" });
+./server/sessions.test.ts:247:  const result = registry 的 exchange 调用({ code, label, source });
+./server/sessions.test.ts:266:    const first = registry 的 exchange 调用({ code: formatPairingCode(code).toLowerCase(), label: "", source: "a" });
+./server/sessions.test.ts:269:    const again = registry 的 exchange 调用({ code, label: "x", source: "a" });
+./server/sessions.test.ts:275:    expect(registry 的 exchange 调用({ code: stale, label: "x", source: "b" }).ok).toBe(false);
+./server/sessions.test.ts:283:    expect(registry 的 exchange 调用({ code, label: "", source: "a" }).ok).toBe(true);
+./server/sessions.test.ts:284:    expect(registry 的 exchange 调用({ code, label: "", source: "a" }).ok).toBe(false);
+./server/sessions.test.ts:287:    expect(registry 的 exchange 调用({ code: late, label: "", source: "b" }).ok).toBe(false);
+./server/sessions.test.ts:300:      expect(registry 的 exchange 调用({ code: "AAAAAAAAAAAA", label: "", source: "attacker" }).ok).toBe(false);
+./server/sessions.test.ts:303:    const locked = registry 的 exchange 调用({ code, label: "", source: "attacker" });
+./server/sessions.test.ts:310:    expect(registry 的 exchange 调用({ code, label: "", source: "friend" }).ok).toBe(true);
+./server/sessions.test.ts:313:    expect(registry 的 exchange 调用({ code: fresh, label: "", source: "attacker" }).ok).toBe(true);
+./server/sessions.test.ts:319:    for (let i = 0; i < 4; i++) registry 的 exchange 调用({ code: "AAAAAAAAAAAA", label: "", source: "slow" });
+./server/sessions.test.ts:321:    const fifth = registry 的 exchange 调用({ code: "AAAAAAAAAAAA", label: "", source: "slow" });
+./server/sessions.test.ts:324:    const locked = registry 的 exchange 调用({ code, label: "", source: "slow" });
+./server/sessions.test.ts:337:      for (let i = 0; i < PAIRING_LOCKOUT.failures + 1; i++) registry 的 exchange 调用({ code: "AAAAAAAAAAAA", label: "", source });
+./server/sessions.test.ts:338:      expect(registry 的 exchange 调用({ code: registry.openPairing().code, label: "", source }).ok, source).toBe(true);
+./server/sessions.test.ts:347:    expect(registry 的 exchange 调用({ code: registry.openPairing().code, label: "", source: "mail" }).ok).toBe(true);
+./server/sessions.test.ts:353:        const refused = registry 的 exchange 调用({ code: input, label: "", source: "mixed-up" });
+./server/sessions.test.ts:362:    expect(registry 的 exchange 调用({ code: `https://bot.example.com/pair#code=${formatPairingCode(a.code)}`, label: "", source: "s" }).ok).toBe(true);
+./server/sessions.test.ts:364:    expect(registry 的 exchange 调用({ code: `crybot://pair?address=https%3A%2F%2Fbot.example.com&token=${b.credential}`, label: "", source: "s" }).ok).toBe(true);
+./server/sessions.test.ts:369:    const first = registry 的 exchange 调用({ code, label: "phone", source: "a", attemptId: "attempt-0001-abcd" });
+./server/sessions.test.ts:371:    expect(registry 的 exchange 调用({ code, label: "phone", source: "b", attemptId: "attempt-0001-abcd" })).toEqual(first);
+./server/sessions.test.ts:373:    expect(registry 的 exchange 调用({ code, label: "x", source: "a", attemptId: "attempt-0002-efgh" }).ok).toBe(false);
+./server/sessions.test.ts:374:    expect(registry 的 exchange 调用({ code, label: "x", source: "a" }).ok).toBe(false);
+./server/sessions.test.ts:376:    expect(registry 的 exchange 调用({ code: c2, label: "p", source: "a", attemptId: "no" }).ok).toBe(true);
+./server/sessions.test.ts:377:    expect(registry 的 exchange 调用({ code: c2, label: "p", source: "a", attemptId: "no" }).ok).toBe(false);
+./server/sessions.test.ts:379:    expect(registry 的 exchange 调用({ code, label: "phone", source: "a", attemptId: "attempt-0001-abcd" }).ok).toBe(false);
+./server/sessions.test.ts:383:    registry 的 exchange 调用({ code: "AAAAAAAAAAAA", label: "", source: "flaky" });
+./server/sessions.test.ts:392:    const named = registry 的 exchange 调用({ code: a.code, label: "", source: "s1", fallbackLabel: "Safari on Mac" });
+./server/sessions.test.ts:396:    const ua = registry 的 exchange 调用({ code: b.code, label: "  ", source: "s2", fallbackLabel: "Safari on Mac" });
+./server/sessions.test.ts:400:    const explicit = registry 的 exchange 调用({ code: c.code, label: "Kitchen iPad", source: "s3", fallbackLabel: "Safari on iPad" });
+./server/sessions.test.ts:407:    const named = registry 的 exchange 调用({ code, label: "Safari\u202E on iPad\n\u0007\u2066", source: "s4" });
+./server/sessions.test.ts:410:    const blank = registry 的 exchange 调用({ code: registry.openPairing().code, label: "\u202E\u0000", source: "s5", fallbackLabel: "Chrome\u200F on Mac" });
+./server/sessions.test.ts:418:    const result = registry 的 exchange 调用({ code, label: "viewer", source: "s" });
+./server/sessions.test.ts:695:    const paired = registry 的 exchange 调用({ code, label: "", source: "ci" });
+./server/sessions.test.ts:708:    const signedIn = registry 的 exchange 调用({ code: browser.credential, label: "", source: "b", browser: true });
+./server/sessions.test.ts:711:    const long = registry 的 exchange 调用({ code, label: "", source: "c" });
+./server/sessions.test.ts:805:    const stored = registry 的 exchange 调用({ code: earlier.credential, label: "Guest phone", source: "a" });
+./server/sessions.test.ts:809:    const owner = registry 的 exchange 调用({ code: registry.openPairing().credential, label: "Mac", source: "a" });
+./server/sessions.test.ts:812:    expect(registry 的 exchange 调用({ code: openWindow.credential, label: "Guest", source: "b" })).toEqual({ ok: false, status: 403, error: PERSONAL, errorKey: "serverError.cloud.personal" });
+./server/sessions.test.ts:821:    const next = registry 的 exchange 调用({ code: registry.openPairing({ scopes: ["admin"] }).credential, label: "Phone", source: "c" });
+./server/sessions.test.ts:843:    const paired = registry 的 exchange 调用({ code, label: "Desktop", source: "a" });
+./server/sessions.test.ts:850:    const paired = registry 的 exchange 调用({ code, label: "Ada's phone", source: "p" });
+./server/sessions.test.ts:913:    expect(registry 的 exchange 调用({ code, label: "Someone's phone", source: "q" }).ok).toBe(true);
+./server/phone-relay.test.ts:52:      const paired = sessions.exchange({ code: presented, label: input.deviceName ?? "", source: requestSource(req) });
+Exit code: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+Exit code: 0
+
+$ pnpm exec vitest run server/sessions.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /data/home/codex-t-1249-main-tsc-label-8e49ff893090
+
+
+ Test Files  1 passed (1)
+      Tests  87 passed (87)
+   Start at  05:18:31
+   Duration  1.84s (transform 922ms, setup 1.05s, import 151ms, tests 494ms, environment 0ms)
+
+Exit code: 0
+
+$ git diff --check
+Exit code: 0
+(已删去 31 行引用现有测试夹具地址的搜索输出)
