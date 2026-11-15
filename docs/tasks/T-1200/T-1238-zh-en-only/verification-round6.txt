@@ -1,0 +1,1116 @@
+Round 6 verification
+Dependency setup: crybot-link-deps; exit 0; linked 73 entries.
+Tests ran sequentially, one file at a time; CI automatic retries disabled (CI empty).
+All servers and data use existing isolated fixtures and temporary homes.
+The referenced verification README is absent; existing fixture launchers were inspected.
+The requested i18n test is located at src/lib/i18n.test.ts.
+VNC browser tests use system Chromium through a temporary launcher adding --no-sandbox.
+URLs, hosts, IDs and equality assertion details are redacted from command output.
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/core.e2e.test.ts initial run 1
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/core.e2e.test.ts > boots an isolated InstaBox bot, persists its backend, suspends on switching, and deletes its retained machine 10165ms
+ ✓ server/instabox/core.e2e.test.ts > forces vps onto Boat for a run_on=cloud routine 2541ms
+ ✓ server/instabox/core.e2e.test.ts > forces instabox onto Boat for a run_on=cloud routine 2655ms
+ ✓ server/instabox/core.e2e.test.ts > refuses an InstaBox cloud routine when the fixture offers no cloud provider 2360ms
+ ✓ server/instabox/core.e2e.test.ts > checks run_on=cloud vps turns against the box policy before mounting cloud computers 8777ms
+ ✓ server/instabox/core.e2e.test.ts > checks run_on=cloud instabox turns against the box policy before mounting cloud computers 8421ms
+ ✓ server/instabox/core.e2e.test.ts > refuses a normal InstaBox turn under the managed box policy before any machine request 6926ms
+ ✓ server/instabox/core.e2e.test.ts > allows a normal InstaBox turn in a real Cloud home without using Boat 2511ms
+ ✓ server/instabox/core.e2e.test.ts > keeps an Android agent usable when a normal turn does not specify a template 2326ms
+ ✓ server/instabox/core.e2e.test.ts > deletes a Boat machine owned by an agent switched to InstaBox 2357ms
+ ✓ server/instabox/core.e2e.test.ts > deletes a VPS machine owned by an agent switched to InstaBox 2399ms
+ ✓ server/instabox/core.e2e.test.ts > deletes a retained InstaBox machine after switching backend 2310ms
+ ✓ server/instabox/core.e2e.test.ts > keeps deletion independent of InstaBox http failures for Boat bots 2145ms
+ ✓ server/instabox/core.e2e.test.ts > keeps deletion independent of InstaBox network failures for Boat bots 2284ms
+ ✓ server/instabox/core.e2e.test.ts > keeps an InstaBox bot when deleting its machine fails 2115ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  10:11:31
+   Duration  63.10s (transform 1.71s, setup 1.13s, import 1.50s, tests 60.30s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/core.e2e.test.ts initial run 2
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/core.e2e.test.ts > boots an isolated InstaBox bot, persists its backend, suspends on switching, and deletes its retained machine 6291ms
+ ✓ server/instabox/core.e2e.test.ts > forces vps onto Boat for a run_on=cloud routine 2573ms
+ ✓ server/instabox/core.e2e.test.ts > forces instabox onto Boat for a run_on=cloud routine 2595ms
+ ✓ server/instabox/core.e2e.test.ts > refuses an InstaBox cloud routine when the fixture offers no cloud provider 2230ms
+ ✓ server/instabox/core.e2e.test.ts > checks run_on=cloud vps turns against the box policy before mounting cloud computers 8659ms
+ ✓ server/instabox/core.e2e.test.ts > checks run_on=cloud instabox turns against the box policy before mounting cloud computers 8842ms
+ ✓ server/instabox/core.e2e.test.ts > refuses a normal InstaBox turn under the managed box policy before any machine request 6889ms
+ ✓ server/instabox/core.e2e.test.ts > allows a normal InstaBox turn in a real Cloud home without using Boat 2565ms
+ ✓ server/instabox/core.e2e.test.ts > keeps an Android agent usable when a normal turn does not specify a template 2488ms
+ ✓ server/instabox/core.e2e.test.ts > deletes a Boat machine owned by an agent switched to InstaBox 2234ms
+ ✓ server/instabox/core.e2e.test.ts > deletes a VPS machine owned by an agent switched to InstaBox 2473ms
+ ✓ server/instabox/core.e2e.test.ts > deletes a retained InstaBox machine after switching backend 2164ms
+ ✓ server/instabox/core.e2e.test.ts > keeps deletion independent of InstaBox http failures for Boat bots 2296ms
+ ✓ server/instabox/core.e2e.test.ts > keeps deletion independent of InstaBox network failures for Boat bots 2131ms
+ ✓ server/instabox/core.e2e.test.ts > keeps an InstaBox bot when deleting its machine fails 2264ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  10:12:35
+   Duration  59.11s (transform 1.72s, setup 940ms, import 1.31s, tests 56.70s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/core.e2e.test.ts initial run 3
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/core.e2e.test.ts > boots an isolated InstaBox bot, persists its backend, suspends on switching, and deletes its retained machine 6466ms
+ ✓ server/instabox/core.e2e.test.ts > forces vps onto Boat for a run_on=cloud routine 2747ms
+ ✓ server/instabox/core.e2e.test.ts > forces instabox onto Boat for a run_on=cloud routine 2610ms
+ ✓ server/instabox/core.e2e.test.ts > refuses an InstaBox cloud routine when the fixture offers no cloud provider 2220ms
+ ✓ server/instabox/core.e2e.test.ts > checks run_on=cloud vps turns against the box policy before mounting cloud computers 8418ms
+ ✓ server/instabox/core.e2e.test.ts > checks run_on=cloud instabox turns against the box policy before mounting cloud computers 8419ms
+ ✓ server/instabox/core.e2e.test.ts > refuses a normal InstaBox turn under the managed box policy before any machine request 6897ms
+ ✓ server/instabox/core.e2e.test.ts > allows a normal InstaBox turn in a real Cloud home without using Boat 2570ms
+ ✓ server/instabox/core.e2e.test.ts > keeps an Android agent usable when a normal turn does not specify a template 2965ms
+ ✓ server/instabox/core.e2e.test.ts > deletes a Boat machine owned by an agent switched to InstaBox 2660ms
+ ✓ server/instabox/core.e2e.test.ts > deletes a VPS machine owned by an agent switched to InstaBox 2702ms
+ ✓ server/instabox/core.e2e.test.ts > deletes a retained InstaBox machine after switching backend 2362ms
+ ✓ server/instabox/core.e2e.test.ts > keeps deletion independent of InstaBox http failures for Boat bots 2314ms
+ ✓ server/instabox/core.e2e.test.ts > keeps deletion independent of InstaBox network failures for Boat bots 2773ms
+ ✓ server/instabox/core.e2e.test.ts > keeps an InstaBox bot when deleting its machine fails 2414ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  10:13:35
+   Duration  60.91s (transform 1.67s, setup 955ms, import 1.27s, tests 58.54s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/computer-tools.e2e.test.ts initial run 1
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes get_screen_size with the exact X11 arguments and DISPLAY 159ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes click with the exact X11 arguments and DISPLAY 24ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes move with the exact X11 arguments and DISPLAY 13ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes drag with the exact X11 arguments and DISPLAY 14ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes key_press with the exact X11 arguments and DISPLAY 16ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes scroll with the exact X11 arguments and DISPLAY 16ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > types Unicode, quotes, newlines and shell syntax literally (clipboard true) 23ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > types Unicode, quotes, newlines and shell syntax literally (clipboard false) 20ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > opens a quoted URL literally and returns the shared launch notice 74ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > reads a native JPEG image and cleans its unique remote file 50ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > runs foreground commands with DISPLAY but without inherited credentials 20ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > starts a detached job, polls it through completion and tails both logs 2070ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > cuts long Unicode log tails and recognizes a lost or unknown process 96ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > copies bytes in both directions with quoted paths and DISPLAY on every preflight 43ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects traversal, absolute local paths, secret folders, symlink escapes and remote escapes 80ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects oversized files before file transfer 26ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects a download replaced with a huge file after stat without landing it 51ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > bounds screenshot reads and cleans the file after rejecting an oversized image 29ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > keeps the screenshot size check when a machines implementation ignores maxBytes 27ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects oversized HTTP bodies with content length undefined 17ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects oversized HTTP bodies with content length 2147483648 5ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > limits copies globally across machines and both directions, retaining slots until aborted transfers settle 53ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > lets the machines layer resume and retry HTTP 409 19ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > polls a five-second wait at the Boat cadence and performs a final read 4554ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > keeps a background job awake with an injected lease and releases it on completion 48ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > keeps the lease while a background job is still running 2060ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > shares one lease across five background commands (concurrent false) 187ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > shares one lease across five background commands (concurrent true) 102ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > covers every advertised tool 3ms
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  10:14:36
+   Duration  11.63s (transform 1.16s, setup 1.17s, import 340ms, tests 9.91s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/computer-tools.e2e.test.ts initial run 2
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes get_screen_size with the exact X11 arguments and DISPLAY 169ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes click with the exact X11 arguments and DISPLAY 21ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes move with the exact X11 arguments and DISPLAY 24ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes drag with the exact X11 arguments and DISPLAY 20ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes key_press with the exact X11 arguments and DISPLAY 19ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes scroll with the exact X11 arguments and DISPLAY 19ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > types Unicode, quotes, newlines and shell syntax literally (clipboard true) 25ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > types Unicode, quotes, newlines and shell syntax literally (clipboard false) 17ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > opens a quoted URL literally and returns the shared launch notice 16ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > reads a native JPEG image and cleans its unique remote file 43ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > runs foreground commands with DISPLAY but without inherited credentials 17ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > starts a detached job, polls it through completion and tails both logs 2072ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > cuts long Unicode log tails and recognizes a lost or unknown process 90ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > copies bytes in both directions with quoted paths and DISPLAY on every preflight 61ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects traversal, absolute local paths, secret folders, symlink escapes and remote escapes 86ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects oversized files before file transfer 33ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects a download replaced with a huge file after stat without landing it 69ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > bounds screenshot reads and cleans the file after rejecting an oversized image 37ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > keeps the screenshot size check when a machines implementation ignores maxBytes 28ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects oversized HTTP bodies with content length undefined 18ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects oversized HTTP bodies with content length 2147483648 6ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > limits copies globally across machines and both directions, retaining slots until aborted transfers settle 55ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > lets the machines layer resume and retry HTTP 409 20ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > polls a five-second wait at the Boat cadence and performs a final read 4547ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > keeps a background job awake with an injected lease and releases it on completion 45ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > keeps the lease while a background job is still running 2057ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > shares one lease across five background commands (concurrent false) 155ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > shares one lease across five background commands (concurrent true) 104ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > covers every advertised tool 2ms
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  10:14:48
+   Duration  11.79s (transform 1.35s, setup 1.29s, import 443ms, tests 9.88s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/computer-tools.e2e.test.ts initial run 3
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes get_screen_size with the exact X11 arguments and DISPLAY 171ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes click with the exact X11 arguments and DISPLAY 22ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes move with the exact X11 arguments and DISPLAY 19ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes drag with the exact X11 arguments and DISPLAY 14ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes key_press with the exact X11 arguments and DISPLAY 17ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > executes scroll with the exact X11 arguments and DISPLAY 21ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > types Unicode, quotes, newlines and shell syntax literally (clipboard true) 20ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > types Unicode, quotes, newlines and shell syntax literally (clipboard false) 19ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > opens a quoted URL literally and returns the shared launch notice 19ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > reads a native JPEG image and cleans its unique remote file 44ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > runs foreground commands with DISPLAY but without inherited credentials 13ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > starts a detached job, polls it through completion and tails both logs 2059ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > cuts long Unicode log tails and recognizes a lost or unknown process 78ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > copies bytes in both directions with quoted paths and DISPLAY on every preflight 43ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects traversal, absolute local paths, secret folders, symlink escapes and remote escapes 68ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects oversized files before file transfer 31ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects a download replaced with a huge file after stat without landing it 60ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > bounds screenshot reads and cleans the file after rejecting an oversized image 31ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > keeps the screenshot size check when a machines implementation ignores maxBytes 30ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects oversized HTTP bodies with content length undefined 21ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > rejects oversized HTTP bodies with content length 2147483648 7ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > limits copies globally across machines and both directions, retaining slots until aborted transfers settle 76ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > lets the machines layer resume and retry HTTP 409 17ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > polls a five-second wait at the Boat cadence and performs a final read 4540ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > keeps a background job awake with an injected lease and releases it on completion 28ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > keeps the lease while a background job is still running 2051ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > shares one lease across five background commands (concurrent false) 174ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > shares one lease across five background commands (concurrent true) 108ms
+ ✓ server/instabox/computer-tools.e2e.test.ts > InstaBox tools through an isolated HTTP machine fixture > covers every advertised tool 4ms
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  10:15:01
+   Duration  11.51s (transform 1.21s, setup 1.20s, import 362ms, tests 9.81s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/store.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/store.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/store.test.ts > Store > retains tool selection across restarts and distinguishes clearing from no tools 27ms
+ ✓ server/store.test.ts > Store > gives an app the bot's Apps switch turned on its tools, on load and whenever the switch changes 29ms
+ ✓ server/store.test.ts > Store > loads a bot saved with the retired HighLevel app, dropping it from its scopes and tool grants 32ms
+ ✓ server/store.test.ts > Store > does not activate a wider tool selection when saving undefined fails 28ms
+ ✓ server/store.test.ts > Store > does not activate a wider tool selection when saving {"allow":["native:read"]} fails 27ms
+ ✓ server/store.test.ts > Store > does not activate a wider tool selection when saving {"deny":["native:bash"]} fails 20ms
+ ✓ server/store.test.ts > Store > keeps tool revocations effective in memory when persistence fails 25ms
+ ✓ server/store.test.ts > Store > does not publish a new restricted bot when its first save fails 5ms
+ ✓ server/store.test.ts > Store > rejects malformed tool selection before creating a bot 11ms
+stderr | server/store.test.ts > Store > finishes bot erasure if the room registry cannot persist, then repairs it on restart
+store: room cleanup will retry on restart Error: fixture write failure
+    at Store.<anonymous> ([worktree]/server/store.test.ts:158:76)
+    at Store.saveGroups ([address]
+    at Store.deleteBot ([worktree]/server/store.ts:1452:18)
+    at [worktree]/server/store.test.ts:160:18
+    at [address]
+    at [address]
+    at [address]
+    at new Promise (<anonymous>)
+    at runWithCancel ([address]
+    at [address]
+
+ ✓ server/store.test.ts > Store > retains corrupt persisted tool selection as denied access instead of inheriting all tools 25ms
+ ✓ server/store.test.ts > Store > takes a deleted bot out of every room it was in and passes its lead role on 42ms
+ ✓ server/store.test.ts > Store > finishes bot erasure if the room registry cannot persist, then repairs it on restart 46ms
+ ✓ server/store.test.ts > Store > repairs rooms that still list a deleted bot when it starts 22ms
+ ✓ server/store.test.ts > Store > never empties rooms when the bot list cannot be read 22ms
+ ✓ server/store.test.ts > Store > renames populated teams without changing members, conversations, grants or computer identity 51ms
+ ✓ server/store.test.ts > Store > rejects rename conflicts and active work without changing teams 16ms
+ ✓ server/store.test.ts > Store > restores membership files when a rename cannot save the group registry 24ms
+ ✓ server/store.test.ts > Store > deletes a populated team while preserving bots, archived members and room history across restart 40ms
+ ✓ server/store.test.ts > Store > refuses active work and Chief conflicts without silently demoting a Chief 21ms
+ ✓ server/store.test.ts > Store > restores persisted membership if deleting the team cannot finish 24ms
+ ✓ server/store.test.ts > Store > persists compaction records but keeps session bookkeeping off the wire 18ms
+ ✓ server/store.test.ts > Store > keeps a Live call row's record across a restart and scrubs a secret from its title 11ms
+ ✓ server/store.test.ts > Store > round-trips audio attachments with their metadata through persistence 24ms
+ ✓ server/store.test.ts > Store > keeps surface pin provenance server-private and round-trips it through bots.json 15ms
+ ✓ server/store.test.ts > Store > clears only auto surface pins that conflict with a Works on change 24ms
+ ✓ server/store.test.ts > Store > leaves bots.json alone when a save changes nothing, and writes the next real change 14ms
+ ✓ server/store.test.ts > Store > overwrites a bots.json changed on disk with the next change it saves 6ms
+ ✓ server/store.test.ts > Store > writes the bot and group registries owner-only and tightens loose ones on load 16ms
+ ✓ server/store.test.ts > Store > commits receipt-backed transcript changes before publishing and replays without duplicates 29ms
+ ✓ server/store.test.ts > Store > commits a confirmed model switch once, moving followers safely and rolling back failed writes 19ms
+ ✓ server/store.test.ts > Store > createBot seeds a greeting without promising engine-specific tools 12ms
+ ✓ server/store.test.ts > Store > offers Set me up on a blank bot's greeting, never on one given a role or instructions 18ms
+ ✓ server/store.test.ts > Store > puts the setup card's answers, in the app's language, on a blank bot's greeting only 23ms
+ ✓ server/store.test.ts > Store > reads the current language when creating a bot 18ms
+ ✓ server/store.test.ts > Store > greets the person by the first name they have given by the time the bot is created 21ms
+ ✓ server/store.test.ts > Store > clears provider-owned voice ids as one durable mutation 17ms
+ ✓ server/store.test.ts > Store > restarts with legacy bot and group migrations despite an unreadable team registry, without permitting later team writes 16ms
+ ✓ server/store.test.ts > Store > messagesTail reads a bounded page via SQL on a fresh Store, and older messages still load in full 11ms
+ ✓ server/store.test.ts > Store > caches a complete tail but never caches a zero-message page as an empty thread 14ms
+ ✓ server/store.test.ts > Store > dismisses an open options card when the user talks, and leaves live asks 12ms
+ ✓ server/store.test.ts > Store > persists a structured question card with its origin and answer across restart 18ms
+ ✓ server/store.test.ts > Store > does not dismiss an open options card for bot-authored messages 12ms
+ ✓ server/store.test.ts > Store > marks only the last assistant message from a settled provider turn as terminal 16ms
+ ✓ server/store.test.ts > Store > createBot with seedMessages:false starts with an empty transcript 12ms
+ ✓ server/store.test.ts > Store > persists request provenance, failure and cancellation without altering message identity 16ms
+ ✓ server/store.test.ts > Store > creates explicitly scoped tasks atomically without inheriting remembered grants or changing siblings 16ms
+ ✓ server/store.test.ts > Store > addTaskUsage accumulates settled-turn totals per task and survives a restart 23ms
+ ✓ server/store.test.ts > Store > chain-inserts a late turn artifact after its anchor without stealing the leaf 22ms
+ ✓ server/store.test.ts > Store > insertMessageAfter is a plain append when the anchor is still the leaf, or unknown 15ms
+ ✓ server/store.test.ts > Store > persists the per-bot composio gate 13ms
+ ✓ server/store.test.ts > Store > persists per-bot connector tool grants without touching legacy records 10ms
+ ✓ server/store.test.ts > Store > rejects malformed connector tool grants at the store boundary 9ms
+ ✓ server/store.test.ts > Store > rotates colors across created bots 13ms
+ ✓ server/store.test.ts > Store > defaults a room to its first member and repairs the lead when membership changes 32ms
+ ✓ server/store.test.ts > Store > persists a channel's context when it is created 17ms
+ ✓ server/store.test.ts > Store > persists a channel's completed setup in the same create write 11ms
+ ✓ server/store.test.ts > Store > migrates old rooms without routing to their first member 11ms
+ ✓ server/store.test.ts > Store > persists bots and messages across a restart, resetting busy 12ms
+ ✓ server/store.test.ts > Store > revokes an unconfirmed elevated approval grant before startup work 15ms
+ ✓ server/store.test.ts > Store > revokes a thread-scoped grant after restart in phase prepared 17ms
+ ✓ server/store.test.ts > Store > revokes a thread-scoped grant after restart in phase confirmed 21ms
+ ✓ server/store.test.ts > Store > revokes a thread-scoped grant after restart in phase activated 18ms
+ ✓ server/store.test.ts > Store > revokes a thread-scoped grant after restart in phase committed 12ms
+ ✓ server/store.test.ts > Store > recovers a composer-only grant in phase prepared without downgrading other threads 13ms
+ ✓ server/store.test.ts > Store > recovers a composer-only grant in phase confirmed without downgrading other threads 11ms
+ ✓ server/store.test.ts > Store > recovers a composer-only grant in phase activated without downgrading other threads 12ms
+ ✓ server/store.test.ts > Store > recovers a composer-only grant in phase committed without downgrading other threads 27ms
+ ✓ server/store.test.ts > Store > normalizes persisted cloud backends without changing valid or absent values 27ms
+ ✓ server/store.test.ts > Store > migrates legacy browser profile references without collapsing case-distinct accounts 19ms
+ ✓ server/store.test.ts > Store > keeps explicit suffix browser references stable across legacy migration 13ms
+ ✓ server/store.test.ts > Store > promotes task-only provider tool grants to the bot default 14ms
+ ✓ server/store.test.ts > Store > persists a bot's effort level across a restart, defaulting to unset 15ms
+ ✓ server/store.test.ts > Store > completes every new bot's selection with the workspace defaults, whichever path creates it 30ms
+ ✓ server/store.test.ts > Store > lands a created specialist in its proposed working folder, keeping the private workspace clean 12ms
+ ✓ server/store.test.ts > Store > stores variants independently; conversations without one of their own follow the bot 15ms
+ ✓ server/store.test.ts > Store > starts a task on a model it is handed, as its own copy, without moving the bot default 7ms
+ ✓ server/store.test.ts > Store > applies one reviewed default-model change with applyTeamSetup's task stamping 8ms
+ ✓ server/store.test.ts > Store > keeps one persisted Chief of Staff per section and supports handoff 20ms
+ ✓ server/store.test.ts > Store > adds and removes members together without replacing unrelated concurrent additions 28ms
+ ✓ server/store.test.ts > Store > rejects stale removals and Chief conflicts without applying the additions 24ms
+ ✓ server/store.test.ts > Store > keeps membership unchanged if the shared write fails 20ms
+ ✓ server/store.test.ts > Store > files visible bots atomically without changing Chief roles 21ms
+ ✓ server/store.test.ts > Store > revokes exact old team grants before changing the empty team to null 21ms
+ ✓ server/store.test.ts > Store > revokes exact old team grants before changing the empty team to Renamed 16ms
+ ✓ server/store.test.ts > Store > keeps grants when an empty-team rename is a no-op or rejected 13ms
+ ✓ server/store.test.ts > Store > does not free a team name when its grant revocation cannot persist 20ms
+ ✓ server/store.test.ts > Store > rejects unavailable or Chief-conflicting section assignments without changing bots 26ms
+ ✓ server/store.test.ts > Store > does not change memory or emit section updates when the atomic write fails 20ms
+ ✓ server/store.test.ts > Store > patchMessage merges card patches and returns null for unknown ids 18ms
+ ✓ server/store.test.ts > Store > keeps memory and SQLite pending when a card patch cannot persist 19ms
+ ✓ server/store.test.ts > Store > setResumeCursor persists per-instance continuations 17ms
+ ✓ server/store.test.ts > Store > seedIfEmpty starts a fresh workspace with one bot, the Chief of Staff, once 17ms
+ ✓ server/store.test.ts > Store > seedIfEmpty makes the new install's Chief its CryBot in chrome, introduced, and no bot after it takes chrome or silver in turn 89ms
+ ✓ server/store.test.ts > Store > seedIfEmpty leaves an existing workspace without a Chief as it is 20ms
+ ✓ server/store.test.ts > Store > chains appended messages and keeps the newest as active leaf 21ms
+ ✓ server/store.test.ts > Store > branchMessage forks at the edited message and hides the old tail 17ms
+ ✓ server/store.test.ts > Store > branchMessage tells clients to show the fork, keeping the edit's sendId 13ms
+ ✓ server/store.test.ts > Store > setActiveLeaf switches branches and descends to the newest leaf 9ms
+ ✓ server/store.test.ts > Store > persists the branch tree and active leaf across a restart 12ms
+ ✓ server/store.test.ts > Store > tolerates a corrupt bots.json by starting empty 11ms
+ ✓ server/store.test.ts > Store > busy is wiped even when bots.json says otherwise 14ms
+ ✓ server/store.test.ts > Store > createBot with seedMessages:false starts with an empty transcript 9ms
+ ✓ server/store.test.ts > Store > persists the per-bot composio gate 21ms
+ ✓ server/store.test.ts > Store > deleteBot removes the bot and its durable transcript 17ms
+ ✓ server/store.test.ts > Store > migrates a pre-branching flat transcript file 13ms
+ ✓ server/store.test.ts > Store bot order > reorders the whole fleet, persists it, and emits one whole-list change 18ms
+ ✓ server/store.test.ts > Store bot order > is stable for the bots a partial list leaves out 12ms
+ ✓ server/store.test.ts > Store bot order > refuses an empty list, a repeated id or an unknown id without touching anything 12ms
+ ✓ server/store.test.ts > Store change stream > emits once per write, after the write, with the record it wrote 11ms
+ ✓ server/store.test.ts > Store change stream > emits a card patch after a user message hides an open options card 17ms
+ ✓ server/store.test.ts > Store change stream > announces a new bot before its greeting 17ms
+ ✓ server/store.test.ts > Store change stream > every message-tree write emits a message or thread event 11ms
+ ✓ server/store.test.ts > Store change stream > keeps a reaction line a reaction when it is retried unchanged, and makes it words when edited 12ms
+ ✓ server/store.test.ts > Store change stream > keeps one reaction per person: a new one replaces theirs, and nobody else's 13ms
+ ✓ server/store.test.ts > Store change stream > announces screen frames whose pixels are pruned 8ms
+ ✓ server/store.test.ts > Store change stream > createTask records which bot opened a thread, and the record survives a reload 18ms
+ ✓ server/store.test.ts > Store change stream > first-message titling preserves peer provenance and a person's rename 24ms
+ ✓ server/store.test.ts > Store change stream > channel first-message titling reports the row it named, and a late retitle cannot undo a rename 16ms
+ ✓ server/store.test.ts > Store change stream > loading collapses the duplicate live pair rows an older server minted, and a second load changes nothing 18ms
+ ✓ server/store.test.ts > Store change stream > setTaskClosedBy stamps who closed a thread, survives a reload, and null reopens it 13ms
+stderr | server/store.test.ts > Store change stream > group writes emit group events; a listener that throws never breaks the write
+store: change listener threw Error: bad listener
+    at [worktree]/server/store.test.ts:2037:13
+    at Store.emit ([worktree]/server/store.ts:789:9)
+    at Store.createGroup ([worktree]/server/store.ts:842:10)
+    at [worktree]/server/store.test.ts:2039:21
+    at [address]
+    at [address]
+    at [address]
+    at new Promise (<anonymous>)
+    at runWithCancel ([address]
+    at [address]
+store: change listener threw Error: bad listener
+    at [worktree]/server/store.test.ts:2037:13
+    at Store.emit ([worktree]/server/store.ts:789:9)
+    at Store.patchGroup ([worktree]/server/store.ts:876:10)
+    at [worktree]/server/store.test.ts:2040:11
+    at [address]
+    at [address]
+    at [address]
+    at new Promise (<anonymous>)
+    at runWithCancel ([address]
+    at [address]
+store: change listener threw Error: bad listener
+    at [worktree]/server/store.test.ts:2037:13
+    at Store.emit ([worktree]/server/store.ts:789:9)
+    at Store.deleteThreadRecord ([worktree]/server/store.ts:893:10)
+    at Store.deleteGroup ([worktree]/server/store.ts:903:12)
+    at [worktree]/server/store.test.ts:2043:11
+    at [address]
+    at [address]
+    at [address]
+    at new Promise (<anonymous>)
+    at runWithCancel ([address]
+store: change listener threw Error: bad listener
+    at [worktree]/server/store.test.ts:2037:13
+    at Store.emit ([worktree]/server/store.ts:789:9)
+    at Store.deleteGroup ([worktree]/server/store.ts:905:10)
+    at [worktree]/server/store.test.ts:2043:11
+    at [address]
+    at [address]
+    at [address]
+    at new Promise (<anonymous>)
+    at runWithCancel ([address]
+    at [address]
+
+ ✓ server/store.test.ts > Store change stream > every bot write emits a bot event carrying only the id (the wire shape is the caller's) 19ms
+ ✓ server/store.test.ts > Store change stream > group writes emit group events; a listener that throws never breaks the write 31ms
+ ✓ server/store.test.ts > Store change stream > delivers each change to the listener snapshot captured before emission 12ms
+ ✓ server/store.test.ts > Store change stream > unsubscribe stops delivery 14ms
+ ✓ server/store.test.ts > Store bot activity state > derives busy from activity, so every existing busy reader keeps working 12ms
+ ✓ server/store.test.ts > Store bot activity state > emits a bot change per transition and skips a no-op 14ms
+ ✓ server/store.test.ts > Store bot activity state > neither activity nor busy survives a restart 19ms
+ ✓ server/store.test.ts > Store redacts bot-authored secrets on write > masks a key in bot text, tools and cards — but never in what the user typed 22ms
+ ✓ server/store.test.ts > Store task usage > banks each turn's tokens and cost on the task, counting turns 23ms
+ ✓ server/store.test.ts > Store task usage > keeps cost null until some turn reports one, then sums only reported costs 13ms
+ ✓ server/store.test.ts > Store task usage > counts a turn that reported no tokens at all 10ms
+ ✓ server/store.test.ts > Store task usage > ignores an unknown task 6ms
+ ✓ server/store.test.ts > Store askedAt from before builds kept it > fills a thread's askedAt from the newest line a person sent there, once per data directory 12ms
+ ✓ server/store.test.ts > Store task working folder > pins the bot's folder onto a task on its first turn, and never again 8ms
+ ✓ server/store.test.ts > Store task working folder > persists a new task's explicit folder before its first turn without changing the bot default 11ms
+ ✓ server/store.test.ts > Store task working folder > pins a private-only conversation to its own folder when it first runs, and never moves one that already ran elsewhere 16ms
+ ✓ server/store.test.ts > Store task working folder > pins the default (null) when the bot has no folder, so a later folder can't move a live session 11ms
+ ✓ server/store.test.ts > Store task working folder > pins a supplied private workspace when the bot has no custom folder 14ms
+ ✓ server/store.test.ts > Store task working folder > a legacy task that already has a session pins to the default, not the bot's new folder 13ms
+ ✓ server/store.test.ts > Store room working folder > pins the room's folder on its first turn, and never again 12ms
+ ✓ server/store.test.ts > Store room working folder > pins the default (null) when the room has no folder, so a later folder can't move a running room 10ms
+ ✓ server/store.test.ts > Store task working folder — cloud runs > a cloud run pins the default so the bot's host folder never shows for that task 9ms
+ ✓ server/store.test.ts > soul > seeds an empty soul with its hash and writes the SOUL.md mirror on create 10ms
+ ✓ server/store.test.ts > soul > setSoul rewrites the record, the hash, the mirror, and clears drift 15ms
+ ✓ server/store.test.ts > soul > backfills old bots' mirrors before the first non-soul history change 23ms
+ ✓ server/store.test.ts > soul > preserves externally edited mirrors on reload 10ms
+ ✓ server/store.test.ts > soul > keeps all profile fields, the receipt and mirror unchanged when persistence fails 14ms
+ ✓ server/store.test.ts > soul > keeps runtime revocations effective in memory even when persistence fails 9ms
+ ✓ server/store.test.ts > soul > gives a teammate a restricted Chief's reviewed setup creates the Chief's own audience 13ms
+ ✓ server/store.test.ts > soul > starts a bot a Chief creates with the Chief's own connected apps and levels, copied, never more 12ms
+ ✓ server/store.test.ts > soul > leaves a bot the person creates with today's defaults, whatever a Chief has 15ms
+stderr | server/store.test.ts > soul > setSoul still returns the updated record when the mirror write fails
+[bot-folder] could not write SOUL.md mirror for [id]: EEXIST: file already exists, mkdir '/data/tmp/cry-test-home-9LdA8t/.crybot/bots/[id]'
+[bot-folder] could not write SOUL.md mirror for [id]: EEXIST: file already exists, mkdir '/data/tmp/cry-test-home-9LdA8t/.crybot/bots/[id]'
+
+ ✓ server/store.test.ts > soul > on a Team Cloud, gives a member's Chief's apps only to the bot it makes for that member 20ms
+ ✓ server/store.test.ts > soul > deleteBot removes the bot folder with the workspace 11ms
+ ✓ server/store.test.ts > soul > deleteBot removes the memory journal, the memory index, and the in-memory baseline 26ms
+ ✓ server/store.test.ts > soul > reviewed setup freezes legacy thread settings and persists valid team grants and its receipt on reload 20ms
+ ✓ server/store.test.ts > soul > persists reviewed Chief replacement atomically and revokes the outgoing Chief's grants 17ms
+ ✓ server/store.test.ts > soul > reviewed deletion saves its receipt with removal before deleting any bot files 12ms
+ ✓ server/store.test.ts > soul > setSoul still returns the updated record when the mirror write fails 10ms
+
+ Test Files  1 passed (1)
+      Tests  158 passed (158)
+   Start at  10:15:21
+   Duration  4.81s (transform 1.45s, setup 1.21s, import 646ms, tests 2.80s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/client.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/client.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/client.test.ts > authenticates and gives each lifecycle call its own idempotency key 27ms
+ ✓ server/instabox/client.test.ts > reports HTTP status and safe error codes without reflecting secrets or remote messages 24ms
+ ✓ server/instabox/client.test.ts > rejects foreign origins before sending the key and refuses redirects 1ms
+ ✓ server/instabox/client.test.ts > waits with 25s polling, reports failure, and bounds a stalled request 37ms
+ ✓ server/instabox/client.test.ts > keeps VNC credentials server-side and follows HTTPS and HTTP origins 1ms
+ ✓ server/instabox/client.test.ts > rejects malformed keys without including their value in errors 1ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  10:15:26
+   Duration  1.28s (transform 792ms, setup 1.01s, import 25ms, tests 94ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/key.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/key.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/key.test.ts > prefers a nonempty environment key, then config, treating blanks as unconfigured 2ms
+ ✓ server/instabox/key.test.ts > parses and persists the server config section 14ms
+ ✓ server/instabox/key.test.ts > keeps InstaBox credentials out of child environments 1ms
+ ✓ server/instabox/key.test.ts > keeps InstaBox credentials out of child environments 1ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  10:15:28
+   Duration  1.41s (transform 944ms, setup 1.21s, import 13ms, tests 19ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/machines.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/machines.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/machines.test.ts > creates linux with the shared naming/spec contract, waits, then starts desktop 47ms
+ ✓ server/instabox/machines.test.ts > creates android with the shared naming/spec contract, waits, then starts desktop 25ms
+ ✓ server/instabox/machines.test.ts > single-flights concurrent starts and tolerates an already running desktop 12ms
+ ✓ server/instabox/machines.test.ts > wakes a suspended machine and retries exec exactly once 12ms
+ ✓ server/instabox/machines.test.ts > wakes a stopped machine and retries exec exactly once 10ms
+ ✓ server/instabox/machines.test.ts > suspends, resumes, deletes with confirmation, and ignores deleted machines 24ms
+ ✓ server/instabox/machines.test.ts > waits for intermediate state before deciding whether to resume and refuses error state 216ms
+ ✓ server/instabox/machines.test.ts > uploads and downloads exact bytes and encodes file parameters 12ms
+ ✓ server/instabox/machines.test.ts > rejects excessive Content-Length and cancels the body with maxBytes=undefined 60ms
+ ✓ server/instabox/machines.test.ts > rejects excessive Content-Length and cancels the body with maxBytes=128 60ms
+ ✓ server/instabox/machines.test.ts > cancels an oversized chunked download before the server sends the entire file 119ms
+ ✓ server/instabox/machines.test.ts > reads exact bytes up to the limit with Content-Length=undefined 70ms
+ ✓ server/instabox/machines.test.ts > reads exact bytes up to the limit with Content-Length=12 73ms
+ ✓ server/instabox/machines.test.ts > allows an empty file with a zero-byte limit and rejects nonempty files 14ms
+ ✓ server/instabox/machines.test.ts > rejects invalid maxBytes=-1 before requesting a file 1ms
+ ✓ server/instabox/machines.test.ts > rejects invalid maxBytes=0.5 before requesting a file 0ms
+ ✓ server/instabox/machines.test.ts > rejects invalid maxBytes=NaN before requesting a file 1ms
+ ✓ server/instabox/machines.test.ts > rejects invalid maxBytes=Infinity before requesting a file 0ms
+ ✓ server/instabox/machines.test.ts > rejects invalid maxBytes=9007199254740992 before requesting a file 0ms
+ ✓ server/instabox/machines.test.ts > does not retry unrelated exec failures 10ms
+ ✓ server/instabox/machines.test.ts > does not claim a same-name machine with another bot's metadata 8ms
+ ✓ server/instabox/machines.test.ts > rejects an existing machine when the requested template changes 11ms
+ ✓ server/instabox/machines.test.ts > reuses an existing Android machine when an ordinary turn omits the template 8ms
+ ✓ server/instabox/machines.test.ts > resumes manual suspension before file uploads and downloads 19ms
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  10:15:30
+   Duration  2.09s (transform 857ms, setup 1.07s, import 52ms, tests 813ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/persistence.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/persistence.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/persistence.test.ts > retains an InstaBox backend when reloading the bot store 28ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  10:15:33
+   Duration  1.86s (transform 1.29s, setup 1.21s, import 448ms, tests 30ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/power.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/power.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+stderr | server/instabox/power.test.ts > runs failed suspension in the background without misreporting a saved backend switch as a failed patch
+InstaBox machine could not be suspended after a backend change Add an InstaBox API key to use this computer.
+
+ ✓ server/instabox/power.test.ts > reuses machines for the same key and replaces the instance after key rotation or clearing 3ms
+ ✓ server/instabox/power.test.ts > makes missing credentials explicit in status and lifecycle actions 2ms
+ ✓ server/instabox/power.test.ts > suspends after a successful backend switch only (status 200) 1ms
+ ✓ server/instabox/power.test.ts > suspends after a successful backend switch only (status 400) 0ms
+ ✓ server/instabox/power.test.ts > runs failed suspension in the background without misreporting a saved backend switch as a failed patch 1ms
+ ✓ server/instabox/power.test.ts > sends translation keys for user errors while preserving provider failures 1ms
+ ✓ server/instabox/power.test.ts > leaves the template unspecified when provisioning an existing machine 1ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  10:15:35
+   Duration  1.27s (transform 861ms, setup 1.08s, import 46ms, tests 11ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/vnc.e2e.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/vnc.e2e.test.ts > relays ws RFB 3.8 None authentication, frames and input byte-for-byte without leaking headers 241ms
+ ✓ server/instabox/vnc.e2e.test.ts > relays wss RFB 3.8 None authentication, frames and input byte-for-byte without leaking headers 238ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes the other side when browser disconnects and releases only its own retain 69ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes the other side when upstream disconnects and releases only its own retain 64ms
+ ✓ server/instabox/vnc.e2e.test.ts > checks member before resolving upstream for HTTP and upgrades 13ms
+ ✓ server/instabox/vnc.e2e.test.ts > checks origin before resolving upstream for HTTP and upgrades 8ms
+ ✓ server/instabox/vnc.e2e.test.ts > checks lease before resolving upstream for HTTP and upgrades 12ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks live and touches only a live viewer 60ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks holding and touches only a live viewer 63ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks present and touches only a live viewer 64ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks key and touches only a live viewer 61ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes established viewers on revoke 59ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes established viewers on shutdown 61ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes established viewers on gate 60ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks liveness after an asynchronous resolve 59ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks liveness after an asynchronous handshake 58ms
+ ✓ server/instabox/vnc.e2e.test.ts > does not connect after a browser leaves during provider resolution 109ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects ws-default without exposing credentials 15ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects remote-ws without exposing credentials 15ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects http without exposing credentials 13ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects https without exposing credentials 13ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects invalid without exposing credentials 9ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects userinfo without exposing credentials 7ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects fragment without exposing credentials 7ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes refused failures and releases retains 9ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes invalid-header failures and releases retains 4ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes provider failures and releases retains 8ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes rejected failures and releases retains 6ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes forged failures and releases retains 4ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes tls failures and releases retains 6ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes untrusted-cert failures and releases retains 8ms
+ ✓ server/instabox/vnc.e2e.test.ts > renders the 1280×800 None-authenticated desktop with the unchanged browser client 4175ms
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  10:15:37
+   Duration  8.16s (transform 1.79s, setup 1.20s, import 1.06s, tests 5.73s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/vnc.test.ts --maxWorkers=1 --reporter=verbose
+Run: server/instabox/vnc.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/vnc.test.ts > resolves fresh server-only upstream credentials without a VNC password 3ms
+ ✓ server/instabox/vnc.test.ts > propagates provider failures to the route's sanitized error boundary 1ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:15:46
+   Duration  1.30s (transform 883ms, setup 1.12s, import 16ms, tests 5ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/lib/i18n.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/lib/i18n.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/lib/i18n.test.ts > resolveLocale > keeps a registered exact tag, case-insensitively 2ms
+ ✓ src/lib/i18n.test.ts > resolveLocale > falls back from a regional tag to its base language 1ms
+ ✓ src/lib/i18n.test.ts > resolveLocale > falls back through script tags before the base language 0ms
+ ✓ src/lib/i18n.test.ts > resolveLocale > falls back to English for unknown or missing tags 0ms
+ ✓ src/lib/i18n.test.ts > t > returns the English catalog value by default 0ms
+ ✓ src/lib/i18n.test.ts > t > fills {app} with the product's name, the name a caller passes 0ms
+ ✓ src/lib/i18n.test.ts > t > keeps new department lifecycle labels available in partial packs, with interpolated names and counts 11ms
+ ✓ src/lib/i18n.test.ts > t > setLocale reports the locale that actually took effect 0ms
+ ✓ src/lib/i18n.test.ts > t > resolves every registered locale to itself 0ms
+ ✓ src/lib/i18n.test.ts > t > routes common system tags onto the shipped packs 0ms
+ ✓ src/lib/i18n.test.ts > t > every registered pack carries only known keys with non-empty values 252ms
+ ✓ src/lib/i18n.test.ts > t > ships translated model and trusted-access help for threads 1ms
+ ✓ src/lib/i18n.test.ts > t > ships exactly one JSON catalog for every picker language 0ms
+ ✓ src/lib/i18n.test.ts > t > overlays a partial pack and falls back to English for missing keys 0ms
+ ✓ src/lib/i18n.test.ts > t > interpolates params and keeps unmatched placeholders visible 0ms
+ ✓ src/lib/i18n.test.ts > activePackComplete > is true only for a pack other than English that has every English key 6ms
+ ✓ src/lib/i18n.test.ts > tFromServer > translates a key the catalog knows 0ms
+ ✓ src/lib/i18n.test.ts > tFromServer > falls back to English for a key this build does not carry 0ms
+ ✓ src/lib/i18n.test.ts > tFromServer > rejects inherited catalog property constructor 0ms
+ ✓ src/lib/i18n.test.ts > tFromServer > rejects inherited catalog property toString 0ms
+ ✓ src/lib/i18n.test.ts > tFromServer > rejects inherited catalog property __proto__ 0ms
+ ✓ src/lib/i18n.test.ts > tFromServer > shows a card that carries only text, and nothing when it carries neither 0ms
+ ✓ src/lib/i18n.test.ts > tFromServer > fills the params, and keeps the English when one the template needs is missing 0ms
+ ✓ src/lib/i18n.test.ts > tFromServer > prefers the catalog over stale text saved with an older card 0ms
+ ✓ src/lib/i18n.test.ts > loading a language > downloads only the chosen merged pack and shows it once it is here 210ms
+ ✓ src/lib/i18n.test.ts > loading a language > shows the language asked for last, whichever pack arrives first 20ms
+ ✓ src/lib/i18n.test.ts > loading a language > keeps de separate from the loaded interface pack 14ms
+ ✓ src/lib/i18n.test.ts > loading a language > keeps ar separate from the loaded interface pack 18ms
+ ✓ src/lib/i18n.test.ts > loading a language > keeps zh-TW separate from the loaded interface pack 9ms
+ ✓ src/lib/i18n.test.ts > loading a language > fills every missing translation without downloading the English pack 165ms
+ ✓ src/lib/i18n.test.ts > loading a language > preserves translation provenance for English-filled keys 11ms
+ ✓ src/lib/i18n.test.ts > loading a language > falls back to the merged English pack when only the requested pack fails 13ms
+ ✓ src/lib/i18n.test.ts > loading a language > rejects when even English is offline, and tries again next time 9ms
+ ✓ src/lib/i18n.test.ts > page language > names every picker language with a valid BCP-47 tag 0ms
+ ✓ src/lib/i18n.test.ts > page language > tags an alias with the pack it shows 0ms
+ ✓ src/lib/i18n.test.ts > page language > sets the page language and direction whenever the locale changes 0ms
+ ✓ src/lib/i18n.test.ts > page language > tags the page once the language's pack has loaded, keeping the one it shows until then 17ms
+ ✓ src/lib/i18n.test.ts > page language > still switches language where there is no page (tests, workers) 0ms
+ ✓ src/lib/i18n.test.ts > intlLocale > formats in the app language, not the system's 0ms
+ ✓ src/lib/i18n.test.ts > intlLocale > keeps the system region when it speaks the app language 0ms
+ ✓ src/lib/i18n.test.ts > intlLocale > falls back to the app language for a missing, empty or malformed system tag 4ms
+ ✓ src/lib/i18n.test.ts > intlLocale > gives Intl a tag it formats in the app language 1ms
+
+ Test Files  1 passed (1)
+      Tests  42 passed (42)
+   Start at  10:15:48
+   Duration  2.25s (transform 1.21s, setup 1.27s, import 49ms, tests 772ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/credential-store-words.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/credential-store-words.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/credential-store-words.test.ts > words the unreadable-credential-store notice for any device, never calling it a Mac 14ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  10:15:51
+   Duration  1.18s (transform 780ms, setup 1.01s, import 8ms, tests 16ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/data-keys.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/data-keys.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/data-keys.test.ts > keeps no Data string that nothing reads 347ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  10:15:53
+   Duration  1.88s (transform 1.08s, setup 1.30s, import 76ms, tests 351ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/departments.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/departments.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/departments.test.ts > the sidebar's groups of bots > are called departments, never teams 17ms
+ ✓ src/locales/departments.test.ts > the sidebar's groups of bots > list only prefixes that exist 3ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:15:55
+   Duration  1.39s (transform 939ms, setup 1.12s, import 80ms, tests 23ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/everyday-words.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/everyday-words.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/everyday-words.test.ts > everyday screens > say what a person knows instead of the app's internal words 22ms
+ ✓ src/locales/everyday-words.test.ts > everyday screens > list only keys and prefixes that exist, and allow only everyday keys that still need it 5ms
+ ✓ src/locales/everyday-words.test.ts > everyday screens > catch each internal word, and let placeholders, commands, MCP servers and Discord or Slack servers through 1ms
+ □ src/locales/everyday-words.test.ts > everyday screens > "This computer" (say this Mac or this PC), still in 15 everyday keys, once the screens that name it are rebuilt
+ □ src/locales/everyday-words.test.ts > everyday screens > "My Cloud" (say the Cloud), still in 12 everyday keys, once the screens that name it are rebuilt
+ □ src/locales/everyday-words.test.ts > everyday screens > "lent" (say shared, or let … use), still in 0 everyday keys, once the screens that name it are rebuilt
+
+ Test Files  1 passed (1)
+      Tests  3 passed | 3 todo (6)
+   Start at  10:15:57
+   Duration  1.62s (transform 1.09s, setup 1.31s, import 112ms, tests 31ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/mcp-sign-in-path.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/mcp-sign-in-path.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/mcp-sign-in-path.test.ts > sends the person to Apps → MCP servers, where the paste-back sign-in is 12ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  10:15:59
+   Duration  1.31s (transform 863ms, setup 1.12s, import 19ms, tests 14ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/native-keys.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/native-keys.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/native-keys.test.ts > every native key main asks for is in the English catalog 3ms
+ ✓ src/locales/native-keys.test.ts > every native key in the English catalog is one main asks for 0ms
+ ✓ src/locales/native-keys.test.ts > main reads the same pack for each language code as the window does 8ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  10:16:01
+   Duration  1.39s (transform 896ms, setup 1.07s, import 154ms, tests 13ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/screen-words.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/screen-words.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/screen-words.test.ts > the words saved steps look for on another app's screen > keep safety coverage independent of the interface languages 2ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  10:16:03
+   Duration  1.34s (transform 919ms, setup 1.12s, import 29ms, tests 4ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/sent-keys.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/sent-keys.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/sent-keys.test.ts > keys sent to the app or read by main > are all in the English catalog 111ms
+ ✓ src/locales/sent-keys.test.ts > keys sent to the app or read by main > read as words in main's menus and dialogs, never as the key 23ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:16:05
+   Duration  1.32s (transform 787ms, setup 972ms, import 81ms, tests 136ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/server-lines.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/server-lines.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/server-lines.test.ts > lines the server writes for a person > come from the language packs, never as English written into the code 3ms
+ ✓ src/locales/server-lines.test.ts > lines the server writes for a person > lists only lines that are still there 1ms
+ ✓ src/locales/server-lines.test.ts > lines the server writes for a person > every English server line has non-empty Chinese text, and the server uses each English key 702ms
+ ✓ src/locales/server-lines.test.ts > lines the server writes for a person > only server-lines.ts (English) and server-line-packs.ts (the rest) read the language packs on the server 43ms
+ ✓ src/locales/server-lines.test.ts > lines the server writes for a person > tells every module the language of a conversation's person (server/server-lines.ts) 4ms
+ ✓ src/locales/server-lines.test.ts > the guard > finds a new English line in each place a line is made 4ms
+ ✓ src/locales/server-lines.test.ts > the guard > lets through a line from the packs, an id, a tool's name and text no line is made of 1ms
+ ✓ src/locales/server-lines.test.ts > the guard > finds English handed to a line from the packs 1ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  10:16:07
+   Duration  5.56s (transform 945ms, setup 1.09s, import 3.54s, tests 760ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/settings-words.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/settings-words.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/settings-words.test.ts > finds the keys Settings renders 4ms
+ ✓ src/locales/settings-words.test.ts > zh.json has every key the Settings window, the outer menu and their shared rows render 8ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:16:13
+   Duration  1.45s (transform 1.00s, setup 1.20s, import 80ms, tests 13ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/trial-days.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/trial-days.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/trial-days.test.ts > has both wordings of a trial's length in every language, and only the longer one counts days 8ms
+ ✓ src/locales/trial-days.test.ts > keeps what a longer trial read in English, and takes the promise about today out of the shorter one's 0ms
+ ✓ src/locales/trial-days.test.ts > takes the promise out of the shorter wording in every language: it is always shorter than the longer one 0ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  10:16:15
+   Duration  1.50s (transform 1.02s, setup 1.23s, import 76ms, tests 10ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/vm-confirm.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/vm-confirm.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/vm-confirm.test.ts > says what survives deleting or replacing a Local VM and what does not 6ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  10:16:18
+   Duration  1.46s (transform 1.01s, setup 1.22s, import 68ms, tests 8ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/vocabulary.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/vocabulary.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/vocabulary.test.ts > one name per thing > English copy uses Cry Bot Cloud, the Cloud, Cloud desktop, This computer and Plan page 27ms
+ ✓ src/locales/vocabulary.test.ts > one name per thing > translations never show CRY, T3 or an old name for Cry Bot Cloud, keep its name as it is, and say Boat only where the English does 18ms
+ ✓ src/locales/vocabulary.test.ts > one name per thing > hard-coded strings in src, server, electron and shared use the same words 4771ms
+ ✓ src/locales/vocabulary.test.ts > one name per thing > the public docs name Cry Bot Cloud and the Cloud as the app does 3ms
+ ✓ src/locales/vocabulary.test.ts > one name per thing > copy that points at a control names it exactly as the control is labelled 1ms
+ ✓ src/locales/vocabulary.test.ts > one name per thing > the check catches each retired word, and lets own-key Boat and env names through 1ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  10:16:20
+   Duration  6.39s (transform 961ms, setup 1.14s, import 272ms, tests 4.82s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/welcome-words.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/welcome-words.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/welcome-words.test.ts > the welcome's English copy uses none of the app's internal words 9ms
+ ✓ src/locales/welcome-words.test.ts > Settings describes the welcome as it now is: no phone step, no first-bot step 1ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:16:27
+   Duration  1.35s (transform 917ms, setup 1.08s, import 89ms, tests 12ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run src/locales/words.test.ts --maxWorkers=1 --reporter=verbose
+Run: src/locales/words.test.ts
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ src/locales/words.test.ts > English copy says Organization and installation, not Organisation or workspace 10ms
+ ✓ src/locales/words.test.ts > hardcoded copy does not bring back the retired workspace and Organisation phrases 10ms
+ ✓ src/locales/words.test.ts > English welcome flow copy has no em dashes 9ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  10:16:29
+   Duration  1.43s (transform 956ms, setup 1.14s, import 86ms, tests 31ms, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1 --reporter=verbose
+Run: vnc e2e repeat 2
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/vnc.e2e.test.ts > relays ws RFB 3.8 None authentication, frames and input byte-for-byte without leaking headers 241ms
+ ✓ server/instabox/vnc.e2e.test.ts > relays wss RFB 3.8 None authentication, frames and input byte-for-byte without leaking headers 237ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes the other side when browser disconnects and releases only its own retain 64ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes the other side when upstream disconnects and releases only its own retain 65ms
+ ✓ server/instabox/vnc.e2e.test.ts > checks member before resolving upstream for HTTP and upgrades 13ms
+ ✓ server/instabox/vnc.e2e.test.ts > checks origin before resolving upstream for HTTP and upgrades 8ms
+ ✓ server/instabox/vnc.e2e.test.ts > checks lease before resolving upstream for HTTP and upgrades 20ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks live and touches only a live viewer 62ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks holding and touches only a live viewer 58ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks present and touches only a live viewer 58ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks key and touches only a live viewer 63ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes established viewers on revoke 61ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes established viewers on shutdown 58ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes established viewers on gate 64ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks liveness after an asynchronous resolve 55ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks liveness after an asynchronous handshake 56ms
+ ✓ server/instabox/vnc.e2e.test.ts > does not connect after a browser leaves during provider resolution 109ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects ws-default without exposing credentials 7ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects remote-ws without exposing credentials 5ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects http without exposing credentials 7ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects https without exposing credentials 5ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects invalid without exposing credentials 4ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects userinfo without exposing credentials 7ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects fragment without exposing credentials 7ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes refused failures and releases retains 12ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes invalid-header failures and releases retains 7ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes provider failures and releases retains 6ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes rejected failures and releases retains 4ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes forged failures and releases retains 5ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes tls failures and releases retains 5ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes untrusted-cert failures and releases retains 7ms
+ ✓ server/instabox/vnc.e2e.test.ts > renders the 1280×800 None-authenticated desktop with the unchanged browser client 695ms
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  10:16:31
+   Duration  4.51s (transform 1.75s, setup 1.24s, import 979ms, tests 2.12s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1 --reporter=verbose
+Run: vnc e2e repeat 3
+
+ RUN  v4.1.11 [worktree]
+
+stderr | unknown test
+Importing from "vitest/runners" is deprecated since Vitest 4.1. Please use "vitest" instead.
+
+ ✓ server/instabox/vnc.e2e.test.ts > relays ws RFB 3.8 None authentication, frames and input byte-for-byte without leaking headers 255ms
+ ✓ server/instabox/vnc.e2e.test.ts > relays wss RFB 3.8 None authentication, frames and input byte-for-byte without leaking headers 237ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes the other side when browser disconnects and releases only its own retain 69ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes the other side when upstream disconnects and releases only its own retain 80ms
+ ✓ server/instabox/vnc.e2e.test.ts > checks member before resolving upstream for HTTP and upgrades 11ms
+ ✓ server/instabox/vnc.e2e.test.ts > checks origin before resolving upstream for HTTP and upgrades 19ms
+ ✓ server/instabox/vnc.e2e.test.ts > checks lease before resolving upstream for HTTP and upgrades 16ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks live and touches only a live viewer 76ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks holding and touches only a live viewer 67ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks present and touches only a live viewer 62ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks key and touches only a live viewer 62ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes established viewers on revoke 69ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes established viewers on shutdown 66ms
+ ✓ server/instabox/vnc.e2e.test.ts > closes established viewers on gate 71ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks liveness after an asynchronous resolve 61ms
+ ✓ server/instabox/vnc.e2e.test.ts > rechecks liveness after an asynchronous handshake 62ms
+ ✓ server/instabox/vnc.e2e.test.ts > does not connect after a browser leaves during provider resolution 117ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects ws-default without exposing credentials 11ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects remote-ws without exposing credentials 8ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects http without exposing credentials 6ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects https without exposing credentials 8ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects invalid without exposing credentials 11ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects userinfo without exposing credentials 8ms
+ ✓ server/instabox/vnc.e2e.test.ts > rejects fragment without exposing credentials 10ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes refused failures and releases retains 12ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes invalid-header failures and releases retains 16ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes provider failures and releases retains 19ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes rejected failures and releases retains 15ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes forged failures and releases retains 15ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes tls failures and releases retains 8ms
+ ✓ server/instabox/vnc.e2e.test.ts > sanitizes untrusted-cert failures and releases retains 13ms
+ ✓ server/instabox/vnc.e2e.test.ts > renders the 1280×800 None-authenticated desktop with the unchanged browser client 725ms
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  10:16:36
+   Duration  5.02s (transform 1.97s, setup 1.25s, import 1.24s, tests 2.38s, environment 0ms)
+
+Exit code: 0
+
+$ pnpm exec tsc -p tsconfig.server.json
+Run: server tsc
+
+Exit code: 0
+
+$ pnpm exec oxlint --deny-warnings server/store.test.ts
+Run: changed-file oxlint
+
+Exit code: 0
+
+$ git diff --check
+Exit code: 0
+
+Verification redaction scan: passed.
+Evidence completeness: 26 unique test files; 32 test runs; 511 passed; 3 existing todo; no failures.
