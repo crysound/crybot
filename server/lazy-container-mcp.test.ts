@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { PassThrough } from "node:stream";
 import { gatedContainerRequests, lazyContainerRequests, serveLazyContainerRequests } from "./lazy-container-mcp.ts";
 import type { AppClient } from "./mcp-app-connections.ts";
-import { CONTROL_HANDED_BACK, CONTROL_TURN_ENDED, CONTROL_UNCONFIRMED, createControlClient, type ControlState } from "./computer-control-client.ts";
+import { CONTROL_BUSY, CONTROL_READ_TIMEOUT_MS, CONTROL_HANDED_BACK, CONTROL_TURN_ENDED, CONTROL_UNCONFIRMED, createControlClient, type ControlState } from "./computer-control-client.ts";
 import { cuaExecArgs, CUA_SOCKET } from "./container-computer.ts";
 import { startAutoVmClaim, type AutoVmClaimTable } from "./auto-vm-claims.ts";
 
@@ -46,39 +46,54 @@ it.each([
   } finally { await proxy.close(); }
 });
 
-it("cancels a pending screen readiness poll without opening MCP or polling again", async () => {
+it.each([false, true])("cancels pending screen readiness without opening MCP or polling again (blocked read: %s)", async blockedRead => {
   vi.useFakeTimers();
-  const fetchImpl = vi.fn<typeof fetch>(async () => Response.json({ held: true, helpOpen: false, readinessPending: true }));
+  const fetchImpl = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json({ held: true, helpOpen: false, readinessPending: true, blockedReason: CONTROL_BUSY }))
+    .mockImplementation(async (_url, init) => {
+      await new Promise<void>((resolve) => init?.signal?.addEventListener("abort", () => resolve(), { once: true }));
+      return Response.json({ held: true, helpOpen: false, readinessPending: true, blockedReason: CONTROL_BUSY });
+    });
   const { proxy, open } = screenFixture(fetchImpl);
   try {
     const pending = proxy.request(request("tools/call", "search_tools", { query: "click" }));
-    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(blockedRead ? 250 : 0);
     await proxy.request({ method: "notifications/cancelled", params: { requestId: 1 } });
     expect(JSON.stringify(await pending)).toContain("cancelled");
     await vi.advanceTimersByTimeAsync(1000);
-    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(fetchImpl).toHaveBeenCalledTimes(blockedRead ? 2 : 1);
     expect(open).not.toHaveBeenCalled();
   } finally { await proxy.close(); }
 });
 
-it("bounds repeated screen readiness checks by the original tool-call deadline", async () => {
+it.each([false, true])("returns the last pending reason within the readiness budget (blocked read: %s)", async blockedRead => {
   vi.useFakeTimers();
   vi.spyOn(AbortSignal, "timeout").mockImplementation(ms => {
     const controller = new AbortController();
     setTimeout(() => controller.abort(new DOMException("fixture deadline", "TimeoutError")), ms);
     return controller.signal;
   });
-  const fetchImpl = vi.fn<typeof fetch>(async () => Response.json({ held: true, helpOpen: false, readinessPending: true }));
+  const lastReason = "Queued for screen 2: keep waiting with a screenshot.";
+  const fetchImpl = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json({ held: true, helpOpen: false, readinessPending: true, blockedReason: CONTROL_BUSY }))
+    .mockResolvedValueOnce(Response.json({ held: true, helpOpen: false, readinessPending: true, blockedReason: lastReason }))
+    .mockImplementation(async (_url, init) => {
+      if (blockedRead) await new Promise<void>((resolve) => init?.signal?.addEventListener("abort", () => resolve(), { once: true }));
+      return Response.json({ held: true, helpOpen: false, readinessPending: true, blockedReason: lastReason });
+    });
   const { proxy, open } = screenFixture(fetchImpl);
   try {
     let finished = false;
     const pending = proxy.request(request("tools/call", "search_tools", { query: "click" })).then(result => { finished = true; return result; });
-    await vi.advanceTimersByTimeAsync(119_999);
+    await vi.advanceTimersByTimeAsync(CONTROL_READ_TIMEOUT_MS - 1);
     expect(finished).toBe(false);
     await vi.advanceTimersByTimeAsync(1);
-    expect(JSON.stringify(await pending)).toContain("fixture deadline");
+    const result = await pending;
+    expect(result).toHaveProperty("result.isError", true);
+    expect(result).toHaveProperty("result.content", [{ type: "text", text: lastReason }]);
+    expect(CONTROL_READ_TIMEOUT_MS * 2).toBeLessThan(120_000);
     const checks = fetchImpl.mock.calls.length;
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(120_000);
     expect(fetchImpl).toHaveBeenCalledTimes(checks);
     expect(open).not.toHaveBeenCalled();
   } finally { await proxy.close(); }

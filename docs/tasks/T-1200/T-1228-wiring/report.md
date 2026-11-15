@@ -381,7 +381,7 @@ $ wc -l server/index.ts
 
 ## 第 10 轮：首次工具调用分屏的就绪竞态
 
-日期：2026-11-15。开工执行 `crybot-link-deps`，输出 `linked 73 entries`；Node `v24.22.3`。Vitest 一次只跑一个文件，没有使用 systemd、Docker 或用户 live app/data。全部验证使用临时目录、假容器运行时和隔离 fixture。`docs/verification/README.md` 仍不存在，无法执行其中未提供的步骤。未提交、暂存或推送 git。
+日期：2026-11-15。开工执行 依赖准备脚本，输出 `linked 73 entries`；Node `v24.22.3`。Vitest 一次只跑一个文件，没有使用 systemd、Docker 或用户 live app/data。全部验证使用临时目录、假容器运行时和隔离 fixture。`docs/verification/README.md` 仍不存在，无法执行其中未提供的步骤。未提交、暂存或推送 git。
 
 ### 根因与可复现证据
 
@@ -454,3 +454,64 @@ exit 0
 另直接启动隔离假 Docker hook 检查延迟机制：`start screen-s2:*` 返回 0，尚未就绪的 status 返回 1 并输出 `screen socket is still starting`；把临时 fixture 的 ready 时刻置为已到达后，status 返回 0 和 `{}`。这不替代服务 e2e。
 
 由于沙箱禁止监听端口，屏幕 e2e 只尝试了一次，未做无效的 5 次重复。协调者需在可监听端口的主机将该整文件连续运行 5 次，并复跑控制客户端及 chat MCP 文件；完整服务行为以主机/Actions 为准，本轮未获取 Actions 结果。
+
+## 第 11 轮：排队时保留就绪门禁的引导文字
+
+### 根因与取舍
+
+第 10 轮的 `readinessPending` 只说明同一个 Local VM claim 仍在执行，不能区分短暂屏启动、四屏占满的队列，以及 `localVmStartupReady` / `waitForLocalVmUpdate` 长时间等待。一次真实门禁调用本身已经等待最多 `CONTROL_WAIT_MS = 45_000`；MCP 再无条件查询，会用完外层 120 秒，最终由 `abortable` 返回 timeout，覆盖原来的 `blockedReason`。模型因而失去继续截图等待的引导，结束轮次又可能取消仍有机会获屏的 claim。
+
+本轮选择保留一个有界的启动宽限窗口，而不是第一次 pending 返回就立即拒绝：立即返回虽能保持约 45 秒的排队反馈，却会破坏第 10 轮已有的 47 秒启动成功回归。现有协议也没有可靠的状态字段区分启动和排队，不能根据提示文字猜测。
+
+就绪循环独立预算由已有时限推出：
+
+```text
+CONTROL_READ_TIMEOUT_MS = CONTROL_WAIT_MS + 10_000 = 55_000（原控制读取超时，仅导出并改名）
+TOOL_CALL_TIMEOUT_MS = 120_000（原 MCP 总时限，仅提取常量）
+SCREEN_READINESS_TIMEOUT_MS = min(CONTROL_READ_TIMEOUT_MS,
+                                TOOL_CALL_TIMEOUT_MS - CONTROL_READ_TIMEOUT_MS)
+                           = min(55_000, 65_000) = 55_000
+```
+
+复用控制读取已有的 10 秒余量作为首次启动宽限，因此排队最迟 55 秒返回，比原 45 秒多 10 秒；仍给外层留下 65 秒，超过一次完整控制读取所需的 55 秒。独立截止时间同时覆盖查询间隔和正在执行的读取，不能因第二次门禁再次等待 45 秒而越界。没有提高任何产品既有超时。
+
+循环记住最后一个明确 pending 的完整 held 状态。自身预算到点时中止当前就绪读取，返回保存的状态，`blockedReason` 原样传给模型；这个读取信号不取消后台 claim。成功后才绑定屏，仍执行原有的动作权限检查和连接后的再次检查。非 pending 拒绝立即返回；用户 `notifications/cancelled` 或连接关闭优先走原取消路径，不会被保存的排队文字覆盖。没有自动重试工具动作。
+
+### 实际改动文件
+
+与本轮最终 `git status --short` 一致，共 7 个文件；没有修改 `computer-call-gate.ts`、屏池或 runtime 产品逻辑。
+
+| 文件 | 改动 |
+| --- | --- |
+| `server/lazy-container-mcp.ts` | 提取原 120 秒常量；新增独立就绪预算，保存最后 pending 状态，在读取或轮询截止时返回该状态，保留用户取消语义。 |
+| `server/computer-control-client.ts` | 导出原 55 秒读取常量供预算推导；在 `CONTROL_ACT_WITHIN_MS` 旁说明启动耗时不计入动作年龄的前提：引擎单次工具时限必须大于 MCP 120 秒。 |
+| `server/lazy-container-mcp.test.ts` | 将原“120 秒后 fixture deadline”断言改为 55 秒返回最后的原始 blockedReason；分别覆盖持续快速 pending 和下一次读取阻塞。取消测试同时覆盖轮询间隔与正在执行的读取，确认仍返回 cancelled、停止查询且不打开 MCP。 |
+| `server/local-vm-screen-runtime.test.ts` | 新增四屏占满的 Auto 首次调用回归，分别验证 CONTROL_BUSY 与队列提示；55 秒后 claim 仍排队，释放第二屏后下一次调用成功。移除文件级 1 秒排队时限覆盖，使用生产排队常量；原 parking 测试通过推进虚拟系统时间触发截止，不等待真实时间。 |
+| `server/testing/local-vm-screens-hooks.mjs` | `.ready-at-N` 不存在时视为就绪；文件存在时仍按原截止时刻检查。 |
+| `docs/tasks/T-1200/T-1228-wiring/report.md` | 追加本节。 |
+| `docs/tasks/T-1200/T-1228-wiring/round11-verification.txt` | 保存依赖准备、逐文件测试、静态检查和隔离 hook 检查的完整输出及退出码。 |
+
+引擎时限核对：任务描述中的 Codex 为 620 秒，但本 checkout 的 `COMPUTER_COPY_BUDGET_MS = 540_000`，`COMPUTER_PROXY_TIMEOUT_MS = 550_000`，Codex 再加 10 秒，实际配置为 **560 秒**；Pi 使用 `AGENTS_TOOL_TIMEOUT_SECONDS * 1000`，为 **960 秒**。注释采用当前源码的 560 / 960 秒，两者均大于 MCP 的 120 秒；本轮未修改引擎配置。
+
+### 隔离回归与逐文件输出
+
+先运行 依赖准备脚本，成功链接 73 项；Node 为 v24.22.3。当前 checkout 缺少 AGENTS.md 引用的 `docs/verification/README.md`，读取结果已记录，不能声称完成该文档规定的服务验证。本轮所有测试均使用进程内 fixture 或 `mkdtempSync` / `TemporaryDirectory` 创建的临时目录，没有访问用户 live app/data；没有 systemd、Docker 或真实 TCP 服务。
+
+四屏回归使用真实 `mountLazyScreenMcp`、Auto claim 表、屏池、`createLocalVmScreenRuntime`、`waitForComputer`、门禁、控制客户端及 lazy MCP；只替换 Docker/屏幕进程调用和 HTTP 传输。使用生产门禁 45 秒与动作 5 秒常量、虚拟时间，无固定 sleep。断言首次结果精确等于原引导文字，未打开 MCP、未执行动作，claim 未 failed / rejected / parked，队列仍有该机器人；释放屏后原 claim 获屏且只启动一次，下一次调用只执行一次工具动作。已有 2 秒、7 秒、47 秒屏启动回归全部保留并通过。
+
+每次只跑一个测试文件。完整输出见 [round11-verification.txt](round11-verification.txt)。
+
+| 命令/文件 | 实际输出摘要 | 退出码 |
+| --- | --- | ---: |
+| `pnpm exec vitest run server/lazy-container-mcp.test.ts` | `Test Files 1 passed; Tests 29 passed`（初次 28 项通过后补充读取中的取消覆盖，最终 29 项） | 0 |
+| `pnpm exec vitest run server/local-vm-screen-runtime.test.ts` | `Test Files 1 passed; Tests 18 passed` | 0 |
+| `pnpm exec vitest run server/computer-call-gate.test.ts` | `Test Files 1 passed; Tests 13 passed` | 0 |
+| `pnpm exec vitest run server/auto-vm-claims.test.ts` | `Test Files 1 passed; Tests 19 passed` | 0 |
+| `pnpm exec vitest run server/local-vm-resume.test.ts` | `Test Files 1 passed; Tests 17 passed` | 0 |
+| `pnpm exec tsc -p tsconfig.server.json` | 无诊断 | 0 |
+| `pnpm exec oxlint --deny-warnings server/lazy-container-mcp.ts server/lazy-container-mcp.test.ts server/local-vm-screen-runtime.test.ts server/computer-control-client.ts server/testing/local-vm-screens-hooks.mjs` | 无诊断 | 0 |
+| `git diff --check` | 无输出 | 0 |
+
+5 个验收测试文件合计 **96 项通过**。另外直接启动隔离假 Docker hook，验证 `.ready-at-2` 缺失、未来时刻、已到时刻三个场景：分别返回 `0 / 1 / 0`，成功时 stdout 为 `{}`，未就绪时 stderr 为 `screen socket is still starting`。脚本和完整输出均保存在验证日志中；没有等待真实时间。
+
+以下 3 个需要监听端口的文件按本轮环境要求跳过，**未记为通过**：`server/local-vm-screens.e2e.test.ts`、`server/computer-control-client.test.ts`、`server/drivers/chat-mcp-lazy-container.test.ts`。沙箱不能监听 TCP 端口，完整服务验收由协调者在主机运行，以主机/Actions 结果为准；本轮未获取该结果。没有提交 git。

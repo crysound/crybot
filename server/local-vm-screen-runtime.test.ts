@@ -6,19 +6,18 @@ import { createLocalVmScreenRuntime, parkedLocalVmTurnBusy } from "./local-vm-sc
 import { sharedScreenTarget, startScreen, stopScreen, screenStates, sh, cuaExecArgs, CUA_SOCKET } from "./container-computer.ts";
 import { screenResource } from "./host/shared-vm-control.ts";
 import type { TurnOwner } from "./turn-resources.ts";
-import { ComputerWaitParked } from "./turn-computer-wait.ts";
+import { COMPUTER_WAIT_MAX_MS, ComputerWaitParked } from "./turn-computer-wait.ts";
 import { mountLazyScreenMcp } from "./local-vm-screen-mcp.ts";
 import type { AutoVmClaimTable } from "./auto-vm-claims.ts";
 import { createComputerCallGate } from "./computer-call-gate.ts";
 import { gatedContainerRequests, lazyContainerRequests } from "./lazy-container-mcp.ts";
-import { createControlClient } from "./computer-control-client.ts";
+import { CONTROL_ACT_WITHIN_MS, CONTROL_BUSY, CONTROL_READ_TIMEOUT_MS, CONTROL_WAIT_MS, createControlClient } from "./computer-control-client.ts";
 import type { AppClient } from "./mcp-app-connections.ts";
 import { createComputerRoutes, type ComputerRouteDeps } from "./routes/computers.ts";
 import type { RouteContext } from "./routes/table.ts";
 import type { ScreenListPayload } from "../shared/local-vm-screens.ts";
 import { z } from "zod";
 
-vi.hoisted(() => { process.env.CRYBOT_COMPUTER_WAIT_MAX_MS = "1000"; });
 vi.mock("./container-computer.ts", async original => ({
   ...await original<typeof import("./container-computer.ts")>(),
   startScreen: vi.fn(async () => {}), stopScreen: vi.fn(async () => {}),
@@ -158,6 +157,58 @@ describe("screen runtime lifecycle", () => {
     expect(claim).toHaveBeenCalledOnce();
   });
 
+  it.each([false, true])("keeps an Auto claim queued after returning guidance and succeeds after a screen is released (queue text: %s)", async queueText => {
+    const f = fixture(4), claims: AutoVmClaimTable = new Map(), owner = f.owner("chat");
+    for (const botId of ["a", "b", "c", "d"]) await f.runtime.claim(botId, f.owner(botId));
+    const claim = vi.fn(() => f.runtime.claim("chat", owner));
+    const onRejected = vi.fn();
+    mountLazyScreenMcp({ runtime: "docker", control: { url: "http://fixture/control", token: "fixture" }, toolScope: {},
+      claims, owner, claim, onClaimed: vi.fn(), onRejected });
+    const guidance = queueText ? "All four screens are occupied. Queue position 1; take a screenshot to keep waiting instead of ending your turn." : CONTROL_BUSY;
+    const gate = createComputerCallGate({ claims, snapshot: () => ({ held: false, heldSinceMs: null, helpReason: null }),
+      isActive: () => !f.stopped.has(owner.threadId), claimResource: () => true,
+      waiting: () => queueText && f.runtime.payload().queue.length ? guidance : undefined, personAwayText: () => "held",
+      waitMs: CONTROL_WAIT_MS, actWithinMs: CONTROL_ACT_WITHIN_MS, personWaitMs: 90_000 });
+    const control = createControlClient({ url: "http://fixture/control", token: "fixture", fetchImpl: async (url, init) => {
+      const state = await gate({ ...owner, botId: "chat" }, init?.signal ?? undefined, undefined, new URL(String(url)).searchParams.get("readinessOnly") === "1");
+      return Response.json({ ...state, ...(!state.held ? { localVmScreen: f.runtime.assigned("chat") } : {}) });
+    } });
+    const call = vi.fn(async (method: string) => method === "tools/list"
+      ? { tools: [{ name: "get_desktop_state", inputSchema: { type: "object" } }] }
+      : { content: [{ type: "text", text: "released screen" }] });
+    const open = vi.fn(async (): Promise<AppClient> => ({ request: call, close: async () => {}, closed: false, extensions: undefined, serverInfo: undefined }));
+    const proxy = gatedContainerRequests("docker", cuaExecArgs(["mcp", "--socket", CUA_SOCKET], { interactive: true }), control,
+      { dynamicScreen: true, open });
+    const params = { name: "call_tool", arguments: { name: "get_desktop_state", arguments: {} } };
+    try {
+      const pending = proxy.request({ id: 1, method: "tools/call", params });
+      await vi.advanceTimersByTimeAsync(CONTROL_READ_TIMEOUT_MS);
+      expect(await pending).toHaveProperty("result.content", [{ type: "text", text: guidance }]);
+      expect(open).not.toHaveBeenCalled();
+      expect(call).not.toHaveBeenCalled();
+      expect(f.runtime.claiming()).toBe(true);
+      expect(f.runtime.payload().queue).toEqual([{ bot: { id: "chat", name: "chat" }, position: 1, waitingSeconds: CONTROL_READ_TIMEOUT_MS / 1000 }]);
+      expect(claims.get(owner.threadId)).toMatchObject({ attempts: 1 });
+      expect(claims.get(owner.threadId)?.failed).toBeUndefined();
+      expect(onRejected).not.toHaveBeenCalled();
+      expect(f.park).not.toHaveBeenCalled();
+      expect(f.ended).not.toHaveBeenCalled();
+      f.busy.delete(screenResource(2));
+      await f.runtime.remove("b");
+      const next = proxy.request({ id: 2, method: "tools/call", params });
+      await vi.advanceTimersByTimeAsync(100);
+      expect(await next).toHaveProperty("result.content", [{ type: "text", text: "released screen" }]);
+      expect(f.runtime.assigned("chat")).toBe(2);
+      expect(f.runtime.ready(2)).toBe(true);
+      expect(f.runtime.payload().queue).toEqual([]);
+      expect(claims.get(owner.threadId)?.claimed).toBe(true);
+      expect(claim).toHaveBeenCalledOnce();
+      expect(f.ended).toHaveBeenCalledWith("chat", "computer:vm:screens:chat", "acquired", expect.any(Number), undefined);
+      expect(open).toHaveBeenCalledExactlyOnceWith("docker", expect.arrayContaining(["crybot-s2", "/run/user/61002/crybot-cua.sock"]), expect.any(AbortSignal));
+      expect(call.mock.calls.filter(([method]) => method === "tools/call")).toHaveLength(1);
+    } finally { await proxy.close(); }
+  });
+
   it.each([
     { waitMs: 500, readyMs: 2000 },
     { waitMs: 45_000, readyMs: 7000 },
@@ -227,7 +278,9 @@ describe("screen runtime lifecycle", () => {
     await f.runtime.claim("a", f.owner("a")); await f.runtime.claim("b", f.owner("b"));
     const owner = f.owner("c");
     const waiting = f.runtime.claim("c", owner).catch(error => error);
-    await vi.advanceTimersByTimeAsync(1_100);
+    await vi.advanceTimersByTimeAsync(0);
+    vi.setSystemTime(Date.now() + COMPUTER_WAIT_MAX_MS);
+    await vi.advanceTimersByTimeAsync(100);
     expect(await waiting).toBeInstanceOf(ComputerWaitParked);
     expect(f.started).toHaveBeenCalledWith("c", "computer:vm:screens:c", 1, undefined);
     expect(f.runtime.free("computer:vm:screens:c")).toBe(false);

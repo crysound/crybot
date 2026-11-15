@@ -36,7 +36,8 @@ if (process.argv[2] === '--fake-docker') {
     }
   } else if (command.includes('--socket')) {
     const socketScreen = Number(command.match(/\/run\/user\/6100([1-4])\//)?.[1]);
-    if (socketScreen && Date.now() < Number(readFileSync(file + '.ready-at-' + socketScreen, 'utf8'))) {
+    const readyAtFile = file + '.ready-at-' + socketScreen;
+    if (socketScreen && existsSync(readyAtFile) && Date.now() < Number(readFileSync(readyAtFile, 'utf8'))) {
       process.stderr.write('screen socket is still starting\n');
       process.exit(1);
     }

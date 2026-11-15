@@ -4,9 +4,10 @@
 /** Under the 60 seconds an engine may give one tool call (Codex's default), with room for the action itself. */
 export const CONTROL_WAIT_MS = 45_000;
 /** A call that waited longer is not performed: a late action could outlive a call the engine already retried, and happen twice. */
+// Excluding Local VM startup from this age requires each engine's tool timeout (Codex: 560 seconds; Pi: 960 seconds) to exceed the MCP's 120 seconds.
 export const CONTROL_ACT_WITHIN_MS = 5_000;
 /** Past the harness's longest answer, so a check it still legitimately holds is never cut off and misread. */
-const READ_TIMEOUT_MS = CONTROL_WAIT_MS + 10_000;
+export const CONTROL_READ_TIMEOUT_MS = CONTROL_WAIT_MS + 10_000;
 const WAIT_WORDS = `${CONTROL_WAIT_MS / 1000} seconds`;
 
 /** Only while a person holds the computer (the harness marks it `reason: "person"`). */
@@ -68,7 +69,7 @@ export function createControlClient(options?: {
   const url = options?.url ?? process.env.CRYBOT_CONTROL_URL ?? "";
   const token = options?.token ?? process.env.CRYBOT_CONTROL_TOKEN ?? "";
   const cacheMs = options?.cacheMs ?? 750;
-  const timeoutMs = options?.timeoutMs ?? READ_TIMEOUT_MS;
+  const timeoutMs = options?.timeoutMs ?? CONTROL_READ_TIMEOUT_MS;
   const fetchImpl = options?.fetchImpl ?? fetch;
   const configured = Boolean(url && token);
   const headers = { authorization: `Bearer ${token}`, "content-type": "application/json" };
