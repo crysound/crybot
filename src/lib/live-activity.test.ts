@@ -191,3 +191,19 @@ it.each([["en", "Waking the computer…"], ["zh", "正在唤醒电脑…"]])("tr
 it.each(["chat.notice.computerWakeFailed", "chat.notice.previousComputerWakeFailed"])("keeps %s out of the current state line", nameCode => {
   expect(turnNowPhrases(null, activity("notice: The computer could not wake (desktop failed)", { nameCode, nameParams: { reason: "desktop failed" }, ok: false }))).toBeNull();
 });
+
+it.each([["en", "Queued · Position 2", "Waiting for a screen"], ["zh", "正在排队，第 2 位", "等待屏幕的智能体"]])("shows screen waits in %s", (locale, queued, queue) => {
+  setLocale(locale);
+  const waiting = activity("Waiting for its turn on this computer — 2nd in queue", { nameCode: "chat.notice.waitingForScreen", nameParams: { position: 2 } });
+  expect(liveActivityLabel(waiting)).toBe(queued);
+  expect(turnNowPhrases(null, waiting)?.phrases).toEqual([queued]);
+  expect(liveActivityLabel(activity("Waiting for its turn on this computer", { nameCode: "chat.notice.waitingForScreen" }))).toBe(queue);
+});
+
+it.each(["Waiting for its turn on this computer", "Waking the computer…", "Please read this file", "computer is busy: wait", "computer\tbusy"])("does not guess a tool from a sentence: %s", name => {
+  expect(liveActivityPhrases(activity(name)).phase).toBe("chat.activity.working");
+});
+
+it("does not call a coded wake notice a computer operation", () => {
+  expect(turnNowPhrases(null, activity("Waking the computer…", { nameCode: "chat.notice.wakingComputer" }))).toBeNull();
+});

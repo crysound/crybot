@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { unlessRefused } from "@/lib/admin-scope";
 import { openExternalLink } from "@/lib/app-links";
+import { readSessionState } from "@/lib/session";
 import { t } from "@/lib/i18n";
 import { serverUpdateConfirmBody, serverUpdateView, type ServerUpdateCheck, type ServerUpdateStatus, type ServerUpdateView } from "@/lib/server-update";
 import { ApiError } from "@/state/api";
@@ -35,7 +36,10 @@ export function useServerUpdate() {
   const [appAnswer, setAppAnswer] = useState<AppUpdateAnswer | null>(null);
 
   const readStatus = useCallback(async () => {
-    const next = await unlessRefused(STATUS, () => api<ServerUpdateStatus>(STATUS, { timeoutMs: 20_000 }), null);
+    const session = await readSessionState();
+    const next = session.kind === "session" && session.scopes.includes("admin")
+      ? await unlessRefused(STATUS, () => api<ServerUpdateStatus>(STATUS, { timeoutMs: 20_000 }), null)
+      : null;
     setStatus(next);
     return next;
   }, []);

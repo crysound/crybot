@@ -5,7 +5,7 @@ import type { PlaceView } from "../../shared/place-view";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { pageOnRemoteServer } from "@/lib/local-computer";
-import { placeOffered, type Place } from "@/lib/place";
+import { placeOffered, vmDescriptionKey, type Place } from "@/lib/place";
 import type { LocaleKey } from "@/locales";
 
 export type WorksOnMode = Place | "off" | null;
@@ -19,9 +19,9 @@ const WORKS_ON_CHOICES = [
   ["off", "vm.dest.off", "computer.dest.offDesc", Power],
 ] as const satisfies ReadonlyArray<readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon]>;
 
-export function worksOnChoices(config: Parameters<typeof placeOffered>[1], capabilities: DesktopCapabilities): ReadonlyArray<readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon]> {
+export function worksOnChoices(config: Partial<Pick<ConfigStatus, "cloudHome" | "providerLock" | "localVm">> | null | undefined, capabilities: DesktopCapabilities): ReadonlyArray<readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon]> {
   return WORKS_ON_CHOICES.map((choice): readonly [WorksOnMode, LocaleKey, LocaleKey, LucideIcon] => config?.providerLock && choice[0] === "cloud"
-    ? ["cloud", "botAccess.cloud.selfHostedVps", "botAccess.cloud.vpsDescription", Cloud] : choice).filter(([mode]) => mode === null || mode === "off" || (placeOffered(mode, config, config?.providerLock ? "vps" : undefined) && !(mode === "local" && pageOnRemoteServer(capabilities))));
+    ? ["cloud", "botAccess.cloud.selfHostedVps", "botAccess.cloud.vpsDescription", Cloud] : choice[0] === "vm" ? [choice[0], choice[1], vmDescriptionKey(config), choice[3]] : choice).filter(([mode]) => mode === null || mode === "off" || (placeOffered(mode, config, config?.providerLock ? "vps" : undefined) && !(mode === "local" && pageOnRemoteServer(capabilities))));
 }
 
 export function worksOnSelected(mode: WorksOnMode, computer: Bot["computer"], capabilities: DesktopCapabilities): boolean {

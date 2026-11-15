@@ -1,4 +1,8 @@
 {
+  "chat.notice.stalled": "已有 {minutes} 分钟没有活动，回合已停止",
+  "task.incidents": "待处理的问题",
+  "computer.dest.vmScreenDesc": "共享容器里的一块虚拟屏",
+  "chat.notice.waitingForScreen": "正在排队等待屏幕",
   "server.computer.wakeFailed": "电脑唤醒失败（{reason}）",
   "server.computer.previousWakeFailed": "上一轮的电脑唤醒失败（{reason}）",
   "server.computer.waking": "正在唤醒电脑…",
