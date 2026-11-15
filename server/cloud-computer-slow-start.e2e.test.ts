@@ -80,7 +80,7 @@ describe("a slow cloud computer start", () => {
   };
   const cloudBot = async (name: string) => {
     const { bot } = await api("POST", "/api/bots", { name });
-    await api("PATCH", `/api/bots/${bot.id}`, { modelSelection: { instanceId: "claude", model: "claude-sonnet-5" }, browser: false, computer: "cloud" });
+    await api("PATCH", `/api/bots/${bot.id}`, { modelSelection: { instanceId: "claude", model: "claude-sonnet-5" }, browser: false, computer: "cloud", cloudBackend: "box" });
     return bot as { id: string; threadId: string };
   };
 

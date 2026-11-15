@@ -187,3 +187,12 @@ zh/en 中仍含 `Boat` 的位置只有 `boatOffer.*`、`keys.boat.*`、`place.ac
 - PATH=/opt/node24/bin:$PATH node scripts/generate-locale.mjs zh --check：当前脚本不支持语言参数与 --check 组合，返回用法错误；改用支持的 PATH=/opt/node24/bin:$PATH node scripts/generate-locale.mjs --check，通过中英文目录及源哈希检查。未修改脚本。
 - 指定验证 README 缺失；全部服务测试通过现有临时目录、假服务及隔离 fixture 执行。完整命令和汇总结果追加在同目录 verification.txt。
 - grep -rn 冲突标记扫描 shared／src／server 无输出；全仓冲突标记扫描与 git diff --check 通过。最终 git status 为上述 7 个修改文件，无新增文件，未提交。
+
+## 第 13 轮
+
+- server/cloud-computer-auto-sleep.e2e.test.ts：夹具属于 Boat 云电脑；新规则下缺省后端是 ，测试辅助函数显式设置 cloudBackend: "box"。
+- server/cloud-computer-slow-start.e2e.test.ts：夹具属于 Boat 云电脑；创建测试智能体时显式设置 cloudBackend: "box"。
+- server/cloud-home-server.test.ts：托管云电脑夹具属于 Cloud Pro 的 Boat；测试智能体显式设置 cloudBackend: "box"，保留托管云主页断言。
+- server/cloud-lent-screen.e2e.test.ts：借用屏幕场景的云电脑属于托管 Boat；创建并保存测试智能体时显式设置 cloudBackend: "box"。
+- server/computer-engine-removal.e2e.test.ts：引擎移除场景使用 Boat 假服务；旧保存记录显式绑定 cloudBackend: "box"，保留迁移和删除保护断言。
+- server/computer-take-control.e2e.test.ts：接管控制场景属于 Boat 云电脑；测试辅助函数显式设置 cloudBackend: "box"。

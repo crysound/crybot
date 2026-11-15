@@ -153,6 +153,7 @@ async function agentTools(turn: Turn) {
 
 it("lets an Auto conversation pinned to the cloud computer use the person's lent PC, and says how", async () => {
   const created = (await api("POST", "/api/bots", { token: owner, body: { name: "Office", modelSelection: { instanceId: "claude", model: "claude-sonnet-5" } } })).body.bot as { id: string; threadId: string };
+  expect((await api("PATCH", `/api/bots/${created.id}`, { token: owner, body: { cloudBackend: "box" } })).status).toBe(200);
   const guestThread = (await api("POST", `/api/bots/${created.id}/tasks`, { token: owner, body: { title: "Guest's" } })).body.task.threadId as string;
   // Stopped: an earlier Auto turn selected the cloud computer in this conversation (the pin a turn makes on its own), and
   // a guest opened the other one before the Cloud was personal.

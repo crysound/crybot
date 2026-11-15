@@ -11764,3 +11764,44 @@ PASS: no conflict markers in repository files; exit 1
 
 $ git diff --check
 PASS; exit 0
+
+## 第 13 轮
+
+$ pnpm exec vitest run server/cloud-computer-auto-sleep.e2e.test.ts --maxWorkers=1
+通过：9，失败：0
+
+$ pnpm exec vitest run server/cloud-computer-slow-start.e2e.test.ts --maxWorkers=1
+通过：6，失败：0
+
+$ pnpm exec vitest run server/cloud-home-server.test.ts --maxWorkers=1
+通过：14，失败：0
+
+$ pnpm exec vitest run server/cloud-lent-screen.e2e.test.ts --maxWorkers=1
+通过：1，失败：0
+
+$ pnpm exec vitest run server/computer-engine-removal.e2e.test.ts --maxWorkers=1
+通过：4，失败：0
+
+$ pnpm exec vitest run server/computer-take-control.e2e.test.ts --maxWorkers=1
+通过：2，失败：0
+
+$ 第 9 轮 19 个文件和 server/instabox 下 16 个文件逐文件运行
+通过：363，跳过：5（既有 Linux 平台限定），失败：0
+
+$ T-1266 相关 21 个测试文件逐文件运行
+通过：285，失败：0
+
+$ 5 个改动 e2e 文件各连续运行 3 次
+通过：66，失败：0
+
+$ pnpm exec tsc -p tsconfig.server.json --pretty false
+通过；失败：0
+
+$ pnpm exec tsc -b --pretty false
+通过；失败：0
+
+$ pnpm exec oxlint --deny-warnings server/cloud-computer-auto-sleep.e2e.test.ts server/cloud-computer-slow-start.e2e.test.ts server/cloud-home-server.test.ts server/cloud-lent-screen.e2e.test.ts server/computer-engine-removal.e2e.test.ts server/computer-take-control.e2e.test.ts
+通过；失败：0
+
+$ git diff --check
+通过；失败：0

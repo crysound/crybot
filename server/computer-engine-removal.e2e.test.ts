@@ -114,6 +114,7 @@ const onEngine = (model: string) => ({ instanceId: "computer", model });
 /** A bot (and each of its conversations) as v0.1.94 saved it on the engine. */
 const savedOnEngine = (saved: any) => {
   saved.modelSelection = onEngine("claude-fable-5");
+  saved.cloudBackend = "box";
   for (const task of saved.tasks) task.modelSelection = onEngine("claude-fable-5");
 };
 
@@ -202,6 +203,7 @@ describe("removing the Computer engine", () => {
     server.editSavedBot(starter.id, saved => {
       saved.modelSelection = onEngine("claude-fable-5");
       saved.computer = "cloud";
+      saved.cloudBackend = "box";
       saved.fallback = [onEngine("sonnet")];
       saved.resumeCursors = { computer: "boat-prompt-run" };
       for (const task of saved.tasks) task.modelSelection = onEngine(task.threadId === other ? "gpt-5.4" : "claude-fable-5");
@@ -209,11 +211,13 @@ describe("removing the Computer engine", () => {
     // Atlas: on the engine with Works on Auto, the default for new bots.
     server.editSavedBot(auto.id, saved => {
       saved.modelSelection = onEngine("claude-fable-5");
+      saved.cloudBackend = "box";
       delete saved.computer;
       for (const task of saved.tasks) task.modelSelection = onEngine("claude-fable-5");
     });
     // Iris: on Claude and Auto, with its open conversation switched to the engine.
     server.editSavedBot(mixed.id, saved => {
+      saved.cloudBackend = "box";
       saved.tasks.find((task: any) => task.threadId === mixedConversation.threadId).modelSelection = onEngine("claude-fable-5");
     });
 
@@ -298,6 +302,7 @@ describe("removing the Computer engine", () => {
     server.editConfig(config => Object.assign(config, { instances: { later, computer: { driver: "boxAgent" } } }));
     server.editSavedBot(starter.id, saved => {
       saved.modelSelection = { instanceId: "computer", model: "claude-fable-5" };
+      saved.cloudBackend = "box";
       for (const task of saved.tasks) task.modelSelection = { instanceId: "computer", model: "claude-fable-5" };
     });
 

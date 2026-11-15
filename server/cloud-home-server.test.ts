@@ -363,6 +363,7 @@ it("offers its bots the browser and cloud computers only, and tells them they ca
   } });
   expect(created.status, JSON.stringify(created.body)).toBe(201);
   const botId = created.body.bot.id;
+  expect((await api("PATCH", `/api/bots/${botId}`, { body: { cloudBackend: "box" } })).status).toBe(200);
   try {
     expect((await api("POST", `/api/bots/${botId}/messages`, { body: { text: "list the files on my desktop" } })).status).toBe(202);
     const dump = join(home, "spawn-hang.json");
