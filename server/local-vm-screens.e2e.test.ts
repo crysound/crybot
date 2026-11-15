@@ -288,3 +288,46 @@ describe("shared Local VM screens through the server", () => {
   });
 
 });
+
+it("manually assigns an idle bot, joins its ready desktop, and reclaims it on idle", async () => {
+  const f = await fixture();
+  const bot = await f.bot(0);
+  const path = `/api/bots/${bot.id}/local-computer`;
+  const assigned = await f.request("POST", `${path}/assign-screen`, {});
+  expect(assigned.screen.screen).toBe(1);
+  await f.until(() => f.request("GET", path), status => status.ready);
+  const repeated = await f.request("POST", `${path}/assign-screen`, {});
+  expect(repeated.screen.screen).toBe(1);
+  const controlLeaseId = "fixture-manual-screen-lease";
+  await f.request("POST", `/api/bots/${bot.id}/computer/control`, { action: "take", target: "local/shared-s1", controlLeaseId });
+  const joined = await f.request("POST", `${path}/join?controlLeaseId=${controlLeaseId}`, {});
+  expect(new URLSearchParams(new URL(joined.joinUrl).hash.slice(1)).get("path")).toBe("websockify?token=s1");
+  await f.request("POST", `/api/bots/${bot.id}/computer/control`, { action: "release", controlLeaseId });
+  await f.until(f.screenList, list => list.slots.every((slot: any) => !slot.bot));
+});
+
+it("manual requests queue behind four running tasks and automatically get the released screen", async () => {
+  const f = await fixture();
+  const bots = [];
+  for (let i = 0; i < 5; i++) bots.push(await f.bot(i));
+  for (let i = 0; i < 4; i++) { await f.send(bots[i].id); await f.dump(i); }
+  const path = `/api/bots/${bots[4].id}/local-computer`;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    expect(await f.request("POST", `${path}/assign-screen`, {})).toEqual({ screen: null, queue_position: 1 });
+  }
+  expect(await f.request("GET", path)).toEqual({ screen: null, queue_position: 1 });
+  expect((await f.screenList()).slots.map((slot: any) => slot.bot.id)).toEqual(bots.slice(0, 4).map(bot => bot.id));
+  f.finish(1); await f.idle(bots[1].id);
+  const status = await f.until(() => f.request("GET", path), status => status.ready);
+  expect(status.screen.screen).toBe(2);
+  expect((await f.screenList()).slots.filter((slot: any) => slot.screen !== 2).map((slot: any) => slot.bot.id)).toEqual([bots[0].id, bots[2].id, bots[3].id]);
+});
+
+it("manual assignment is a no-op for the single desktop", async () => {
+  const f = await fixture(1);
+  const bot = await f.bot(0);
+  const status = await f.request("POST", `/api/bots/${bot.id}/local-computer/assign-screen`, {});
+  expect(status).not.toHaveProperty("screen");
+  expect((await f.screenList()).layout).toBe("single");
+  expect(f.rows(".actions").some(row => row.action === "run" || row.action === "start")).toBe(false);
+});

@@ -5642,8 +5642,8 @@ const localVmScreensHost = createLocalVmScreenRuntime({
   held: n => computerControl.snapshot(screenControlKey(n)).held,
   bot: id => { const bot = store.bot(id); return bot ? { id: bot.id, name: bot.name } : null; },
   prepare: async (botId, owner) => {
-    await waitForLocalVmUpdate(SHARED_LOCAL_VM_TARGET, owner.threadId, () => computerWaitHooks.active(owner));
-    const status = await readyLocalVmForTurn(botId, SHARED_LOCAL_VM_TARGET, () => computerWaitHooks.active(owner), true);
+    if (owner) await waitForLocalVmUpdate(SHARED_LOCAL_VM_TARGET, owner.threadId, () => computerWaitHooks.active(owner));
+    const status = await readyLocalVmForTurn(botId, SHARED_LOCAL_VM_TARGET, () => !owner || computerWaitHooks.active(owner), true);
     if (!status.ready || !status.runtime) throw new Error("The multi-screen desktop is not ready");
     if (status.runtime === "container" || status.screens_fallback) return { runtime: status.runtime, single: true };
     if (status.screens_layout !== "multi") throw new Error("The multi-screen layout is not ready");
