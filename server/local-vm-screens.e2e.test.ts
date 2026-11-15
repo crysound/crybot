@@ -106,7 +106,7 @@ async function fixture(screens = 4, waitMs = 15_000, initialState: Record<string
       const result = await client.request("tools/call", mounted.env.CRYBOT_CONTAINER_LAZY === "1"
         ? { name: "call_tool", arguments: { name: "get_desktop_state", arguments: {} } }
         : { name: "get_desktop_state", arguments: {} }, AbortSignal.timeout(15_000));
-      expect(result).not.toHaveProperty("isError", true);
+      expect(result, JSON.stringify(result)).not.toHaveProperty("isError", true);
     } finally { await client.close(); }
   };
   return { home, request, refused, until, rows, bot, send, dump, finish, idle, screenList, control, tool };
@@ -262,13 +262,13 @@ describe("shared Local VM screens through the server", () => {
     f.finish(0); await f.idle(bot.id);
   });
 
-  it("Auto binds its MCP to the assigned screen only on its first tool call", async () => {
-    const f = await fixture();
+  it.each([0, 2000])("Auto binds its MCP to the assigned screen only on its first tool call (screen startup delay: %i ms)", async delayMs => {
+    const f = await fixture(4, 15_000, { screenReadyDelayMs: { 2: delayMs } });
     const first = await f.bot(0); await f.send(first.id); await f.dump(0);
     const chat = await f.bot(1, true); await f.send(chat.id); const dump = await f.dump(1);
     expect((await f.screenList()).slots.some((slot: any) => slot.bot?.id === chat.id)).toBe(false);
     await f.tool(dump);
-    expect((await f.screenList()).slots[1].bot.id).toBe(chat.id);
+    expect((await f.screenList()).slots[1]).toMatchObject({ state: "ready", bot: { id: chat.id } });
     const exec = f.rows(".execs").filter(row => row.args.includes("mcp") && row.args.includes("crybot-s2"));
     expect(exec).toHaveLength(1);
     expect(exec[0].args).toEqual(expect.arrayContaining(["DISPLAY=:2", "/run/user/61002/crybot-cua.sock"]));

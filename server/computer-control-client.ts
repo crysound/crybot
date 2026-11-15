@@ -37,6 +37,8 @@ export interface ControlState {
   held: boolean;
   helpOpen: boolean;
   localVmScreen?: number;
+  /** The Local VM claim is still running; a readiness check may wait again without replaying a tool action. */
+  readinessPending?: true;
   /** "person" only when the harness says a person holds the computer. */
   reason?: "person";
   blockedReason?: string;
@@ -91,6 +93,7 @@ export function createControlClient(options?: {
         held: body.held,
         helpOpen: body.helpOpen,
         ...(Number.isInteger(body.localVmScreen) && body.localVmScreen >= 0 && body.localVmScreen <= 4 ? { localVmScreen: body.localVmScreen } : {}),
+        ...(body.held && body.readinessPending === true ? { readinessPending: true as const } : {}),
         ...(body.reason === "person" ? { reason: "person" as const } : {}),
         ...(typeof body.blockedReason === "string" && body.blockedReason.trim() ? { blockedReason: body.blockedReason } : {}),
       };

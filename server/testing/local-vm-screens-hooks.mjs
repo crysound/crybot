@@ -15,6 +15,8 @@ if (process.argv[2] === '--fake-docker') {
   if (command.includes('supervisorctl') && command.includes(' start ')) {
     for await (const _chunk of process.stdin) {}
     writeFileSync(file + '.screen-' + screen, 'running');
+    const delayMs = JSON.parse(readFileSync(file, 'utf8')).screenReadyDelayMs?.[screen] ?? 0;
+    writeFileSync(file + '.ready-at-' + screen, String(Date.now() + delayMs));
   } else if (command.includes('supervisorctl') && command.includes(' stop ')) {
     writeFileSync(file + '.screen-' + screen, 'off');
   } else if (command.includes('supervisorctl') && command.endsWith(' status')) {
@@ -33,6 +35,11 @@ if (process.argv[2] === '--fake-docker') {
       process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: frame.id, result }) + '\n');
     }
   } else if (command.includes('--socket')) {
+    const socketScreen = Number(command.match(/\/run\/user\/6100([1-4])\//)?.[1]);
+    if (socketScreen && Date.now() < Number(readFileSync(file + '.ready-at-' + socketScreen, 'utf8'))) {
+      process.stderr.write('screen socket is still starting\n');
+      process.exit(1);
+    }
     process.stdout.write('{}');
   }
 } else {

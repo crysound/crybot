@@ -378,3 +378,79 @@ $ wc -l server/index.ts
 补充只读检查：在 shell 中先运行 `git ls-files server shared`，再由 Node 读取文件并使用 lazy-server-modules 测试的同一导入正则，扫描 1549 个非测试 TS 文件，结果 `staticImports: []`。这仅补充静态证据，不将被 EPERM 阻断的原测试记为通过。
 
 全工作区扫描没有合并冲突块；第三方许可证中的既有等号分隔线不属于冲突标记，未改许可证。未修改 ratchet 上限。
+
+## 第 10 轮：首次工具调用分屏的就绪竞态
+
+日期：2026-11-15。开工执行 `crybot-link-deps`，输出 `linked 73 entries`；Node `v24.22.3`。Vitest 一次只跑一个文件，没有使用 systemd、Docker 或用户 live app/data。全部验证使用临时目录、假容器运行时和隔离 fixture。`docs/verification/README.md` 仍不存在，无法执行其中未提供的步骤。未提交、暂存或推送 git。
+
+### 根因与可复现证据
+
+首次调用前，`mountLazyScreenMcp` 只登记 lazy claim、设置动态屏标志，不分屏；`initialize` / `tools/list` 也不触发门禁。原 `lazy-container-mcp.ts:68` 对 `call_tool` 直接进入动作门禁，原 `:101` 只调用一次控制端点；原 `:70` 将所有 `held: true` 立即转换成 `isError`，没有区分正在准备屏与终止性拒绝。
+
+服务端门禁在 `computer-call-gate.ts:39` 启动一次 claim，在 `:49` 等待剩余门禁预算。到期仍未就绪时，`:56` 返回 `held: true` 和 `CONTROL_BUSY`（或排队文字）；失败时返回 `lazyClaimFailedText`，网络 claim 失败返回 `lazyClaimRetryText`；人工接管、轮次结束也各自拒绝。只有成功放行时，内部控制路由才附带 `localVmScreen`，MCP 随后按该屏的用户、DISPLAY 和 socket 打开连接。
+
+屏运行时已经在等待真实就绪：`local-vm-screen-runtime.ts:75` 启动屏，`:80` 探测该屏 CUA socket；探测每次最多 8 秒、失败间隔 200ms，就绪循环预算 90 秒（单次在途探测可能越过循环截止时刻）。`:159` 的 `pool.waitFor` 完成后 claim 才成功。问题是外面的 MCP 门禁先把“仍在等待”变成工具错误。
+
+预算对照：生产门禁默认 45 秒，控制客户端单次读取 55 秒，MCP 单次工具请求总预算 120 秒；e2e fixture 将门禁压到 500ms，工具请求预算 15 秒。原假 Docker 虽然立即回答 status，但首次认领仍需多个真实 Node 子进程完成状态查询、profile 准备、启动和探测，负载足以让总耗时越过 500ms。Auto 在首次工具调用前没有屏可以等待，因此不能靠测试提前等屏 ready 来修复。
+
+还发现同一路径的另一处问题：`local-vm-screen-mcp.ts:18` 的屏 claim 没有 `startsComputer`，不会进入 `computer-call-gate.ts:51` 的启动耗时补偿。即使在 45 秒预算内完成，启动超过动作保护的 5 秒也会在 `:67` 返回 `CONTROL_WAITED`。
+
+新增回归使用真实屏池/runtime、`mountLazyScreenMcp`、门禁、控制客户端和动态 MCP 绑定，通过注入 fetch 在内存中传递控制响应，不监听端口。先占用第一屏，再让第二屏的 status 探测在指定时刻前持续失败；使用虚拟时间推进实际的 200ms 探测循环。保留最终测试，临时恢复三个产品模块的 HEAD 版本，实跑得到：
+
+| 门禁预算 | 第二屏就绪延迟 | 修复前实际结果 | 修复后 |
+| --- | --- | --- | --- |
+| 500ms | 2000ms | `isError: true`，`Another thread is using this computer...` | 首次调用成功 |
+| 45000ms | 7000ms | `isError: true`，`This computer is free now, but this call had to wait for it...` | 首次调用成功 |
+| 45000ms | 47000ms | `isError: true`，`Another thread is using this computer...` | 首次调用成功 |
+
+修复前输出为 `3 failed | 13 skipped`；恢复修复后整文件 `16 passed`。每项断言就绪前未打开 MCP、claim 只执行一次、只打开第二屏连接、工具动作只调用一次。这里复现了产品路径的确定性失败；由于旧 CI 没有输出 content，不能反推那三次 CI 的具体错误文字，也没有声称在本沙箱复现了完整 e2e 的 CPU 压力场景。
+
+### 本轮实际改动文件
+
+| 文件 | 改动 |
+| --- | --- |
+| `server/lazy-container-mcp.ts` | `:102` 起，首次动态屏绑定先发 `readinessOnly=1`；只有明确的 pending 状态才间隔 250ms 继续查询，受原 120 秒总预算和取消信号约束。就绪后取得屏号，再进入原动作门禁；连接后仍重新检查动作权限。启动耗时不再计入首次动作的 5 秒过期判断。 |
+| `server/computer-call-gate.ts` | `:57` 为仍在执行的 Local VM claim 的就绪查询返回 `readinessPending: true`。动作检查、已失败 claim 和网络失败不带这个标志。 |
+| `server/computer-control-client.ts` | 增加并校验 `readinessPending` 控制响应字段，仅接受 held 状态下的字面量 true。 |
+| `server/local-vm-screen-runtime.test.ts` | 增加上述 2 秒、7 秒、47 秒的确定性延迟回归，覆盖短 fixture 预算和生产默认预算。 |
+| `server/lazy-container-mcp.test.ts` | 覆盖 pending 后的启动失败、人工接管、无法确认、轮次结束和交还拒绝；覆盖取消、原 120 秒总截止时间，以及就绪后和连接后的动作权限检查。 |
+| `server/computer-call-gate.test.ts` | 覆盖仅就绪查询返回 pending、启动失败后不再返回 pending，确认 claim 不重复启动。 |
+| `server/computer-control-client.test.ts` | 覆盖 pending 字段的合法值及非法值、放行状态的校验。 |
+| `server/local-vm-screens.e2e.test.ts` | 工具断言附带完整 result JSON（包含 content 文字）；原首次绑定场景参数化为 0 / 2000ms 第二屏启动延迟，调用后断言该屏明确 ready。 |
+| `server/testing/local-vm-screens-hooks.mjs` | 假 Docker 支持按屏配置 `screenReadyDelayMs`；启动时记录 ready 时刻，此前 status 返回非零，之后成功。 |
+| `docs/tasks/T-1200/T-1228-wiring/report.md` | 追加本节，记录根因、实际改动和验证边界。 |
+| `docs/tasks/T-1200/T-1228-wiring/round10-verification.txt` | 保存下列验收命令及基线对照的完整输出和退出码。 |
+
+这是产品的就绪协议修复：没有提高任何既有超时，没有自动重试工具动作或终止性拒绝。MCP 继续等待同一个 claim 的明确 pending 状态；成功之后才绑定屏并检查动作权限。测试延迟用于触发竞态，断言不靠固定 sleep 等待屏幕。
+
+### 逐文件验收输出
+
+完整输出见 [round10-verification.txt](round10-verification.txt)。以下文件均分别运行 `pnpm exec vitest run <文件>`：
+
+| 文件 | 实际输出摘要 | 退出码 |
+| --- | --- | ---: |
+| `server/local-vm-screens.e2e.test.ts` | `Test Files 1 failed; Tests 13 failed`；全部阻断于 `no free port block for offsets 0,1 in 19600..22600` | 1 |
+| `server/lazy-container-mcp.test.ts` | `Test Files 1 passed; Tests 27 passed` | 0 |
+| `server/local-vm-screen-runtime.test.ts` | `Test Files 1 passed; Tests 16 passed` | 0 |
+| `server/computer-call-gate.test.ts` | `Test Files 1 passed; Tests 13 passed` | 0 |
+| `server/computer-control-client.test.ts` | `Test Files 1 failed; Tests 2 failed, 23 passed; Errors 2 errors`；两项真实 HTTP 测试遇到 `listen EPERM: operation not permitted 127.0.0.1`，随后分别在 10/20 秒超时 | 1 |
+| `server/drivers/chat-mcp-lazy-container.test.ts` | `Test Files 1 failed; Tests 1 failed`；`MCP server "computer" didn't start: MCP server exited before the session closed.` | 1 |
+| `server/auto-vm-claims.test.ts` | `Test Files 1 passed; Tests 19 passed` | 0 |
+| `server/local-vm-resume.test.ts` | `Test Files 1 passed; Tests 17 passed` | 0 |
+
+5 个文件全部通过，共 92 项；控制客户端另有 23 项通过（包含新增 3 项）。不能把带未处理监听错误的控制客户端文件记为整体通过。`chat-mcp-lazy-container` 在临时恢复三个原始产品模块后同样以相同文字失败，确认该失败不是本轮产品修改引入；子进程退出原因未进一步确定，仍交主机复跑，不记为通过或擅自归因为端口限制。
+
+```text
+$ pnpm exec tsc -p tsconfig.server.json
+exit 0（无诊断）
+
+$ pnpm exec oxlint --deny-warnings server/computer-call-gate.ts server/computer-call-gate.test.ts server/computer-control-client.ts server/computer-control-client.test.ts server/lazy-container-mcp.ts server/lazy-container-mcp.test.ts server/local-vm-screen-runtime.test.ts server/local-vm-screens.e2e.test.ts server/testing/local-vm-screens-hooks.mjs
+exit 0（无诊断）
+
+$ git diff --check
+exit 0
+```
+
+另直接启动隔离假 Docker hook 检查延迟机制：`start screen-s2:*` 返回 0，尚未就绪的 status 返回 1 并输出 `screen socket is still starting`；把临时 fixture 的 ready 时刻置为已到达后，status 返回 0 和 `{}`。这不替代服务 e2e。
+
+由于沙箱禁止监听端口，屏幕 e2e 只尝试了一次，未做无效的 5 次重复。协调者需在可监听端口的主机将该整文件连续运行 5 次，并复跑控制客户端及 chat MCP 文件；完整服务行为以主机/Actions 为准，本轮未获取 Actions 结果。

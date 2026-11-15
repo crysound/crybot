@@ -3,14 +3,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createLocalVmScreenRuntime, parkedLocalVmTurnBusy } from "./local-vm-screen-runtime.ts";
-import { sharedScreenTarget, startScreen, stopScreen, screenStates, sh } from "./container-computer.ts";
+import { sharedScreenTarget, startScreen, stopScreen, screenStates, sh, cuaExecArgs, CUA_SOCKET } from "./container-computer.ts";
 import { screenResource } from "./host/shared-vm-control.ts";
 import type { TurnOwner } from "./turn-resources.ts";
 import { ComputerWaitParked } from "./turn-computer-wait.ts";
 import { mountLazyScreenMcp } from "./local-vm-screen-mcp.ts";
 import type { AutoVmClaimTable } from "./auto-vm-claims.ts";
 import { createComputerCallGate } from "./computer-call-gate.ts";
-import { lazyContainerRequests } from "./lazy-container-mcp.ts";
+import { gatedContainerRequests, lazyContainerRequests } from "./lazy-container-mcp.ts";
+import { createControlClient } from "./computer-control-client.ts";
+import type { AppClient } from "./mcp-app-connections.ts";
 import { createComputerRoutes, type ComputerRouteDeps } from "./routes/computers.ts";
 import type { RouteContext } from "./routes/table.ts";
 import type { ScreenListPayload } from "../shared/local-vm-screens.ts";
@@ -154,6 +156,57 @@ describe("screen runtime lifecycle", () => {
     expect(f.runtime.assigned("chat")).toBe(1);
     await gate({ ...owner, botId: "chat" });
     expect(claim).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { waitMs: 500, readyMs: 2000 },
+    { waitMs: 45_000, readyMs: 7000 },
+    { waitMs: 45_000, readyMs: 47_000 },
+  ])("binds the first Auto tool call after a $readyMs ms screen startup (gate budget $waitMs ms)", async ({ waitMs, readyMs }) => {
+    const f = fixture(4), claims: AutoVmClaimTable = new Map(), owner = f.owner("chat");
+    await f.runtime.claim("first", f.owner("first"));
+    const readyAt = Date.now() + readyMs;
+    vi.mocked(sh).mockImplementation(async (_runtime, args) => {
+      if (args.includes("status") && args.includes("crybot-s2") && Date.now() < readyAt) throw new Error("screen socket is still starting");
+      return { stdout: "{}" };
+    });
+    const claim = vi.fn(() => f.runtime.claim("chat", owner));
+    const mounted = mountLazyScreenMcp({ runtime: "docker", control: { url: "http://fixture/control", token: "fixture" }, toolScope: {},
+      claims, owner, claim, onClaimed: vi.fn(), onRejected: vi.fn() });
+    const gate = createComputerCallGate({ claims, snapshot: () => ({ held: false, heldSinceMs: null, helpReason: null }),
+      isActive: () => true, claimResource: () => true, waiting: () => undefined, personAwayText: () => "held",
+      waitMs, actWithinMs: 5000, personWaitMs: 90_000 });
+    const control = createControlClient({ url: "http://fixture/control", token: "fixture", fetchImpl: async (url, init) => {
+      const state = await gate({ ...owner, botId: "chat" }, init?.signal ?? undefined, undefined, new URL(String(url)).searchParams.get("readinessOnly") === "1");
+      return Response.json({ ...state, ...(!state.held ? { localVmScreen: f.runtime.assigned("chat") } : {}) });
+    } });
+    const call = vi.fn(async (method: string) => method === "tools/list"
+      ? { tools: [{ name: "get_desktop_state", inputSchema: { type: "object" } }] }
+      : { content: [{ type: "text", text: "screen two" }] });
+    const open = vi.fn(async (): Promise<AppClient> => ({ request: call, close: async () => {}, closed: false, extensions: undefined, serverInfo: undefined }));
+    const proxy = gatedContainerRequests("docker", cuaExecArgs(["mcp", "--socket", CUA_SOCKET], { interactive: true }), control,
+      { dynamicScreen: mounted.env.CRYBOT_CONTAINER_DYNAMIC_SCREEN === "1", open });
+    try {
+      await proxy.request({ id: 1, method: "initialize" });
+      await proxy.request({ id: 2, method: "tools/list" });
+      expect(claim).not.toHaveBeenCalled();
+      expect(f.runtime.assigned("chat")).toBeNull();
+      const pending = proxy.request({ id: 3, method: "tools/call", params: { name: "call_tool", arguments: { name: "get_desktop_state", arguments: {} } } });
+      await vi.advanceTimersByTimeAsync(readyMs - 1);
+      expect(f.runtime.ready(2)).toBe(false);
+      expect(open).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(501);
+      const result = await pending;
+      expect(result, JSON.stringify(result)).not.toHaveProperty("result.isError", true);
+      expect(result).toHaveProperty("result.content", [{ type: "text", text: "screen two" }]);
+      expect(f.runtime.ready(2)).toBe(true);
+      expect(claim).toHaveBeenCalledOnce();
+      expect(open).toHaveBeenCalledExactlyOnceWith("docker", expect.arrayContaining(["-u", "crybot-s2", "DISPLAY=:2", "/run/user/61002/crybot-cua.sock"]), expect.any(AbortSignal));
+      expect(call.mock.calls.filter(([method]) => method === "tools/call")).toHaveLength(1);
+    } finally {
+      await proxy.close();
+      vi.mocked(sh).mockResolvedValue({ stdout: "{}" });
+    }
   });
   it("uses separate ready screens and never exposes passwords in the public inventory", async () => {
     const f = fixture();

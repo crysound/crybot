@@ -53,7 +53,8 @@ export function createComputerCallGate<C extends Capability>(deps: {
           if (lazyClaim.claimed) continue;
           if (lazyClaim.retryReason) return { held: true, helpOpen: false, blockedReason: lazyClaimRetryText(lazyClaim) };
         }
-        held = { held: true, helpOpen: false, blockedReason: deps.waiting(threadId, generation) ?? lazyClaim.pendingReason ?? CONTROL_BUSY };
+        held = { held: true, helpOpen: false, blockedReason: deps.waiting(threadId, generation) ?? lazyClaim.pendingReason ?? CONTROL_BUSY,
+          ...(readinessOnly && lazyClaim.localVm && lazyClaim.begin && !lazyClaim.retryReason ? { readinessPending: true as const } : {}) };
       } else {
         if (!readinessOnly && !deps.claimResource(internalCapability)) {
           held = { held: true, helpOpen: false, blockedReason: CONTROL_BUSY };

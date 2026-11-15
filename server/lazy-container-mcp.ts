@@ -8,6 +8,7 @@ import { listsComputerTool } from "./computer-tool-list.ts";
 import { textOnlyErrorResult } from "./mcp-error-result.ts";
 import { MAX_INPUT_BYTES, failure } from "./harness-mcp-request.ts";
 import { screenExecArgs, screenSocket, sharedScreenTarget } from "./container-computer.ts";
+import { settledWithin } from "./auto-vm-claims.ts";
 
 export function lazyContainerRequests(deps: {
   toolScope?: ToolScope;
@@ -98,6 +99,20 @@ export function gatedContainerRequests(command: string, args: string[], gate: Co
   return lazyContainerRequests({
     toolScope: options.toolScope,
     gate: async (action, signal) => {
+      if (options.dynamicScreen && screen === undefined) {
+        for (;;) {
+          signal.throwIfAborted();
+          const readiness = await gate.state(true, { readinessOnly: "1" }, signal);
+          signal.throwIfAborted();
+          if (!readiness.held) {
+            screen = readiness.localVmScreen;
+            if (!action) return readiness;
+            break;
+          }
+          if (!readiness.readinessPending) return readiness;
+          await settledWithin(null, 250, signal);
+        }
+      }
       const state = await gate.state(true, action ? undefined : { readinessOnly: "1" }, signal);
       if (!state.held) screen = state.localVmScreen;
       return state;
