@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { localVmConfigSchema, localVmScreens } from "../local-vm-settings.ts";
 import { liveSavePatch } from "../live-config.ts";
 import { signInEnvRefusal } from "../sign-in-env.ts";
@@ -34,6 +35,7 @@ import { DECIDER_KEY_ERROR, deciderIncludedHere, deciderPatchKey, deciderSavePat
 import type { ProviderRegistry } from "../harness/registry.ts";
 import { HOSTED_PROVIDER_SETTINGS_ERROR } from "../hosted-models.ts";
 import { forgetKey } from "../key-rejections.ts";
+import { keyHint } from "../key-hint.ts";
 import type { ComputerIdleTimer } from "../computer-idle.ts";
 import { PROVIDER_KEY_KINDS } from "../provider-key-check.ts";
 import type { SessionRegistry } from "../sessions.ts";
@@ -53,7 +55,7 @@ export interface BusyFlag {
   set(busy: boolean): void;
 }
 
-export type RemoteComputerProvider = "box" | "vps";
+export type RemoteComputerProvider = "box" | "vps" | "instabox";
 
 export type ModelSelectionCheck = { ok: true; selection: ModelSelection } | ({ ok: false; status: number } & ServerErrorBody);
 
@@ -122,9 +124,17 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
     closeBrowser, browserEngineSwitched, sharedComputers, sharedComputerControl, hostedModels, cloudHome: CLOUD_HOME, sharedMembership, lendingEnabled, providerConfigs,
     localVmIdleMs, localVmIdles, localVmActiveThreads, localVmLifecycleBusy, localVmImageBusy, localVmModeChangeBusy, localVmModeChanging,
     providerConfigBusy, computerProviderConfigTransitions, managedBoatOwners, providerOperationConflict,
-    perBotLocalVmCountForModeChange, checkedModelSelection, policyModelRefusal, browserSessionSpec, configStatus,
+    perBotLocalVmCountForModeChange, checkedModelSelection, policyModelRefusal, browserSessionSpec,
     configForAccess, resyncOpenCodeProviderKeys, revokeEngineCapabilities, reloadProviders, broadcast, drainQueuedSends, ownProfile, ownHints, postiz,
   } = deps;
+  const configStatus = () => {
+    const status = deps.configStatus(), reported = status.instabox;
+    const fromEnv = !!process.env.INSTABOX_API_KEY?.trim(), key = process.env.INSTABOX_API_KEY?.trim() || cfg.instabox?.apiKey?.trim();
+    const hint = keyHint(key);
+    const safeHint = reported && typeof reported === "object" && "configured" in reported && reported.configured === true
+      && "last4" in reported && reported.last4 === hint.last4 ? hint : {};
+    return { ...status, instabox: { configured: !!key, fromEnv, ...safeHint } };
+  };
   return async ({ req, res, url, path, method, auth, json, readBody }) => {
     // API keys are never echoed back: booleans only.
     if (method === "GET" && path === "/api/config") {
@@ -133,6 +143,11 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
     if ((method === "PUT" || method === "PATCH") && path === "/api/config") {
       const body = await readBody(req);
       if (hostedModels && ["instances", "anthropic", "openai", "openrouter", "openaiCompat", "xai", "mistral", "cerebras", "groq", "greenference", "modelgo", "meta", "opencodeGo"].some(key => Object.hasOwn(body, key))) return json(res, 403, { error: HOSTED_PROVIDER_SETTINGS_ERROR });
+      if (Object.hasOwn(body, "instabox")) {
+        if (process.env.INSTABOX_API_KEY?.trim()) return json(res, 409, { error: "InstaBox key is provided by the environment", code: "instabox_key_env" });
+        const key = z.object({ apiKey: z.string().trim().max(8192) }).strict().safeParse(body.instabox);
+        if (!key.success) return json(res, 400, { error: "Invalid InstaBox key", code: "instabox_key_invalid" });
+      }
       const patch = parseConfigPatchForPerson(body);
       if (patch.localVm) localVmConfigSchema.parse({ ...cfg.localVm, ...patch.localVm });
       if (patch.profile && ownProfile) {
@@ -263,7 +278,7 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
       const changingVpsAlias = patch.vps !== undefined && nextVpsAlias !== currentVpsAlias;
       const transitioningProviders: RemoteComputerProvider[] = [
         ...(changingBoatToken ? ["box" as const] : []),
-        ...(changingVpsAlias ? ["vps" as const] : []),
+        ...(changingVpsAlias ? ["vps" as const] : []), ...(patch.instabox ? ["instabox" as const] : []),
       ];
       providerConfigBusy.set(true);
       const nextVmConfig = { ...cfg, localVm: { ...cfg.localVm, ...patch.localVm } };

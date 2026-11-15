@@ -11,7 +11,7 @@ vi.mock("@/state/store", async (importOriginal) => {
 });
 
 const { CloudBackendPicker } = await import("./CloudBackendPicker");
-const picker = (value: "box" | "vps" = "box") => renderToStaticMarkup(createElement(CloudBackendPicker, { value, onChange: () => {} }));
+const picker = (value: "box" | "vps" | "instabox" = "box") => renderToStaticMarkup(createElement(CloudBackendPicker, { value, onChange: () => {} }));
 
 describe("CloudBackendPicker", () => {
   afterEach(() => { fixture.config = null; });
@@ -31,9 +31,10 @@ describe("CloudBackendPicker", () => {
     expect(picker("vps")).toBe("");
   });
 
-  it.each(["box", "vps"] as const)("offers both backends whichever is chosen (%s)", (value) => {
+  it.each(["box", "vps", "instabox"] as const)("offers all three backends whichever is chosen (%s)", (value) => {
     const markup = picker(value);
     expect(markup).toContain("Boat");
+    expect(markup).toContain("InstaBox");
     expect(markup).toContain("Self-hosted VPS");
     expect(markup).not.toContain("disabled");
     expect(markup).not.toMatch(/ACP model provider/);
@@ -43,4 +44,10 @@ describe("CloudBackendPicker", () => {
     expect(Object.keys(en)).not.toContain("computer.err.vpsEngine");
     expect(Object.values(en).filter((value) => /switch the cloud backend to Boat/i.test(value))).toEqual([]);
   });
+});
+
+it("prompts for an InstaBox key without disabling selection", () => {
+  expect(picker("instabox")).toContain("Add your InstaBox key in Settings first");
+  fixture.config = { instabox: { configured: true } };
+  expect(picker("instabox")).not.toContain("Add your InstaBox key in Settings first");
 });

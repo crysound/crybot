@@ -11773,6 +11773,7 @@ function configStatus() {
     },
     box: providerLockEnabled() ? { configured: false } : { ...boat.describeBoatAccount(cfg), ...(boat.boatAccount(cfg)?.included ? {} : keyHint(cfg.box?.token)) },
     vps: { configured: Boolean(vpsSshAlias(cfg)), sshAlias: vpsSshAlias(cfg) ?? "" },
+    instabox: { ...keyStatus(cfg.instabox?.apiKey), fromEnv: !!process.env.INSTABOX_API_KEY?.trim() },
     opencodeGo: { ...keyStatus(cfg.opencodeGo?.apiKey), providerKeys: Object.keys(openCodeProviderKeys(cfg)) },
     tts: tts.describeVoice(cfg),
     decider: describeDecider(cfg), helpers: describeHelpers(cfg),

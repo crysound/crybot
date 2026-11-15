@@ -1556,6 +1556,7 @@ describe("legacy feature flag migration", () => {
 
 describe("credential env preference", () => {
   const VARS = [
+    "INSTABOX_API_KEY",
     "XAI_API_KEY",
     "CRYBOT_GROQ_API_KEY",
     "CRYBOT_META_API_KEY",
@@ -1593,6 +1594,7 @@ describe("credential env preference", () => {
       JSON.stringify({
         xai: { key: "file-xai", url: "https://api.example.test/v1" },
         box: { token: "file-box" },
+        instabox: { apiKey: "file-instabox" },
         opencodeGo: { apiKey: "file-ocg" },
         tts: { key: "file-tts", fishKey: "file-fish", voice: "narrator" },
         imageGen: { key: "file-image" },
@@ -1600,6 +1602,7 @@ describe("credential env preference", () => {
     );
     process.env.XAI_API_KEY = "env-xai";
     process.env.BOX_TOKEN = "env-box";
+    process.env.INSTABOX_API_KEY = " env-instabox ";
     process.env.OPENCODE_API_KEY = "env-ocg";
     process.env.CRYBOT_TTS_KEY = "env-tts";
     process.env.CRYBOT_FISH_AUDIO_API_KEY = "env-fish";
@@ -1607,9 +1610,23 @@ describe("credential env preference", () => {
     const cfg = loadConfig();
     expect(cfg.xai).toEqual({ key: "env-xai", url: "https://api.example.test/v1" });
     expect(cfg.box).toEqual({ token: "env-box" });
+    expect(cfg.instabox).toEqual({ apiKey: "env-instabox" });
     expect(cfg.opencodeGo).toEqual({ apiKey: "env-ocg" });
     expect(cfg.tts).toEqual({ key: "env-tts", fishKey: "env-fish", voice: "narrator" });
     expect(cfg.imageGen).toEqual({ key: "env-image" });
+  });
+
+  it("persists and clears the InstaBox key without turning a saved key into an environment override", () => {
+    saveConfig({ instabox: { apiKey: " fixture-instabox-key " } });
+    syncCredentialEnv({ instabox: { apiKey: "fixture-instabox-key" } });
+    expect(process.env.INSTABOX_API_KEY).toBeUndefined();
+    expect(loadConfig().instabox).toEqual({ apiKey: "fixture-instabox-key" });
+    saveConfig({ language: "en" });
+    expect(loadConfig().instabox).toEqual({ apiKey: "fixture-instabox-key" });
+    process.env.INSTABOX_API_KEY = "   ";
+    expect(loadConfig().instabox).toEqual({ apiKey: "fixture-instabox-key" });
+    saveConfig({ instabox: { apiKey: "" } });
+    expect(loadConfig().instabox).toEqual({ apiKey: "" });
   });
 
   it("uses a preset voice only when the person has not chosen one or another provider", () => {
@@ -2026,6 +2043,7 @@ describe("workspace credential env strip", () => {
 
   it("covers in-process secrets and private app-state paths", () => {
     expect(WORKSPACE_CREDENTIAL_ENV).toContain("BOX_TOKEN");
+    expect(WORKSPACE_CREDENTIAL_ENV).toContain("INSTABOX_API_KEY");
     expect(WORKSPACE_CREDENTIAL_ENV).toContain("CRYBOT_TTS_KEY");
     expect(WORKSPACE_CREDENTIAL_ENV).toContain("CRYBOT_CLOUD_BOAT_TOKEN");
     expect(WORKSPACE_CREDENTIAL_ENV).toContain("CRYBOT_CLOUD_VOICE_TOKEN");

@@ -1032,10 +1032,12 @@ describe("config status frames", () => {
     const status = configStatusFromFrame({
       openai: { configured: true, last4: "a1b2" },
       box: { configured: true, last4: "c3d4" },
+      instabox: { configured: true, last4: "i7j8", fromEnv: false },
       savedKeys: { ttsKey: { configured: true, last4: "e5f6" }, openaiLiveKey: { configured: false } },
     } as ConfigStatusFrame);
     expect(status.openai).toEqual({ configured: true, last4: "a1b2" });
     expect(status.box).toEqual({ configured: true, last4: "c3d4" });
+    expect(status.instabox).toEqual({ configured: true, last4: "i7j8", fromEnv: false });
     expect(status.savedKeys).toEqual({ ttsKey: { configured: true, last4: "e5f6" }, openaiLiveKey: { configured: false } });
   });
 

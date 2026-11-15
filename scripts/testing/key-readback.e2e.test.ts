@@ -23,6 +23,7 @@ vi.mock("@/state/store", async (original) => {
 const { KEY_CATALOG, savedState } = await import("@/components/keys/key-catalog");
 const { KeyCatalogRow } = await import("@/components/keys/KeysPage");
 const { setLocale } = await import("@/lib/i18n");
+const { configStatusFromFrame } = await import("@/state/store");
 
 const ROOT = new URL("../..", import.meta.url);
 const ACCOUNT_ID = "0123456789abcdef0123456789abcdef";
@@ -81,6 +82,7 @@ beforeAll(async () => {
     }
     if (url.startsWith("/eleven/voices")) return reply(200, { voices: [] });
     if (url.startsWith("/fish/model")) return reply(200, { items: [], total: 0 });
+    if (url === "/jev/v1/systemone" || url === "/alpha/decisions") return reply(200, { answers: { answer: { type: "noul", noul: 0.9 } } });
     return reply(404, { error: "not in the stand-in" });
   });
   await new Promise<void>((resolve) => stub.listen(0, "127.0.0.1", resolve));
@@ -120,7 +122,7 @@ it("saves every kind of credential, reads it back and shows it masked to its las
   setLocale("en");
   expect(saveds.map((entry) => entry.id)).toEqual([
     "openai", "anthropic", "xai", "openrouter", "mistral", "cerebras", "groq", "greenference", "modelgo", "meta", "deepseek", "opencodeGo", "openaiCompat",
-    "liveKey", "elevenlabs", "geminiTts", "fishAudio", "box", "composio", "treg", "postiz", "jev", "openrouterHelper", "workersAi", "imageOpenai", "imageCustom",
+    "liveKey", "elevenlabs", "geminiTts", "fishAudio", "box", "instabox", "composio", "treg", "postiz", "jev", "openrouterHelper", "workersAi", "imageOpenai", "imageCustom",
   ]);
   for (const storage of ["", "?secretStorage=external"]) {
     for (const entry of saveds) {
@@ -131,13 +133,14 @@ it("saves every kind of credential, reads it back and shows it masked to its las
       geminiModelKeys.length = 0;
       const saved = await call("PUT", `/api/config${storage}`, patch(key));
       expect(saved.status, `${entry.id}${storage}: ${JSON.stringify(saved.body)}`).toBe(200);
+      expect(JSON.stringify(saved.body), entry.id).not.toContain(key);
       for (const sent of geminiModelKeys) expect(sent, `${entry.id}${storage} verification key`).toBe(key);
 
       const config = (await call("GET", "/api/config")).body;
       expect(savedState(entry, config as never), `${entry.id}${storage}`).toEqual({ configured: true, last4 });
       if (storage) expect(readFileSync(join(fixture.info.dataDir, "config.json"), "utf8"), `${entry.id} config.json`).not.toContain(key);
       expect(JSON.stringify(config), entry.id).not.toContain(key);
-      view.config = config;
+      view.config = configStatusFromFrame(config as never) as unknown as Record<string, unknown>;
       const html = renderToStaticMarkup(createElement(KeyCatalogRow, { entry }));
       expect(html, entry.id).toContain(`••••••••${last4}`);
       expect(html, entry.id).toMatch(/>(Connected|Saved)</);
