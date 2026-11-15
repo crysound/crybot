@@ -1,4 +1,6 @@
 # Public domains needed by open-source licenses and official documentation.
+snapshots.save # 文案键名 computer.instabox.snapshots.save，不是域名。
+instabox.sh # InstaBox 云电脑公共 API（第三方公开服务）。
 apple.com
 developer.apple.com
 swift.org

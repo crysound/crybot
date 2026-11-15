@@ -105,12 +105,12 @@ describe("every credential has one home on the keys page", () => {
 });
 
 describe("searching the keys", () => {
-  const found = (query: string) => KEY_CATALOG.filter((entry) => keyMatches(entry, query)).map((entry) => entry.id);
+  const found = (query: string) => KEY_CATALOG.filter((entry) => !keyHidden(entry.id, null) && keyMatches(entry, query)).map((entry) => entry.id);
 
   it("matches a provider's name, what the key is for, and its section's title", () => {
     expect(found("fish")).toEqual(["fishAudio"]);
     expect(found("ElevenLabs")).toEqual(["elevenlabs"]);
-    expect(found("Computers and browser")).toEqual(["box", "vps", "onePassword"]);
+    expect(found("Computers and browser")).toEqual(["box", "instabox", "vps", "onePassword"]);
     expect(found("voice")).toEqual(expect.arrayContaining(["liveCalls", "liveKey", "elevenlabs", "fishAudio"]));
     expect(found("openai")).toEqual(expect.arrayContaining(["openai", "liveCalls", "liveKey", "imageOpenai"]));
     expect(found("gmail")).toEqual(["composio"]);
@@ -165,6 +165,29 @@ describe("engines that run on a key", () => {
 it.each([false, true])("hides only the Boat computer key when provider lock is %s", (providerLock) => {
   const config = { providerLock } as ConfigStatus;
   const computers = KEY_CATALOG.filter((entry) => entry.section === "computers" && !keyHidden(entry.id, config));
-  expect(computers.map((entry) => entry.id)).toEqual(providerLock ? ["vps", "onePassword"] : ["box", "vps", "onePassword"]);
+  expect(computers.map((entry) => entry.id)).toEqual(providerLock ? ["instabox", "vps", "onePassword"] : ["box", "instabox", "vps", "onePassword"]);
   expect(computers.filter((entry) => keyMatches(entry, "boat", config)).map((entry) => entry.id)).toEqual(providerLock ? [] : ["box"]);
+});
+
+it("keeps the shared InstaBox key write-only and saves and clears its agreed config field", () => {
+  const entry = keyEntry("instabox");
+  expect(entry.env).toEqual(["INSTABOX_API_KEY"]);
+  expect(entry.target?.patch("fixture-key", true)).toEqual({ instabox: { apiKey: "fixture-key" } });
+  expect(entry.target?.patch("", false)).toEqual({ instabox: { apiKey: "" } });
+  expect(savedState(entry, { instabox: { configured: true, last4: "nope", apiKey: "never-display", fromEnv: true } } as unknown as ConfigStatus))
+    .toEqual({ configured: true, fromEnv: true });
+});
+
+it("shows exactly one InstaBox row and makes the environment variant read-only", () => {
+  for (const fromEnv of [false, true]) {
+    const config = { instabox: { configured: true, fromEnv } } as unknown as ConfigStatus;
+    const entries = KEY_CATALOG.filter((entry) => entry.name === "InstaBox" && !keyHidden(entry.id, config));
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.kind).toBe(fromEnv ? "elsewhere" : "key");
+    if (fromEnv) {
+      expect(entries[0]?.target).toBeUndefined();
+      expect(entries[0]?.opens).toBeUndefined();
+      expect(t(entries[0]!.whereKey!)).toContain("INSTABOX_API_KEY");
+    }
+  }
 });

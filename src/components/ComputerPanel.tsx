@@ -1,3 +1,4 @@
+import { InstaboxSnapshots } from "./InstaboxSnapshots";
 import { boatCapableEngine, cloudEngineOf } from "@/lib/remote-desktop";
 import { canWorkOnCloud } from "../../shared/cloud-computer";
 import { ComputerBrowserSwitch } from "./ComputerBrowserSwitch";
@@ -1495,6 +1496,7 @@ export function ComputerPanel({
             />
           </div>
         )}
+        {cloudBackend === "instabox" && profileBot.computer === "cloud" && phase !== "team-boat" && <InstaboxSnapshots botId={bot.id} />}
         {advanced && phase === "vps-unconfigured" && (
           <div className="mt-3 rounded-xl bg-card p-4">
             <div className="mb-3 text-[13px] text-ink-secondary">
