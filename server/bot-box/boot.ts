@@ -5,7 +5,8 @@ import { join } from "node:path";
 
 import { CONTROL_PLANE_ENV, WORKSPACE_CREDENTIAL_ENV } from "../config.ts";
 import { BOX_BRIDGE_SCRIPT, botBox, type BotBox } from "./box.ts";
-import { serverPath } from "./program-trust.ts";
+import { restrictServerProcessPath } from "../env-path.ts";
+import { cliIsolationReason } from "../procs.ts";
 import { runBoxSelfCheck } from "./self-check.ts";
 
 export { botBox };
@@ -25,15 +26,25 @@ export async function startBotBoxAtBoot(options: {
   /** Off in tests that only want the gates. */
   selfCheck?: boolean;
   delayMs?: number;
+  configuredClis?: () => readonly string[];
 }): Promise<void> {
   const box = options.box ?? botBox;
   const log = options.log ?? ((line: string) => console.log(line));
   const detection = await box.start({ dataDir: options.dataDir, home: options.home ?? homedir(), port: options.port, denyEnv: BOX_DENY_ENV, log });
   // What the server starts with no PATH of its own (a plain spawn) finds nothing in HOME either.
-  if (box === botBox && box.enabled()) process.env.PATH = serverPath(process.env.PATH);
+  if (box === botBox && box.enabled()) restrictServerProcessPath();
   if (detection.box !== "bwrap" || !detection.tools || options.selfCheck === false) return;
   const tools = detection.tools;
   const timer = setTimeout(() => {
+    try {
+      for (const cli of new Set(options.configuredClis?.() ?? [])) {
+        const reason = cliIsolationReason(cli);
+        if (reason) log(`bot box: warning: ${reason}`);
+      }
+    } catch (error) {
+      const message = (error instanceof Error ? error.message : String(error)).replace(/[\r\n]+/g, " ");
+      log(`bot box: engine diagnostics failed: ${message}`);
+    }
     runBoxSelfCheck({
       bwrap: tools.bwrap, bridge: { socat: tools.socat, bridgeScript: BOX_BRIDGE_SCRIPT, node: process.execPath },
       root: join(options.dataDir, "box"), denyEnv: BOX_DENY_ENV, seccompFile: box.seccomp(),
