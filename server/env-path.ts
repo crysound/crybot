@@ -4,7 +4,7 @@ import { execFile } from "node:child_process";
 import { closeSync, existsSync, openSync, readFileSync, readSync, statSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, delimiter, dirname, extname, join } from "node:path";
-import { homeProgramsDistrusted, serverMayRunFrom } from "./bot-box/program-trust.ts";
+import { homeProgramsDistrusted, serverMayRunFrom, serverPath } from "./bot-box/program-trust.ts";
 import { resolvePortableHermes } from "./portable-hermes.ts";
 
 function nvmBinDirs(home: string): string[] {
@@ -76,6 +76,7 @@ function windowsKnownDirs(): string[] {
 }
 
 let cached: string | null = null;
+let blockedProcessPath: string | undefined;
 let probed = false;
 let loginShellPath: string | null = null;
 
@@ -108,17 +109,29 @@ export function homeProgramDirs(home: string): string[] {
   return (process.platform === "win32" ? [] : knownDirs(home)).filter((dir) => dir.startsWith(`${home}/`) && existsSync(dir));
 }
 
+export function restrictServerProcessPath(): void {
+  blockedProcessPath = mergePaths([...(blockedProcessPath ?? "").split(delimiter), ...(process.env.PATH ?? "").split(delimiter).filter((dir) => !serverMayRunFrom(dir))]);
+  process.env.PATH = serverPath(process.env.PATH);
+  resetPathCache();
+}
+
+/** Diagnostics only: never use this PATH to launch a server process while the box is on. */
+export function unfilteredAugmentedPath(): string {
+  const fallback = fallbackDirs.filter((d) => existsSync(d));
+  return mergePaths([
+    ...registeredDirs.filter((d) => existsSync(d)),
+    ...(process.env.CRYBOT_EXTRA_PATH ? process.env.CRYBOT_EXTRA_PATH.split(delimiter) : []),
+    ...(process.env.PATH ? process.env.PATH.split(delimiter) : []),
+    ...(blockedProcessPath ? blockedProcessPath.split(delimiter) : []),
+    // Keep the last login-shell result while a rescan re-probes, or rc-only CLIs vanish for the response that triggered it.
+    ...(loginShellPath ? loginShellPath.split(delimiter) : []),
+    ...(process.platform === "win32" ? windowsKnownDirs() : knownDirs()).filter((d) => existsSync(d)),
+  ].filter((d) => !fallback.includes(d)).concat(fallback));
+}
+
 export function augmentedPath(): string {
   if (cached === null) {
-    const fallback = fallbackDirs.filter((d) => existsSync(d));
-    cached = mergePaths([
-      ...registeredDirs.filter((d) => existsSync(d)),
-      ...(process.env.CRYBOT_EXTRA_PATH ? process.env.CRYBOT_EXTRA_PATH.split(delimiter) : []),
-      ...(process.env.PATH ? process.env.PATH.split(delimiter) : []),
-      // Keep the last login-shell result while a rescan re-probes, or rc-only CLIs vanish for the response that triggered it.
-      ...(loginShellPath ? loginShellPath.split(delimiter) : []),
-      ...(process.platform === "win32" ? windowsKnownDirs() : knownDirs()).filter((d) => existsSync(d)),
-    ].filter((d) => !fallback.includes(d)).concat(fallback).filter(serverMayRunFrom));
+    cached = serverPath(unfilteredAugmentedPath());
   }
   // The login shell reads its rc files from HOME, which a boxed bot can write.
   if (!probed && !process.env.VITEST && !sealedFixture() && process.platform !== "win32" && !homeProgramsDistrusted()) {
@@ -152,6 +165,7 @@ function probeLoginShellPath(): void {
 }
 
 export function resetPathCacheForTests(): void {
+  blockedProcessPath = undefined;
   cached = null;
   probed = false;
   loginShellPath = null;

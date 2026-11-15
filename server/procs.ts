@@ -9,7 +9,7 @@ import {
   type ExecFileOptions,
   type SpawnOptions,
 } from "node:child_process";
-import { closeSync, existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { accessSync, constants, statSync, closeSync, existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import type { Readable, Writable } from "node:stream";
 import { basename, dirname, join, resolve } from "node:path";
 import { botBox, type WrappedSpawn } from "./bot-box/box.ts";
@@ -18,7 +18,7 @@ import { homeProgramsDistrusted, serverMayRunFrom, serverPath } from "./bot-box/
 import { engineMemory } from "./engine-memory.ts";
 import { engineHomes } from "./engine-homes/engine-homes.ts";
 import type { HomedSpawn } from "./engine-homes/layout.ts";
-import { resolveCliSpawn, type ResolvedSpawn } from "./env-path.ts";
+import { findCliCandidates, resolveCliSpawn, unfilteredAugmentedPath, type ResolvedSpawn } from "./env-path.ts";
 import { spawnBotWork } from "./oom-score.ts";
 
 export function resolveCli(cli: string, args: string[] = [], env?: NodeJS.ProcessEnv): ResolvedSpawn {
@@ -347,6 +347,27 @@ function cutOffError(cli: string, timeout: number | undefined): Error {
 
 export const CLI_VERSION_TIMEOUT_MS = 30_000;
 
+export function cliIsolationReason(cli: string, path?: string): string | null {
+  if (!homeProgramsDistrusted()) return null;
+  path ??= unfilteredAugmentedPath();
+  const command = resolveCli(cli).command;
+  const runnable = (file: string) => {
+    try {
+      accessSync(file, constants.X_OK);
+      return statSync(file).isFile();
+    } catch { return false; }
+  };
+  const trusted = (file: string) => {
+    try { return serverMayRunFrom(file) && serverMayRunFrom(realpathSync(file)); } catch { return false; }
+  };
+  const original = findCliCandidates(command, path).filter(runnable);
+  if (!original.length || findCliCandidates(command, serverPath(path)).filter(runnable).some(trusted)) return null;
+  const blocked = original.find((file) => !trusted(file));
+  return blocked
+    ? `\`${command}\` was found at ${blocked}, in a directory agents can write. While isolation is enabled, the server will not run it. Install it in a location agents cannot write.`
+    : null;
+}
+
 export function cliVersionReader(cli: string): (err: Error | null, stdout: string) => { version: string } | { reason: string } {
   let last: string | null = null;
   return (err, stdout) => {
@@ -354,6 +375,13 @@ export function cliVersionReader(cli: string): (err: Error | null, stdout: strin
     if (version) return { version: (last = version) };
     const failure = err as (NodeJS.ErrnoException & { killed?: boolean }) | null;
     const timedOut = failure?.killed === true && typeof failure.code !== "string";
+    if (failure?.code === "ENOENT" || failure?.code === "EACCES" || failure?.code === "EPERM") {
+      const reason = cliIsolationReason(cli);
+      if (reason) {
+        last = null;
+        return { reason };
+      }
+    }
     if (failure?.code === "ENOENT") {
       last = null;
       return { reason: `\`${cli}\` CLI not found` };
