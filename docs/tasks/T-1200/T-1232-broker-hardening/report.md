@@ -42,7 +42,7 @@
 
 ## 隔离 fixture 与待协调事项
 
-`AGENTS.md` 引用的 `docs/verification/README.md` 在当前检出不存在。Vitest 使用已有 `server/testing/setup.ts` 的临时 HOME，以及各测试独立的会话目录、假 CLI 和假 broker，不访问 live app 或用户数据。
+仓库说明里引用的验证说明文档在当前检出不存在。Vitest 使用 server/testing 下已有 setup 提供的临时主目录，以及各测试独立的会话目录、假 CLI 和假 broker，不访问线上应用或用户数据。
 
 另外实际尝试启动现有隔离服务 fixture：
 
