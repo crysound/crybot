@@ -17,7 +17,7 @@ export interface InstaboxMachines {
   suspend(botId: string): Promise<void>;
   remove(botId: string): Promise<void>;
   exec(machineId: string, req: InstaboxExecRequest): Promise<InstaboxExecResult>;
-  readFile(machineId: string, path: string): Promise<Uint8Array>;
+  readFile(machineId: string, path: string, options?: { maxBytes?: number }): Promise<Uint8Array>;
   writeFile(machineId: string, path: string, data: Uint8Array, opts?: { mode?: string }): Promise<void>;
   /** Where the server connects for this machine's VNC (RFB, no password); headers carry the key and never leave the server. */
   vncUpstream(machineId: string): Promise<{ url: string; headers: Record<string, string> }>;

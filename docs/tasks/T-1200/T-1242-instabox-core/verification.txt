@@ -1,322 +1,287 @@
-T-1242 第 5 轮验证
-所有服务使用隔离临时目录、假引擎和本地假服务。
+T-1242 第 7 轮验证
+所有服务验证使用隔离 fixture 和假服务。
 docs/verification/README.md 在仓库中不存在。
-地址、主机名及仓库绝对路径已脱敏；下列保留完整命令输出。
+输出中的仓库绝对路径及连接信息已脱敏。
 
 $ crybot-link-deps
 crybot-link-deps: linked 73 entries into worktree node_modules
+Exit code: 0
 
-===== new-cases =====
-$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 -t 'normal InstaBox turn'
+Run: machines
+$ pnpm exec vitest run server/instabox/machines.test.ts --maxWorkers=1
 
  RUN  v4.1.11 .
 
 
  Test Files  1 passed (1)
-      Tests  2 passed | 13 skipped (15)
-   Start at  06:54:50
-   Duration  11.59s (transform 1.52s, setup 954ms, import 1.10s, tests 9.39s, environment 0ms)
+      Tests  24 passed (24)
+   Start at  07:38:54
+   Duration  2.37s (transform 1.04s, setup 1.34s, import 37ms, tests 787ms, environment 0ms)
 
 
-===== mutation =====
-Mutation: replace wantedKind cloud branch with undefined.
-$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 -t refuses a normal InstaBox turn
+Exit code: 0
+
+Run: client
+$ pnpm exec vitest run server/instabox/client.test.ts --maxWorkers=1
 
  RUN  v4.1.11 .
 
- ❯ server/instabox/core.e2e.test.ts (15 tests | 1 failed | 14 skipped) 26570ms
-   × refuses a normal InstaBox turn under the managed box policy before any machine request 26568ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  07:39:21
+   Duration  1.77s (transform 1.14s, setup 1.46s, import 30ms, tests 88ms, environment 0ms)
+
+
+Exit code: 0
+
+Run: power
+$ pnpm exec vitest run server/instabox/power.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  07:39:24
+   Duration  1.25s (transform 830ms, setup 1.04s, import 35ms, tests 8ms, environment 0ms)
+
+
+Exit code: 0
+
+Run: core-1
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  07:39:25
+   Duration  62.74s (transform 1.90s, setup 1.11s, import 1.48s, tests 59.98s, environment 0ms)
+
+
+Exit code: 0
+
+Run: core-2
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+ ❯ server/instabox/core.e2e.test.ts (15 tests | 1 failed) 58941ms
+   × deletes a retained InstaBox machine after switching backend 2513ms
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  server/instabox/core.e2e.test.ts > refuses a normal InstaBox turn under the managed box policy before any machine request
-AssertionError: expected [ { …(8) }, { …(7) }, { …(12) }, …(2) ] to deeply equal ArrayContaining{…}
+ FAIL  server/instabox/core.e2e.test.ts > deletes a retained InstaBox machine after switching backend
+AssertionError: expected 'suspended' to be 'deleted' // Object-is equality
 
-- Expected
-+ Received
+Expected: "deleted"
+Received: "suspended"
 
-- ArrayContaining [
--   ObjectContaining {
-+ [
-+   {
-+     "at": 1794725725956,
-+     "kind": "text",
-+     "parentId": null,
-+     "role": "bot",
-+     "setupChoices": [
-+       "Research and digging into topics",
-+       "Keeping an eye on things for me",
-+       "Email, calendar and messages",
-+       "Bookings, shopping and errands",
-+       "Data, spreadsheets and reports",
-+     ],
-+     "setupOffer": true,
-+     "text": "Hi, I'm Churro. What would you like me to do?",
-+   },
-+   {
-+     "at": 1794725730551,
-+     "kind": "text",
-+     "requestPending": false,
-+     "role": "user",
-+     "text": "Use the cloud computer.",
-+   },
-+   {
-+     "at": 1794725730720,
-+     "kind": "text",
-+     "role": "bot",
-+     "text": "hello from fake claude",
-+     "turnCompletedAt": 1794725730733,
-+     "turnSucceeded": true,
-+     "turnTerminal": true,
-+   },
-+   {
-+     "at": 1794725730723,
-      "kind": "activity",
-      "role": "bot",
--     "tool": ObjectContaining {
--       "name": "error: Fixture Agency does not allow bots to use cloud computers.",
--       "ok": false,
-+     "tool": {
-+       "input": "{
-+   \"command\": \"echo hi\"
-+ }",
-+       "itemId": "tu-13183-1",
-+       "name": "Bash",
-+       "ok": true,
-+       "output": "[
-+   {
-+     \"type\": \"text\",
-+     \"text\": \"hi\"
-+   }
-+ ]",
-+       "spoken": "running a command",
-+       "step": {
-+         "activity": "command",
-+         "target": "echo hi",
-+       },
-+       "summary": "echo hi",
-+     },
-+   },
-+   {
-+     "at": 1794725730735,
-+     "digest": {
-+       "at": 1794725730735,
-+       "durationMs": 83,
-+       "hookCoverage": "preview",
-+       "memory": [],
-+       "reply": "hello from fake claude",
-+       "toolCalls": 1,
-+       "tools": [
-+         {
-+           "count": 1,
-+           "failed": 0,
-+           "name": "Bash",
-+           "sample": "echo hi",
-          },
--     "turnSucceeded": false,
-+       ],
-+       "usage": {
-+         "cachedInput": 2,
-+         "costUsd": 0.01,
-+         "input": 12,
-+         "output": 5,
-+       },
-+     },
-+     "kind": "digest",
-+     "role": "bot",
-+     "text": "[digest] · tools: Bash ×1 (from tool previews) · reply: hello from fake claude",
-+     "turnSucceeded": true,
-    },
-  ]
-
- ❯ server/instabox/core.e2e.test.ts:215:8
-    213|     expect((await request("POST", `/api/bots/${bot.id}/messages`, { te…
-    214|     await expect.poll(async () => (await request("GET", `/api/threads/…
-    215|       .toEqual(expect.arrayContaining([expect.objectContaining({ role:…
-       |        ^
-    216|         tool: expect.objectContaining({ ok: false, name: "error: Fixtu…
-    217|     expect(fake.calls.filter(call => call.path.startsWith("/v1/machine…
-
-Caused by: Error: Matcher did not succeed in time.
- ❯ server/instabox/core.e2e.test.ts:214:5
+ ❯ server/instabox/core.e2e.test.ts:380:51
+    378|     const deleted = await request("DELETE", `/api/bots/${bot.id}`);
+    379|     expect(deleted.status).toBe(200);
+    380|     expect([...fake.machines.values()][0]?.state).toBe("deleted");
+       |                                                   ^
+    381|   } finally { await fixture.close(); await fake.close(); }
+    382| }, 60_000);
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 
  Test Files  1 failed (1)
-      Tests  1 failed | 14 skipped (15)
-   Start at  06:55:22
-   Duration  28.38s (transform 1.26s, setup 740ms, import 948ms, tests 26.57s, environment 0ms)
-
-
-Exit code: 1 (expected 1)
-
-===== core-1 =====
-$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
-
- RUN  v4.1.11 .
-
-
- Test Files  1 passed (1)
-      Tests  15 passed (15)
-   Start at  06:56:09
-   Duration  59.36s (transform 1.50s, setup 952ms, import 1.04s, tests 57.24s, environment 0ms)
-
-
-Exit code: 0
-
-===== core-2 =====
-$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
-
- RUN  v4.1.11 .
-
-
- Test Files  1 passed (1)
-      Tests  15 passed (15)
-   Start at  06:57:09
-   Duration  63.22s (transform 2.06s, setup 1.26s, import 1.43s, tests 60.38s, environment 0ms)
-
-
-Exit code: 0
-
-===== core-3 =====
-$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
-
- RUN  v4.1.11 .
-
-
- Test Files  1 passed (1)
-      Tests  15 passed (15)
-   Start at  06:58:13
-   Duration  68.61s (transform 2.74s, setup 1.58s, import 1.90s, tests 64.91s, environment 0ms)
-
-
-Exit code: 0
-
-===== environment =====
-$ pnpm exec vitest run scripts/control-cry.test.ts --maxWorkers=1
-
- RUN  v4.1.11 .
-
-
- Test Files  1 passed (1)
-      Tests  10 passed (10)
-   Start at  06:59:22
-   Duration  3.07s (transform 2.20s, setup 1.48s, import 1.33s, tests 16ms, environment 0ms)
-
-
-Exit code: 0
-
-===== launcher-1 =====
-$ pnpm exec vitest run server/control-cry.test.ts --maxWorkers=1
-
- RUN  v4.1.11 .
-
- ❯ server/control-cry.test.ts (20 tests | 1 failed) 11244ms
-     × launches, drives a real fake-engine turn, and removes only its test data 2624ms
-
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
-
- FAIL  server/control-cry.test.ts > control-cry isolated verification loop > launches, drives a real fake-engine turn, and removes only its test data
-AssertionError: expected [ 'claude', 'chatgpt' ] to deeply equal [ 'claude' ]
-
-- Expected
-+ Received
-
-  [
-    "claude",
-+   "chatgpt",
-  ]
-
- ❯ server/control-cry.test.ts:261:39
-    259|       const doctor = await runControlCry(["doctor"], { env }) as any;
-    260|       expect(doctor.ok).toBe(true);
-    261|       expect(doctor.availableEngines).toEqual(["claude"]);
-       |                                       ^
-    262|
-    263|       const created = await runControlCry(["new-bot", "--name", "Verif…
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-
- Test Files  1 failed (1)
-      Tests  1 failed | 19 passed (20)
-   Start at  06:59:26
-   Duration  14.03s (transform 2.06s, setup 1.33s, import 1.28s, tests 11.24s, environment 0ms)
+      Tests  1 failed | 14 passed (15)
+   Start at  07:40:29
+   Duration  61.62s (transform 1.92s, setup 1.17s, import 1.36s, tests 58.94s, environment 0ms)
 
 
 Exit code: 1
 
-===== launcher-baseline =====
-Baseline check: scripts/control-cry.ts temporarily restored from HEAD.
-$ pnpm exec vitest run server/control-cry.test.ts --maxWorkers=1
+Run: baseline-core-1
+HEAD baseline; all five code files temporarily restored
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 -t 'deletes a retained InstaBox machine after switching backend'
 
  RUN  v4.1.11 .
 
- ❯ server/control-cry.test.ts (20 tests | 1 failed) 10821ms
-     × launches, drives a real fake-engine turn, and removes only its test data 2617ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 14 skipped (15)
+   Start at  07:42:25
+   Duration  4.41s (transform 1.57s, setup 920ms, import 1.16s, tests 2.19s, environment 0ms)
+
+
+Exit code: 0
+
+Run: baseline-core-2
+HEAD baseline; all five code files temporarily restored
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 -t 'deletes a retained InstaBox machine after switching backend'
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 14 skipped (15)
+   Start at  07:42:30
+   Duration  4.67s (transform 1.64s, setup 979ms, import 1.19s, tests 2.34s, environment 0ms)
+
+
+Exit code: 0
+
+Run: baseline-core-3
+HEAD baseline; all five code files temporarily restored
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 -t 'deletes a retained InstaBox machine after switching backend'
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 14 skipped (15)
+   Start at  07:42:35
+   Duration  4.60s (transform 1.71s, setup 1.00s, import 1.25s, tests 2.21s, environment 0ms)
+
+
+Exit code: 0
+
+Run: baseline-core-4
+HEAD baseline; all five code files temporarily restored
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 -t 'deletes a retained InstaBox machine after switching backend'
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 14 skipped (15)
+   Start at  07:42:40
+   Duration  4.46s (transform 1.62s, setup 935ms, import 1.19s, tests 2.20s, environment 0ms)
+
+
+Exit code: 0
+
+Run: baseline-core-5
+HEAD baseline; all five code files temporarily restored
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 -t 'deletes a retained InstaBox machine after switching backend'
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 14 skipped (15)
+   Start at  07:42:45
+   Duration  4.35s (transform 1.56s, setup 881ms, import 1.17s, tests 2.18s, environment 0ms)
+
+
+Exit code: 0
+
+Run: baseline-core-6
+HEAD baseline; all five code files temporarily restored
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 -t 'deletes a retained InstaBox machine after switching backend'
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 14 skipped (15)
+   Start at  07:42:50
+   Duration  4.51s (transform 1.63s, setup 962ms, import 1.20s, tests 2.20s, environment 0ms)
+
+
+Exit code: 0
+
+Run: core-final-1
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  07:43:19
+   Duration  63.42s (transform 2.02s, setup 1.17s, import 1.49s, tests 60.60s, environment 0ms)
+
+
+Exit code: 0
+
+Run: core-final-2
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  07:44:23
+   Duration  61.97s (transform 2.04s, setup 1.18s, import 1.50s, tests 59.14s, environment 0ms)
+
+
+Exit code: 0
+
+Run: core-final-3
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+ ❯ server/instabox/core.e2e.test.ts (15 tests | 1 failed) 56599ms
+   × deletes a retained InstaBox machine after switching backend 2335ms
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  server/control-cry.test.ts > control-cry isolated verification loop > launches, drives a real fake-engine turn, and removes only its test data
-AssertionError: expected [ 'claude', 'chatgpt' ] to deeply equal [ 'claude' ]
+ FAIL  server/instabox/core.e2e.test.ts > deletes a retained InstaBox machine after switching backend
+AssertionError: expected 'suspended' to be 'deleted' // Object-is equality
 
-- Expected
-+ Received
+Expected: "deleted"
+Received: "suspended"
 
-  [
-    "claude",
-+   "chatgpt",
-  ]
-
- ❯ server/control-cry.test.ts:261:39
-    259|       const doctor = await runControlCry(["doctor"], { env }) as any;
-    260|       expect(doctor.ok).toBe(true);
-    261|       expect(doctor.availableEngines).toEqual(["claude"]);
-       |                                       ^
-    262|
-    263|       const created = await runControlCry(["new-bot", "--name", "Verif…
+ ❯ server/instabox/core.e2e.test.ts:380:51
+    378|     const deleted = await request("DELETE", `/api/bots/${bot.id}`);
+    379|     expect(deleted.status).toBe(200);
+    380|     expect([...fake.machines.values()][0]?.state).toBe("deleted");
+       |                                                   ^
+    381|   } finally { await fixture.close(); await fake.close(); }
+    382| }, 60_000);
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 
  Test Files  1 failed (1)
-      Tests  1 failed | 19 passed (20)
-   Start at  07:00:07
-   Duration  13.83s (transform 2.24s, setup 1.44s, import 1.37s, tests 10.82s, environment 0ms)
+      Tests  1 failed | 14 passed (15)
+   Start at  07:45:25
+   Duration  59.19s (transform 1.86s, setup 1.11s, import 1.33s, tests 56.60s, environment 0ms)
 
 
 Exit code: 1
 
-===== backend =====
-$ pnpm exec vitest run server/cloud-backend.test.ts --maxWorkers=1
+Run: baseline-full-1
+HEAD baseline; all five code files temporarily restored
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
 
  RUN  v4.1.11 .
 
 
  Test Files  1 passed (1)
-      Tests  12 passed (12)
-   Start at  07:00:22
-   Duration  1.50s (transform 1.02s, setup 1.29s, import 39ms, tests 5ms, environment 0ms)
+      Tests  15 passed (15)
+   Start at  07:46:56
+   Duration  62.86s (transform 2.36s, setup 1.29s, import 1.76s, tests 59.63s, environment 0ms)
 
 
 Exit code: 0
 
-===== index =====
-$ pnpm exec vitest run server/index.test.ts --maxWorkers=1
+Run: baseline-full-2
+HEAD baseline; all five code files temporarily restored
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
 
  RUN  v4.1.11 .
 
 
  Test Files  1 passed (1)
-      Tests  338 passed (338)
-   Start at  07:00:24
-   Duration  161.98s (transform 2.15s, setup 1.18s, import 1.91s, tests 158.71s, environment 0ms)
+      Tests  15 passed (15)
+   Start at  07:48:00
+   Duration  64.03s (transform 2.00s, setup 1.26s, import 1.37s, tests 61.24s, environment 0ms)
 
 
 Exit code: 0
 
-===== size =====
+Run: ratchet
 $ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1
 
  RUN  v4.1.11 .
@@ -324,26 +289,63 @@ $ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1
 
  Test Files  1 passed (1)
       Tests  1 passed (1)
-   Start at  07:03:07
-   Duration  1.49s (transform 699ms, setup 903ms, import 9ms, tests 441ms, environment 0ms)
+   Start at  07:49:05
+   Duration  2.06s (transform 1.01s, setup 1.27s, import 12ms, tests 604ms, environment 0ms)
 
 
 Exit code: 0
 
-===== tsc =====
+Run: tsc
 $ pnpm exec tsc -p tsconfig.server.json
 
 Exit code: 0
 
-===== oxlint =====
-$ pnpm exec oxlint --deny-warnings scripts/control-cry.ts scripts/control-cry.test.ts server/instabox/core.e2e.test.ts
+Run: lint
+$ pnpm exec oxlint --deny-warnings server/instabox/client.ts server/instabox/machine.ts server/instabox/machines.ts server/instabox/machines.test.ts server/testing/fake-instabox-core.ts
 
 Exit code: 0
 
-===== diff-check =====
+Run: core-confirm-1
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  07:49:37
+   Duration  63.91s (transform 2.12s, setup 1.22s, import 1.61s, tests 60.94s, environment 0ms)
+
+
+Exit code: 0
+
+Run: core-confirm-2
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  07:50:41
+   Duration  60.53s (transform 1.87s, setup 1.13s, import 1.33s, tests 57.90s, environment 0ms)
+
+
+Exit code: 0
+
+Run: core-confirm-3
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  07:51:43
+   Duration  58.85s (transform 1.38s, setup 830ms, import 1.02s, tests 56.87s, environment 0ms)
+
+
+Exit code: 0
+
 $ git diff --check
-
 Exit code: 0
-
-Mutation self-check: expected refusal assertion failed after replacing the cloud wantedKind branch with undefined. server/index.ts restored; no final diff.
-Launcher baseline check: the same extra chatgpt engine failed the exact same assertion with scripts/control-cry.ts restored from HEAD. Round 5 changes restored afterward.

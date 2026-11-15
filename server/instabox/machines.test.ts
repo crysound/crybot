@@ -78,6 +78,54 @@ it("uploads and downloads exact bytes and encodes file parameters", async () => 
   expect((await service.vncUpstream(machine.id)).url).toContain(`/v1/machines/${machine.id}/vnc`);
 });
 
+it.each([undefined, 128])("rejects excessive Content-Length and cancels the body with maxBytes=%s", async maxBytes => {
+  const machine = await service.ensureRunning(botId);
+  const limit = maxBytes ?? 256 * 1024 * 1024;
+  const stream = fake.streamFile(machine.id, "/tmp/large", {
+    chunk: Buffer.alloc(64), chunkCount: 100, contentLength: limit + 1,
+  });
+  await expect(service.readFile(machine.id, "/tmp/large", maxBytes === undefined ? undefined : { maxBytes })).rejects.toThrow(
+    new Error(`InstaBox readFile exceeds maxBytes=${limit}`),
+  );
+  await expect.poll(() => stream.cancelled).toBe(true);
+  expect(stream.completed).toBe(false);
+  expect(stream.chunksSent * 64).toBeLessThan(limit + 1);
+});
+
+it("cancels an oversized chunked download before the server sends the entire file", async () => {
+  const machine = await service.ensureRunning(botId);
+  const stream = fake.streamFile(machine.id, "/tmp/chunked", { chunk: Buffer.alloc(64), chunkCount: 100 });
+  await expect(service.readFile(machine.id, "/tmp/chunked", { maxBytes: 128 })).rejects.toThrow(
+    new Error("InstaBox readFile exceeds maxBytes=128"),
+  );
+  await expect.poll(() => stream.cancelled).toBe(true);
+  expect(stream.chunksSent).toBeGreaterThanOrEqual(3);
+  expect(stream.chunksSent).toBeLessThan(stream.chunkCount);
+  expect(stream.completed).toBe(false);
+});
+
+it.each([undefined, 12])("reads exact bytes up to the limit with Content-Length=%s", async contentLength => {
+  const machine = await service.ensureRunning(botId);
+  const chunk = Buffer.from([0, 255, 128, 10]);
+  const stream = fake.streamFile(machine.id, "/tmp/bounded", { chunk, chunkCount: 3, contentLength });
+  expect(await service.readFile(machine.id, "/tmp/bounded", { maxBytes: 12 })).toEqual(new Uint8Array(Buffer.concat([chunk, chunk, chunk])));
+  expect(stream.completed).toBe(true);
+  expect(stream.cancelled).toBe(false);
+});
+
+it("allows an empty file with a zero-byte limit and rejects nonempty files", async () => {
+  const machine = await service.ensureRunning(botId);
+  await service.writeFile(machine.id, "/tmp/empty", new Uint8Array());
+  expect(await service.readFile(machine.id, "/tmp/empty", { maxBytes: 0 })).toEqual(new Uint8Array());
+  await service.writeFile(machine.id, "/tmp/nonempty", new Uint8Array([1]));
+  await expect(service.readFile(machine.id, "/tmp/nonempty", { maxBytes: 0 })).rejects.toThrow("maxBytes=0");
+});
+
+it.each([-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])("rejects invalid maxBytes=%s before requesting a file", async maxBytes => {
+  await expect(service.readFile("unused", "/tmp/file", { maxBytes })).rejects.toThrow("maxBytes must be a non-negative safe integer");
+  expect(fake.calls).toHaveLength(0);
+});
+
 it("does not retry unrelated exec failures", async () => {
   const machine = await service.ensureRunning(botId);
   fake.failNext({ status: 409, code: "quota_exceeded" });

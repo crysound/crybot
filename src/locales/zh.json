@@ -8014,6 +8014,9 @@
   "vm.screens.take": "接管这块屏",
   "vm.screens.count": "屏数",
   "vm.screens.resources": "共享模式默认：8 GB 内存 · 3 核，不超过宿主机上限。",
+  "serverError.instabox.keyMissing": "请添加 InstaBox 钥匙以使用此电脑。",
+  "serverError.instabox.template": "请选择 Linux 或安卓电脑。",
+  "serverError.instabox.unavailable": "此 InstaBox 电脑暂时不可用。",
   "serverError.secret.saving": "此凭据正在保存中。",
   "serverError.secret.screenUnavailable": "此机器人已无法访问接收该凭据的屏幕。请让机器人重新请求凭据。"
 }

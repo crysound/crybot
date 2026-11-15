@@ -53,6 +53,39 @@ export function createInstaboxRequest(apiKey: string, baseUrl = "https://api.ins
   return request;
 }
 
+export async function readInstaboxFile(response: Response, maxBytes: number): Promise<Uint8Array> {
+  const tooLarge = () => new Error(`InstaBox readFile exceeds maxBytes=${maxBytes}`);
+  if (Number(response.headers.get("content-length")) > maxBytes) {
+    await response.body?.cancel().catch(() => {});
+    throw tooLarge();
+  }
+  if (!response.body) return new Uint8Array();
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read().catch(() => { throw new InstaboxError(0, "network_error"); });
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) throw tooLarge();
+      chunks.push(value);
+    }
+    const result = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return result;
+  } catch (error) {
+    await reader.cancel().catch(() => {});
+    throw error;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export function instaboxVncUpstream(request: InstaboxRequest, machineId: string) {
   const connection = connections.get(request);
   if (!connection) throw new Error("InstaBox connection metadata is unavailable");

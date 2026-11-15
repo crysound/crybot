@@ -1,5 +1,5 @@
 import { setTimeout as delay } from "node:timers/promises";
-import { InstaboxError, instaboxVncUpstream, waitOperation } from "./client.ts";
+import { InstaboxError, instaboxVncUpstream, readInstaboxFile, waitOperation } from "./client.ts";
 import type { InstaboxExecResult, InstaboxMachine, InstaboxMachines, InstaboxRequest, InstaboxTemplate } from "./machine.ts";
 
 const LIFECYCLE_TIMEOUT = 180_000;
@@ -98,10 +98,12 @@ export function createInstaboxMachines(request: InstaboxRequest): InstaboxMachin
     async exec(machineId, req) {
       return whileRunning(machineId, async () => (await request("POST", `${pathOf(machineId)}/exec`, { body: req })).json() as Promise<InstaboxExecResult>);
     },
-    async readFile(machineId, path) {
+    async readFile(machineId, path, options) {
+      const maxBytes = options?.maxBytes ?? 256 * 1024 * 1024;
+      if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) throw new Error("InstaBox readFile maxBytes must be a non-negative safe integer");
       return whileRunning(machineId, async () => {
         const response = await request("GET", `${pathOf(machineId)}/files/content`, { query: { path } });
-        return new Uint8Array(await response.arrayBuffer());
+        return readInstaboxFile(response, maxBytes);
       });
     },
     async writeFile(machineId, path, data, opts) {

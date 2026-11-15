@@ -117,3 +117,74 @@
 | `pnpm exec vitest run server/control-cry.test.ts --maxWorkers=1` | 19 过、1 失败；第 261 行预期仅 claude，实际还有 chatgpt。临时恢复 HEAD 中的启动器后复跑仍同样失败，确认是基线问题，未扩展修复，也未重复跑三次 |
 
 完整输出（含预期失败的自检与基线复跑）见 [verification.txt](verification.txt)。
+
+
+## 第 6 轮
+
+1. 改了什么
+
+- `src/locales/en.json`、`src/locales/zh.json`：补齐 `serverError.instabox.keyMissing`、`serverError.instabox.template`、`serverError.instabox.unavailable` 的简洁用户文案。
+- `server/bot-box/env.test.ts`：将 `CRYBOT_TEST_INSTABOX_API` 加入 `SERVER_ONLY_CRYBOT`。
+- `docs/tasks/T-1200/T-1242-instabox-core/report.md`、`docs/tasks/T-1200/T-1242-instabox-core/verification.txt`：追加本节并更新脱敏验证输出。以上五个文件与最终 git status 一致；未提交 git。
+
+2. 为什么
+
+修复 CI 的缺失翻译键和环境变量未分类失败。其他语言按现有部分目录规则回退英文；假服务地址仅供服务端测试使用，现有分类测试同时检查它不能传入智能体 box。
+
+3. 测试命令与结果摘要
+
+已执行 依赖准备脚本。仓库缺少 `docs/verification/README.md`；服务验证全部使用隔离 fixture 和假服务。以下 Vitest 命令均逐文件执行。
+
+| 命令 | 结果 |
+| --- | --- |
+| `pnpm exec vitest run src/locales/sent-keys.test.ts --maxWorkers=1` | 2 项通过 |
+| `pnpm exec vitest run server/bot-box/env.test.ts --maxWorkers=1` | 11 项通过 |
+| `pnpm exec vitest run src/lib/i18n.test.ts --maxWorkers=1` | 39 项通过 |
+| `pnpm exec vitest run scripts/generate-locale.test.mjs --maxWorkers=1` | 23 项通过 |
+| `pnpm exec vitest run server/instabox/<file>.test.ts --maxWorkers=1` | client、key、machines、persistence、power 分别 6、4、13、1、7 项通过 |
+| `pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1` | 连续 3 次，每次 15 项通过 |
+| `pnpm exec tsc -p tsconfig.server.json`、`pnpm exec tsc -p tsconfig.json` | 均通过 |
+| `pnpm exec oxlint --deny-warnings server/bot-box/env.test.ts src/locales/en.json src/locales/zh.json` | 通过 |
+| `git diff --check` | 通过 |
+
+完整输出见 [verification.txt](verification.txt)，已检查不含 IP、连接地址、域名或 UUID。
+
+
+## 第 7 轮
+
+1. 改了什么
+
+本轮文件清单与 `git status --short` 一致；未提交 git。
+
+```text
+ M docs/tasks/T-1200/T-1242-instabox-core/report.md
+ M docs/tasks/T-1200/T-1242-instabox-core/verification.txt
+ M server/instabox/client.ts
+ M server/instabox/machine.ts
+ M server/instabox/machines.test.ts
+ M server/instabox/machines.ts
+ M server/testing/fake-instabox-core.ts
+```
+
+接口按要求原样增加 `options?: { maxBytes?: number }`；默认上限 256 MiB，先检查 Content-Length，再逐块累计，超限立即取消响应体或 reader。错误包含上限数值、不含钥匙或地址；拒绝无效上限。假服务记录发送块数及取消状态，测试覆盖提前拒绝、中途取消、正常及边界大小读取。
+
+2. 为什么
+
+防止文件被替换成超大内容后，在大小检查前完整读入共享服务内存。
+
+3. 测试命令与结果摘要
+
+已执行 依赖准备脚本。仓库仍缺少 `docs/verification/README.md`；所有服务验证使用隔离 fixture 和假服务。Vitest 均以 `pnpm exec vitest run <文件> --maxWorkers=1` 逐文件执行。
+
+| 文件或命令 | 结果 |
+| --- | --- |
+| `server/instabox/machines.test.ts` | 24 项通过 |
+| `server/instabox/client.test.ts` | 6 项通过 |
+| `server/instabox/power.test.ts` | 7 项通过 |
+| `server/instabox/core.e2e.test.ts` | 最终连续 3 次，每次 15 项通过 |
+| `scripts/testing/file-size-ratchet.test.ts` | 1 项通过 |
+| `pnpm exec tsc -p tsconfig.server.json` | 通过 |
+| `pnpm exec oxlint --deny-warnings`（上述 5 个 TS 文件） | 通过 |
+| `git diff --check` | 通过 |
+
+此前两次完整 e2e 在 `core.e2e.test.ts:380` 出现间歇失败（期望 deleted，实际 suspended）。临时恢复 HEAD 的全部 5 个代码文件后，单独用例 6 次、完整 e2e 2 次均未复现，未确认原因；恢复本轮改动后最终三连过。完整命令、失败及成功输出均见 [verification.txt](verification.txt)，已检查不含 IP、连接地址、域名或 UUID。

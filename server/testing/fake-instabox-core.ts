@@ -5,6 +5,10 @@ export async function fakeInstaboxCore() {
   const machines = new Map<string, { id: string; name: string; state: InstaboxMachineState; templateId: string; metadata: Record<string, unknown> }>();
   const operations = new Map<string, { id: string; machineId: string; state: string; finalState: InstaboxMachineState; polls: number }>();
   const files = new Map<string, Buffer>();
+  const fileStreams = new Map<string, {
+    chunk: Buffer; chunkCount: number; contentLength?: number;
+    chunksSent: number; cancelled: boolean; completed: boolean;
+  }>();
   const desktop = new Set<string>();
   const calls: Array<{ method: string; path: string; query: URLSearchParams; headers: IncomingHttpHeaders; body: any }> = [];
   let failure: { status: number; code: string; message?: string } | undefined;
@@ -65,13 +69,36 @@ export async function fakeInstaboxCore() {
     if (action === "exec") return send(200, { stdout: "fixture output", stderr: "", exitCode: 0, timedOut: false, truncated: false });
     const fileKey = `${machine.id}:${url.searchParams.get("path")}`;
     if (action === "files" && req.method === "PUT") { files.set(fileKey, raw); res.writeHead(204); return res.end(); }
-    if (action === "files/content") { res.writeHead(200); return res.end(files.get(fileKey) ?? Buffer.alloc(0)); }
+    if (action === "files/content") {
+      const stream = fileStreams.get(fileKey);
+      if (stream) {
+        res.writeHead(200, stream.contentLength === undefined ? {} : { "Content-Length": stream.contentLength });
+        res.flushHeaders();
+        const timer = setInterval(() => {
+          res.write(stream.chunk);
+          stream.chunksSent++;
+          if (stream.chunksSent === stream.chunkCount) {
+            clearInterval(timer);
+            stream.completed = true;
+            res.end();
+          }
+        }, 20);
+        res.on("close", () => { clearInterval(timer); stream.cancelled = !stream.completed; });
+        return;
+      }
+      res.writeHead(200); return res.end(files.get(fileKey) ?? Buffer.alloc(0));
+    }
     send(404, { error: { code: "not_found" } });
   });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("Fake InstaBox failed to listen");
   return { url: `http://127.0.0.1:${address.port}`, calls, machines, operations, desktop,
+    streamFile: (machineId: string, path: string, options: { chunk: Buffer; chunkCount: number; contentLength?: number }) => {
+      const stream = { ...options, chunksSent: 0, cancelled: false, completed: false };
+      fileStreams.set(`${machineId}:${path}`, stream);
+      return stream;
+    },
     failNext: (next: NonNullable<typeof failure>) => { failure = next; },
     failOperations: () => { operationFailure = true; },
     close: () => new Promise<void>((resolve, reject) => { server.close(error => error ? reject(error) : resolve()); server.closeAllConnections(); }),
