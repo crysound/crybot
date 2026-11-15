@@ -13,6 +13,16 @@ export function cliInvocation(executable: string, args: string[], platform = pro
   return { command: executable, args };
 }
 
+function brokerErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? [...error.message].map(character => {
+    const code = character.codePointAt(0)!;
+    if (/\s/u.test(character) || code === 0x85) return " ";
+    return code <= 0x1f || (code >= 0x7f && code <= 0x9f) ? "" : character;
+  }).join("").replace(/ +/g, " ").trim() : "";
+  const characters = [...message];
+  return characters.length > 300 ? characters.slice(0, 299).join("") + "…" : message || "飞书代领服务不可用";
+}
+
 export async function runLarkCli(args: string[], source: NodeJS.ProcessEnv = process.env): Promise<number> {
   const command = args[0];
   if (command === "update") { console.error("请由管理员升级 lark-cli，不允许自行更新"); return 1; }
@@ -29,7 +39,7 @@ export async function runLarkCli(args: string[], source: NodeJS.ProcessEnv = pro
     if (!validToken(token) || needsToken(token)) {
       if (!source.CRYBOT_FEISHU_BROKER_SOCKET) { console.error("飞书令牌已失效，请重新发起对话"); return 1; }
       try { token = await brokerToken(source.CRYBOT_FEISHU_BROKER_SOCKET); }
-      catch (error) { console.error(error instanceof Error ? error.message : "飞书代领服务不可用"); return 1; }
+      catch (error) { console.error(brokerErrorMessage(error)); return 1; }
     }
     if (command === "auth") {
       if (args[1] === "status") { console.log(JSON.stringify({ authorized: true, identity: "user" })); return 0; }

@@ -84,7 +84,30 @@ it("reports authorization details and fails without running the CLI when refresh
   environment.CRYBOT_FEISHU_BROKER_SOCKET = "/fixture/token.sock";
   vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", "https://example.invalid/authorize"));
   expect(await runLarkCli(["calendar", "list"], environment)).toBe(1);
-  expect(error).toHaveBeenCalledWith("请重新授权\nhttps://example.invalid/authorize");
+  expect(error).toHaveBeenCalledWith("请重新授权 https://example.invalid/authorize");
   expect(JSON.stringify(error.mock.calls)).not.toContain(environment.CRYBOT_FEISHU_USER_TOKEN);
+  await expect(readFile(environment.FIXTURE_DUMP!)).rejects.toMatchObject({ code: "ENOENT" });
+});
+
+it.each([
+  ["\u001b[31m失败\r\n\t 请重试\u0000\u007f\u0080\u0085\u009f", "[31m失败 请重试"],
+  ["\u001b[31m失败\n" + "文".repeat(400), "[31m失败 " + "文".repeat(292) + "…"],
+  ["文".repeat(300), "文".repeat(300)],
+  ["文".repeat(301), "文".repeat(299) + "…"],
+  ["😀".repeat(301), "😀".repeat(299) + "…"],
+  ["\u001b\u0000\u007f\u0080\u009f\n\t ", "飞书代领服务不可用"],
+  ["", "飞书代领服务不可用"],
+])("sanitizes broker failure text before writing stderr (%#)", async (message, expected) => {
+  environment.CRYBOT_FEISHU_EXPIRES_AT = "1";
+  environment.CRYBOT_FEISHU_BROKER_SOCKET = "/fixture/token.sock";
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError(message));
+  expect(await runLarkCli(["calendar", "list"], environment)).toBe(1);
+  expect(error.mock.calls).toEqual([[expected]]);
+  const output = error.mock.calls[0][0] as string;
+  expect([...output].length).toBeLessThanOrEqual(300);
+  expect([...output].some(character => {
+    const code = character.codePointAt(0)!;
+    return code <= 0x1f || (code >= 0x7f && code <= 0x9f);
+  })).toBe(false);
   await expect(readFile(environment.FIXTURE_DUMP!)).rejects.toMatchObject({ code: "ENOENT" });
 });

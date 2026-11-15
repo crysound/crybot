@@ -50,9 +50,12 @@ export function feishuCliAccess(unionId: string | undefined, env: NodeJS.Process
         };
       } catch (error) {
         unavailable = language.startsWith("zh") ? "飞书暂不可用。" : "Feishu is temporarily unavailable.";
-        const authorizationUrl = error instanceof BrokerAuthorizationError && validAuthorizationUrl(error.authorizationUrl)
-          ? error.authorizationUrl
-          : validAuthorizationUrl(env.CRYBOT_FEISHU_AUTHORIZATION_URL) ? env.CRYBOT_FEISHU_AUTHORIZATION_URL : undefined;
+        const configuredUrl = env.CRYBOT_FEISHU_AUTHORIZATION_URL;
+        let authorizationUrl = validAuthorizationUrl(configuredUrl) ? configuredUrl : undefined;
+        if (authorizationUrl && error instanceof BrokerAuthorizationError && validAuthorizationUrl(error.authorizationUrl) &&
+          new URL(error.authorizationUrl).origin === new URL(authorizationUrl).origin) {
+          authorizationUrl = error.authorizationUrl;
+        }
         if (authorizationUrl) {
           unavailable += language.startsWith("zh")
             ? ` 请在回复中告诉用户去此链接重新授权：${authorizationUrl}`

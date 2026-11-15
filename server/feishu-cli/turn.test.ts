@@ -129,6 +129,7 @@ it("strips inherited Feishu and Meegle capability variables from normal child en
 });
 
 it.each(["zh-CN", "en"])("continues with an authorization link and no capability in %s", async language => {
+  env.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://example.invalid/configured-authorize";
   const logs = [vi.spyOn(console, "log"), vi.spyOn(console, "warn"), vi.spyOn(console, "error")];
   vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError(short, "https://example.invalid/authorize"));
   const access = feishuCliAccess("test_union", env, language)!;
@@ -142,12 +143,50 @@ it.each(["zh-CN", "en"])("continues with an authorization link and no capability
 it.each([
   "https://example.invalid/authorize\nfixture",
   "http://example.invalid/authorize",
+  "https://example.invalid/authorize\u001b",
   `https://example.invalid/${"x".repeat(2048)}`,
 ])("does not put an unsafe upstream authorization URL in the prompt: %s", async authorizationUrl => {
+  env.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://example.invalid/configured-authorize";
   vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", authorizationUrl));
   const access = feishuCliAccess("test_union", env, "zh-CN")!;
   await access.environment();
   expect(access.prompt()).not.toContain(authorizationUrl);
+  expect(access.prompt()).toBe(`飞书暂不可用。 请在回复中告诉用户去此链接重新授权：${env.CRYBOT_FEISHU_AUTHORIZATION_URL}`);
+});
+
+it.each([
+  "https://other.invalid/authorize",
+  "https://example.invalid:8443/authorize",
+  "http://example.invalid/authorize",
+])("falls back to the configured link for a different broker origin: %s", async authorizationUrl => {
+  env.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://example.invalid/configured-authorize";
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", authorizationUrl));
+  const access = feishuCliAccess("test_union", env, "zh-CN")!;
+  expect(await access.environment()).toEqual({});
+  expect(access.prompt()).toBe("飞书暂不可用。 请在回复中告诉用户去此链接重新授权：https://example.invalid/configured-authorize");
+  expect(access.prompt()).not.toContain(authorizationUrl);
+  expect(access.prompt()).not.toContain("other.invalid");
+});
+
+it("accepts the broker link with the same normalized origin", async () => {
+  env.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://EXAMPLE.invalid:443/configured-authorize";
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", "https://example.invalid/authorize?state=fixture"));
+  const access = feishuCliAccess("test_union", env, "zh-CN")!;
+  await access.environment();
+  expect(access.prompt()).toBe("飞书暂不可用。 请在回复中告诉用户去此链接重新授权：https://example.invalid/authorize?state=fixture");
+});
+
+it.each([
+  undefined,
+  "http://example.invalid/configured-authorize",
+  "https://example.invalid/configured-authorize\nfixture",
+  "https://example.invalid/configured-authorize\u001b",
+  `https://example.invalid/${"x".repeat(2048)}`,
+])("omits even a valid broker link without a valid configured URL: %s", async configuredUrl => {
+  env.CRYBOT_FEISHU_AUTHORIZATION_URL = configuredUrl;
+  vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", "https://example.invalid/authorize"));
+  const access = feishuCliAccess("test_union", env, "zh-CN")!;
+  await access.environment();
   expect(access.prompt()).toBe("飞书暂不可用。");
 });
 
@@ -247,11 +286,13 @@ it("isolates launch credentials from other users, boxes and warm contracts", asy
 });
 
 it("builds the launch prompt after a failed token request and cannot retain a warm contract", async () => {
+  env.CRYBOT_FEISHU_AUTHORIZATION_URL = "https://example.invalid/configured-authorize";
   vi.mocked(brokerToken).mockRejectedValue(new BrokerAuthorizationError("请重新授权", "https://example.invalid/authorize"));
   const launch = await claudeTurnLaunch({ threadId: "thread", text: "Fixture", system: "Stable", feishuCli: feishuCliAccess("test_union", env) }, env);
   expect(launch.environment()).toEqual({});
   expect(launch.box({})).toEqual({ rw: [], allowEnv: [] });
   expect(launch.launchSystem).toContain("https://example.invalid/authorize");
+  expect(launch.launchSystem).not.toContain(env.CRYBOT_FEISHU_AUTHORIZATION_URL);
   expect(launch.launchSystem).not.toContain("lark-cli");
   const contracts = new Map<string, KeepWarmContract>();
   launch.rememberWarmContract(contracts, "thread", [], directory, null, null);
