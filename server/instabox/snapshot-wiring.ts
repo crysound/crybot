@@ -5,6 +5,7 @@ import { createInstaboxRequest } from "./client.ts";
 import { instaboxApiKey } from "./key.ts";
 import type { InstaboxRequest } from "./machine.ts";
 import { createInstaboxMachines } from "./machines.ts";
+import type { createInstaboxMachineRecords } from "./machine-records.ts";
 
 export function createSnapshotWiring(deps: {
   cfg(): AppConfig;
@@ -13,6 +14,7 @@ export function createSnapshotWiring(deps: {
   inUse(botId: string): boolean;
   baseUrl?: string;
   snapshotTimeoutMs?: number;
+  records?: ReturnType<typeof createInstaboxMachineRecords>;
 }): RouteHandler {
   const activeSnapshots = new Set<string>();
   return async ctx => {
@@ -32,7 +34,7 @@ export function createSnapshotWiring(deps: {
         const query = opts?.query?.wait ? { ...opts.query, wait: `${Math.min(parseFloat(opts.query.wait), 25, (deadline - Date.now()) / 1000)}s` } : opts?.query;
         return upstream(method, path, { ...opts, query });
       });
-      const machines = request ? createInstaboxMachines(request) : null;
+      const machines = request ? createInstaboxMachines(request, deps.records, key) : null;
       return await createInstaboxSnapshotRoutes({
         request: () => request, machines: () => machines,
         machineIdFor: async botId => (await machines?.find(botId))?.id ?? null,

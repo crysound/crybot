@@ -9056,7 +9056,11 @@ async function deleteBotWithLifecycle(botId: string, revalidate: () => void = ()
           error: `stop this bot's work in channel ${activeGroup.group.name} before deleting the bot`,
         });
       }
-      if ((cloudKindOf(bot) === "instabox" || boat.boatConfigured(cfg) || vpsSshAliasForBot(cfg, bot)) && (bot.busy || hasDirectDispatch(bot.id))) {
+      const hasInstaboxMachine = instaboxWiring.hasMachine(bot.id);
+      if (hasInstaboxMachine && !instaboxConfigured(cfg)) {
+        return deletionResponse(503, { error: "Restore the InstaBox API key before deleting this bot. The bot was kept so its cloud machine can be deleted safely." });
+      }
+      if ((hasInstaboxMachine || instaboxConfigured(cfg) || boat.boatConfigured(cfg) || vpsSshAliasForBot(cfg, bot)) && (bot.busy || hasDirectDispatch(bot.id))) {
         return deletionResponse( 409, { error: "stop this bot's work before checking and deleting its cloud computer" });
       }
       const botBoatRecovery = boatCreateRecoverySnapshot().filter((entry) => entry.botId === bot.id);
@@ -9130,10 +9134,9 @@ async function deleteBotWithLifecycle(botId: string, revalidate: () => void = ()
           const instabox = instaboxMachinesFor(cfg);
           const botCloudKind = cloudKindOf(bot);
           try {
-            if (botCloudKind === "instabox") await requireInstabox(instabox).remove(bot.id);
-            else await instabox?.remove(bot.id);
+            await instabox?.remove(bot.id);
           } catch (error) {
-            if (botCloudKind === "instabox") {
+            if (hasInstaboxMachine || botCloudKind === "instabox") {
               throw Object.assign(new Error(`InstaBox failed to delete this bot's machine: ${error instanceof Error ? error.message : String(error)}. The bot was kept so deletion can be retried`), { status: 503 });
             }
             instaboxNotice = `InstaBox could not be reached, so this bot's InstaBox machine, if it is still there, was left as it is.`;

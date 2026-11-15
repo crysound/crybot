@@ -305,7 +305,6 @@ export function ComputerPanel({
   }, [bot.id, dispatch, requestedDataResult]);
   const requestedSignIn = state.signInFocus?.botId === bot.id ? state.signInFocus : undefined;
   const [signInRequest, setSignInRequest] = useState<{ url: string; site: string; nonce: number }>();
-  // A published page's Open (usePageOpener): this bot's browser shows, with the page in a new tab.
   const [pageRequest, setPageRequest] = useState<PanelPage>();
   usePanelPage(bot.id, (page) => { selectPanelView("browser"); setPageRequest(page); });
   useEffect(() => {

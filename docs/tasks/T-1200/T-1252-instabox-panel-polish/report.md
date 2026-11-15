@@ -26,7 +26,7 @@
 - `pnpm i18n:check`、`pnpm exec tsc -b --pretty false`、`pnpm exec tsc -p tsconfig.server.json`、改动文件 `pnpm exec oxlint --deny-warnings`、`git diff --check`：通过。
 - `server/verification-fixture.e2e.test.ts`：1 passed、1 failed；失败是现有 fixture 将当前 Node 目录中的 CLI 误识别为可用，与本次改动无关。
 
-仓库中缺少 `docs/verification/README.md`，因此使用现有隔离 fixture；完整命令输出见 `verification.txt`。未提交 git。
+仓库中缺少 docs/verification/README.md，因此使用现有隔离 fixture；完整命令输出见 `verification.txt`。未提交 git。
 
 ## T-1252 第 3 轮
 
@@ -77,3 +77,92 @@ zh/en 中仍含 `Boat` 的位置只有 `boatOffer.*`、`keys.boat.*`、`place.ac
 - 改了什么：`src/components/RoutineCalendarPage.tsx`、`src/components/RoutineCalendarPage.dialogs.test.ts`、本报告、`verification.txt`。全仓检索前端 lock 与后端判断，仅发现并修正 `RoutineCalendarPage.tsx:1463` 的同类误判；新增 12 项回归覆盖 lock 开关下的显式／缺省 、VPS、box、本机和旧云例行任务。
 - 为什么：按服务端默认规则将缺省后端视为 ，lock 只隐藏有效后端为 box 的云电脑运行位置；旧 `runOn === "cloud"` 处理保持不变。
 - 测试命令与结果：`pnpm exec vitest run <文件> --maxWorkers=1` 逐文件通过 9 个相关测试文件、107 项（含文件大小检查）；新增测试修复前准确复现 2 项失败。`pnpm exec tsc -b --pretty false`、`pnpm exec oxlint --deny-warnings src/components/RoutineCalendarPage.tsx src/components/RoutineCalendarPage.dialogs.test.ts`、`git diff --check` 均通过。本轮仅改前端显示，无涉及的端口 e2e；验证 README 缺失，使用隔离组件夹具。完整输出见 `verification.txt`，未提交 git。
+
+## 第 9 轮
+
+改了什么与原因（本轮文件清单）：
+
+- server/index.ts：只有已配置 时才检查其删除前占用和执行云端删除；没有密钥的普通智能体可正常删除。已配置服务的删除失败保护保留。
+- server/instabox/machines.ts、server/instabox/machines.test.ts：回归发现后台休眠与删除竞争；删除等待已有休眠结束，补充挂起休眠时的调用顺序和最终删除状态验证。
+- server/instabox/core.e2e.test.ts：补充缺密钥、未建机智能体删除成功且不访问上游的断言。
+- server/group-local-vm.e2e.test.ts、server/hosted-desktop.e2e.test.ts、server/incidents.e2e.test.ts、server/openai-boat.e2e.test.ts、server/place-view.e2e.test.ts：只给依赖 Boat 假服务或专属错误的场景显式保存 box，其余默认后端覆盖保留。
+- server/post-to-room.test.ts：等待群聊停止完成再进入后续设置；慢退出假 CLI 固定覆盖竞争，并在状态断言中显示响应原因。
+- src/components/ComputerPanel.tsx：历史回归发现文件已超出行数上限 1 行；删除复述代码的注释，保持原有限制。
+- src/components/keys/KeyRow.test.ts：确认旧密钥入口隐藏、行没有 Boat 文案，保留 OpenAI 提醒及其余覆盖。
+- docs/tasks/T-1200/T-1252-instabox-panel-polish/report.md、docs/tasks/T-1200/T-1252-instabox-panel-polish/verification.txt：记录本轮原因、命令和脱敏输出。
+
+临时文件清理记录：ci-fails.txt 已在第 9 轮删除，不列为本轮仓库改动。
+
+逐文件原因与处理：
+
+| 文件 | 原因分类与处理 |
+| --- | --- |
+| server/full-access-workflows.e2e.test.ts | 产品回归：团队删除失败使工作流失败；修服务端，原测试不改。 |
+| server/group-local-vm.e2e.test.ts | 混合：删除失败遗留 VM，导致后续清理及模式切换连锁失败；修服务端。云电脑选择、唤醒场景显式 box，Local VM 场景保留默认值。 |
+| server/headless-cli.e2e.test.ts | 产品回归：团队 prune 无法删除；修服务端，原测试不改。 |
+| server/hosted-desktop.e2e.test.ts | 后端夹具：托管桌面依赖 Boat 假服务；显式 box，保留引擎、工具及失败恢复断言。 |
+| server/incidents.e2e.test.ts | 后端夹具：两项检查 Boat 专属缺密钥错误；只修改这两项为 box，并按已隐藏 Boat 的中性提示更新文字匹配，保留缺电脑、通知和重试断言。 |
+| server/independent-threads-api.test.ts | 产品回归：删除返回 503；修服务端，原测试不改。 |
+| server/late-question-source.e2e.test.ts | 产品回归：删除提问智能体返回 503；修服务端，原测试不改。 |
+| server/live-call.e2e.test.ts | 产品回归：通话中删除智能体返回 503；修服务端，原测试不改。 |
+| server/no-cry-cards.e2e.test.ts | 产品回归：撤销新建智能体被缺密钥阻止；修服务端，原测试不改。 |
+| server/one-home.e2e.test.ts | 产品回归：删除 503 中断迁移，随后读取未迁移会话出现 messages 错误；修服务端，原测试不改。 |
+| server/openai-boat.e2e.test.ts | 后端夹具：直接、群聊及例行任务依赖 Boat；显式 box。 |
+| server/place-view.e2e.test.ts | 后端夹具：套餐额度、占用及开机错误来自 Boat；云电脑及自动固定夹具显式 box。 |
+| server/post-to-room.test.ts | 夹具时序：停止请求返回时旧群聊仍在退出，下一项修改部门被权限保护拒绝；慢退出 CLI 复现同一 409，补等待，保留权限保护。 |
+| server/session-credentials.e2e.test.ts | 产品回归：未配置云服务却阻止工作中智能体删除；修服务端，原测试不改。 |
+| server/steer-e2e.test.ts | 产品回归：删除返回 503；修服务端，原测试不改。 |
+| server/team-setup.e2e.test.ts | 产品回归：团队删除请求失败；修服务端，原测试不改。 |
+| server/thread-aware-bots.e2e.test.ts | 产品回归：清理删除失败遗留智能体，后续设置遇到 409；修服务端，原测试不改。 |
+| server/thread-page-frames.e2e.test.ts | 产品回归：导入后的源智能体无法删除；修服务端，原测试不改。 |
+| src/components/keys/KeyRow.test.ts | 界面规则变化：改为旧入口隐藏和无 Boat 文案断言，保留其他覆盖。 |
+
+测试命令与结果摘要：
+
+- 修复前逐文件运行 19 个目标：18 个直接复现失败；post-to-room 普通及单核共 7 次通过后，用慢退出假 CLI 定向复现同一 409，再补等待。
+- pnpm exec vitest run <文件> --maxWorkers=1，以及 node --test electron/desktop-prefs.node-test.mjs：最终 102 个文件、162 次文件运行通过，共 2403 次测试执行通过；30 个端到端／集成文件各连续 3 次通过。包含全部 19 个目标、server/instabox/ 全部测试及前几轮相关测试。
+- Linux 上保留 4 个平台限定跳过：group-local-vm 两项 macOS／本机桌面场景、independent-threads-api 一项 macOS 场景、session-credentials 一项非 Linux 本机桌面场景。其余无跳过；VNC 浏览器 32 项和 VPS 图像 59 项均实际通过。
+- pnpm exec tsc -p tsconfig.server.json、pnpm exec tsc -b --pretty false、全部改动 TS／TSX 文件的 pnpm exec oxlint --deny-warnings、pnpm i18n:check、git diff --check：通过。
+- 验证 README 缺失，使用隔离夹具。Chromium 使用临时直接启动器，Pillow 使用临时虚拟环境，验证隔离性测试使用只含 Node 的临时目录；完整脱敏输出见同目录 verification.txt。未提交 git。
+
+
+## 第 10 轮
+
+改了什么（第 10 轮实现已在入口基线中；当前相对 HEAD 的清单与第 11 轮一致，共 8 个文件）：
+
+- server/instabox/machine-records.ts：记录加入密钥指纹，旧两元组按指纹未知读取。
+- server/instabox/machines.ts：列表为空时按记录中的机器标识核实，只有同指纹且已删除才清记录。
+- server/instabox/wiring.ts、server/instabox/snapshot-wiring.ts：生命周期、预览和快照记录绑定当前密钥指纹。
+- server/instabox/machine-records.test.ts、server/instabox/deletion.e2e.test.ts：补不同账号、同密钥已删除、未知指纹及核实失败回归，保留第 10 轮覆盖。
+- docs/tasks/T-1200/T-1252-instabox-panel-polish/report.md、docs/tasks/T-1200/T-1252-instabox-panel-polish/verification.txt：修正当前文件清单与数量，追加命令和脱敏验证输出。
+
+临时文件清理记录：ci-fails.txt 在入口即已不存在，本轮没有删除该文件，不计入当前改动。
+
+为什么：当前配置与内存缓存不能证明云机器不存在。独立持久记录使清空密钥、重启和切换后端后仍能保留清理入口；缺密钥预检先于普通忙碌检查返回 503，不会继续删除。没有机器记录且没有密钥时仍允许删除。入口工作区干净，既有第 9 轮修复保留在基线中；不提交 git。
+
+测试命令与结果摘要：
+
+- pnpm exec vitest run <文件> --maxWorkers=1：47 个文件、118 次运行通过，包含第 9 轮全部 19 个文件、全部 16 个文件及删除相关测试；33 组服务 e2e 各连续 3 次通过。新增删除回归每轮 4 项、持久记录回归 3 项通过。
+- pnpm exec tsc -p tsconfig.server.json、pnpm exec tsc -b --pretty false、7 个改动 TS 文件的 pnpm exec oxlint --deny-warnings、git diff --check：通过。
+- Linux 下原有 4 项平台专属用例跳过：group-local-vm 的 2 项本机桌面／macOS 权限用例、independent-threads-api 的 1 项 macOS 用例、session-credentials 的 1 项本机桌面用例。VNC 浏览器用例每轮 32 项全部执行通过，无新增跳过。
+- 仓库缺少指定验证 README，全部服务端验证使用临时目录和假服务的隔离 fixture；完整脱敏输出追加在同目录 verification.txt。
+
+
+## 第 11 轮
+
+改了什么（当前相对 HEAD 的清单，按 git diff HEAD --stat 加未跟踪文件核对，共 8 个文件，无未跟踪文件）：
+
+- server/instabox/machine-records.ts：记录加入密钥指纹，旧两元组按指纹未知读取。
+- server/instabox/machines.ts：列表为空时按记录中的机器标识核实，只有同指纹且已删除才清记录。
+- server/instabox/wiring.ts、server/instabox/snapshot-wiring.ts：生命周期、预览和快照记录绑定当前密钥指纹。
+- server/instabox/machine-records.test.ts、server/instabox/deletion.e2e.test.ts：补不同账号、同密钥已删除、未知指纹及核实失败回归，保留第 10 轮覆盖。
+- docs/tasks/T-1200/T-1252-instabox-panel-polish/report.md、docs/tasks/T-1200/T-1252-instabox-panel-polish/verification.txt：修正当前文件清单与数量，追加命令和脱敏验证输出。
+
+为什么：另一个账号返回空列表或单机不存在，不能证明原账号的机器已经清理。记录仅保存 SHA-256 的前 16 位十六进制指纹；指纹不同、未知或无法确认删除时保留记录并抛错，由既有删除流程返回 503、保留智能体并提示恢复原密钥。既有改动保留，不提交 git。
+
+测试命令与结果摘要：
+
+- pnpm exec vitest run <文件> --maxWorkers=1：47 个文件、113 次最终运行全部通过；33 组服务 e2e／集成测试各连续 3 次通过，包含全部 19 个第 9 轮目标、全部 16 个文件和删除相关测试。新增删除回归每轮 7 项、持久记录回归 16 项通过。
+- pnpm exec tsc -p tsconfig.server.json、pnpm exec tsc -b --pretty false、6 个改动 TS 文件的 pnpm exec oxlint --deny-warnings、git diff --check：通过。
+- 保留原有 4 项 Linux 平台限定跳过，无新增跳过；VNC 每轮 32 项全部执行通过。初次新增 e2e 的夹具准备被环境密钥保护返回 409，调整为先保存配置密钥、再启用环境密钥后连续三轮通过。
+- 指定验证 README 和 server/bot-delete 路径在本基线不存在，删除生命周期使用现有删除相关 e2e 验证；全部服务端验证使用临时目录和假服务的隔离 fixture。完整脱敏输出见同目录 verification.txt。
