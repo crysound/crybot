@@ -85,11 +85,11 @@ export interface PlaceFacts {
   bot: string;
   /** Desktop only: signed in to a paid Cry Bot Cloud plan (the desktop bridge). */
   plan?: boolean;
-  /** Where cloud computers come from here: the plan's, the person's own Boat key, or nowhere. */
+  /** Cloud access: the plan's Boat computers, a personal InstaBox or Boat key, or none. */
   boat: "included" | "own-key" | "none";
   /** Boat desktops are unavailable in provider-locked installations. */
   providerLock?: boolean;
-  /** The cloud computer's provider: Boat, or the person's own server. */
+  /** The cloud computer's provider: InstaBox, Boat, or the person's own server (VPS). */
   backend?: "box" | "vps" | "instabox";
   engine: {
     name: string;
@@ -334,7 +334,6 @@ export function placeState(facts: PlaceFacts): { state: PlaceState; params: Plac
   if (facts.place === "vm") {
     return facts.engine.computer ? { state: "vm", params: { bot } } : { state: "vm-cannot", params: { bot, model } };
   }
-  // On the person's own server (VPS) or on Boat, one rule for both.
   const vps = facts.backend === "vps";
   if (!facts.engine.computer) return { state: "cc-cannot", params: { bot, model } };
   if (!facts.toolsAllowComputer) return { state: "cc-tools-off", params: { bot } };
