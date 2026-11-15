@@ -1,0 +1,431 @@
+BASELINE: origin/main 0c8950353d5b6a6c729afa36373ed78a18db6f68
+ENV: CRYBOT_UI_E2E=1; AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium; CRYBOT_AGENT_BROWSER_PATH=/tmp/t1238-ui-tools/tools/agent-browser/0.37.0/agent-browser
+COMMAND: pnpm exec vitest run scripts/testing/rail-profile-ui.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /tmp/t1238-origin
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+8:55:05 AM [vite] http proxy error: /api/bots?messages=0
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:221:20)
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > a switch while a turn runs: the circle says it opens once the bot finishes, the turn finishes there, and its reply is there on return
+8:55:05 AM [vite] http proxy error: /api/bots?messages=0
+Error: connect ECONNREFUSED [redacted-address]
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2083:16)
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+8:56:20 AM [vite] http proxy error: /api/bots
+Error: connect ECONNREFUSED [redacted-address]
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2083:16)
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > past eight tiles: ⋯ lists every place, a row opens its place and its right-click opens its menu
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- /tmp/t1238-origin
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- /tmp/t1238-origin
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts (13 tests | 5 failed) 405145ms
+     × This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops 13050ms
+     × a switch while a turn runs: the circle says it opens once the bot finishes, the turn finishes there, and its reply is there on return 17ms
+     × a workspace's menu: Rename, its colour, and Remove asked first; Cancel changes nothing; removing the open one goes to My Cloud first 62062ms
+     × an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud 152134ms
+     × past eight tiles: ⋯ lists every place, a row opens its place and its right-click opens its menu 60561ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+Error: SyntaxError: Failed to execute 'json' on 'Response': Unexpected end of JSON input
+    at <anonymous>:1:59
+ ❯ TabWindow.evaluate scripts/testing/one-workspace-fixture.ts:149:39
+    147|   async evaluate<T = any>(expression: string): Promise<T> {
+    148|     const value = await this.cdp.request("Runtime.evaluate", { express…
+    149|     if (value.exceptionDetails) throw new Error(value.exceptionDetails…
+       |                                       ^
+    150|     return value.result.value as T;
+    151|   }
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts:240:31
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > a switch while a turn runs: the circle says it opens once the bot finishes, the turn finishes there, and its reply is there on return
+Error: SyntaxError: Failed to execute 'json' on 'Response': Unexpected end of JSON input
+    at <anonymous>:1:59
+ ❯ TabWindow.evaluate scripts/testing/one-workspace-fixture.ts:149:39
+    147|   async evaluate<T = any>(expression: string): Promise<T> {
+    148|     const value = await this.cdp.request("Runtime.evaluate", { express…
+    149|     if (value.exceptionDetails) throw new Error(value.exceptionDetails…
+       |                                       ^
+    150|     return value.result.value as T;
+    151|   }
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts:251:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > a workspace's menu: Rename, its colour, and Remove asked first; Cancel changes nothing; removing the open one goes to My Cloud first
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > past eight tiles: ⋯ lists every place, a row opens its place and its right-click opens its menu
+Error: Fixture Chrome Page.captureScreenshot timed out
+ ❯ Timeout._onTimeout scripts/testing/one-workspace-fixture.ts:78:69
+     76|       const id = ++next;
+     77|       return new Promise((resolve, reject) => {
+     78|         const timer = setTimeout(() => { pending.delete(id); reject(ne…
+       |                                                                     ^
+     79|         pending.set(id, { resolve: (value) => { clearTimeout(timer); r…
+     80|         socket.send(JSON.stringify({ id, method, params, ...(sessionId…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+Error: timed out waiting for profile:work-3f000a on screen with Diary: {"current":"profile:default","local":true,"body":""} at [redacted-url]
+ ❯ until scripts/testing/rail-profile-ui.e2e.test.ts:39:15
+     37|       if (Date.now() > deadline) {
+     38|         await get().world.window.screenshot(join(get().shots, `failure…
+     39|         throw new Error(`timed out waiting for ${what}: ${JSON.stringi…
+       |               ^
+     40|       }
+     41|       await new Promise((resolve) => setTimeout(resolve, 100));
+ ❯ scripts/testing/rail-profile-ui.e2e.test.ts:332:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 8 passed (13)
+   Start at  08:53:42
+   Duration  407.19s (transform 1.32s, setup 748ms, import 1.13s, tests 405.14s, environment 0ms)
+
+
+EXIT: 1

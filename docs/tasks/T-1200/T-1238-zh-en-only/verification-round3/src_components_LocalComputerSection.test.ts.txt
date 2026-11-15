@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/components/LocalComputerSection.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  52 passed (52)
+   Start at  07:45:23
+   Duration  2.20s (transform 1.17s, setup 822ms, import 720ms, tests 366ms, environment 154ms)
+
+
+EXIT: 0

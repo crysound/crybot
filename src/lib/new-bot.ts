@@ -7,7 +7,7 @@ import type { BotSource } from "./setup-types";
 import { BotCreationDraft } from "./bot-creation-draft";
 import { isBotLimitRefusal, showCreatedPaused } from "./bot-limit";
 import { createConfiguredBot } from "./create-configured-bot";
-import { activeLocale, t } from "./i18n";
+import { activeLanguage, t } from "./i18n";
 
 
 export interface BotDefaultsAnswer { defaults: NewBotDefaults; modelSelection: ModelSelection; suggestedName: string }
@@ -62,11 +62,11 @@ export function setNewBotNameAsker(ask: NameAsker | null): void { nameAsker = as
  * `name`: the person's own choice, in place of a suggested one. */
 async function createNewBot(section: string | undefined, bots: readonly Bot[], team: TeamPeople | null, request: typeof api, name?: string, defaults?: BotDefaultsAnswer) {
   if (team?.admin === false) {
-    const { bot, paused } = await request<{ bot: Bot; paused?: true }>("/api/bots", { method: "POST", body: JSON.stringify({ ...(name ? { name } : {}), language: activeLocale() }) });
+    const { bot, paused } = await request<{ bot: Bot; paused?: true }>("/api/bots", { method: "POST", body: JSON.stringify({ ...(name ? { name } : {}), language: activeLanguage() }) });
     return { bot, warnings: [] as string[], startsOnAsk: false, ...(paused ? { paused } : {}) };
   }
   if (typeof window !== "undefined" && window.cry?.remoteClient?.active) {
-    const { bot, paused } = await request<{ bot: Bot; paused?: true }>("/api/bots", { method: "POST", body: JSON.stringify({ ...(name ? { name } : {}), language: activeLocale() }) });
+    const { bot, paused } = await request<{ bot: Bot; paused?: true }>("/api/bots", { method: "POST", body: JSON.stringify({ ...(name ? { name } : {}), language: activeLanguage() }) });
     return { bot, warnings: [] as string[], startsOnAsk: false, ...(paused ? { paused } : {}) };
   }
   const template = startingTemplate(defaults ?? await request<BotDefaultsAnswer>("/api/bot-defaults"), true);

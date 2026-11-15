@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/SidebarThreadRow.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  62 passed (62)
+   Start at  05:16:08
+   Duration  2.17s (transform 1.47s, setup 1.10s, import 845ms, tests 61ms, environment 0ms)
+

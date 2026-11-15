@@ -1,0 +1,20 @@
+COMMAND: node --test electron/native-text.node-test.mjs
+✔ language tags select English or Simplified Chinese, including legacy fallbacks (1.719602ms)
+✔ a code from a page is never a path (0.68037ms)
+✔ a key a language lacks reads in English and parameters fill in (0.561021ms)
+✔ shared native controls reuse the renderer's catalog in Chinese (21.245255ms)
+✔ saved language wins, empty follows the system, and deleted languages fall back (0.941501ms)
+✔ window language is followed while no preference is saved (0.62143ms)
+✔ dates and lists follow the app language (9.637557ms)
+✔ the shipped catalog has English native keys and Chinese fallback (31.476533ms)
+✔ team controls use the current language and retain only their own keys (0.87895ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 121.328096
+
+EXIT: 0

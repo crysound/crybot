@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/parked-cards.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  07:44:45
+   Duration  18.80s (transform 1.25s, setup 911ms, import 808ms, tests 16.95s, environment 0ms)
+
+
+EXIT: 0

@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/approval-request-contract.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  05:17:02
+   Duration  4.49s (transform 2.85s, setup 1.19s, import 2.51s, tests 650ms, environment 0ms)
+

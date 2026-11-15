@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/model-picker-reasoning.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:16:39
+   Duration  1.20s (transform 806ms, setup 1.00s, import 33ms, tests 17ms, environment 0ms)
+

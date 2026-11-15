@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/workspace.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  43 passed (43)
+   Start at  08:25:54
+   Duration  1.74s (transform 852ms, setup 1.03s, import 80ms, tests 487ms, environment 0ms)
+
+
+EXIT: 0

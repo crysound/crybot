@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/SettingsModal.i18n.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  05:15:39
+   Duration  7.15s (transform 5.47s, setup 1.16s, import 756ms, tests 5.06s, environment 0ms)
+

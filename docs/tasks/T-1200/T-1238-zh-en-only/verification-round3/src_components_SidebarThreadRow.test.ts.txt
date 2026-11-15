@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/components/SidebarThreadRow.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  62 passed (62)
+   Start at  07:45:43
+   Duration  1.79s (transform 1.19s, setup 889ms, import 705ms, tests 61ms, environment 0ms)
+
+
+EXIT: 0

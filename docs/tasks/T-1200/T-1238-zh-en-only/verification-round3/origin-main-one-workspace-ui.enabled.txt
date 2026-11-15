@@ -1,0 +1,14 @@
+BASELINE: origin/main 0c8950353d5b6a6c729afa36373ed78a18db6f68
+ENV: CRYBOT_UI_E2E=1; AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium; CRYBOT_AGENT_BROWSER_PATH=/tmp/t1238-ui-tools/tools/agent-browser/0.37.0/agent-browser
+COMMAND: pnpm exec vitest run scripts/testing/one-workspace-ui.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /tmp/t1238-origin
+
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  08:51:36
+   Duration  123.60s (transform 1.75s, setup 1.00s, import 1.38s, tests 121.07s, environment 0ms)
+
+
+EXIT: 0

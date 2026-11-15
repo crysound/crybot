@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/MoveToTeam.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  05:15:20
+   Duration  1.67s (transform 1.08s, setup 1.11s, import 369ms, tests 43ms, environment 0ms)
+

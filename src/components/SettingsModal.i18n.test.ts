@@ -37,7 +37,7 @@ describe("Settings in another language", () => {
     "settings.advancedMode.title"] as const;
 
   it("renders in the language the picker selected, and re-renders in the next one", async () => {
-    for (const locale of ["pt-br", "ja"] as const) {
+    for (const locale of ["zh", "en"] as const) {
       setLocale(locale);
       const html = await renderSettings();
       for (const key of NAV) {
@@ -45,7 +45,7 @@ describe("Settings in another language", () => {
         expect(html, `${locale} ${key}`).toContain(locales[locale][key]!.replaceAll("&", "&amp;"));
       }
     }
-    expect(await renderSettings()).not.toContain(locales["pt-br"]["settings.page.bots"]!);
+    expect(await renderSettings()).not.toContain(locales["zh"]["settings.page.bots"]!);
   });
 
   it("stays English when no language is picked", async () => {

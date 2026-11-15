@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/SidebarBotRead.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  05:15:58
+   Duration  6.40s (transform 3.73s, setup 1.19s, import 3.52s, tests 1.31s, environment 187ms)
+

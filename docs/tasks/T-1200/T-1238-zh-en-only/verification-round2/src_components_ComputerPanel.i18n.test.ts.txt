@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/ComputerPanel.i18n.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  05:14:44
+   Duration  1.76s (transform 1.17s, setup 1.40s, import 179ms, tests 20ms, environment 0ms)
+

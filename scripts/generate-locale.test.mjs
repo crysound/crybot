@@ -48,8 +48,9 @@ describe("locale draft validation", () => {
   });
 
   it("normalizes locale ids to stable lowercase filenames", () => {
-    expect(normalizeLocaleCode("pt-BR")).toBe("pt-br");
-    expect(normalizeLocaleCode("ZH-hant-TW")).toBe("zh-hant-tw");
+    expect(normalizeLocaleCode("ZH-hant-TW")).toBe("zh");
+    expect(normalizeLocaleCode("en-US")).toBe("en");
+    expect(() => normalizeLocaleCode("pt-BR")).toThrow(/unsupported locale code/i);
     expect(() => normalizeLocaleCode("../fr")).toThrow(/unsupported locale code/i);
   });
 
@@ -153,13 +154,8 @@ describe("locale draft validation", () => {
     expect(() => main(["en", "--accept"])).toThrow(/English is the source catalog/i);
   });
 
-  it("asks for pt-BR terms in pt-br drafts and leaves other prompts as they were", () => {
-    const portuguese = translationPrompt({ first: "One" }, "Brazilian Portuguese", "pt-br");
-    expect(portuguese).toContain("Write AI as “IA”");
-    expect(portuguese).toContain("skill as “habilidade”");
-    expect(portuguese).not.toContain("and AI unchanged");
-
-    expect(translationPrompt({ first: "One" }, "German", "de")).toContain(
+  it("uses the shared default translation terms for Chinese", () => {
+    expect(translationPrompt({ first: "One" }, "Simplified Chinese", "zh")).toContain(
       "Keep placeholders such as {name} exactly, including duplicates. Keep Cry Bot, Cry Bot Cloud, CLI, and AI unchanged.",
     );
   });
@@ -182,12 +178,12 @@ describe("every locale pack", () => {
   }
 
   it("may skip keys and repeat English, whichever language it is", () => {
-    expect(() => check({ "pt-br": { save: "Salvar" }, fr: { save: "Save", claude: "Claude" } })).not.toThrow();
+    expect(() => check({ zh: { save: "保存" } })).not.toThrow();
   });
 
   it("still fails --check for a broken placeholder in any pack", () => {
-    expect(() => check({ "pt-br": { count: "{n} bots" } })).toThrow(/pt-br\.json: count: placeholders must stay/);
-    expect(() => check({ fr: { count: "{n} bots" } })).toThrow(/fr\.json: count: placeholders must stay/);
+    expect(() => check({ zh: { count: "{n} bots" } })).toThrow(/zh\.json: count: placeholders must stay/);
+    expect(() => check({ de: { count: "{n} bots" } })).toThrow(/unsupported locale code/);
   });
 });
 
@@ -216,8 +212,8 @@ describe("locale catalogs on disk", () => {
   it("passes --check for a new key translated without a hash", () => {
     const directory = locales({
       en: { first: "One", added: "New {name}" },
-      catalogs: { de: { first: "Eins", added: "Neu {name}" } },
-      hashes: { de: { first: sourceHash("One") } },
+      catalogs: { zh: { first: "一", added: "新 {name}" } },
+      hashes: { zh: { first: sourceHash("One") } },
     });
     expect(() => quietly(() => checkCatalogs(directory))).not.toThrow();
   });
@@ -225,8 +221,8 @@ describe("locale catalogs on disk", () => {
   it("passes --check with hashes left behind by removed keys and languages", () => {
     const directory = locales({
       en: { first: "One" },
-      catalogs: { de: { first: "Eins" } },
-      hashes: { de: { first: sourceHash("One"), removed: sourceHash("Removed") }, fr: { first: sourceHash("One") } },
+      catalogs: { zh: { first: "一" } },
+      hashes: { zh: { first: sourceHash("One"), removed: sourceHash("Removed") }, fr: { first: sourceHash("One") } },
     });
     expect(() => quietly(() => checkCatalogs(directory))).not.toThrow();
   });
@@ -234,11 +230,11 @@ describe("locale catalogs on disk", () => {
   it("fails --check when the English source changed since its recorded hash", () => {
     const directory = locales({
       en: { first: "One, reworded" },
-      catalogs: { de: { first: "Eins" } },
-      hashes: { de: { first: sourceHash("One") } },
+      catalogs: { zh: { first: "一" } },
+      hashes: { zh: { first: sourceHash("One") } },
     });
     expect(() => quietly(() => checkCatalogs(directory))).toThrow(
-      "de.json: first: English source changed; refresh the translation or remove it for English fallback",
+      "zh.json: first: English source changed; refresh the translation or remove it for English fallback",
     );
   });
 
@@ -246,10 +242,10 @@ describe("locale catalogs on disk", () => {
     const staleHash = sourceHash("One");
     const directory = locales({
       en: { first: "One, reworded", second: "Two", added: "New", untranslated: "Later" },
-      catalogs: { de: { first: "Eins", second: "Zwei", added: "Neu" }, ja: { second: "二" } },
+      catalogs: { zh: { first: "一", second: "二", added: "新" } },
       hashes: {
         fr: { second: sourceHash("Two") },
-        de: { removed: sourceHash("Removed"), first: staleHash, untranslated: sourceHash("Later"), second: sourceHash("Two") },
+        zh: { removed: sourceHash("Removed"), first: staleHash, untranslated: sourceHash("Later"), second: sourceHash("Two") },
       },
     });
 
@@ -258,15 +254,14 @@ describe("locale catalogs on disk", () => {
     expect(readHashes(directory)).toEqual({
       version: 1,
       locales: {
-        de: { first: staleHash, second: sourceHash("Two"), added: sourceHash("New") },
-        ja: { second: sourceHash("Two") },
+        zh: { first: staleHash, second: sourceHash("Two"), added: sourceHash("New") },
       },
     });
-    expect(Object.keys(readHashes(directory).locales.de)).toEqual(["first", "second", "added"]);
+    expect(Object.keys(readHashes(directory).locales.zh)).toEqual(["first", "second", "added"]);
     expect(readFileSync(join(directory, "source-hashes.json"), "utf8")).toBe(
       `${JSON.stringify(readHashes(directory), null, 2)}\n`,
     );
-    expect(() => quietly(() => checkCatalogs(directory))).toThrow("de.json: first: English source changed");
+    expect(() => quietly(() => checkCatalogs(directory))).toThrow("zh.json: first: English source changed");
 
     const recorded = readFileSync(join(directory, "source-hashes.json"), "utf8");
     quietly(() => recordSourceHashes(directory));
@@ -276,7 +271,7 @@ describe("locale catalogs on disk", () => {
   it("--record-hashes refuses to record an invalid catalog", () => {
     const directory = locales({
       en: { first: "Hello {name}" },
-      catalogs: { de: { first: "Hallo" } },
+      catalogs: { zh: { first: "你好" } },
       hashes: {},
     });
     expect(() => quietly(() => recordSourceHashes(directory))).toThrow(/placeholders must stay/);
@@ -328,17 +323,17 @@ describe("--record-hashes in a git checkout", () => {
     const { directory, commit } = repository();
     commit({
       "en.json": { kept: "Kept", reworded: "Old wording" },
-      "de.json": { kept: "Behalten", reworded: "Alter Wortlaut" },
+      "zh.json": { kept: "保留", reworded: "旧措辞" },
       "source-hashes.json": { version: 1, locales: {} },
     }, "translate both keys");
     commit({ "en.json": { kept: "Kept", reworded: "New wording" } }, "reword the English only");
 
     const lines = record(directory);
 
-    expect(hashesOf(directory, "de")).toEqual({ kept: sourceHash("Kept"), reworded: sourceHash("Old wording") });
-    expect(lines).toContain("de.json: reworded: translated before its English changed; refresh it (pnpm i18n:check fails until then)");
+    expect(hashesOf(directory, "zh")).toEqual({ kept: sourceHash("Kept"), reworded: sourceHash("Old wording") });
+    expect(lines).toContain("zh.json: reworded: translated before its English changed; refresh it (pnpm i18n:check fails until then)");
     expect(check(directory)).toBe(
-      "de.json: reworded: English source changed; refresh the translation or remove it for English fallback",
+      "zh.json: reworded: English source changed; refresh the translation or remove it for English fallback",
     );
   });
 
@@ -346,19 +341,19 @@ describe("--record-hashes in a git checkout", () => {
     const { directory, commit } = repository();
     commit({
       "en.json": { reworded: "Old wording" },
-      "de.json": { reworded: "Alter Wortlaut" },
+      "zh.json": { reworded: "旧措辞" },
       "source-hashes.json": { version: 1, locales: {} },
     }, "translate");
     commit({ "en.json": { reworded: "New wording" } }, "reword the English only");
     commit({
       "en.json": { reworded: "New wording", added: "Added" },
-      "de.json": { reworded: "Alter Wortlaut", added: "Hinzugefügt" },
+      "zh.json": { reworded: "旧措辞", added: "新增" },
     }, "append a key after it");
 
     record(directory);
 
-    expect(hashesOf(directory, "de")).toEqual({ reworded: sourceHash("Old wording"), added: sourceHash("Added") });
-    expect(check(directory)).toContain("de.json: reworded: English source changed");
+    expect(hashesOf(directory, "zh")).toEqual({ reworded: sourceHash("Old wording"), added: sourceHash("Added") });
+    expect(check(directory)).toContain("zh.json: reworded: English source changed");
     expect(check(directory)).not.toContain("added");
   });
 
@@ -366,7 +361,7 @@ describe("--record-hashes in a git checkout", () => {
     const { directory: origin, commit } = repository();
     commit({
       "en.json": { reworded: "Old wording" },
-      "de.json": { reworded: "Alter Wortlaut" },
+      "zh.json": { reworded: "旧措辞" },
       "source-hashes.json": { version: 1, locales: {} },
     }, "translate");
     commit({ "en.json": { reworded: "New wording" } }, "reword the English only");
@@ -375,7 +370,7 @@ describe("--record-hashes in a git checkout", () => {
 
     const lines = record(directory);
 
-    expect(hashesOf(directory, "de")).toEqual({ reworded: sourceHash("New wording") });
-    expect(lines).toContain("de.json: hashed today's English for 1 translations because the clone's history is shallow");
+    expect(hashesOf(directory, "zh")).toEqual({ reworded: sourceHash("New wording") });
+    expect(lines).toContain("zh.json: hashed today's English for 1 translations because the clone's history is shallow");
   });
 });

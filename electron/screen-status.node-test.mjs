@@ -100,14 +100,14 @@ test("screen words follow the app language, including the device and the prompt'
   assert.equal(indicator().line, "My Cloud can use this computer, but not its apps and screen");
   text.set("pt-br");
   assert.deepEqual(indicator(), {
-    line: "My Cloud com acesso a este computador, mas não aos apps e à tela dele", title: "", screen: "O controle de tela não está rodando neste computador",
+    line: "My Cloud can use this computer, but not its apps and screen", title: "", screen: "Screen control isn't running on this computer",
   });
-  assert.equal(screenFixLabel(stopped, text.t), "Iniciar o controle de tela");
-  assert.equal(screenFixLabel({ ready: false, reason: "permissions", fix: "allow" }, text.t), "Permitir o controle de tela…");
+  assert.equal(screenFixLabel(stopped, text.t), "Start screen control");
+  assert.equal(screenFixLabel({ ready: false, reason: "permissions", fix: "allow" }, text.t), "Allow screen control…");
   assert.deepEqual(askPromptWords({ bot: "Scout", need: "terminal", reason: "terminal-off" }, { cloud: "My Cloud", device: "computer", t: text.t }), {
-    message: "Scout em My Cloud quer executar comandos neste computador",
-    detail: "A execução de comandos não está ligada neste computador.",
-    buttons: ["Ligar", "Agora não"],
+    message: "Scout on My Cloud wants to run commands on this computer",
+    detail: "Running commands isn't turned on for this computer.",
+    buttons: ["Turn on", "Not now"],
   });
 });
 

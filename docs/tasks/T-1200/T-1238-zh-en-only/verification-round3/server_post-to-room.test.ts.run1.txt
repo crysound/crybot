@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/post-to-room.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  08:27:50
+   Duration  9.27s (transform 934ms, setup 871ms, import 345ms, tests 7.93s, environment 0ms)
+
+
+EXIT: 0

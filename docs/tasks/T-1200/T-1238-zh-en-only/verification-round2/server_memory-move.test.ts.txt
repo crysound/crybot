@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/memory-move.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  05:13:07
+   Duration  1.89s (transform 1.25s, setup 1.31s, import 302ms, tests 103ms, environment 0ms)
+

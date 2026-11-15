@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { initialGreeting, initialGreetingMessage, setupChoices, setupRequestLine } from "./initial-greeting.ts";
+import { hasSetupChoices, initialGreeting, initialGreetingMessage, setupChoices, setupRequestLine } from "./initial-greeting.ts";
 
 describe("the line after Set me up", () => {
   it("is written in the app's language, by region, with English for any other", () => {
     expect(setupRequestLine("en")).toBe(
       "Great. Tell me what you'd like help with, in your own words, and I'll set myself up for it. For example: \"sort my inbox every morning\" or \"research our competitors every week\".",
     );
-    expect(setupRequestLine("es-MX")).toMatch(/^Genial\. Cuéntame/);
-    expect(setupRequestLine("pt-BR")).toMatch(/^Ótimo\. Me conte/);
+    expect(setupRequestLine("es-MX")).toBe(setupRequestLine("en"));
+    expect(setupRequestLine("zh")).toMatch(/^好的。/);
     expect(setupRequestLine("fr")).toBe(setupRequestLine("en"));
     expect(setupRequestLine(undefined)).toBe(setupRequestLine("en"));
   });
@@ -21,10 +21,10 @@ describe("the line after Set me up", () => {
 describe("a new bot's greeting", () => {
   it("names the person by their first name, in the app's language", () => {
     expect(initialGreeting("Scout", "en", "Alex Morgan")).toBe("Hi Alex, I'm Scout. What would you like me to do?");
-    expect(initialGreeting("Scout", "es-MX", "  Ana  María ")).toBe("Hola Ana, soy Scout. ¿Qué te gustaría que hiciera?");
-    expect(initialGreeting("Scout", "pt-BR", "João")).toBe("Oi João, eu sou Scout. O que você gostaria que eu fizesse?");
-    expect(initialGreeting("Scout", "zh-TW", "王小明")).toBe("嗨 王小明，我是 Scout。你想要我幫你做什麼？");
-    expect(initialGreeting("Scout", "zh-Hant")).toBe("嗨，我是 Scout。你想要我幫你做什麼？");
+    expect(initialGreeting("Scout", "es-MX", "  Ana  María ")).toBe("Hi Ana, I'm Scout. What would you like me to do?");
+    expect(initialGreeting("Scout", "zh", "João")).toBe("你好 João，我是 Scout。你想让我帮你做什么？");
+    expect(initialGreeting("Scout", "zh-TW", "王小明")).toBe("你好 王小明，我是 Scout。你想让我帮你做什么？");
+    expect(initialGreeting("Scout", "zh-Hant")).toBe("你好，我是 Scout。你想让我帮你做什么？");
   });
 
   it("names no one when the person has not given a name", () => {
@@ -42,4 +42,11 @@ it.each(["zh", "zh-cn", "zh-hans", "zh-sg", "ZH-CN"])("seeds Simplified Chinese 
   });
   expect(setupRequestLine(language)).toContain("收件箱");
   expect(setupChoices(language)).toEqual(setupChoices("zh"));
+});
+
+it.each(["es", "de", "ar"])("asks the model for setup choices in %s", (language) => {
+  expect(hasSetupChoices(language)).toBe(false);
+});
+it.each([undefined, "en", "en-US", "zh", "zh-TW"])("has fixed setup choices for %s", (language) => {
+  expect(hasSetupChoices(language)).toBe(true);
 });

@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/routes/bots-create.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  25 passed (25)
+   Start at  05:13:31
+   Duration  4.12s (transform 2.65s, setup 1.42s, import 1.93s, tests 549ms, environment 0ms)
+

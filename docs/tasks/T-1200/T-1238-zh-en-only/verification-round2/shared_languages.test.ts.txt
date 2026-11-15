@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run shared/languages.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  05:18:39
+   Duration  1.64s (transform 1.12s, setup 1.41s, import 20ms, tests 5ms, environment 0ms)
+

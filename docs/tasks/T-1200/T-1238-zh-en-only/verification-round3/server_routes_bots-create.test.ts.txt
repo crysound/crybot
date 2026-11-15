@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/routes/bots-create.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  25 passed (25)
+   Start at  08:25:14
+   Duration  2.37s (transform 1.52s, setup 815ms, import 1.19s, tests 241ms, environment 0ms)
+
+
+EXIT: 0

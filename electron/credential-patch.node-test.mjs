@@ -10,12 +10,12 @@ test("a key the provider refused crosses IPC named KeyRejected, with the server'
 });
 
 test("fixed decider refusals use native words before Electron serializes the error", () => {
-  const t = nativeText.createNativeText({ saved: "pt-br" }).t;
+  const t = nativeText.createNativeText({ saved: "zh" }).t;
   const cases = [
-    ["accountRequired", "Add your Cloudflare account ID with the token.", "Adicione o ID da conta da Cloudflare junto com o token."],
-    ["jevRejected", "Jev rejected this key. Check it at typesafe.ai and paste it again.", "O Jev recusou esta chave. Confira em typesafe.ai e cole novamente."],
-    ["workersRejected", "Cloudflare rejected this token. Check that it has Workers AI permission and belongs to this account ID.", "A Cloudflare recusou este token. Confira se ele tem permissão para Workers AI e pertence à conta com este ID."],
-    ["routerRejected", "OpenRouter rejected this key. Check it at openrouter.ai/keys and paste it again.", "O OpenRouter recusou esta chave. Confira em openrouter.ai/keys e cole novamente."],
+    ["accountRequired", "Add your Cloudflare account ID with the token.", "Add your Cloudflare account ID with the token."],
+    ["jevRejected", "Jev rejected this key. Check it at typesafe.ai and paste it again.", "Jev rejected this key. Check it at typesafe.ai and paste it again."],
+    ["workersRejected", "Cloudflare rejected this token. Check that it has Workers AI permission and belongs to this account ID.", "Cloudflare rejected this token. Check that it has Workers AI permission and belongs to this account ID."],
+    ["routerRejected", "OpenRouter rejected this key. Check it at openrouter.ai/keys and paste it again.", "OpenRouter rejected this key. Check it at openrouter.ai/keys and paste it again."],
   ];
   for (const [suffix, english, portuguese] of cases) {
     const body = { error: english, errorKey: `serverError.decider.${suffix}`, code: "decider_rejected" };

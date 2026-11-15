@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/workspace-banner.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  08:29:46
+   Duration  8.32s (transform 1.29s, setup 1.19s, import 493ms, tests 6.48s, environment 0ms)
+
+
+EXIT: 0

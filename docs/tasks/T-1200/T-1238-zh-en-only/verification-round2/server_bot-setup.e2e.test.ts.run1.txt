@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/bot-setup.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:19:21
+   Duration  5.67s (transform 1.75s, setup 1.21s, import 1.05s, tests 3.25s, environment 0ms)
+

@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/ready-bots.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  05:17:53
+   Duration  1.63s (transform 1.13s, setup 1.20s, import 246ms, tests 17ms, environment 0ms)
+

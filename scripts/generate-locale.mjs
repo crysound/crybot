@@ -2,8 +2,8 @@
 // CLI. Models never run in CI: generated copy is reviewed and committed
 // like code, while --check stays deterministic and safe for forks.
 //
-//   node scripts/generate-locale.mjs it "Italian"
-//   node scripts/generate-locale.mjs pt-br --accept
+//   node scripts/generate-locale.mjs zh "简体中文"
+//   node scripts/generate-locale.mjs zh --accept
 //   node scripts/generate-locale.mjs --check
 //   node scripts/generate-locale.mjs --record-hashes
 import { execFileSync } from "node:child_process";
@@ -20,6 +20,7 @@ import {
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { supportedLanguage } from "../shared/languages.ts";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const LOCALES_DIR = join(dirname(SCRIPT_PATH), "..", "src", "locales");
@@ -41,7 +42,9 @@ export function normalizeLocaleCode(value) {
   } catch {
     throw new Error(`unsupported locale code: ${value}`);
   }
-  return code;
+  const supported = supportedLanguage(code);
+  if (!supported || (supported === "en" && !code.startsWith("en"))) throw new Error(`unsupported locale code: ${value}`);
+  return supported;
 }
 
 export function placeholders(value) {
@@ -167,7 +170,7 @@ function readSourceHashes(directory = LOCALES_DIR) {
     throw new Error(`${SOURCE_HASH_FILE}: expected { "version": 1, "locales": { ... } }`);
   }
   for (const [code, hashes] of Object.entries(value.locales)) {
-    if (normalizeLocaleCode(code) !== code || code === "en" || !isRecord(hashes)) {
+    if (!LOCALE_CODE.test(code) || code === "en" || !isRecord(hashes)) {
       throw new Error(`${SOURCE_HASH_FILE}: invalid locale entry ${code}`);
     }
   }
@@ -399,14 +402,7 @@ export function recordSourceHashes(directory = LOCALES_DIR) {
 }
 
 const DEFAULT_TERMS = "Keep Cry Bot, Cry Bot Cloud, CLI, and AI unchanged.";
-const LOCALE_TERMS = {
-  "pt-br": [
-    "Keep Cry Bot, Cry Bot Cloud, and CLI unchanged. Write AI as “IA”, skill as “habilidade”,",
-    "sign in as “Entrar” (the noun is “login”), app as “app” (never “aplicativo”), this app's Settings as",
-    "“Configurações” (never “Ajustes”; macOS System Settings stays “Ajustes do Sistema”), and conversation or",
-    "thread as “conversa”. Put no article before a bot's name: “de {name}”, not “do {name}”.",
-  ].join(" "),
-};
+const LOCALE_TERMS = {};
 
 export function translationPrompt(source, label, code) {
   return [

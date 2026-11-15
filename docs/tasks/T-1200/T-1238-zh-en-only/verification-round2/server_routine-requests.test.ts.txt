@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/routine-requests.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  88 passed (88)
+   Start at  05:13:43
+   Duration  2.98s (transform 1.67s, setup 1.37s, import 774ms, tests 644ms, environment 0ms)
+

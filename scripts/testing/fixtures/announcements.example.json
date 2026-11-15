@@ -6,13 +6,13 @@
     {
       "id": "tip-first-api-key",
       "kind": "tip",
-      "label": { "en": "Tip", "de": "Tipp" },
-      "title": { "en": "Your bots can use any AI provider", "de": "Deine Bots können jeden KI-Anbieter nutzen" },
+      "label": { "en": "Tip", "zh": "提示" },
+      "title": { "en": "Your bots can use any AI provider", "zh": "你的机器人可以使用任何 AI 服务商" },
       "body": {
         "en": "Paste an API key once and every bot here can use it. You can change which model a bot uses at any time.",
-        "de": "Füge einmal einen API-Schlüssel ein, und jeder Bot hier kann ihn nutzen. Das Modell eines Bots kannst du jederzeit ändern."
+        "zh": "只需粘贴一次 API 密钥，这里的每个机器人都能使用它。你可以随时更改机器人的模型。"
       },
-      "primary": { "label": { "en": "Open API keys", "de": "API-Schlüssel öffnen" }, "action": { "open": "api_keys" } },
+      "primary": { "label": { "en": "Open API keys", "zh": "打开 API 密钥" }, "action": { "open": "api_keys" } },
       "ends": "2027-02-01T00:00:00Z",
       "audience": { "people": "new", "when": ["no_api_key"], "surfaces": ["desktop", "cloud"] }
     },

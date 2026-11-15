@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/cloud-team-first-look.e2e.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:21:02
+   Duration  8.97s (transform 1.45s, setup 1.31s, import 552ms, tests 6.94s, environment 0ms)
+

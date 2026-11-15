@@ -1,0 +1,34 @@
+COMMAND: node --test electron/desktop-prefs.node-test.mjs
+✔ a page on an older release keeps working with the longer list: its own ids record as before, and it never reads the new one (1.679631ms)
+✔ What's new, Boat's credit offer and the Grok Bot move are the notices a page can record; seen and analytics survive a restart; a broken record never stops the app (0.412481ms)
+✔ an announcement card's mark and the last sponsor day are kept beside the fixed notices, the newest few only (1.223141ms)
+✔ a write that fails leaves the last whole record on disk, analytics opt-out included (1.537631ms)
+✔ every page of this desktop's window reads and records the same notices; nothing else is answered (0.930381ms)
+✔ a first run's default name for the profile goes to this computer's own page only (0.17159ms)
+✔ This computer's own record counts on every page before its page loads on this build: an earlier close; the welcome's Cloud beat does not (0.33776ms)
+✔ every desktop has What's new still to show, whatever This computer's welcome record says or lacks (2.032571ms)
+✔ the analytics switch is This computer's page's to set; a server's page in the window is told only that it is off (0.408211ms)
+✔ the app language picked on any page of the window is the one every page reads, and it outlives a restart (0.85981ms)
+✔ main's own words read this desktop's record from its userData folder, and follow the system's language until a pick (0.871381ms)
+✔ main hears each new pick once, from any page of the window, to draw its menus, tray and dialogs in (1.130261ms)
+✔ a page of the window says which language it shows, and main hears it only from this desktop's window (0.32693ms)
+✔ the preload gives every page the notices without exposing analytics (3.990013ms)
+✔ the preload gives every page of the window the app language this computer keeps (2.837152ms)
+✔ production wiring: main answers this computer's page, My Cloud's own page and the active saved server's own page, and no other (3.049232ms)
+✔ the window's rail of places is shown until the person hides it, and the choice survives a restart (0.242721ms)
+✔ the talk shortcut is on with ⌃⌥Space until changed, and the choice survives a restart (0.20074ms)
+✔ each server keeps its own Quick asks chat; nothing malformed is read back (0.33298ms)
+✔ registerDesktopPrefs works on the store main hands it (0.13589ms)
+✔ the window draws its own frame until the person turns it off, and the choice survives a restart (0.14626ms)
+✔ Settings reads and changes the window's frame on any page of the window; on Windows the change waits for a restart (0.25391ms)
+✔ island preferences default on, survive restart, clamp width and require a verified app page (0.281471ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 95.402328
+
+EXIT: 0

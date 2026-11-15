@@ -8,7 +8,7 @@ vi.mock("@/state/thread-navigation", async (importOriginal) => ({
 import type { Action, Bot } from "@/state/store";
 import { setTeamChats } from "@/state/team-chats";
 import { setTeamPeople, type TeamPeople } from "@/state/team-people";
-import { setLocale } from "./i18n";
+import { activeLocale, loadLocale, setLocale } from "./i18n";
 import { botLimitReason, closeBotLimit, createdPausedBot } from "./bot-limit";
 import { makeNewBot, setNewBotNameAsker, type BotDefaultsAnswer } from "./new-bot";
 
@@ -145,6 +145,29 @@ describe("New bot", () => {
       expect(calls.map(call => call.path)).toEqual(["/api/bot-name", "/api/bots"]);
       expect(created()).toEqual({ name: "Nova", language: "zh" });
     }
+  });
+
+  it.each(["personal", "member", "paired"])("keeps the system language when %s creation falls back to English UI", async (kind) => {
+    vi.stubGlobal("navigator", { language: "de" });
+    const { loadPageLanguage } = await import("./language-preference");
+    await loadPageLanguage();
+    expect(activeLocale()).toBe("en");
+    if (kind === "member") setTeamPeople({ ...team, admin: false });
+    if (kind === "paired") vi.stubGlobal("window", { cry: { remoteClient: { active: true } } });
+    const { request, created } = server();
+    await newBot(request);
+    expect(created()).toMatchObject({ language: "de" });
+  });
+
+  it("keeps a saved language over the system language for creation", async () => {
+    vi.stubGlobal("navigator", { language: "en-US" });
+    vi.stubGlobal("localStorage", { getItem: () => "de" });
+    const { startupLocaleTag } = await import("./language-preference");
+    await loadLocale(startupLocaleTag());
+    expect(activeLocale()).toBe("en");
+    const { request, created } = server();
+    await newBot(request);
+    expect(created()).toMatchObject({ language: "de" });
   });
 
   it("names the bot so it never repeats one already here", async () => {

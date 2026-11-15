@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/components/app/app-blocked.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  07:45:47
+   Duration  1.26s (transform 818ms, setup 882ms, import 240ms, tests 10ms, environment 0ms)
+
+
+EXIT: 0

@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/lib/cron-text.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  07:46:21
+   Duration  1.21s (transform 768ms, setup 923ms, import 127ms, tests 22ms, environment 0ms)
+
+
+EXIT: 0

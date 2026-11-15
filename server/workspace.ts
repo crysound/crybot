@@ -8,6 +8,8 @@ import { parseTopicHeader, readTopicHead, renderTopicIndex } from "./memory-topi
 import { indexMemoryFile, indexedMemoryFiles, recallMemory, removeMemoryFile, type MemoryHit, type SearchMode } from "./message-db.ts";
 import { redactSecretsInText } from "./redact.ts";
 
+import { supportedLanguage } from "../shared/languages.ts";
+
 import { DATA_DIR } from "./config.ts";
 
 export const WORKSPACES_DIR = join(DATA_DIR, "workspaces");
@@ -40,6 +42,14 @@ Durable notes this bot keeps between tasks. The first ${MEMORY_MAX_LINES} lines
 load at the start of every session — keep this file short and curated.
 Longer notes belong in memory/<topic>.md files, read on demand.
 `,
+  zh: `# 记忆
+
+这个智能体会在任务之间保留长期笔记。每次会话开始时会加载前 ${MEMORY_MAX_LINES} 行，请保持文件简短、整理好。
+较长的笔记放在 memory/<主题>.md 文件中，需要时再读取。
+`,
+};
+
+const LEGACY_MEMORY_SEEDS: Record<string, string> = {
   "pt-br": `# Memória
 
 Notas permanentes que este bot mantém entre tarefas. As primeiras ${MEMORY_MAX_LINES} linhas
@@ -66,19 +76,14 @@ Las notas más largas van en memory/<tema>.md y se leen cuando es necesario.
 `,
 };
 
-const MEMORY_SEED_VALUES = new Set(Object.values(MEMORY_SEEDS));
+const MEMORY_SEED_VALUES = new Set([...Object.values(MEMORY_SEEDS), ...Object.values(LEGACY_MEMORY_SEEDS)]);
 
 export function isMemorySeed(text: string): boolean {
   return MEMORY_SEED_VALUES.has(text);
 }
 
 function memorySeedFor(language?: string): string {
-  const normalized = (language?.trim() || Intl.DateTimeFormat().resolvedOptions().locale).toLowerCase().replaceAll("_", "-");
-  if (normalized === "pt" || normalized.startsWith("pt-")) return MEMORY_SEEDS["pt-br"];
-  if (normalized === "es" || normalized.startsWith("es-")) return MEMORY_SEEDS.es;
-  if (normalized === "ko" || normalized.startsWith("ko-")) return MEMORY_SEEDS.ko;
-  if (/^zh-(?:tw|hant|hk|mo)(?:-|$)/.test(normalized)) return MEMORY_SEEDS["zh-tw"];
-  return MEMORY_SEEDS[normalized] ?? MEMORY_SEEDS.en;
+  return MEMORY_SEEDS[supportedLanguage(language?.trim() || Intl.DateTimeFormat().resolvedOptions().locale) ?? "en"];
 }
 
 export function ensureWorkspace(botId: string, language?: string): string {

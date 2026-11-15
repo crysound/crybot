@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/routes/setup-request.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  05:13:35
+   Duration  3.88s (transform 2.64s, setup 1.39s, import 1.97s, tests 352ms, environment 0ms)
+

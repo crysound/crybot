@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/components/AppNotices.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  63 passed (63)
+   Start at  07:45:06
+   Duration  2.76s (transform 1.72s, setup 881ms, import 1.36s, tests 363ms, environment 0ms)
+
+
+EXIT: 0

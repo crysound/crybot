@@ -3,7 +3,7 @@
 // each other bot that could have used it, in words of the server's own, not a model's. Disposable homes; no network.
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { delimiter, dirname } from "node:path";
+import { delimiter } from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { launchCloudSendFixture, type CloudSendFixture } from "../scripts/testing/cloud-send-fixture.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
@@ -14,7 +14,7 @@ const phase = () => (existsSync(fx.journalFile) ? (JSON.parse(readFileSync(fx.jo
 
 beforeAll(async () => {
   // A PATH with no uvx: this Cloud lacks it, as the image did before it carried uv.
-  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-stayed-${randomBytes(8).toString("hex")}`, env: { CRYBOT_ENVIRONMENT_LABEL: "Mac mini", PATH: [dirname(process.execPath), "/usr/bin", "/bin"].join(delimiter) } });
+  fx = await launchCloudSendFixture({ onePasswordToken: `ops_fake-stayed-${randomBytes(8).toString("hex")}`, env: { CRYBOT_ENVIRONMENT_LABEL: "Mac mini", PATH: ["/usr/bin", "/bin"].join(delimiter) } });
 }, hostTimeout(120_000));
 afterAll(async () => { await fx?.close(); });
 

@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/Sidebar.i18n.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  05:15:47
+   Duration  4.60s (transform 3.48s, setup 1.05s, import 3.39s, tests 34ms, environment 0ms)
+

@@ -912,9 +912,11 @@ describe("cards from the announcements file", () => {
   });
 
   it("follows the person's language, falling back to English", async () => {
-    feed = [card("translated", { title: { en: "English title", de: "Deutscher Titel" } })];
-    setLocale("de");
-    expect(await launch()).toContain("Deutscher Titel");
+    feed = [card("translated", { title: { en: "English title", zh: "中文标题", de: "Deutscher Titel", es: "Título" } })];
+    setLocale("zh");
+    expect(await launch()).toContain("中文标题");
+    setLocale("en");
+    expect(await launch()).toContain("English title");
   });
 
   it("skips a card for someone else and a card it cannot read, and shows nothing on a branded build", async () => {

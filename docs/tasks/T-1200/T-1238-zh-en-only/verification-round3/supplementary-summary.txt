@@ -1,0 +1,29 @@
+COMMAND for each file: pnpm exec vitest run FILE --maxWorkers=1
+server_host_brief.test.ts.txt
+server_host_first-hour.test.ts.txt
+server_initial-greeting.test.ts.txt
+server_language.test.ts.txt
+server_routes_bots-create.test.ts.txt
+server_routes_setup-request.test.ts.txt
+server_saved-steps_computer-client.test.ts.txt
+server_saved-steps_dispatch.test.ts.txt
+server_saved-steps_driver-wire.test.ts.txt
+server_saved-steps_journal-tap.test.ts.txt
+server_saved-steps_journal.test.ts.txt
+server_saved-steps_key.test.ts.txt
+server_saved-steps_replay.test.ts.txt
+server_saved-steps_resolve.test.ts.txt
+server_saved-steps_rules.test.ts.txt
+server_saved-steps_saved-steps.test.ts.txt
+server_saved-steps_screen-words.test.ts.txt
+server_saved-steps_store.test.ts.txt
+server_setup-request.test.ts.txt
+server_setup-suggestions.test.ts.txt
+server_workspace.test.ts.txt
+shared_announcements.test.ts.txt
+shared_languages.test.ts.txt
+src_lib_create-configured-bot.test.ts.txt
+src_lib_language-preference.test.ts.txt
+src_lib_new-bot.test.ts.txt
+src_testing_preview-locale.test.ts.txt
+Files passed: 27; tests passed: 838; failed: 0

@@ -5,7 +5,7 @@ const LOCALES_DIR = path.join(__dirname, "..", "src", "locales");
 const LOCALE_FILE = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*\.json$/;
 const SOURCE_HASHES = "source-hashes.json";
 const ENGLISH = "en";
-const LOCALE_ALIASES = Object.freeze({ pt: "pt-br", "zh-hant": "zh-tw", "zh-hk": "zh-tw", "zh-mo": "zh-tw" });
+const LOCALE_ALIASES = Object.freeze({});
 const SHARED_KEYS = new Set(["place.local", "rail.thisComputer", "rail.thisMac", "rail.thisPc", "rail.remove", "cloudHome.tryAgain", "computer.windows.start", "mcp.turnOn", "cloudSetup.myCloud", "computer.badge.local", "room.aBot"]);
 const kept = (key) => key.startsWith("native.") || key.startsWith("teamMove.") || SHARED_KEYS.has(key);
 
@@ -59,7 +59,8 @@ function createNativeText({ dir = LOCALES_DIR, saved = null, system = () => "", 
   const systemTag = () => {
     try { return String(system() ?? ""); } catch { return ""; }
   };
-  let chosen = resolveLanguage(saved, available()), shown = null;
+  const savedLanguage = (value) => typeof value === "string" && value.trim() ? (resolveLanguage(value, available()) ?? ENGLISH) : null;
+  let chosen = savedLanguage(saved), shown = null;
   // With nothing picked, the language the window's page shows (follow), so menus never read in another one beside it.
   const language = () => chosen ?? shown ?? resolveLanguage(systemTag(), available()) ?? ENGLISH;
   const intlTag = () => {
@@ -77,7 +78,7 @@ function createNativeText({ dir = LOCALES_DIR, saved = null, system = () => "", 
     },
     set(code) {
       const before = language();
-      chosen = resolveLanguage(code, available());
+      chosen = savedLanguage(code);
       return language() !== before;
     },
     /** The window's page shows `code`: main's words follow it while nothing is picked. True when they change. */

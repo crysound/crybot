@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/transcript-derivations.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  05:18:09
+   Duration  2.06s (transform 1.40s, setup 1.09s, import 734ms, tests 72ms, environment 0ms)
+

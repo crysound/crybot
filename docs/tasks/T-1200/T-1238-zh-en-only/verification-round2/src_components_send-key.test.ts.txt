@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/send-key.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  30 passed (30)
+   Start at  05:16:43
+   Duration  6.68s (transform 4.37s, setup 1.07s, import 4.60s, tests 714ms, environment 157ms)
+

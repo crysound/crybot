@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/routine-run-card.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  05:13:47
+   Duration  1.66s (transform 1.16s, setup 1.31s, import 188ms, tests 4ms, environment 0ms)
+

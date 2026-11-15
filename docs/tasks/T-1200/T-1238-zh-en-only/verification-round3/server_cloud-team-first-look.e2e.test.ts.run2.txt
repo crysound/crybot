@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/cloud-team-first-look.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  08:27:09
+   Duration  7.01s (transform 954ms, setup 911ms, import 337ms, tests 5.62s, environment 0ms)
+
+
+EXIT: 0

@@ -1,0 +1,2 @@
+COMMAND: git diff --exit-code origin/main -- scripts/testing/bot-tools-ui.e2e.test.ts scripts/testing/one-workspace-ui.e2e.test.ts scripts/testing/rail-profile-ui.e2e.test.ts scripts/testing/team-conversation-share-ui.e2e.test.ts scripts/testing/team-private-default-ui.e2e.test.ts
+EXIT: 0

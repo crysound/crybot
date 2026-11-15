@@ -1,0 +1,13 @@
+ENV: CRYBOT_UI_E2E=1; AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium; CRYBOT_AGENT_BROWSER_PATH=/tmp/t1238-ui-tools/tools/agent-browser/0.37.0/agent-browser
+COMMAND: pnpm exec vitest run scripts/testing/team-side-switch-ui.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  08:49:09
+   Duration  66.07s (transform 1.50s, setup 857ms, import 1.14s, tests 63.90s, environment 0ms)
+
+
+EXIT: 0

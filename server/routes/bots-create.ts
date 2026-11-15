@@ -1,5 +1,5 @@
 import { BOT_PROFILE_LIMITS } from "../../shared/bot-profile.ts";
-import { supportedLanguage } from "../../shared/languages.ts";
+import { requestedLanguageTag } from "../language.ts";
 import { pickBotName } from "../names.ts";
 import type { WireBot } from "../../shared/wire.ts";
 import { freshLook } from "../bot-look.ts";
@@ -101,7 +101,7 @@ export function createBotCreateRoutes(deps: BotCreateRouteDeps): RouteHandler {
         return json(res, 400, { error: "bot must be a JSON object" });
       }
       const { language: requestedLanguage, ...creation } = body;
-      const language = supportedLanguage(requestedLanguage) ?? supportedLanguage(deps.personLanguage?.(auth))
+      const language = requestedLanguageTag(requestedLanguage) ?? requestedLanguageTag(deps.personLanguage?.(auth))
         ?? cfg.language ?? deps.team?.language ?? Intl.DateTimeFormat().resolvedOptions().locale;
       body = creation;
       if (req.headers["x-crybot-companion"] === "1") {

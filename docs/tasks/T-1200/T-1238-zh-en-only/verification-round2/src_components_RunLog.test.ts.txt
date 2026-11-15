@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/RunLog.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  05:15:33
+   Duration  2.32s (transform 1.61s, setup 1.19s, import 912ms, tests 57ms, environment 0ms)
+

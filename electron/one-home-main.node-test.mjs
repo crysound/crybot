@@ -100,7 +100,7 @@ test("the switch's refusal follows the app's language", () => {
     keep: { read: () => null, write: () => {} }, t,
   });
   try {
-    assert.throws(() => handlers.get("one-home:keep-set")({ page: "local" }, true), { message: "Este computador não tem um Cloud para receber seus bots." });
+    assert.throws(() => handlers.get("one-home:keep-set")({ page: "local" }, true), { message: "This computer has no My Cloud to keep its bots from." });
   } finally { main.close(); }
 });
 

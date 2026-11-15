@@ -138,8 +138,7 @@ describe("work from outside stays with that work", () => {
 describe("confinement explanations follow the conversation language without choosing branches by translated text", () => {
   it.each([
     ["en", "Work from outside came into this conversation", "This bot's AI can't run it that way.", "This conversation is from before the Cloud was only yours"],
-    ["pt-br", "Esta conversa recebeu trabalho de fora", "A IA deste bot não pode trabalhar dessa forma.", "Esta conversa é de antes de o Cloud ser só seu"],
-    ["de", "Arbeit von außerhalb ist in diese Unterhaltung gelangt", "Die KI dieses Bots kann so nicht arbeiten.", "Diese Unterhaltung stammt aus der Zeit, bevor die Cloud nur dir gehörte"],
+    ["zh", "这段对话收到了外部任务", "这个智能体的 AI 无法以这种方式运行。", "这段对话创建于云端仅限你自己使用之前"],
   ])("keeps both refusal branches in %s", (language, outside, prefix, old) => {
     const w = world({ language: () => language });
     w.lineage.mark("hook-run");

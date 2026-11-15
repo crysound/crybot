@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/lib/verify-steps.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  78 passed (78)
+   Start at  07:46:41
+   Duration  1.19s (transform 781ms, setup 977ms, import 45ms, tests 28ms, environment 0ms)
+
+
+EXIT: 0

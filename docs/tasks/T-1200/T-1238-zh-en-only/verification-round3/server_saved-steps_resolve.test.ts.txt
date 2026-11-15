@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/saved-steps/resolve.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  82 passed (82)
+   Start at  08:25:36
+   Duration  1.34s (transform 701ms, setup 849ms, import 64ms, tests 272ms, environment 0ms)
+
+
+EXIT: 0

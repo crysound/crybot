@@ -22,7 +22,7 @@ test("main initializes native text from the saved language and follows later cho
     app: { isReady: () => true, getLocale: () => "en" },
     createDesktopText: app => createDesktopText(app, prefs),
   });
-  assert.equal(text.t("native.menu.server"), "Servidor");
+  assert.equal(text.t("native.menu.server"), "Server");
   text.set("en");
   assert.equal(text.t("native.menu.server"), "Server");
 });
@@ -54,9 +54,9 @@ test("main's activity window follows the shown Chinese language without a saved 
   assert.match(windows[0].html, /<html lang="en-US">/);
   assert.equal(nativeText.follow("zh-Hant"), true);
   activity.show();
-  assert.match(windows[0].html, /<html lang="zh-TW">/);
-  assert.match(windows[0].html, /<h1>這台電腦上的活動<\/h1>/);
-  assert.match(windows[0].html, /讀取檔案 · 已拒絕/);
+  assert.match(windows[0].html, /<html lang="zh">/);
+  assert.match(windows[0].html, /<h1>这台电脑上的活动<\/h1>/);
+  assert.match(windows[0].html, /读取了一个文件 · 已拒绝/);
   assert.equal(prefs.language(), null);
   assert.equal(windows.length, 1);
 });
@@ -91,8 +91,8 @@ test("a new language redraws main's menu, both trays, the window title and the b
 
   text.set("pt-br");
   context.applyNativeLanguage();
-  assert.deepEqual(calls, [["menu", "Servidor"], ["title", "Cry Bot — Hospedado: Office (office.example.test)"], ["badge", "Nenhuma conversa não lida"]]);
-  assert.deepEqual(said(trays[0]), ["Abrir o Cry Bot", "Sair do Cry Bot"]);
-  assert.deepEqual(said(trays[1]), ["My Cloud com acesso a este PC", "Pausar", "Permitir que os Clouds executem comandos neste PC", "Ver atividade"]);
-  assert.equal(trays[1].tip, "Cry Bot: My Cloud com acesso a este PC");
+  assert.deepEqual(calls, [["menu", "Server"], ["title", "Cry Bot — Hosted: Office (office.example.test)"], ["badge", "No unread conversations"]]);
+  assert.deepEqual(said(trays[0]), ["Open Cry Bot", "Quit Cry Bot"]);
+  assert.deepEqual(said(trays[1]), ["My Cloud can use this PC", "Pause", "Let Clouds run commands on this PC", "See activity"]);
+  assert.equal(trays[1].tip, "Cry Bot: My Cloud can use this PC");
 });

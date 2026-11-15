@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/lib/send-key.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  07:46:35
+   Duration  1.19s (transform 791ms, setup 983ms, import 44ms, tests 28ms, environment 0ms)
+
+
+EXIT: 0

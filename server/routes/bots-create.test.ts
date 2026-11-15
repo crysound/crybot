@@ -82,16 +82,16 @@ it.each(["zh", "zh-cn", "zh-hans", "zh-sg"])("creates a Simplified Chinese greet
   expect(bot.description).toBe("");
   expect(bot.soul ?? "").toBe("");
   await vi.waitFor(() => expect(prompts).toHaveLength(1));
-  expect(prompts[0]).toContain("Write every option in Simplified Chinese");
+  expect(prompts[0]).toContain(language === "zh" || language === "zh-hans" ? "Write every option in Simplified Chinese" : "Write every option in Chinese");
   expect(deps.cfg.language).toBe("en");
 });
 
 it("lets explicit English override both the person's recorded language and Chinese configuration", async () => {
   people.heard(THIS_COMPUTER, "zh");
-  const bot = await create({ language: "en" });
+  const bot = await create({ language: "en-US" });
   expect(bot.messages[0]).toMatchObject({ text: initialGreeting(bot.name, "en"), setupChoices: setupChoices("en") });
   await vi.waitFor(() => expect(prompts).toHaveLength(1));
-  expect(prompts[0]).toContain("Write every option in English");
+  expect(prompts[0]).toContain("Write every option in American English");
   expect(deps.cfg.language).toBe("zh");
 });
 
@@ -120,7 +120,7 @@ it("uses only this person's saved language before configuration", async () => {
   expect(prompts[1]).toContain("Write every option in English");
 });
 
-it.each(["xx", "en<script>", "constructor", "__proto__", "en-US", "", 12, null, {}, ["zh"]])("ignores unsupported language %j", async (language) => {
+it.each(["xx", "en<script>", "constructor", "__proto__", "", 12, null, {}, ["zh"]])("ignores unsupported language %j", async (language) => {
   const bot = await create({ language });
   expect(bot.messages[0]).toMatchObject({ text: initialGreeting(bot.name, "zh"), setupChoices: setupChoices("zh") });
 });
@@ -184,4 +184,12 @@ it("ignores names of bots the caller cannot see while excluding visible and curr
   } finally {
     random.mockRestore();
   }
+});
+
+it.each([["de", "German"], ["ar", "Arabic"]])("keeps %s for model-written setup choices while fixed text falls back to English", async (language, name) => {
+  const bot = await create({ language });
+  expect(bot.messages[0].text).toBe(initialGreeting(bot.name, "en"));
+  await vi.waitFor(() => expect(prompts).toHaveLength(1));
+  expect(prompts[0]).toContain(`Write every option in ${name}`);
+  expect(prompts[0]).not.toContain("Write every option in English");
 });

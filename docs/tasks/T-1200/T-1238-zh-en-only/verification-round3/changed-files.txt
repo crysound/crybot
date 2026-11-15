@@ -1,0 +1,13 @@
+COMMAND: git status --short
+ M docs/tasks/T-1200/T-1238-zh-en-only/report.md
+ M server/routes/bots-create.test.ts
+ M src/components/AppSettingsRows.tsx
+ M src/lib/create-configured-bot.ts
+ M src/lib/i18n.test.ts
+ M src/lib/i18n.ts
+ M src/lib/language-preference.test.ts
+ M src/lib/language-preference.ts
+ M src/lib/new-bot.test.ts
+ M src/lib/new-bot.ts
+ M src/lib/presence-client.test.ts
+?? docs/tasks/T-1200/T-1238-zh-en-only/verification-round3/

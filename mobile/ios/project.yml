@@ -1,7 +1,7 @@
 name: CryBot
 options:
   developmentLanguage: en
-  knownRegions: [en, de, es, fr, hi, it, ja, ko, pl, pt-BR, ru, tr, uk, vi, zh-Hans, zh-Hant]
+  knownRegions: [en, zh-Hans]
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -82,7 +82,7 @@ targets:
       path: CryBot/Info.plist
       properties:
         CFBundleDisplayName: Cry Bot
-        CFBundleLocalizations: [en, de, es, fr, hi, it, ja, ko, pl, pt-BR, ru, tr, uk, vi, zh-Hans, zh-Hant]
+        CFBundleLocalizations: [en, zh-Hans]
         CFBundleExecutable: $(EXECUTABLE_NAME)
         CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
         CFBundleName: $(PRODUCT_NAME)

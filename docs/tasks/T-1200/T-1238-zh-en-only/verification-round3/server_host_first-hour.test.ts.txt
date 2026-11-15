@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/host/first-hour.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  08:25:08
+   Duration  1.64s (transform 1.05s, setup 791ms, import 567ms, tests 164ms, environment 0ms)
+
+
+EXIT: 0

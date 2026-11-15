@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/team-setup.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  08:28:54
+   Duration  5.61s (transform 1.45s, setup 1.05s, import 844ms, tests 3.55s, environment 0ms)
+
+
+EXIT: 0

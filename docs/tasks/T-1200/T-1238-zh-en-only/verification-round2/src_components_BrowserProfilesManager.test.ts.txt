@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/BrowserProfilesManager.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  05:14:26
+   Duration  2.00s (transform 1.31s, setup 1.38s, import 316ms, tests 46ms, environment 0ms)
+

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api, useStore, type ConfigStatus } from "@/state/store";
 import { builtInBrowserEnabled, showToolCallsEnabled, skillAuthoringEnabled } from "@/lib/feature-flags";
 import { localeChoices } from "@/locales";
-import { activeLocale, activePackComplete, t } from "@/lib/i18n";
+import { knownLocales, resolveLocale, activeLocale, activePackComplete, t } from "@/lib/i18n";
 import { withTourReset } from "@/lib/guided-tour";
 import { completionPatch } from "@/lib/onboarding";
 import { updaterMessage, useUpdaterState } from "@/lib/updater";
@@ -215,7 +215,7 @@ export function LanguageRow({ simple = false }: { simple?: boolean }) {
       subtitle={activePackComplete() ? t("settings.language.subtitleComplete") : simple ? activeLocale() === "en" ? undefined : t("settings.simple.language.partial") : t("settings.language.subtitle")}
     >
       <Select size="sm" variant={simple ? "ghost" : "field"} className={simple ? undefined : "w-full max-w-[240px]"}
-        value={current}
+        value={current ? resolveLocale(current, knownLocales()) : ""}
         aria-label={t("settings.language.aria")}
         onChange={(event) => setLanguageChoice(event.target.value)}
       >

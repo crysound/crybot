@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/SidebarThreadRow.shared-chat.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  05:16:05
+   Duration  2.33s (transform 1.49s, setup 1.10s, import 838ms, tests 66ms, environment 164ms)
+

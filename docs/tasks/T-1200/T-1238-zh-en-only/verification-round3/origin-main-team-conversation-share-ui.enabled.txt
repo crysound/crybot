@@ -1,0 +1,228 @@
+BASELINE: origin/main 0c8950353d5b6a6c729afa36373ed78a18db6f68
+ENV: CRYBOT_UI_E2E=1; AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium; CRYBOT_AGENT_BROWSER_PATH=/tmp/t1238-ui-tools/tools/agent-browser/0.37.0/agent-browser
+COMMAND: pnpm exec vitest run scripts/testing/team-conversation-share-ui.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 /tmp/t1238-origin
+
+stderr | scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Marta finds it in her inbox, opens it, and the bot carries on with the whole conversation
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- /tmp/t1238-origin
+- /tmp/t1238-origin/node_modules
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Marta finds it in her inbox, opens it, and the bot carries on with the whole conversation
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > and back: Rui's inbox holds one line for it, he answers there, and it waits in Marta's inbox in turn
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- /tmp/t1238-origin
+- /tmp/t1238-origin/node_modules
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > and back: Rui's inbox holds one line for it, he answers there, and it waits in Marta's inbox in turn
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Marta at phone width: the line waiting on her, and the conversation's label
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- /tmp/t1238-origin
+- /tmp/t1238-origin/node_modules
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Marta at phone width: the line waiting on her, and the conversation's label
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Ana's new conversation with Scout reads the decision Rui saved
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- /tmp/t1238-origin
+- /tmp/t1238-origin/node_modules
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Ana's new conversation with Scout reads the decision Rui saved
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+ ❯ scripts/testing/team-conversation-share-ui.e2e.test.ts (6 tests | 4 failed) 189471ms
+     × Marta finds it in her inbox, opens it, and the bot carries on with the whole conversation 40071ms
+     × and back: Rui's inbox holds one line for it, he answers there, and it waits in Marta's inbox in turn 38919ms
+     × Marta at phone width: the line waiting on her, and the conversation's label 38884ms
+     × Ana's new conversation with Scout reads the decision Rui saved 37876ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Marta finds it in her inbox, opens it, and the bot carries on with the whole conversation
+AssertionError: expected false to be true // Object 相等 equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ scripts/testing/team-conversation-share-ui.e2e.test.ts:179:92
+    177|     rmSync(join(team.home, "dump.json"), { force: true });
+    178|     await marta.say(MARTA_LINE);
+    179|     await expect.poll(() => existsSync(join(team.home, "dump.json")), …
+       |                                                                                            ^
+    180|     expect(JSON.stringify(dump().prompt), "the bot has the conversatio…
+    181|     expect(JSON.stringify(dump()), "and none of Rui's other private ch…
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ scripts/testing/team-conversation-share-ui.e2e.test.ts:179:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > and back: Rui's inbox holds one line for it, he answers there, and it waits in Marta's inbox in turn
+AssertionError: expected 'Just me\nTeam\n\nJust me is private, …' to contain 'answered Marta'
+
+- Expected
++ Received
+
+- answered Marta
++ Just me
++ Team
++
++ Just me is private, even from admins. Team is shared.
++
++ Inbox
++ 1
++ Seedling
++ Cry Bot
++ R
++ M
++ A
++ O
++ Scout
++ Something went wrong. Try again.
++
++ R
++ Connect apps
++ Scout
++ Salary
++ Private · only you
++ claude-sonnet-5
++ Today 9:00 AM
++ Rui's own salary questions
++ 9:00 AM
++ NEW
++ Something went wrong. Try again.
++ Details
++ Retry
++
++ Private · only you
++
++
++ Inbox
++ 1
++ M
++ Marta
++ 1 min ago
++ Marta wrote in “Kumquat launch: the supplier is Ortega, call be…”. Open it to answer.
++ Active Threads
++ New thread
++ Cry Bot · Unread
+
+ ❯ scripts/testing/team-conversation-share-ui.e2e.test.ts:191:55
+    189|     const rui = await openAs("rui", DESKTOP);
+    190|     await rui.openInbox();
+    191|     await expect.poll(rui.words, { timeout: 30_000 }).toContain("answe…
+       |                                                       ^
+    192|     await rui.shot("05-rui-inbox-back-desktop");
+    193|     await rui.openInboxLine("answered Marta");
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ scripts/testing/team-conversation-share-ui.e2e.test.ts:191:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Marta at phone width: the line waiting on her, and the conversation's label
+AssertionError: expected 'M\nM\nR\nA\nO\nSeedling\nChief of Sta…' to contain 'answered Rui'
+
+- Expected
++ Received
+
+- answered Rui
++ M
++ M
++ R
++ A
++ O
++ Seedling
++ Chief of Staff
++
++ M
++ Scout
++ Untitled chat
++ Private · only you
++
++ Your chats in Acme are private. Only you can see them: not other members, not Acme's admins.
++
++ Scout
++ Send a message to start the conversation.
++
++ Private · only you
++
++
++ Inbox
++
++ Nothing for you yet.
++
++ When a bot needs your OK, has a question or finishes something, it shows up here.
+
+ ❯ scripts/testing/team-conversation-share-ui.e2e.test.ts:212:57
+    210|     const marta = await openAs("marta", PHONE);
+    211|     await marta.openInbox();
+    212|     await expect.poll(marta.words, { timeout: 30_000 }).toContain("ans…
+       |                                                         ^
+    213|     await marta.shot("07-marta-inbox-phone");
+    214|     await marta.openInboxLine("answered Rui");
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ scripts/testing/team-conversation-share-ui.e2e.test.ts:212:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Ana's new conversation with Scout reads the decision Rui saved
+AssertionError: expected false to be true // Object 相等 equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ scripts/testing/team-conversation-share-ui.e2e.test.ts:228:92
+    226|     rmSync(join(team.home, "dump.json"), { force: true });
+    227|     await ana.say("When do we ship the Kumquat launch?");
+    228|     await expect.poll(() => existsSync(join(team.home, "dump.json")), …
+       |                                                                                            ^
+    229|     expect(`${JSON.stringify(dump().prompt)}\n${dump().systemPrompt ??…
+    230|     expect(await ana.words(), "nothing of the handoff on her screen").…
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ scripts/testing/team-conversation-share-ui.e2e.test.ts:228:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 2 passed (6)
+   Start at  09:00:29
+   Duration  191.51s (transform 1.42s, setup 898ms, import 1.00s, tests 189.47s, environment 0ms)
+
+
+EXIT: 1

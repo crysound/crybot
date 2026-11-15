@@ -1,0 +1,58 @@
+ENV: CRYBOT_UI_E2E=1; AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium; CRYBOT_AGENT_BROWSER_PATH=/tmp/t1238-ui-tools/tools/agent-browser/0.37.0/agent-browser
+COMMAND: pnpm exec vitest run scripts/testing/one-workspace-ui.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+stderr | scripts/testing/one-workspace-ui.e2e.test.ts > the desktop window once My Cloud is home > a lapsed cookie on the team's page signs in again through the team route, and the team's Cloud being unreachable shows the screen named Acme while My Cloud keeps working
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/one-workspace-ui.e2e.test.ts > the desktop window once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- [worktree]
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/one-workspace-ui.e2e.test.ts > the desktop window once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+stderr | scripts/testing/one-workspace-ui.e2e.test.ts > the desktop window once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+- [worktree]
+- /opt/crybot-deps/node_modules/.pnpm/[redacted-email]@[redacted-email]@[redacted-email]@[redacted-email]/node_modules/vite/dist/client
+
+Refer to docs [redacted-url] for configurations and more details.
+
+
+stderr | scripts/testing/one-workspace-ui.e2e.test.ts > the desktop window once My Cloud is home
+The request id "/opt/crybot-deps/node_modules/.pnpm/@[redacted-email]/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2" is outside of Vite serving allow list.
+
+ ❯ scripts/testing/one-workspace-ui.e2e.test.ts (16 tests | 1 failed) 148726ms
+     × a lapsed cookie on the team's page signs in again through the team route, and the team's Cloud being unreachable shows the screen named Acme while My Cloud keeps working 30145ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/testing/one-workspace-ui.e2e.test.ts > the desktop window once My Cloud is home > a lapsed cookie on the team's page signs in again through the team route, and the team's Cloud being unreachable shows the screen named Acme while My Cloud keeps working
+Error: timed out waiting for a new team session: undefined at [redacted-url]
+ ❯ until scripts/testing/one-workspace-ui.e2e.test.ts:31:15
+     29|       if (Date.now() > deadline) {
+     30|         await world.window.screenshot(join(shots, `failure-${Date.now(…
+     31|         throw new Error(`timed out waiting for ${what}: ${JSON.stringi…
+       |               ^
+     32|       }
+     33|       await new Promise((resolve) => setTimeout(resolve, 100));
+ ❯ scripts/testing/one-workspace-ui.e2e.test.ts:294:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 15 passed (16)
+   Start at  08:33:45
+   Duration  151.53s (transform 1.96s, setup 1.12s, import 1.55s, tests 148.73s, environment 0ms)
+
+
+EXIT: 1

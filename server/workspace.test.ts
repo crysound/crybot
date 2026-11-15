@@ -1,3 +1,4 @@
+import legacyMemorySeeds from "./testing/fixtures/legacy-memory-seeds.json" with { type: "json" };
 import { chmodSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -116,13 +117,25 @@ describe("workspace", () => {
     expect(loadMemory(BOT)).toBeNull();
   });
 
-  it("treats localized factory memory seeds as empty", () => {
-    for (const [language, heading] of [["pt-BR", "# Memória"], ["es", "# Memoria"], ["en", "# Memory"], ["zh-TW", "# 記憶"], ["zh-Hant", "# 記憶"], ["zh_HK", "# 記憶"], ["zh-MO", "# 記憶"]] as const) {
+  it("generates only English and Simplified Chinese factory seeds", () => {
+    for (const [language, heading] of [["pt-BR", "# Memory"], ["es", "# Memory"], ["ko", "# Memory"], ["en", "# Memory"], ["zh", "# 记忆"], ["zh-TW", "# 记忆"], ["zh-Hant", "# 记忆"], ["zh_HK", "# 记忆"], ["zh-MO", "# 记忆"]] as const) {
       const bot = `${BOT}-${language}`;
       const dir = ensureWorkspace(bot, language);
       expect(readFileSync(join(dir, "MEMORY.md"), "utf8")).toContain(heading);
       expect(loadMemory(bot)).toBeNull();
       expect(readMemoryFile(bot)).toEqual({ text: "", truncated: false });
+    }
+  });
+
+  it("treats localized factory memory seeds as empty", () => {
+    for (const [language, seed] of Object.entries(legacyMemorySeeds)) {
+      const bot = `${BOT}-legacy-${language}`;
+      const dir = ensureWorkspace(bot);
+      writeFileSync(join(dir, "MEMORY.md"), seed);
+      expect(loadMemory(bot)).toBeNull();
+      expect(readMemoryFile(bot)).toEqual({ text: "", truncated: false });
+      writeFileSync(join(dir, "MEMORY.md"), `${seed}\n- A real memory\n`);
+      expect(loadMemory(bot)?.text).toContain("A real memory");
     }
   });
 

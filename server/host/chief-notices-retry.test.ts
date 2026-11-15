@@ -232,10 +232,10 @@ describe("the person's line about an incident", () => {
   });
 
   it("is in the language of the person whose work failed, while the Chief's report stays English", () => {
-    const f = fixture({ threadLanguage: (threadId) => (threadId === "ada-job" ? "de" : undefined) });
+    const f = fixture({ threadLanguage: (threadId) => (threadId === "ada-job" ? "zh" : undefined) });
     f.notices.reportIncident({ kind: "stalled", bot: f.ada as never, threadId: "ada-job", detail: "" });
     const row = f.store.messagesFor("notices-1").find((line) => line.kind === "activity") as { tool: { name: string } } | undefined;
-    expect(row?.tool.name).toBe("Ada hatte ein Problem: Die Ausführung im Thread #Invoices wurde gestoppt, weil sie keine Aktivität mehr zeigte");
+    expect(row?.tool.name).toBe("Ada 遇到问题：在对话 #Invoices 中 的执行因没有任何活动而被停止");
     expect(f.turnsOf("chief")[0]!.text).toContain("Ada's run in its thread #Invoices stopped after showing no activity");
   });
 });

@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/saved-steps/screen-words.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  08:25:45
+   Duration  1.23s (transform 816ms, setup 1.02s, import 30ms, tests 17ms, environment 0ms)
+
+
+EXIT: 0

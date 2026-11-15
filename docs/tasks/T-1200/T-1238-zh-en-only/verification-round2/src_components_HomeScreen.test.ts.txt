@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/HomeScreen.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  05:15:10
+   Duration  1.57s (transform 1.06s, setup 1.29s, import 86ms, tests 21ms, environment 0ms)
+

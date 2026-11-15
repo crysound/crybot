@@ -24,10 +24,9 @@ final class ServerTextRendererTests: XCTestCase {
             "resetsAt": .number(0), "timeZone": .string("UTC"), "aaa": .string("unrelated")
         ])
         let translations = [
-            "zh-Hant": "Claude 已登出，改在 Orion 上繼續",
-            "pt-BR": "Continuando em Orion enquanto Claude está sem login"
+            "zh-Hans": "Claude 已退出登录，改在 Orion 上继续"
         ]
-        for language in ["en", "de", "es", "fr", "hi", "it", "ja", "ko", "pl", "pt-BR", "ru", "tr", "uk", "vi", "zh-Hans", "zh-Hant"] {
+        for language in ["en", "zh-Hans"] {
             XCTAssertEqual(try renderer(language).render(line),
                            translations[language] ?? "continuing on Orion while Claude is signed out", language)
         }
@@ -63,16 +62,17 @@ final class ServerTextRendererTests: XCTestCase {
     }
 
     func testReferenceParametersAreTranslated() throws {
-        let line = ServerTextLine(textCode: "chat.notice.claudeLimit", textParams: [
-            "limit": .string("chat.notice.part.weeklyLimit"), "meanwhile": .string("chat.notice.part.chooseModel")
+        let line = ServerTextLine(textCode: "chat.notice.claudeLimitSaid", textParams: [
+            "limit": .string("chat.notice.part.weeklyLimit"), "meanwhile": .string("chat.notice.part.chooseModel"),
+            "said": .string("请稍后再试")
         ])
         XCTAssertEqual(try renderer("en").render(line),
-                       "This Claude account has reached its weekly limit. For now, choose another model for this bot.")
-        XCTAssertEqual(try renderer("zh-Hant").render(line), "這個 Claude 帳號已達到每週上限。目前請為這個智能體選擇另一個模型。")
+                       "This Claude account has reached its weekly limit (Claude says: \"请稍后再试\"). For now, choose another model for this bot.")
+        XCTAssertEqual(try renderer("zh-Hans").render(line), "这个 Claude 账户已达到每周用量上限（Claude 提示：「请稍后再试」）。目前可以为这个智能体选择其他模型。")
         let retry = ServerTextLine(textCode: "chat.notice.goalRetry", textParams: [
-            "name": .string("Orion"), "why": .string("chat.notice.part.goalTimedOut")
+            "name": .string("Orion"), "why": .string("已超时")
         ])
-        XCTAssertEqual(try renderer("zh-Hant").render(retry), "Orion 的回合沒有結束（逾時），正在重試一次。")
+        XCTAssertEqual(try renderer("zh-Hans").render(retry), "Orion 的回合未能正常结束（已超时），正在重试一次。")
     }
 
     func testUnrecognizedPartAndMissingParameterFallBackToEnglish() throws {
@@ -80,9 +80,9 @@ final class ServerTextRendererTests: XCTestCase {
         let line = ServerTextLine(textCode: "chat.notice.claudeLimit", textParams: [
             "limit": .string("chat.notice.part.futurePart"), "meanwhile": .string("chat.notice.part.chooseModel")
         ])
-        XCTAssertEqual(try renderer("zh-Hant").render(line, fallback: english), english)
+        XCTAssertEqual(try renderer("zh-Hans").render(line, fallback: english), english)
         let incomplete = ServerTextLine(textCode: "chat.notice.backupContinuingSignedOut", textParams: ["name": .string("Orion")])
-        XCTAssertEqual(try renderer("zh-Hant").render(incomplete, fallback: "continuing on Orion"), "continuing on Orion")
+        XCTAssertEqual(try renderer("zh-Hans").render(incomplete, fallback: "continuing on Orion"), "continuing on Orion")
     }
 
     func testOnlyReferenceParameterNamesAreTranslatedAndValuesAreNotReexpanded() throws {
@@ -112,7 +112,7 @@ final class ServerTextRendererTests: XCTestCase {
         let line = ServerTextLine(textCode: "chat.notice.claudeLimitResets", textParams: [
             "resetsAt": .number(0), "timeZone": .string("Unknown/Zone")
         ])
-        XCTAssertEqual(try renderer("zh-Hant").render(line, fallback: "Original English"), "Original English")
+        XCTAssertEqual(try renderer("zh-Hans").render(line, fallback: "Original English"), "Original English")
     }
 
     func testResetHourHasTwoDigitsInTwelveAndTwentyFourHourLocales() throws {

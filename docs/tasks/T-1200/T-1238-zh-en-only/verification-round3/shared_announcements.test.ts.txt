@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run shared/announcements.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  08:25:56
+   Duration  1.10s (transform 701ms, setup 900ms, import 29ms, tests 40ms, environment 0ms)
+
+
+EXIT: 0

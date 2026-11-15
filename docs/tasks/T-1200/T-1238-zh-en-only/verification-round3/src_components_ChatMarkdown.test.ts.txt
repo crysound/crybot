@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/components/ChatMarkdown.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  140 passed (140)
+   Start at  07:45:17
+   Duration  3.85s (transform 1.39s, setup 794ms, import 1.36s, tests 1.43s, environment 147ms)
+
+
+EXIT: 0

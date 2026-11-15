@@ -1,0 +1,33 @@
+Enabled browser comparison against origin/main 0c8950353d5b6a6c729afa36373ed78a18db6f68
+Identical test files; identical browser and environment flags. Expanded commands and output are in the named logs.
+
+bot-tools-ui
+  Current: Tests  1 failed (1)
+  Origin: Tests  1 failed (1)
+  both: scripts/testing/bot-tools-ui.e2e.test.ts > bot setup and tools in the real renderer > makes bots at once, configures per-bot MCP access, and recovers a rejected ready-made bot
+one-workspace-ui
+  Current: Tests  1 failed | 15 passed (16)
+  Origin: Tests  16 passed (16)
+  current only: scripts/testing/one-workspace-ui.e2e.test.ts > the desktop window once My Cloud is home > a lapsed cookie on the team's page signs in again through the team route, and the team's Cloud being unreachable shows the screen named Acme while My Cloud keeps working
+rail-profile-ui
+  Current: Tests  8 failed | 5 passed (13)
+  Origin: Tests  5 failed | 8 passed (13)
+  both: scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > This Mac ↔ Work ↔ My Cloud in every order: each shows what was left there, the frozen copy never runs, the link never drops
+  both: scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > a switch while a turn runs: the circle says it opens once the bot finishes, the turn finishes there, and its reply is there on return
+  both: scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > a workspace's menu: Rename, its colour, and Remove asked first; Cancel changes nothing; removing the open one goes to My Cloud first
+  both: scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > an app restart reopens the place open when it closed: Work, then This Mac, each as it was; a workspace removed meanwhile opens My Cloud
+  both: scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > past eight tiles: ⋯ lists every place, a row opens its place and its right-click opens its menu
+  current only: scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > removing the last workspace of this computer's own lands on My Cloud, whose ＋ still offers a new one
+  current only: scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > two quick clicks on two tiles: only the last opens, and the rail and the window agree
+  current only: scripts/testing/rail-profile-ui.e2e.test.ts > workspaces of this computer's own on the rail, once My Cloud is home > ＋ → New workspace → Work, in a colour: it opens fresh, This Mac keeps its data, and the window and the line call it Work
+team-conversation-share-ui
+  Current: Tests  4 failed | 2 passed (6)
+  Origin: Tests  4 failed | 2 passed (6)
+  both: scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Ana's new conversation with Scout reads the decision Rui saved
+  both: scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Marta at phone width: the line waiting on her, and the conversation's label
+  both: scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > Marta finds it in her inbox, opens it, and the bot carries on with the whole conversation
+  both: scripts/testing/team-conversation-share-ui.e2e.test.ts > sharing a conversation and saving to team memory on a Team Cloud, in the real app > and back: Rui's inbox holds one line for it, he answers there, and it waits in Marta's inbox in turn
+team-private-default-ui
+  Current: Tests  1 failed | 5 passed (6)
+  Origin: Tests  1 failed | 5 passed (6)
+  both: scripts/testing/team-private-default-ui.e2e.test.ts > a team bot is its maker's until they share it, in the real app > an admin's Templates form says who can use the new bot, preset to Just me; choosing Everyone in Acme shares it from the start

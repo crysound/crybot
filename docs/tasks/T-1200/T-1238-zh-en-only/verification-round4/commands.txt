@@ -1,0 +1,43 @@
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  09:25:43
+   Duration  1.57s (transform 1.08s, setup 1.29s, import 88ms, tests 23ms, environment 0ms)
+
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  09:25:45
+   Duration  1.36s (transform 925ms, setup 1.19s, import 9ms, tests 4ms, environment 0ms)
+
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  42 passed (42)
+   Start at  09:25:47
+   Duration  2.27s (transform 1.18s, setup 1.25s, import 54ms, tests 794ms, environment 0ms)
+
+✔ Web interpolation uses English positions, repeated names and escaped literal percents (1.15382ms)
+✔ maps all renamed language codes and keeps English positions across languages (0.24241ms)
+✔ ServerText retains named placeholders across languages (0.12085ms)
+✔ missing English key fails generation even if a translation exists (66.922166ms)
+✔ skips source-hashes.json, includes serverError and maps locale files (3.677849ms)
+✔ --check fails for stale content and succeeds after regeneration (348.43851ms)
+✔ --check and generation only clean exactly named generated feature tables (376.279467ms)
+✔ ServerText includes all five production heldCode messages (40.480898ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 946.265464

@@ -24,7 +24,7 @@ const keptAnnouncements = list => {
   const days = list.filter(id => typeof id === "string" && ANNOUNCEMENT_SPONSOR_DAY.test(id)).sort();
   return [...new Set(marks)].slice(-MAX_ANNOUNCEMENTS_SEEN).concat(days.slice(-1));
 };
-/** A locale code such as "de" or "pt-br", or "" for following the system. */
+/** A locale code, or "" for following the system. */
 const LANGUAGE = /^(?:[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,2})?$/i;
 const isLanguage = value => typeof value === "string" && value.length <= 24 && LANGUAGE.test(value);
 const CHAT_ID = /^[\w-]{1,128}$/;

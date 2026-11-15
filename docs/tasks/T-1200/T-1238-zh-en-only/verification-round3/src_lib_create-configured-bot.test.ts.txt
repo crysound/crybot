@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/lib/create-configured-bot.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  08:26:00
+   Duration  1.72s (transform 1.17s, setup 1.01s, import 570ms, tests 13ms, environment 0ms)
+
+
+EXIT: 0

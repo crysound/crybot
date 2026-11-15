@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/plain-error.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  41 passed (41)
+   Start at  05:17:49
+   Duration  1.33s (transform 884ms, setup 1.10s, import 47ms, tests 21ms, environment 0ms)
+

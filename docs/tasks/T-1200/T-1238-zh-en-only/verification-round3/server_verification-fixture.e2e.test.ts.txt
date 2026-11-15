@@ -1,0 +1,33 @@
+COMMAND: pnpm exec vitest run server/verification-fixture.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+ ❯ server/[redacted-host].ts (2 tests | 1 failed) 6183ms
+   × keeps the fixture blind to this machine's installed CLIs (#2035) 2055ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/[redacted-host].ts > keeps the fixture blind to this machine's installed CLIs (#2035)
+AssertionError: expected 'available' to be 'unavailable' // Object 相等 equality
+
+Expected: "unavailable"
+Received: "available"
+
+ ❯ server/[redacted-host].ts:54:93
+     52|     };
+     53|     const { instances } = await get("/api/instances") as { instances: …
+     54|     expect(instances.find((instance) => instance.instanceId === "chatg…
+       |                                                                                             ^
+     55|     expect(instances.filter((instance) => instance.snapshot.state === …
+     56|       .toEqual(["claude"]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  07:46:45
+   Duration  8.07s (transform 1.28s, setup 934ms, import 803ms, tests 6.18s, environment 0ms)
+
+
+EXIT: 1

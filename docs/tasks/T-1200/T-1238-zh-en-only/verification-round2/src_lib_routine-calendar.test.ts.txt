@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/routine-calendar.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  27 passed (27)
+   Start at  05:17:55
+   Duration  1.50s (transform 957ms, setup 1.18s, import 58ms, tests 98ms, environment 0ms)
+

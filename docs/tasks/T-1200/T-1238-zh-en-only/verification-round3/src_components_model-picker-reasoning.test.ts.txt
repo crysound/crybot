@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run src/components/model-picker-reasoning.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  07:45:55
+   Duration  1.81s (transform 1.27s, setup 1.48s, import 95ms, tests 36ms, environment 0ms)
+
+
+EXIT: 0

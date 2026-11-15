@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/lib/fixed-runtime-lines.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  05:17:31
+   Duration  2.50s (transform 1.77s, setup 1.06s, import 1.26s, tests 33ms, environment 0ms)
+

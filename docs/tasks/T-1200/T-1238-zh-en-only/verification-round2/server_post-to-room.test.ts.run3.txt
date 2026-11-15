@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/post-to-room.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  05:22:54
+   Duration  11.45s (transform 1.17s, setup 1.10s, import 410ms, tests 9.78s, environment 0ms)
+

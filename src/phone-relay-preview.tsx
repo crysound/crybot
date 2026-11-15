@@ -1,7 +1,7 @@
 import { preparePreviewLocale } from "./testing/preview-locale";
 // Dev-only gallery of Remote access with the end-to-end phone connection, served at /phone-relay-preview.html; not in
 // the packaged app. It mounts the real settings section and pairing screen over a fake companion bridge.
-// ?view=phones|qr&e2e=on|off&relay=connected|off&skin=midnight|daylight&lang=de
+// ?view=phones|qr&e2e=on|off&relay=connected|off&skin=midnight|daylight&lang=zh
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { PhoneDevicesSection } from "@/components/PhoneDevicesSection";

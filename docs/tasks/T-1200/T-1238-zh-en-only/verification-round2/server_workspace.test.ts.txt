@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run server/workspace.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  43 passed (43)
+   Start at  05:14:01
+   Duration  2.92s (transform 1.30s, setup 1.53s, import 131ms, tests 1.08s, environment 0ms)
+

@@ -1,6 +1,6 @@
 import { preparePreviewLocale } from "./testing/preview-locale";
 // Dev-only gallery of the usage meter, served at /usage-meter-preview.html; not in the packaged app.
-// ?view=sidebar|settings|confirm&state=near|full|browser|top|trial&skin=midnight|daylight&lang=de
+// ?view=sidebar|settings|confirm&state=near|full|browser|top|trial&skin=midnight|daylight&lang=zh
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Bot, CalendarClock, Gauge, LayoutGrid, MessageSquare, Plus, Search, Settings } from "lucide-react";

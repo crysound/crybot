@@ -1,0 +1,14 @@
+COMMAND: node --test electron/native-language.node-test.mjs
+✔ main initializes native text from the saved language and follows later choices (12.595349ms)
+✔ main's activity window follows the shown Chinese language without a saved preference on an English OS (12.020978ms)
+✔ a new language redraws main's menu, both trays, the window title and the badge (11.923749ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 99.193901
+
+EXIT: 0

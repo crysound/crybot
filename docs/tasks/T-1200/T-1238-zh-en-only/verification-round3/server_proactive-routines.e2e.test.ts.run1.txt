@@ -1,0 +1,12 @@
+COMMAND: pnpm exec vitest run server/proactive-routines.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 [worktree]
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  08:31:22
+   Duration  9.47s (transform 1.24s, setup 837ms, import 835ms, tests 7.67s, environment 0ms)
+
+
+EXIT: 0

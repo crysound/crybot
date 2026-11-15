@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/app/app-blocked.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  05:16:21
+   Duration  1.64s (transform 1.11s, setup 1.09s, import 387ms, tests 12ms, environment 0ms)
+

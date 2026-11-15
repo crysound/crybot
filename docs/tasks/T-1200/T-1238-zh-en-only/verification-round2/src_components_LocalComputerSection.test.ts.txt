@@ -1,0 +1,27 @@
+COMMAND: pnpm exec vitest run src/components/LocalComputerSection.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+ ❯ src/components/LocalComputerSection.test.ts (52 tests | 1 failed) 414ms
+     × keeps cloud badge meaning and delete requests stable when the language changes 8ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/LocalComputerSection.test.ts > cloud computer inventory UI > keeps cloud badge meaning and delete requests stable when the language changes
+AssertionError: expected 'Permanently delete Research\'s cloud …' not to be 'Permanently delete Research\'s cloud …' // Object 相等 equality
+ ❯ src/components/LocalComputerSection.test.ts:383:47
+    381|         .toContain(`bg-control text-ink-secondary">${sleeping}</span>`…
+    382|       const translatedPlan = cloudComputerActionPlan("delete", ownedCl…
+    383|       expect(translatedPlan.confirmation).not.toBe(englishPlan.confirm…
+       |                                               ^
+    384|       expect(translatedPlan.confirmation).toContain(ownedCloudComputer…
+    385|       expect(translatedPlan.request).toEqual(englishPlan.request);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 51 passed (52)
+   Start at  05:15:12
+   Duration  3.08s (transform 1.79s, setup 1.28s, import 1.06s, tests 414ms, environment 167ms)
+

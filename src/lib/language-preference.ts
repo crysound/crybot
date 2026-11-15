@@ -44,7 +44,8 @@ export function languageChoice(): string | null {
 }
 
 export function effectiveLanguage(choice: string | null, serverDefault: string | undefined): string {
-  return choice ?? serverDefault ?? "";
+  if (choice === "") return "";
+  return choice || serverDefault || "";
 }
 
 export function localeTag(language: string, system: string | undefined = globalThis.navigator?.language): string | undefined {
@@ -111,7 +112,7 @@ export function useLanguageChoice(): string | null {
 
 /** The person's own language, loaded before a page first draws, so they never see another one first. */
 export function loadPageLanguage(): Promise<string> {
-  return loadLocale(effectiveLanguage(languageChoice(), undefined) || globalThis.navigator?.language);
+  return loadLocale(startupLocaleTag());
 }
 
 /** Shows `language` (the system's when empty) once its pack has loaded, and draws the caller again then. `windowPage`:
@@ -119,7 +120,7 @@ export function loadPageLanguage(): Promise<string> {
 export function usePageLanguage(language: string, windowPage = false): void {
   const [, setShown] = useState(0);
   useEffect(() => {
-    void loadLocale(language || globalThis.navigator?.language).then((shown) => {
+    void loadLocale(localeTag(language, globalThis.navigator?.language)).then((shown) => {
       if (windowPage) desktop()?.shown?.(shown);
       setShown((count) => count + 1);
     }).catch(() => {});

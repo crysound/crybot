@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/browser/StreamSurface.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  05:16:30
+   Duration  2.94s (transform 875ms, setup 975ms, import 214ms, tests 1.43s, environment 163ms)
+

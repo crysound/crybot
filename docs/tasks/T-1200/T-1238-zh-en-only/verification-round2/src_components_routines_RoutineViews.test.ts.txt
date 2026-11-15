@@ -1,0 +1,10 @@
+COMMAND: pnpm exec vitest run src/components/routines/RoutineViews.test.ts
+
+ RUN  v4.1.11 /data/home/codex-t-1238-zh-en-only-d14532546ce8
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  05:16:41
+   Duration  2.13s (transform 1.46s, setup 1.17s, import 758ms, tests 57ms, environment 0ms)
+

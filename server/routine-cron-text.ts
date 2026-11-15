@@ -1,7 +1,7 @@
 import { cronPreset, type CronPreset } from "../shared/cron-label.ts";
 import { plainTimeZone } from "../shared/plain-time-zone.ts";
 import type { RoutineCronSchedule } from "../shared/routine-schedule.ts";
-import { byLanguage } from "./language.ts";
+import { supportedLanguage } from "../shared/languages.ts";
 import { serverLine, type ServerLineKey } from "./server-lines.ts";
 
 type Nth = Extract<CronPreset, { kind: "monthlyNth" }>["nth"];
@@ -15,7 +15,7 @@ const NTH_WEEKEND: Record<Nth, ServerLineKey> = {
 };
 
 function presetText(preset: CronPreset, language: string | undefined): string {
-  const locale = byLanguage({ en: "en-US", de: "de-DE", "pt-br": "pt-BR", "zh-tw": "zh-TW" }, language);
+  const locale = supportedLanguage(language) === "zh" ? "zh-CN" : "en-US";
   const time = locale === "en-US" ? preset.time.replace(/^0(?=\d:)/, "") : preset.time;
   const weekdayName = (day: number) => new Intl.DateTimeFormat(locale, { weekday: "long", timeZone: "UTC" }).format(Date.UTC(2023, 0, 1 + day));
   const monthName = (month: number) => new Intl.DateTimeFormat(locale, { month: "long", timeZone: "UTC" }).format(Date.UTC(2023, month, 1));

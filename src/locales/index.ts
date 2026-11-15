@@ -1,4 +1,4 @@
-import { localePacks, type LanguageCode as PackName } from "../../shared/languages";
+import { localePacks, SUPPORTED_LANGUAGE_CODES, supportedLanguage, type LanguageCode as PackName } from "../../shared/languages";
 import type English from "./en.json";
 import { localeKeyCount } from "virtual:english-contracts";
 
@@ -11,21 +11,7 @@ export type LocalePack = Partial<Record<LocaleKey, string>>;
 
 const packLoaders = {
   en: () => import("./en.json?locale"),
-  de: () => import("./de.json?locale"),
-  es: () => import("./es.json?locale"),
-  fr: () => import("./fr.json?locale"),
-  hi: () => import("./hi.json?locale"),
-  ja: () => import("./ja.json?locale"),
-  "pt-br": () => import("./pt-br.json?locale"),
   zh: () => import("./zh.json?locale"),
-  "zh-tw": () => import("./zh-tw.json?locale"),
-  uk: () => import("./uk.json?locale"),
-  vi: () => import("./vi.json?locale"),
-  tr: () => import("./tr.json?locale"),
-  pl: () => import("./pl.json?locale"),
-  ru: () => import("./ru.json?locale"),
-  it: () => import("./it.json?locale"),
-  ko: () => import("./ko.json?locale"),
 } satisfies Record<PackName, () => Promise<{ default: LocalePack; missingKeys: string[] }>>;
 
 export const locales: Record<string, LocalePack> = { en };
@@ -42,7 +28,7 @@ export function packComplete(pack: LocalePack): boolean {
 }
 
 export async function loadLocalePack(tag: string): Promise<LocalePack | undefined> {
-  const name = localePacks[tag];
+  const name = supportedLanguage(tag) ?? localePacks[tag];
   if (!name) return locales[tag];
   if (locales[tag] && (name !== "en" || Object.keys(en).length)) return locales[tag];
   let loading = pending.get(name);
@@ -58,21 +44,7 @@ export async function loadLocalePack(tag: string): Promise<LocalePack | undefine
   return loading;
 }
 
-export const localeChoices: ReadonlyArray<{ code: string; label: string }> = [
-  { code: "en", label: "English" },
-  { code: "de", label: "Deutsch" },
-  { code: "es", label: "Español" },
-  { code: "fr", label: "Français" },
-  { code: "hi", label: "हिन्दी" },
-  { code: "ja", label: "日本語" },
-  { code: "pt-br", label: "Português (Brasil)" },
-  { code: "zh", label: "简体中文" },
-  { code: "zh-tw", label: "繁體中文（台灣）" },
-  { code: "uk", label: "Українська" },
-  { code: "vi", label: "Tiếng Việt" },
-  { code: "tr", label: "Türkçe" },
-  { code: "pl", label: "Polski" },
-  { code: "ru", label: "Русский" },
-  { code: "it", label: "Italiano" },
-  { code: "ko", label: "한국어" },
-];
+export const localeChoices: ReadonlyArray<{ code: string; label: string }> = SUPPORTED_LANGUAGE_CODES.map((code) => ({
+  code,
+  label: code === "zh" ? "简体中文" : "English",
+}));

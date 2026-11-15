@@ -312,9 +312,9 @@ test("an open box follows the current language without translating a reply or ca
   panel.relabel();
   await flush();
   assert.equal(painted(made[0]).text, text.t("native.talk.dictationOff"));
-  assert.equal(painted(made[0]).labels.listening, "Ouvindo…");
+  assert.equal(painted(made[0]).labels.listening, "Listening…");
   assert.equal(painted(made[0]).labels.reply, "Cry Bot");
-  assert.equal(painted(made[0]).dismiss, "Fechar");
+  assert.equal(painted(made[0]).dismiss, "Dismiss");
   assert.equal(painted(made[0]).release, text.t("native.talk.releaseToSend"));
   panel.render({ state: "reply", text: "Turn on Dictation in System Settings → Keyboard, then try again." });
   await flush();
