@@ -188,3 +188,44 @@
 | `git diff --check` | 通过 |
 
 此前两次完整 e2e 在 `core.e2e.test.ts:380` 出现间歇失败（期望 deleted，实际 suspended）。临时恢复 HEAD 的全部 5 个代码文件后，单独用例 6 次、完整 e2e 2 次均未复现，未确认原因；恢复本轮改动后最终三连过。完整命令、失败及成功输出均见 [verification.txt](verification.txt)，已检查不含 IP、连接地址、域名或 UUID。
+
+
+## 第 8 轮
+
+1. 改了什么
+
+本轮文件清单与 `git status --short` 一致；未提交 git。
+
+```text
+ M docs/tasks/T-1200/T-1242-instabox-core/report.md
+ M docs/tasks/T-1200/T-1242-instabox-core/verification.txt
+ M server/config.ts
+ M server/instabox/core.e2e.test.ts
+ M server/instabox/key.test.ts
+ M server/instabox/power.test.ts
+ M server/instabox/power.ts
+ M server/user-errors.ts
+```
+
+三种 错误接入 `USER_ERROR`，实际错误和状态提示使用目录文案与键；更新相关断言。删除重复配置定义，补充保存、读取去空白及纯空白清除回归。
+
+2. 为什么
+
+①的宽松 `instabox` schema 排在④的 `.trim().max(8192)` 严格 schema 后，覆盖了保存和加载校验；现保留④的定义，环境读取继续去空白、空白回退文件配置，保存不写入环境变量。错误目录与现有英文文案一致，未修改目录测试的判定方式。
+
+3. 测试命令与结果摘要
+
+已执行 依赖准备脚本。仓库缺少验证说明；全部服务测试使用隔离 fixture 和假服务。Vitest 均以 `pnpm exec vitest run <文件> --maxWorkers=1` 逐文件执行。
+
+| 文件或命令 | 结果 |
+| --- | --- |
+| `server/user-errors.test.ts`、`server/config.test.ts` | 分别 5、257 项通过 |
+| `server/instabox/{client,key,machines,persistence,power,vnc}.test.ts` | 分别 6、4、24、1、7、2 项通过 |
+| `server/bot-box/env.test.ts`、`server/routes/config-instabox.test.ts`、`scripts/testing/file-size-ratchet.test.ts` | 分别 11、6、1 项通过 |
+| `server/instabox/core.e2e.test.ts` | 连续 3 次，每次 15 项通过 |
+| `CRYBOT_CDP_CHROME=/usr/bin/chromium pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1` | 完整连续 3 次，每次 32 项通过；此前未指定浏览器的三轮各跳过 1 项 |
+| `pnpm exec tsc -p tsconfig.server.json` | 失败：未改动的 `server/routes/config-instabox.test.ts:20` 中 `status`、`auth` 两处 TS7006；临时恢复全部源码改动后同样复现，基线另有本轮已修的重复定义错误 |
+| `pnpm exec oxlint --deny-warnings server/config.ts server/instabox/core.e2e.test.ts server/instabox/key.test.ts server/instabox/power.test.ts server/instabox/power.ts server/user-errors.ts` | 通过，0 警告、0 错误 |
+| `git diff --check` | 通过 |
+
+完整脱敏输出见 [verification.txt](verification.txt)。

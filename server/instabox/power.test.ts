@@ -21,9 +21,9 @@ it("reuses machines for the same key and replaces the instance after key rotatio
 });
 
 it("makes missing credentials explicit in status and lifecycle actions", async () => {
-  expect(() => requireInstabox(null)).toThrow("InstaBox 钥匙未配置");
-  expect(await instaboxStatus(null, "bot")).toMatchObject({ backend: "instabox", configured: false, problem: "InstaBox 钥匙未配置" });
-  await expect(instaboxComputerAction(null, "bot", "provision", {})).rejects.toThrow("InstaBox 钥匙未配置");
+  expect(() => requireInstabox(null)).toThrow("Add an InstaBox API key to use this computer.");
+  expect(await instaboxStatus(null, "bot")).toMatchObject({ backend: "instabox", configured: false, problem: "Add an InstaBox API key to use this computer." });
+  await expect(instaboxComputerAction(null, "bot", "provision", {})).rejects.toThrow("Add an InstaBox API key to use this computer.");
 });
 
 it.each([200, 400])("suspends after a successful backend switch only (status %s)", async status => {
@@ -57,11 +57,11 @@ it("sends translation keys for user errors while preserving provider failures", 
   try { requireInstabox(null); }
   catch (error) {
     expect(instaboxFailureResponse(error)).toEqual({ status: 409,
-      body: { error: "InstaBox 钥匙未配置", errorKey: "serverError.instabox.keyMissing" } });
+      body: { error: "Add an InstaBox API key to use this computer.", errorKey: "serverError.instabox.keyMissing" } });
   }
   const service = {} as InstaboxMachines;
-  await expect(instaboxComputerAction(service, "bot", "provision", { template: "apple" })).rejects.toMatchObject({ status: 400, errorKey: "serverError.instabox.template" });
-  await expect(instaboxComputerAction(service, "bot", "join", {})).rejects.toMatchObject({ status: 501, errorKey: "serverError.instabox.unavailable" });
+  await expect(instaboxComputerAction(service, "bot", "provision", { template: "apple" })).rejects.toMatchObject({ status: 400, message: "Choose a Linux or Android computer.", errorKey: "serverError.instabox.template" });
+  await expect(instaboxComputerAction(service, "bot", "join", {})).rejects.toMatchObject({ status: 501, message: "This InstaBox computer is unavailable.", errorKey: "serverError.instabox.unavailable" });
   const providerFailure = new Error("provider failed");
   expect(() => instaboxFailureResponse(providerFailure)).toThrow(providerFailure);
 });

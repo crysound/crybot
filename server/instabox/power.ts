@@ -1,18 +1,17 @@
 import type { AppConfig } from "../config.ts";
 import type { RouteHandler } from "../routes/table.ts";
 import type { BotRecord } from "../store.ts";
+import { USER_ERROR, type UserErrorKey } from "../user-errors.ts";
 import { createInstaboxRequest } from "./client.ts";
 import { instaboxApiKey } from "./key.ts";
 import type { InstaboxMachines, InstaboxRequest } from "./machine.ts";
 import { createInstaboxMachines } from "./machines.ts";
 
-export const INSTABOX_KEY_MISSING = "InstaBox 钥匙未配置";
-
 class InstaboxUserError extends Error {
   readonly status: number;
-  readonly errorKey: string;
-  constructor(status: number, errorKey: string, message: string) {
-    super(message);
+  readonly errorKey: UserErrorKey;
+  constructor(status: number, errorKey: UserErrorKey) {
+    super(USER_ERROR[errorKey]);
     this.status = status;
     this.errorKey = errorKey;
   }
@@ -34,14 +33,14 @@ export function createInstaboxMachineCache(makeRequest: (key: string) => Instabo
 }
 
 export function requireInstabox(machines: InstaboxMachines | null): InstaboxMachines {
-  if (!machines) throw new InstaboxUserError(409, "serverError.instabox.keyMissing", INSTABOX_KEY_MISSING);
+  if (!machines) throw new InstaboxUserError(409, "serverError.instabox.keyMissing");
   return machines;
 }
 
 export async function instaboxStatus(machines: InstaboxMachines | null, botId: string) {
   if (!machines) {
     return { backend: "instabox" as const, configured: false, ready: false, machine: null,
-      problem: INSTABOX_KEY_MISSING, problemKey: "serverError.instabox.keyMissing" };
+      problem: USER_ERROR["serverError.instabox.keyMissing"], problemKey: "serverError.instabox.keyMissing" };
   }
   try {
     const machine = await machines.find(botId);
@@ -57,13 +56,13 @@ export async function instaboxComputerAction(machines: InstaboxMachines | null, 
   if (action === "provision") {
     const template = (body as { template?: unknown } | null)?.template;
     if (template !== undefined && template !== "linux" && template !== "android") {
-      throw new InstaboxUserError(400, "serverError.instabox.template", "InstaBox template must be linux or android");
+      throw new InstaboxUserError(400, "serverError.instabox.template");
     }
     return { machine: await service.ensureRunning(botId, template === undefined ? undefined : { template }) };
   }
   if (action === "sleep") { await service.suspend(botId); return { ok: true }; }
   if (action === "remove") { await service.remove(botId); return { ok: true }; }
-  throw new InstaboxUserError(501, "serverError.instabox.unavailable", "InstaBox computer access is unavailable");
+  throw new InstaboxUserError(501, "serverError.instabox.unavailable");
 }
 
 export function withInstaboxBackendPower(handler: RouteHandler, deps: {

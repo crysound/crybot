@@ -14,11 +14,12 @@ it("prefers a nonempty environment key, then config, treating blanks as unconfig
 });
 
 it("parses and persists the server config section", () => {
-  expect(parseStoredConfig({ instabox: { apiKey: "config-fixture" } }).instabox).toEqual({ apiKey: "config-fixture" });
-  saveConfig({ instabox: { apiKey: "saved-fixture" } });
+  expect(parseStoredConfig({ instabox: { apiKey: " config-fixture " } }).instabox).toEqual({ apiKey: "config-fixture" });
+  saveConfig({ instabox: { apiKey: " saved-fixture " } });
   expect(loadConfig().instabox?.apiKey).toBe("saved-fixture");
-  saveConfig({ instabox: { apiKey: "" } });
+  saveConfig({ instabox: { apiKey: "   " } });
   expect(loadConfig().instabox?.apiKey).toBe("");
+  expect(instaboxConfigured(loadConfig())).toBe(false);
 });
 
 

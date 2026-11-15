@@ -99,9 +99,9 @@ it("boots an isolated InstaBox bot, persists its backend, suspends on switching,
     await fixture.stop();
     env.INSTABOX_API_KEY = "";
     await fixture.start();
-    expect((await request("GET", `${missingPath}/computer`)).body).toMatchObject({ backend: "instabox", configured: false, problem: "InstaBox 钥匙未配置" });
+    expect((await request("GET", `${missingPath}/computer`)).body).toMatchObject({ backend: "instabox", configured: false, problem: "Add an InstaBox API key to use this computer." });
     const callsBeforeMissingProvision = fake.calls.length;
-    expect(await request("POST", `${missingPath}/computer/provision`, {})).toMatchObject({ status: 409, body: { error: "InstaBox 钥匙未配置", errorKey: "serverError.instabox.keyMissing" } });
+    expect(await request("POST", `${missingPath}/computer/provision`, {})).toMatchObject({ status: 409, body: { error: "Add an InstaBox API key to use this computer.", errorKey: "serverError.instabox.keyMissing" } });
     expect(fake.calls.slice(callsBeforeMissingProvision).some(call => call.path === "/v1/machines")).toBe(false);
     expect(readFileSync(fixture.logPath, "utf8")).not.toContain("instabox-e2e-fixture");
   } finally { await fixture.close(); await fake.close(); }
