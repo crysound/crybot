@@ -1,3 +1,9 @@
+import type { CloudBackend } from "../shared/wire.ts";
+
+export function cloudKindOf(bot: { cloudBackend?: CloudBackend }, teamComputer = false): CloudBackend {
+  return teamComputer ? "box" : bot.cloudBackend ?? "box";
+}
+
 export const CLOUD_BACKEND_CHANGE_ERROR = "stop the active turn before changing the cloud backend";
 export const BOAT_ACCOUNT_RESOURCES_ERROR =
   "remove this installation's cloud computers before changing or clearing the Boat account";
@@ -47,4 +53,9 @@ export function boatAccountResourceChangeError(
 
 export function vpsAliasResourceChangeError(instanceCount: number): string | null {
   return instanceCount > 0 ? VPS_ALIAS_RESOURCES_ERROR : null;
+}
+
+export function cloudPolicyKindOf(bot: { cloudBackend?: CloudBackend }, teamComputer = false): "box" | "vps" {
+  const kind = cloudKindOf(bot, teamComputer);
+  return kind === "instabox" ? "box" : kind;
 }

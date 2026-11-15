@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  cloudKindOf, cloudPolicyKindOf,
   BOAT_ACCOUNT_RESOURCES_ERROR,
   CLOUD_BACKEND_CHANGE_ERROR,
   VPS_ALIAS_RESOURCES_ERROR,
@@ -45,5 +46,13 @@ describe("cloud backend switching", () => {
 
   it("allows a bot's own SSH alias change while idle", () => {
     expect(vpsBotAliasChangeError(false, false)).toBeNull();
+  });
+});
+
+describe("cloud kind selection", () => {
+  it.each([undefined, "box", "vps", "instabox"] as const)("selects %s without falling back and preserves team Boat", backend => {
+    expect(cloudKindOf({ cloudBackend: backend })).toBe(backend ?? "box");
+    expect(cloudKindOf({ cloudBackend: backend }, true)).toBe("box");
+    expect(cloudPolicyKindOf({ cloudBackend: backend })).toBe(backend === "instabox" ? "box" : backend ?? "box");
   });
 });

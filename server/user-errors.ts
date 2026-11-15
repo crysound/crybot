@@ -4,6 +4,9 @@ import { formatServerText, type ServerErrorBody, type ServerTextParams } from ".
 
 /** The client translates by key and falls back to this English, which the server keeps sending for older clients. */
 export const USER_ERROR = {
+  "serverError.instabox.keyMissing": "Add an InstaBox API key to use this computer.",
+  "serverError.instabox.template": "Choose a Linux or Android computer.",
+  "serverError.instabox.unavailable": "This InstaBox computer is unavailable.",
   "serverError.pair.codeWrong": "pairing code is wrong or has expired; create a new one on the server",
   "serverError.pair.tooMany": "Too many wrong codes. Try again at {time}.",
   ...PAIRING_INPUT_PROBLEM_TEXT,

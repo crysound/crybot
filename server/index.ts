@@ -124,14 +124,18 @@ import { createDataRoutes } from "./data/routes.ts";
 import { DataSheetRegistry } from "./data/sheet.ts";
 import { DataFailure } from "./data/types.ts";
 import { TeamComputers, teamComputerOwner, type TeamComputerRecord } from "./team-computers.ts";
-import { isEffortLevel, type CardAnswerer, type ResolvedSender, type SignInRequestCardData, type WireBot, type WireGroup, type WireTask } from "../shared/wire.ts";
+import { isEffortLevel, type CloudBackend, type CardAnswerer, type ResolvedSender, type SignInRequestCardData, type WireBot, type WireGroup, type WireTask } from "../shared/wire.ts";
 import { isPersistentQuestionCard, shouldSettleRequestCard } from "../shared/ask-question.ts";
 import { parseToolScope } from "../shared/tool-scope.ts";
 import type { TeamComputersPayload } from "../shared/team-computer.ts";
 import { boatCreateRecoverySnapshot } from "./boat-create-idempotency.ts";
 import { boatDeletionSnapshot } from "./boat-delete-journal.ts";
 import { liveDecisionRefusal } from "../shared/live-approval.ts"; import type { PersonWaitKind } from "../shared/person-wait.ts";
-import { vpsLeftBehindNotice } from "./cloud-backend.ts";
+import { cloudKindOf, cloudPolicyKindOf, vpsLeftBehindNotice } from "./cloud-backend.ts";
+import { createInstaboxRequest } from "./instabox/client.ts";
+import { instaboxConfigured } from "./instabox/key.ts";
+import type { InstaboxMachines } from "./instabox/machine.ts";
+import { createInstaboxMachineCache, instaboxComputerAction, instaboxFailureResponse, instaboxStatus, requireInstabox, withInstaboxBackendPower } from "./instabox/power.ts";
 import * as composio from "./composio.ts";
 import { appSandboxRule, connectorCallFromFrame, connectorRefusalText, connectorScopeRefusalText, connectorUnrecognizedText, evaluateConnectorTools } from "./connector-verdict.ts";
 import { signInCardText } from "./connector-card-text.ts";
@@ -1896,12 +1900,12 @@ function clearFailedAutoPin(botId: string, threadId: string, place: Surface): bo
 }
 
 async function asPlaceFailure(
-  error: unknown, place: Surface, source: PlaceSource, bot: { id: string; name: string }, backend: "box" | "vps" = "box",
+  error: unknown, place: Surface, source: PlaceSource, bot: { id: string; name: string }, backend: "box" | "vps" | "instabox" = "box",
 ): Promise<unknown> {
   if (error instanceof DirectTurnSetupCancelled || error instanceof ComputerWaitParked || error instanceof PlaceUnavailableError) return error;
   const failure = error instanceof Error ? error : new Error(String(error));
   const cause = failure.message.trim().replace(/[\s.]+$/, "");
-  if (place !== "cloud" || backend === "vps" || (failure as { code?: unknown }).code === "managed_policy") {
+  if (place !== "cloud" || backend !== "box" || (failure as { code?: unknown }).code === "managed_policy") {
     return placeUnavailable(place, {
       state: "place-failed", params: { bot: bot.name, cause: `${cause.charAt(0).toUpperCase()}${cause.slice(1)}.` }, source,
     }, Boolean(CLOUD_HOME));
@@ -2523,7 +2527,7 @@ async function moveOffComputerEngine(): Promise<void> {
   const moves = store.retireInstances(removed, replacement, {
     driverKind: instance?.driverKind,
     canWorkOnCloud: canWorkOnCloud(cloudEngine(instance)),
-    keepCloud: (bot) => boat.boatConfigured(cfg) && bot.cloudBackend !== "vps" && !inheritedTeamComputer(bot),
+    keepCloud: (bot) => !inheritedTeamComputer(bot) && (cloudKindOf(bot) === "instabox" ? instaboxConfigured(cfg) : cloudKindOf(bot) === "box" && boat.boatConfigured(cfg)),
   });
   writeComputerEngineMoveLines(moves, (move) => {
     const bot = store.bot(move.botId);
@@ -2920,7 +2924,7 @@ function previewSystemPrompt(bot: BotRecord) {
   const previewComputer = teamComputer ? "cloud" : bot.computer;
   const computerPromptKind = resolveComputerPromptKind({
     kind: previewComputer === "vm" ? "vm" : previewComputer === "cloud"
-      ? bot.cloudBackend === "vps" ? "vps" : "box" : previewComputer === "local" ? "local" : null,
+      ? cloudPolicyKindOf(bot, Boolean(teamComputer)) ?? null : previewComputer === "local" ? "local" : null,
     vmPrivate: localVmMode(cfg) === "per-bot",
   });
   const peers = reachablePeers(store.bots, bot);
@@ -5623,6 +5627,9 @@ const computerPreviews = createComputerPreviews();
 const vpsJoinRequests = new Map<string, Promise<void>>();
 const orphanBoatLifecycleBusyIds = new Set<string>();
 const boatInventoryRequestsBusyIds = new Set<string>();
+const cachedInstaboxMachines = createInstaboxMachineCache(key => createInstaboxRequest(key,
+  /^http:\/\/127\.0\.0\.1:[1-9]\d{0,4}$/.test(process.env.CRYBOT_TEST_INSTABOX_API ?? "") ? process.env.CRYBOT_TEST_INSTABOX_API : undefined));
+function instaboxMachinesFor(cfg: AppConfig): InstaboxMachines | null { return cachedInstaboxMachines(cfg); }
 type RemoteComputerProvider = "box" | "vps";
 const computerProviderConfigTransitions = new Set<RemoteComputerProvider>();
 const localVmIdleMs = () => localVmIdleTimeoutMinutes(cfg) * 60_000;
@@ -5956,11 +5963,12 @@ function turnSurfacePlan(bot: BotRecord, runOn?: RoutineRunOn, threadId?: string
   });
 }
 
-function turnProvider(bot: BotRecord, runOn?: RoutineRunOn, threadId?: string): RemoteComputerProvider | null {
-  if (runOn === "cloud" || inheritedTeamComputer(bot)) return "box";
+function turnProvider(bot: BotRecord, runOn?: RoutineRunOn, threadId?: string): CloudBackend | null {
+  if (inheritedTeamComputer(bot)) return "box";
+  const cloudBackend = cloudKindOf(bot, Boolean(inheritedTeamComputer(bot)) || runOn === "cloud");
   const wants = turnSurfacePlan(bot, runOn, threadId).computer;
   if (wants !== undefined && wants !== "cloud") return null;
-  return bot.cloudBackend === "vps" ? "vps" : wants === "cloud" ? "box" : null;
+  return cloudBackend !== "box" || wants === "cloud" ? cloudBackend : null;
 }
 
 /** A query never grants lifecycle authority. */
@@ -5976,6 +5984,7 @@ async function computerPreviewSurface(bot: BotRecord, threadId?: string) {
   const plan = turnSurfacePlan(bot, undefined, threadId);
   if (plan.computer !== undefined) return plan.computer === "off" && plan.browser ? "browser" : plan.computer;
   const instance = registry.get(bot.modelSelection.instanceId);
+  if (cloudKindOf(bot) === "instabox") return "cloud";
   if (bot.cloudBackend === "vps") {
     const remote = await vps.vpsComputerStatus(vpsConfigForBot(cfg, bot), bot.id);
     if (remote.ready || vpsDesktopOutdated(remote)) return "cloud";
@@ -5998,7 +6007,7 @@ async function selectableComputers(bot: BotRecord) {
   const caps = instance?.adapter.capabilities;
   const off = bot.computer === "off";
   const toolsLeaveOut = computerToolsRefusal(bot.toolScope, "works-on", bot.name)?.message;
-  const surfaces = (["cloud", "vm", "local", "browser"] as const).filter(surface => (surface !== "cloud" || bot.cloudBackend === "vps" || !providerLockEnabled()) && (!CLOUD_HOME || cloudHomeOffersPlace(surface)));
+  const surfaces = (["cloud", "vm", "local", "browser"] as const).filter(surface => (surface !== "cloud" || cloudKindOf(bot, Boolean(inheritedTeamComputer(bot))) !== "box" || !providerLockEnabled()) && (!CLOUD_HOME || cloudHomeOffersPlace(surface)));
   let ownDesktopAwaitsUpdate = false;
   return withoutHostWhileUpdating(await Promise.all(surfaces.map(async surface => {
     let ready = false;
@@ -6011,7 +6020,12 @@ async function selectableComputers(bot: BotRecord) {
       if (off) reason = "Computer access is Off in this bot's settings.";
       else if (toolsLeaveOut && surface !== "browser") reason = toolsLeaveOut;
       else if (surface === "cloud") {
-        if (bot.cloudBackend === "vps") {
+        if (cloudKindOf(bot, Boolean(inheritedTeamComputer(bot))) === "instabox") {
+          const status = await instaboxStatus(instaboxMachinesFor(cfg), bot.id);
+          ready = status.ready; canCreate = status.configured && !status.machine;
+          canStart = status.machine?.state === "suspended" || status.machine?.state === "stopped";
+          reason = status.problem ?? reason;
+        } else if (bot.cloudBackend === "vps") {
           const status = canWorkOnCloud(cloudEngine(instance)) ? await vps.vpsComputerStatus(vpsConfigForBot(cfg, bot), bot.id) : null;
           ready = status?.ready === true;
           canStart = Boolean(status?.daemonUp && status.managed && status.container === "stopped" &&
@@ -6048,7 +6062,7 @@ async function selectableComputers(bot: BotRecord) {
         reason = "The built-in browser is disabled, not installed, or unsupported by this model.";
       }
     } catch (error) { reason = error instanceof Error ? error.message : String(error); }
-    const kind = surface === "local" ? "thisComputer" : surface === "vm" ? "localVm" : surface === "cloud" ? (bot.cloudBackend === "vps" ? "vps" : "box") : undefined;
+    const kind = surface === "local" ? "thisComputer" : surface === "vm" ? "localVm" : surface === "cloud" ? cloudPolicyKindOf(bot, Boolean(inheritedTeamComputer(bot))) : undefined;
     const managed = kind && managedPolicy.computerRefusal(kind);
     if (managed) return { surface, label: surfaceLabel(surface), available: false, ready: false, canStart: false, canCreate: false, reason: managed };
     const available = ready || canStart || canCreate;
@@ -6114,7 +6128,7 @@ function providerTransitionForTurn(
   threadId?: string,
 ): string | null {
   const provider = turnProvider(bot, runOn, threadId);
-  return provider && computerProviderConfigTransitions.has(provider)
+  return provider && provider !== "instabox" && computerProviderConfigTransitions.has(provider)
     ? providerTransitionMessage(provider)
     : null;
 }
@@ -7907,7 +7921,7 @@ async function beginTurn(
       const dwebUrl = process.env.DWEB_URL?.trim();
       if (dwebUrl) integrations.dweb = { url: dwebUrl };
       let teamComputer = computerSkipped || proactive.fence.confines(threadId) || botApiThread(threadId) ? undefined : inheritedTeamComputer(bot);
-      const cloudBackend = teamComputer || opts?.runOn === "cloud" || bot.cloudBackend !== "vps" ? "box" : "vps";
+      const cloudBackend = cloudKindOf(bot, Boolean(teamComputer) || opts?.runOn === "cloud");
       const mountsComputerMcp = instance.adapter.capabilities.computerMcp === true;
       const mountsLocalComputer = instance.adapter.capabilities.localComputerMcp === true;
       const dispatchTask = store.taskByThread(bot.id, threadId);
@@ -7924,7 +7938,7 @@ async function beginTurn(
         releaseTurnComputer(resourceOwner);
       };
       const wantedKind = teamComputer ? "box" : wants === "local" ? "thisComputer" : wants === "vm" ? "localVm"
-        : wants === "cloud" ? (cloudBackend === "vps" ? "vps" : "box") : undefined;
+        : wants === "cloud" ? cloudPolicyKindOf({ cloudBackend }) : undefined;
       const placeRefusal = wantedKind && computerPlaceRefusal(wantedKind);
       if (placeRefusal) skipComputer(Object.assign(new Error(placeRefusal.message), { status: 409, code: placeRefusal.code }));
       const namedPlace = teamComputer || wants === undefined || wants === "off" ? undefined : wants;
@@ -8194,6 +8208,9 @@ async function beginTurn(
         if (teamComputer) {
           integrations.localComputer = mountTeamBoat(teamComputer, bot.id, resourceOwner, canWorkOnCloud(cloudEngine(instance)), { onClaimed: adoptClaimedCapture, onRejected: surfaceLazyClaimRejection("the team's cloud computer") });
           computerKind = "box";
+        }
+        if (!teamComputer && cloudBackend === "instabox" && wants === "cloud") {
+          await requireInstabox(instaboxMachinesFor(cfg)).ensureRunning(bot.id);
         }
         if (!teamComputer && cloudBackend === "box" && boat.boatOffered(cfg) && wants === "cloud") {
           integrations.localComputer = mountBotBoat(bot, resourceOwner, {
@@ -9036,7 +9053,7 @@ async function deleteBotWithLifecycle(botId: string, revalidate: () => void = ()
           error: `stop this bot's work in channel ${activeGroup.group.name} before deleting the bot`,
         });
       }
-      if ((boat.boatConfigured(cfg) || vpsSshAliasForBot(cfg, bot)) && (bot.busy || hasDirectDispatch(bot.id))) {
+      if ((cloudKindOf(bot) === "instabox" || boat.boatConfigured(cfg) || vpsSshAliasForBot(cfg, bot)) && (bot.busy || hasDirectDispatch(bot.id))) {
         return deletionResponse( 409, { error: "stop this bot's work before checking and deleting its cloud computer" });
       }
       const botBoatRecovery = boatCreateRecoverySnapshot().filter((entry) => entry.botId === bot.id);
@@ -9105,7 +9122,19 @@ async function deleteBotWithLifecycle(botId: string, revalidate: () => void = ()
         // Revalidate, re-check a person's holds (one may have come through another bot meanwhile) and record the browser cleanup intent before the first irreversible provider mutation.
         revalidate(); const heldNow = sharedVm.deletionRefusal(bot.id); if (heldNow) return deletionResponse(409, { error: heldNow });
         const browserCleanupRequest = browserCleanup.prepare("bot", bot.id);
+        let instaboxNotice: string | undefined;
         try {
+          const instabox = instaboxMachinesFor(cfg);
+          const botCloudKind = cloudKindOf(bot);
+          try {
+            if (botCloudKind === "instabox") await requireInstabox(instabox).remove(bot.id);
+            else await instabox?.remove(bot.id);
+          } catch (error) {
+            if (botCloudKind === "instabox") {
+              throw Object.assign(new Error(`InstaBox failed to delete this bot's machine: ${error instanceof Error ? error.message : String(error)}. The bot was kept so deletion can be retried`), { status: 503 });
+            }
+            instaboxNotice = `InstaBox could not be reached, so this bot's InstaBox machine, if it is still there, was left as it is.`;
+          }
           for (const instance of ownedBoatComputers) {
             const removed = await boat.deleteManagedBoat(cfg, managedBoatOwners(), instance.boxId, instance.name);
             if (removed.pending) {
@@ -9167,7 +9196,11 @@ async function deleteBotWithLifecycle(botId: string, revalidate: () => void = ()
           const acknowledged = await browserCleanup.ensure(committedCleanup);
           requireBrowserCleanupAcknowledged(acknowledged, `Browser data for ${bot.name}`);
         }
-        return deletionResponse(200, { ok: true, ...(vpsLeftOn ? { notice: vpsLeftBehindNotice("Deleted", vpsLeftOn, vps.vpsContainerName(bot.id)) } : {}) });
+        const notices = [
+          vpsLeftOn ? vpsLeftBehindNotice("Deleted", vpsLeftOn, vps.vpsContainerName(bot.id)) : undefined,
+          instaboxNotice,
+        ].filter((notice): notice is string => Boolean(notice));
+        return deletionResponse(200, { ok: true, ...(notices.length ? { notice: notices.join(" ") } : {}) });
       } finally {
         if (claimedLocalVmTarget) localVmLifecycleBusy.delete(claimedLocalVmTarget.key);
         releaseComputerLifecycle();
@@ -9971,7 +10004,7 @@ async function runClaimedGroupMemberTurn(
       instance.adapter.capabilities.browserMcp === true,
   });
   const roomKind = roomTeamComputer ? "box" : roomPlan.computer === "local" ? "thisComputer" : readyBot.computer === "vm" ? "localVm"
-    : roomPlan.computer === "cloud" ? (turnProvider(readyBot) === "vps" ? "vps" : "box") : undefined;
+    : roomPlan.computer === "cloud" ? cloudPolicyKindOf(readyBot, Boolean(roomTeamComputer)) : undefined;
   const roomPlaceRefusal = roomKind && computerPlaceRefusal(roomKind);
   if (roomPlaceRefusal) throw Object.assign(new Error(roomPlaceRefusal.message), { code: roomPlaceRefusal.code });
   if (!roomTeamComputer && roomPlan.computer === "cloud") {
@@ -10037,7 +10070,9 @@ async function runClaimedGroupMemberTurn(
       roomComputerKind = "local";
     }
     if (!roomTeamComputer && roomPlan.computer === "cloud") {
-      if (turnProvider(readyBot) === "vps") {
+      if (turnProvider(readyBot) === "instabox") {
+        await requireInstabox(instaboxMachinesFor(cfg)).ensureRunning(readyBot.id);
+      } else if (turnProvider(readyBot) === "vps") {
         vpsThreadStarted(readyBot.id, threadId);
         roomVpsBotId = readyBot.id;
         const mounted = await mountBotVps(readyBot, resourceOwner, { start: true, onClaimed: showClaimedScreen });
@@ -10095,7 +10130,7 @@ async function runClaimedGroupMemberTurn(
   } catch (error) {
     const place = roomPlan.computer;
     if (place !== "cloud" && place !== "vm" && place !== "local") throw error;
-    throw await asPlaceFailure(error, place, "room", readyBot, turnProvider(readyBot) === "vps" ? "vps" : "box");
+    throw await asPlaceFailure(error, place, "room", readyBot, turnProvider(readyBot) ?? "box");
   }
 
   const roomMembers = readyGroup.memberIds
@@ -12143,14 +12178,14 @@ ROUTES.push(createBotSettingsRoutes({
   canManageCommandAllowlist, commandAllowlistResponse, cardAnswerRefusal, threadRead: teamMessages.seen, levelOf, personMarkThread: personRooms.personMarkThread,
 }));
 ROUTES.push(createGroupOrderRoutes({ store, visibleFor: (auth) => visibleTo(viewerFor(auth)) }), createBotOrderRoutes({ store, visibleFor: (auth) => visibleTo(viewerFor(auth)), ...(botOrders ? { own: { person: botOrders.personOf, order: botOrders, told: (person, botIds) => broadcast({ kind: "bots.order", botIds }, { person }) } } : {}) }), createBotAccessRoutes({ team: CLOUD_TEAM, people: teamOwners.people, store, levelOf, wireBot, publicGroupState, broadcast, audienceChanged, record: (auth, row) => appendAdminAction(DATA_DIR, { ...row, actor: decisionActorFor(auth) }), shared: createShareNotice({ people: () => teamOwners.people?.list() ?? [], profileName: (email) => sessionNameForEmail(email) ?? teamHost.people.profile(personKey({ id: "", email })).name, store: () => store, inbox: () => teamMessages.inbox }) }), accessRequests.routes);
-ROUTES.push(createBotPatchRoutes({
+ROUTES.push(withInstaboxBackendPower(createBotPatchRoutes({
   store, cfg, registry, sessions, browserRuntime, browserLive, memoryUpkeep, cacheKeepWarm, hostedModels, supportsApprovalMode,
   routines: () => routines, activeVpsThreads,
   hostedWorkspace: HOSTED_WORKSPACE, hostedFullAccessRefusal: HOSTED_FULL_ACCESS_REFUSAL, desktopManaged: DESKTOP_MANAGED,
   broadcast, wireBot, publicGroupState, audienceChanged, storedAvatarExists, requestedTaskBot, threadBusy, activeGroupTurnForBot,
   checkedModelSelection, engineSwitchNeedsAsk, currentBrowserSession, interruptAllDirectThreads, cancelGroupTurnOperations,
   revokeInternalCapabilitiesForThread, runningTurnInstance, closeOpenApprovals, assertTeamComputerChangeIdle, forgetTemporaryBrowser, levelOf, team: Boolean(CLOUD_TEAM), mainThreadTasks, chiefChanged: (changed) => chiefRooms.moved(changed), ...(personRooms.personMarkThread ? { personMarkThread: personRooms.personMarkThread, shownThread: (auth: RequestAuth, bot: BotRecord) => memberBot(wireBot(bot), visibleTo(viewerFor(auth))).threadId } : {}),
-}));
+}), { bot: id => store.bot(id), machines: () => instaboxMachinesFor(cfg) }));
 ROUTES.push(createBotLifecycleRoutes({
   store, routines: () => routines, interruptAllDirectThreads, cancelDirectTurnDispatch, revokeInternalCapabilitiesForThread,
   activeGroupTurnForBot, cancelGroupTurnOperations, runningTurnInstance, closeOpenApprovals, deleteBotWithLifecycle, deleteRefusal: (auth, botId) => memberDeleteRefusal(auth, store.bot(botId), Boolean(CLOUD_TEAM)),
@@ -15001,9 +15036,10 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const bot = computerPreviewBot(m[1], url);
       if (!bot) return json(res, 404, { error: "no such bot" });
       const surface = url.searchParams.has("threadId") ? await computerPreviewSurface(bot, bot.threadId) : "cloud";
-      if (surface !== "cloud") return json(res, 200, { surface, configured: false, backend: bot.cloudBackend === "vps" ? "vps" : "box" });
+      if (surface !== "cloud") return json(res, 200, { surface, configured: false, backend: cloudKindOf(bot, Boolean(inheritedTeamComputer(bot))) });
       const teamComputer = inheritedTeamComputer(bot);
       if (teamComputer) return json(res, 200, { surface, backend: "box", teamComputer: { id: teamComputer.id, name: teamComputer.name }, ...(await boat.boatStatus(cfg, teamComputerOwner(teamComputer.id))) });
+      if (cloudKindOf(bot) === "instabox") return json(res, 200, { surface, ...await instaboxStatus(instaboxMachinesFor(cfg), bot.id) });
       return bot.cloudBackend === "vps"
         ? json(res, 200, { surface, backend: "vps", ...(await vps.vpsComputerStatus(vpsConfigForBot(cfg, bot), bot.id)) })
         : json(res, 200, { surface, backend: "box", ...(await boat.boatStatus(cfg, bot.id)) });
@@ -15092,8 +15128,8 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       if (m[2] === "join" && bot.cloudBackend === "vps") {
         for (let pending; (pending = vpsJoinRequests.get(botId));) await pending;
       }
-      const remoteProvider: RemoteComputerProvider = bot.cloudBackend === "vps" ? "vps" : "box";
-      if (computerProviderConfigTransitions.has(remoteProvider)) {
+      const remoteProvider = cloudKindOf(bot, Boolean(inheritedTeamComputer(bot)));
+      if (remoteProvider !== "instabox" && computerProviderConfigTransitions.has(remoteProvider)) {
         return json(res, 409, { error: providerTransitionMessage(remoteProvider) });
       }
       if (boatLifecycleBusyBots.has(botId)) {
@@ -15116,6 +15152,13 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
           if (m[2] === "join") return json(res, 200, await boat.joinReadyBoat(cfg, key));
           return json(res, 200, await boat.sleepBoat(cfg, key));
         } finally { release(); if (m[2] !== "sleep") cloudComputerPower.used(key); }
+      }
+      if (remoteProvider === "instabox") {
+        if (botHasActiveTurn(botId) && ["provision", "sleep", "remove"].includes(m[2])) return json(res, 409, { error: CLOUD_COMPUTER_BUSY_ERROR });
+        const release = claimBotComputerLifecycle(botId, m[2] === "join");
+        try { return json(res, 200, await instaboxComputerAction(instaboxMachinesFor(cfg), botId, m[2], await readBody(req))); }
+        catch (error) { const failure = instaboxFailureResponse(error); return json(res, failure.status, failure.body); }
+        finally { release(); }
       }
       if (bot.cloudBackend === "vps") {
         if (m[2] === "screenshot") {

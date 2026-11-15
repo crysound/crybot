@@ -11,7 +11,10 @@ const token = process.env.CRYBOT_TEST_DESKTOP_OWNER_TOKEN;
 const pages = process.env.CRYBOT_TEST_DESKTOP_PAGES_ACCESS;
 const cuaFile = process.env.CRYBOT_TEST_DESKTOP_CUA_CONNECTION;
 const tailnetShare = process.env.CRYBOT_TEST_DESKTOP_TAILNET_SHARE;
+const policy = process.env.CRYBOT_TEST_DESKTOP_POLICY;
+const policyDelay = Number(process.env.CRYBOT_TEST_DESKTOP_POLICY_DELAY_MS) || 0;
 delete process.env.CRYBOT_TEST_DESKTOP_TAILNET_SHARE;
+delete process.env.CRYBOT_TEST_DESKTOP_POLICY;
 delete process.env.CRYBOT_TEST_DESKTOP_OWNER_TOKEN;
 delete process.env.CRYBOT_TEST_DESKTOP_PAGES_ACCESS;
 delete process.env.CRYBOT_TEST_DESKTOP_CUA_CONNECTION;
@@ -39,6 +42,11 @@ if (token || cuaFile) {
         if (event !== "message") return;
         listeners.push(listener);
         if (token) queueMicrotask(() => listener({ data: { type: "crybot:desktop-mutation-token", token } }));
+        if (policy) {
+          const deliver = () => listener({ data: { type: "crybot:managed-desktop-policy", policy: JSON.parse(policy) } });
+          if (policyDelay > 0) setTimeout(deliver, policyDelay).unref?.();
+          else queueMicrotask(deliver);
+        }
         if (pages) queueMicrotask(() => listener({ data: { type: "crybot:included-pages", access: JSON.parse(pages) } }));
         if (cuaFile) queueMicrotask(() => listener({ data: cuaGrant() }));
         if (tailnetShare) queueMicrotask(() => listener({ data: { type: "crybot:tailnet-share", share: JSON.parse(tailnetShare) } }));

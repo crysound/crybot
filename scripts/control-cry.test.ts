@@ -42,6 +42,19 @@ describe("the fixture's Netlify stand-in", () => {
   });
 });
 
+describe("the fixture's InstaBox stand-in", () => {
+  it("passes the key only with a validated loopback API address", () => {
+    expect(childEnv({ CRYBOT_TEST_INSTABOX_API: " http://127.0.0.1:4100 ", INSTABOX_API_KEY: "instabox-fixture-key" }))
+      .toMatchObject({ CRYBOT_TEST_INSTABOX_API: "http://127.0.0.1:4100", INSTABOX_API_KEY: "instabox-fixture-key" });
+    for (const url of [undefined, "", "https://api.instabox.sh", "http://localhost:4100", "http://127.0.0.1:4100/v1", "http://127.0.0.1:4100@evil.test", "http://192.0.2.1:4100"]) {
+      const env = childEnv({ CRYBOT_TEST_INSTABOX_API: url, INSTABOX_API_KEY: "must-not-reach-the-fixture" });
+      expect(env, url).not.toHaveProperty("CRYBOT_TEST_INSTABOX_API");
+      expect(env, url).not.toHaveProperty("INSTABOX_API_KEY");
+    }
+    expect(childEnv({ CRYBOT_TEST_INSTABOX_API: "http://127.0.0.1:4100" })).not.toHaveProperty("INSTABOX_API_KEY");
+  });
+});
+
 describe("the fixture's Live call environment", () => {
   it("passes a loopback fake GPT-Live and its key through", () => {
     expect(childEnv({ CRYBOT_OPENAI_LIVE_URL: " http://127.0.0.1:4100 ", CRYBOT_OPENAI_LIVE_KEY: "sk-fake" }))

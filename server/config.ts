@@ -819,7 +819,12 @@ export function syncCredentialEnv(patch: Partial<Omit<AppConfig, "threads" | "ne
   }
 }
 
-import { WORKSPACE_CREDENTIAL_ENV, CONTROL_PLANE_ENV, CONTROL_PLANE_ENV_PREFIX, stripControlPlaneEnv, stripWorkspaceCredentialEnv, PROVIDER_CREDENTIAL_ENV, OPENCODE_PROVIDER_ENV } from "./credential-env.ts";
+import { WORKSPACE_CREDENTIAL_ENV as BASE_WORKSPACE_CREDENTIAL_ENV, CONTROL_PLANE_ENV as BASE_CONTROL_PLANE_ENV, CONTROL_PLANE_ENV_PREFIX, stripControlPlaneEnv as stripBaseControlPlaneEnv, stripWorkspaceCredentialEnv as stripBaseWorkspaceCredentialEnv, PROVIDER_CREDENTIAL_ENV, OPENCODE_PROVIDER_ENV } from "./credential-env.ts";
+import { stripInstaboxCredentialEnv } from "./instabox/key.ts";
+const WORKSPACE_CREDENTIAL_ENV = [...BASE_WORKSPACE_CREDENTIAL_ENV, "INSTABOX_API_KEY"] as const;
+const CONTROL_PLANE_ENV = [...BASE_CONTROL_PLANE_ENV, "INSTABOX_API_KEY"] as const;
+function stripControlPlaneEnv(env: Record<string, string | undefined>): void { stripBaseControlPlaneEnv(env); stripInstaboxCredentialEnv(env); }
+function stripWorkspaceCredentialEnv(env: Record<string, string | undefined>): void { stripBaseWorkspaceCredentialEnv(env); stripInstaboxCredentialEnv(env); }
 export { WORKSPACE_CREDENTIAL_ENV, CONTROL_PLANE_ENV, CONTROL_PLANE_ENV_PREFIX, stripControlPlaneEnv, stripWorkspaceCredentialEnv, PROVIDER_CREDENTIAL_ENV, OPENCODE_PROVIDER_ENV };
 
 export const OPENCODE_PROVIDER_KEY_LIMIT = 20;
