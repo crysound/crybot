@@ -375,3 +375,21 @@ describe("PATCH /api/bots/:id mainThreadChoice", () => {
     expect(store.bot(bot.id)?.mainThreadChoice).toBeUndefined();
   });
 });
+
+
+describe("PATCH cloudBackend", () => {
+  it("accepts instabox and keeps it across store reload", async () => {
+    const { bot, patch } = fixture();
+    const result = await patch(bot.id, { cloudBackend: "instabox" });
+    expect(result.status).toBe(200);
+    expect(result.body.bot.cloudBackend).toBe("instabox");
+    expect(new Store(() => sonnet).bot(bot.id)?.cloudBackend).toBe("instabox");
+  });
+
+  it("lists all three valid backends when rejecting unknown values", async () => {
+    const { bot, patch } = fixture();
+    expect(await patch(bot.id, { cloudBackend: "unknown" })).toMatchObject({
+      status: 400, body: { error: "cloudBackend must be box, vps or instabox" },
+    });
+  });
+});

@@ -1,4 +1,5 @@
 # Public domains needed by open-source licenses and official documentation.
+instabox.sh # InstaBox 云电脑公共 API（第三方公开服务）。
 apple.com
 developer.apple.com
 swift.org

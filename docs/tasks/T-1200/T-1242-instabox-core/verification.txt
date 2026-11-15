@@ -1,0 +1,349 @@
+T-1242 第 5 轮验证
+所有服务使用隔离临时目录、假引擎和本地假服务。
+docs/verification/README.md 在仓库中不存在。
+地址、主机名及仓库绝对路径已脱敏；下列保留完整命令输出。
+
+$ crybot-link-deps
+crybot-link-deps: linked 73 entries into worktree node_modules
+
+===== new-cases =====
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 -t 'normal InstaBox turn'
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed | 13 skipped (15)
+   Start at  06:54:50
+   Duration  11.59s (transform 1.52s, setup 954ms, import 1.10s, tests 9.39s, environment 0ms)
+
+
+===== mutation =====
+Mutation: replace wantedKind cloud branch with undefined.
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1 -t refuses a normal InstaBox turn
+
+ RUN  v4.1.11 .
+
+ ❯ server/instabox/core.e2e.test.ts (15 tests | 1 failed | 14 skipped) 26570ms
+   × refuses a normal InstaBox turn under the managed box policy before any machine request 26568ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/instabox/core.e2e.test.ts > refuses a normal InstaBox turn under the managed box policy before any machine request
+AssertionError: expected [ { …(8) }, { …(7) }, { …(12) }, …(2) ] to deeply equal ArrayContaining{…}
+
+- Expected
++ Received
+
+- ArrayContaining [
+-   ObjectContaining {
++ [
++   {
++     "at": 1794725725956,
++     "kind": "text",
++     "parentId": null,
++     "role": "bot",
++     "setupChoices": [
++       "Research and digging into topics",
++       "Keeping an eye on things for me",
++       "Email, calendar and messages",
++       "Bookings, shopping and errands",
++       "Data, spreadsheets and reports",
++     ],
++     "setupOffer": true,
++     "text": "Hi, I'm Churro. What would you like me to do?",
++   },
++   {
++     "at": 1794725730551,
++     "kind": "text",
++     "requestPending": false,
++     "role": "user",
++     "text": "Use the cloud computer.",
++   },
++   {
++     "at": 1794725730720,
++     "kind": "text",
++     "role": "bot",
++     "text": "hello from fake claude",
++     "turnCompletedAt": 1794725730733,
++     "turnSucceeded": true,
++     "turnTerminal": true,
++   },
++   {
++     "at": 1794725730723,
+      "kind": "activity",
+      "role": "bot",
+-     "tool": ObjectContaining {
+-       "name": "error: Fixture Agency does not allow bots to use cloud computers.",
+-       "ok": false,
++     "tool": {
++       "input": "{
++   \"command\": \"echo hi\"
++ }",
++       "itemId": "tu-13183-1",
++       "name": "Bash",
++       "ok": true,
++       "output": "[
++   {
++     \"type\": \"text\",
++     \"text\": \"hi\"
++   }
++ ]",
++       "spoken": "running a command",
++       "step": {
++         "activity": "command",
++         "target": "echo hi",
++       },
++       "summary": "echo hi",
++     },
++   },
++   {
++     "at": 1794725730735,
++     "digest": {
++       "at": 1794725730735,
++       "durationMs": 83,
++       "hookCoverage": "preview",
++       "memory": [],
++       "reply": "hello from fake claude",
++       "toolCalls": 1,
++       "tools": [
++         {
++           "count": 1,
++           "failed": 0,
++           "name": "Bash",
++           "sample": "echo hi",
+          },
+-     "turnSucceeded": false,
++       ],
++       "usage": {
++         "cachedInput": 2,
++         "costUsd": 0.01,
++         "input": 12,
++         "output": 5,
++       },
++     },
++     "kind": "digest",
++     "role": "bot",
++     "text": "[digest] · tools: Bash ×1 (from tool previews) · reply: hello from fake claude",
++     "turnSucceeded": true,
+    },
+  ]
+
+ ❯ server/instabox/core.e2e.test.ts:215:8
+    213|     expect((await request("POST", `/api/bots/${bot.id}/messages`, { te…
+    214|     await expect.poll(async () => (await request("GET", `/api/threads/…
+    215|       .toEqual(expect.arrayContaining([expect.objectContaining({ role:…
+       |        ^
+    216|         tool: expect.objectContaining({ ok: false, name: "error: Fixtu…
+    217|     expect(fake.calls.filter(call => call.path.startsWith("/v1/machine…
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ server/instabox/core.e2e.test.ts:214:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 14 skipped (15)
+   Start at  06:55:22
+   Duration  28.38s (transform 1.26s, setup 740ms, import 948ms, tests 26.57s, environment 0ms)
+
+
+Exit code: 1 (expected 1)
+
+===== core-1 =====
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  06:56:09
+   Duration  59.36s (transform 1.50s, setup 952ms, import 1.04s, tests 57.24s, environment 0ms)
+
+
+Exit code: 0
+
+===== core-2 =====
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  06:57:09
+   Duration  63.22s (transform 2.06s, setup 1.26s, import 1.43s, tests 60.38s, environment 0ms)
+
+
+Exit code: 0
+
+===== core-3 =====
+$ pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  06:58:13
+   Duration  68.61s (transform 2.74s, setup 1.58s, import 1.90s, tests 64.91s, environment 0ms)
+
+
+Exit code: 0
+
+===== environment =====
+$ pnpm exec vitest run scripts/control-cry.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  06:59:22
+   Duration  3.07s (transform 2.20s, setup 1.48s, import 1.33s, tests 16ms, environment 0ms)
+
+
+Exit code: 0
+
+===== launcher-1 =====
+$ pnpm exec vitest run server/control-cry.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+ ❯ server/control-cry.test.ts (20 tests | 1 failed) 11244ms
+     × launches, drives a real fake-engine turn, and removes only its test data 2624ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/control-cry.test.ts > control-cry isolated verification loop > launches, drives a real fake-engine turn, and removes only its test data
+AssertionError: expected [ 'claude', 'chatgpt' ] to deeply equal [ 'claude' ]
+
+- Expected
++ Received
+
+  [
+    "claude",
++   "chatgpt",
+  ]
+
+ ❯ server/control-cry.test.ts:261:39
+    259|       const doctor = await runControlCry(["doctor"], { env }) as any;
+    260|       expect(doctor.ok).toBe(true);
+    261|       expect(doctor.availableEngines).toEqual(["claude"]);
+       |                                       ^
+    262|
+    263|       const created = await runControlCry(["new-bot", "--name", "Verif…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 passed (20)
+   Start at  06:59:26
+   Duration  14.03s (transform 2.06s, setup 1.33s, import 1.28s, tests 11.24s, environment 0ms)
+
+
+Exit code: 1
+
+===== launcher-baseline =====
+Baseline check: scripts/control-cry.ts temporarily restored from HEAD.
+$ pnpm exec vitest run server/control-cry.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+ ❯ server/control-cry.test.ts (20 tests | 1 failed) 10821ms
+     × launches, drives a real fake-engine turn, and removes only its test data 2617ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/control-cry.test.ts > control-cry isolated verification loop > launches, drives a real fake-engine turn, and removes only its test data
+AssertionError: expected [ 'claude', 'chatgpt' ] to deeply equal [ 'claude' ]
+
+- Expected
++ Received
+
+  [
+    "claude",
++   "chatgpt",
+  ]
+
+ ❯ server/control-cry.test.ts:261:39
+    259|       const doctor = await runControlCry(["doctor"], { env }) as any;
+    260|       expect(doctor.ok).toBe(true);
+    261|       expect(doctor.availableEngines).toEqual(["claude"]);
+       |                                       ^
+    262|
+    263|       const created = await runControlCry(["new-bot", "--name", "Verif…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 passed (20)
+   Start at  07:00:07
+   Duration  13.83s (transform 2.24s, setup 1.44s, import 1.37s, tests 10.82s, environment 0ms)
+
+
+Exit code: 1
+
+===== backend =====
+$ pnpm exec vitest run server/cloud-backend.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  07:00:22
+   Duration  1.50s (transform 1.02s, setup 1.29s, import 39ms, tests 5ms, environment 0ms)
+
+
+Exit code: 0
+
+===== index =====
+$ pnpm exec vitest run server/index.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  338 passed (338)
+   Start at  07:00:24
+   Duration  161.98s (transform 2.15s, setup 1.18s, import 1.91s, tests 158.71s, environment 0ms)
+
+
+Exit code: 0
+
+===== size =====
+$ pnpm exec vitest run scripts/testing/file-size-ratchet.test.ts --maxWorkers=1
+
+ RUN  v4.1.11 .
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  07:03:07
+   Duration  1.49s (transform 699ms, setup 903ms, import 9ms, tests 441ms, environment 0ms)
+
+
+Exit code: 0
+
+===== tsc =====
+$ pnpm exec tsc -p tsconfig.server.json
+
+Exit code: 0
+
+===== oxlint =====
+$ pnpm exec oxlint --deny-warnings scripts/control-cry.ts scripts/control-cry.test.ts server/instabox/core.e2e.test.ts
+
+Exit code: 0
+
+===== diff-check =====
+$ git diff --check
+
+Exit code: 0
+
+Mutation self-check: expected refusal assertion failed after replacing the cloud wantedKind branch with undefined. server/index.ts restored; no final diff.
+Launcher baseline check: the same extra chatgpt engine failed the exact same assertion with scripts/control-cry.ts restored from HEAD. Round 5 changes restored afterward.
