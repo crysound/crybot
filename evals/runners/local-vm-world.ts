@@ -38,6 +38,7 @@ export class LocalVmWorld extends BaseWorld {
     mkdirSync(data, { recursive: true });
     this.vmState({});
     writeFileSync(join(data, "config.json"), JSON.stringify({
+      localVm: { mode: "shared", screens: 1 },
       instances: {
         claude: {
           driver: "claudeAgent",

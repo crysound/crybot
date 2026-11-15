@@ -1,8 +1,11 @@
+import type { LocalVmScreenRuntime } from "../local-vm-screen-runtime.ts";
+import { localVmLayout, localVmRunResources, screenJoinUrl } from "../local-vm-screen-layout.ts";
+import { isScreenTarget, containerTargetOf, sharedScreenTarget } from "../container-targets.ts";
 import { z, type ZodString } from "zod";
 import * as boat from "../boat.ts";
 import { boatHealth } from "../boat-health.ts";
 import type { ComputerControl } from "../computer-control.ts";
-import { isValidSshAlias, localVmMaxInstances, localVmMode, localVmResources, type AppConfig } from "../config.ts";
+import { isValidSshAlias, localVmMaxInstances, localVmMode, type AppConfig } from "../config.ts";
 import {
   containerComputerAction,
   containerComputerExists,
@@ -41,6 +44,8 @@ async function keepSignInsBeforeRemove(target: LocalVmTarget): Promise<void> {
 export interface ComputerRouteDeps {
   store: Pick<Store, "bot" | "bots" | "sections">;
   cfg: AppConfig;
+  screens?: LocalVmScreenRuntime;
+  localVmContainerBusy?(target: LocalVmTarget): boolean;
   sessions: Pick<SessionRegistry, "isLive">;
   teamComputers: Pick<TeamComputers, "get" | "create" | "assign" | "setProblem" | "list">;
   computerControl: Pick<ComputerControl, "snapshot" | "take" | "release" | "acquireLease" | "releaseLease" | "beat">;
@@ -290,6 +295,22 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       }
     }
 
+    m = path.match(/^\/api\/local-computer\/screens\/([1-4])\/(join|screenshot)$/);
+    if (m && method === "POST") {
+      if (!auth.scopes.includes("admin")) return json(res, 403, { error: "forbidden" });
+      const screen = Number(m[1]);
+      if (!deps.screens?.ready(screen)) return json(res, 409, { error: "screen_not_ready" });
+      const target = sharedScreenTarget(screen);
+      res.setHeader("cache-control", "private, no-store");
+      if (m[2] === "screenshot") return json(res, 200, { image: await containerComputerScreenshot(undefined, undefined, target) });
+      const status = await containerComputerStatus(undefined, undefined, target);
+      const password = deps.screens.password(screen);
+      if (!status.ready || !password || !deps.screens.ready(screen)) return json(res, 409, { error: "screen_not_ready" });
+      return json(res, 200, {
+        ...(auth.kind === "loopback" ? { joinUrl: screenJoinUrl(status.viewer_url, screen, password) } : {}),
+        socketPath: `api/desktop-viewer/${viewerTargetId(target)}/websockify`, password,
+      });
+    }
     if (method === "GET" && path === "/api/local-computer") {
       return json(res, 200, await localVmPayload(SHARED_LOCAL_VM_TARGET, auth));
     }
@@ -313,6 +334,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       if (localVmMode(cfg) === "pool" && action === "run") {
         return json(res, 409, { error: "Pool mode creates its desktops automatically from conversation turns" });
       }
+      if (action !== "pull" && deps.screens?.enabled() && deps.localVmContainerBusy?.(SHARED_LOCAL_VM_TARGET)) return json(res, 409, { error: "the Local VM is being used — stop its turns and release control first" });
       const vmOwner = localVmLeaseFor(SHARED_LOCAL_VM_TARGET).current(localVmOwnerBusy);
       if (vmOwner && (action === "stop" || action === "remove" || action === "run")) {
         return json(res, 409, { error: "the Local VM is being used by a bot — stop that turn first" });
@@ -324,11 +346,13 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       if (action === "pull") localVmImageBusy.set(true);
       else localVmLifecycleBusy.add(SHARED_LOCAL_VM_TARGET.key);
       try {
+        if (action === "stop" || action === "remove") await deps.screens?.reset();
         if (action === "remove") await keepSignInsBeforeRemove(SHARED_LOCAL_VM_TARGET);
-        const status = await containerComputerAction(action, undefined, undefined, SHARED_LOCAL_VM_TARGET, localVmResources(cfg));
+        const status = await containerComputerAction(action, undefined, undefined, SHARED_LOCAL_VM_TARGET, localVmRunResources(cfg), localVmLayout(cfg, SHARED_LOCAL_VM_TARGET));
         if (action === "run" || action === "start") {
           localVmSeen.add(SHARED_LOCAL_VM_TARGET.key);
-          localVmIdleFor(SHARED_LOCAL_VM_TARGET).touch();
+          if (deps.screens?.enabled()) deps.screens.touch(SHARED_LOCAL_VM_TARGET);
+          else localVmIdleFor(SHARED_LOCAL_VM_TARGET).touch();
         }
         if (action === "stop" || action === "remove") localVmIdleFor(SHARED_LOCAL_VM_TARGET).cancel();
         return json(res, 200, {
@@ -337,6 +361,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
           idle_timeout_ms: localVmIdleMs(),
           mode: localVmMode(cfg),
           max_instances: localVmMaxInstances(cfg),
+          ...(deps.screens ? { screens: deps.screens.payload() } : {}),
         });
       } finally {
         if (action === "pull") localVmImageBusy.set(false);
@@ -344,7 +369,8 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       }
     }
     if (method === "POST" && path === "/api/local-computer/screenshot") {
-      localVmIdleFor(SHARED_LOCAL_VM_TARGET).touch();
+      if (!deps.screens?.enabled()) localVmIdleFor(SHARED_LOCAL_VM_TARGET).touch();
+      if (deps.screens?.enabled()) return json(res, 409, { error: "select_a_screen" });
       res.setHeader("cache-control", "private, no-store");
       return json(res, 200, {
         image: await containerComputerScreenshot(undefined, undefined, SHARED_LOCAL_VM_TARGET),
@@ -355,6 +381,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
     if (m && method === "GET") {
       const bot = computerPreviewBot(m[1], url);
       if (!bot) return json(res, 404, { error: "no such bot" });
+      if (deps.screens?.enabled() && !deps.screens.assigned(bot.id)) return json(res, 409, { error: "screen_not_assigned" });
       return json(res, 200, await localVmPayload(localVmTargetForStatus(bot.id, bot.threadId), auth));
     }
     m = path.match(/^\/api\/bots\/([\w-]+)\/local-computer\/(run|start|stop|remove)$/);
@@ -369,7 +396,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       }
       const action = z.enum(["run", "start", "stop", "remove"]).parse(m[2]);
       const target = localVmTargetForBot(bot.id);
-      if (target.key === SHARED_LOCAL_VM_TARGET.key) {
+      if (containerTargetOf(target).key === SHARED_LOCAL_VM_TARGET.key) {
         return json(res, 409, { error: "Shared mode manages this desktop in App Settings → Computers" });
       }
       if (localVmImageBusy.get() || localVmModeChangeBusy.get() || localVmLifecycleBusy.has(target.key)) {
@@ -400,7 +427,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
           }
         }
         if (action === "remove") await keepSignInsBeforeRemove(target);
-        const status = await containerComputerAction(action, undefined, undefined, target, localVmResources(cfg));
+        const status = await containerComputerAction(action, undefined, undefined, target, localVmRunResources(cfg), localVmLayout(cfg, target));
         if (action === "run" || action === "start") {
           localVmSeen.add(target.key);
           localVmIdleFor(target).touch();
@@ -412,6 +439,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
           idle_timeout_ms: localVmIdleMs(),
           mode: localVmMode(cfg),
           max_instances: localVmMaxInstances(cfg),
+          ...(deps.screens ? { screens: deps.screens.payload() } : {}),
         });
       } finally {
         if (action === "run") localVmProvisionBusy.set(false);
@@ -425,8 +453,9 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       if (url.searchParams.has("threadId") && await computerPreviewSurface(bot, bot.threadId) !== "vm") {
         return json(res, 409, { error: "This conversation is not using the Local VM" });
       }
+      if (deps.screens?.enabled() && !deps.screens.assigned(bot.id)) return json(res, 409, { error: "screen_not_assigned" });
       const target = localVmTargetForStatus(bot.id, url.searchParams.has("threadId") ? bot.threadId : undefined);
-      localVmIdleFor(target).touch();
+      if (!deps.screens?.enabled()) localVmIdleFor(target).touch();
       res.setHeader("cache-control", "private, no-store");
       return json(res, 200, {
         image: await containerComputerScreenshot(undefined, undefined, target),
@@ -448,6 +477,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       if (localVmMode(cfg) === "pool") {
         return json(res, 409, { error: "Phone control is not available in pool mode. Select shared or per-bot mode in Settings → Computers." });
       }
+      if (deps.screens?.enabled() && !deps.screens.assigned(bot.id)) return json(res, 409, { error: "screen_not_assigned" });
       const lease = controlLeaseIdSchema.safeParse(url.searchParams.get("controlLeaseId") ?? undefined);
       if (!lease.success) return json(res, 400, { error: "controlLeaseId is required" });
       if (!store.bot(bot.id) || !computerControl.beat(localVmLeaseKey(bot, threadId), lease.data)) {
@@ -459,13 +489,16 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
         || !status.viewer_url) {
         return json(res, 409, { error: status.problem ?? "The Local VM is not ready" });
       }
-      localVmIdleFor(target).touch();
+      if (!deps.screens?.enabled()) localVmIdleFor(target).touch();
       res.setHeader("cache-control", "private, no-store");
-      if (auth.kind === "loopback") return json(res, 200, { joinUrl: status.viewer_url });
+      const password = isScreenTarget(target) ? deps.screens?.password(target.screen) : new URLSearchParams(new URL(status.viewer_url).hash.slice(1)).get("password");
+      if (isScreenTarget(target) && (!password || !deps.screens?.ready(target.screen))) return json(res, 409, { error: "screen_not_ready" });
+      const joinUrl = isScreenTarget(target) ? screenJoinUrl(status.viewer_url, target.screen, password!) : status.viewer_url;
+      if (auth.kind === "loopback") return json(res, 200, { joinUrl });
       const socket = new URLSearchParams({ botId: bot.id, ...(threadId ? { threadId } : {}), controlLeaseId: lease.data });
       return json(res, 200, {
         socketPath: `api/desktop-viewer/${viewerTargetId(target)}/websockify?${socket}`,
-        password: new URLSearchParams(new URL(status.viewer_url).hash.slice(1)).get("password"),
+        password,
       });
     }
     return PASS;

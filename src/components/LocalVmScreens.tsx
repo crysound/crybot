@@ -1,3 +1,4 @@
+import type { ScreenListPayload } from "../../shared/local-vm-screens";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Hand, Loader2, Monitor } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -12,20 +13,6 @@ import { Select } from "./Select";
 import { useComputerTakeover } from "./computer-takeover";
 
 const LiveDesktop = lazy(() => import("./LiveDesktop").then((module) => ({ default: module.LiveDesktop })));
-
-export interface ScreenListPayload {
-  layout: "single" | "multi";
-  screens: number;
-  slots: Array<{
-    screen: number;
-    state: "off" | "starting" | "ready" | "stopping" | "failed";
-    bot: { id: string; name: string } | null;
-    viewerTarget: string;
-    controlledByPerson: boolean;
-    idleSeconds: number | null;
-  }>;
-  queue: Array<{ bot: { id: string; name: string }; position: number; waitingSeconds: number }>;
-}
 
 type ScreenSlot = ScreenListPayload["slots"][number];
 const stateLabels: Record<ScreenSlot["state"], LocaleKey> = {

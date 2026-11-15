@@ -305,6 +305,8 @@ export function findServerLines(paths: readonly string[], read: (path: string) =
           if (text) trace(source, valueOf(text), at(node, "line"), new Set());
         } else if (called === "notice") {
           for (const argument of node.arguments) trace(source, argument, at(node, "notice"), new Set());
+        } else if (called === "row" && ts.isPropertyAccessExpression(callee) && callee.expression.getText() === "hooks") {
+          trace(source, node.arguments[1], at(node, "status row"), new Set());
         }
       }
       ts.forEachChild(node, visit);
@@ -567,6 +569,7 @@ describe("the guard", () => {
         `store.patchMessage(id, line, { text: \`Finished at \${time}\` });`,
         `const note = { kind: "done", botId: bot.id, title: \`\${bot.name} finished the job\`, body };`,
         `deps.notice(\`Switched to \${name} after the limit.\`);`,
+        `hooks.row(threadId, "Waiting for this computer.");`,
         `store.appendMessage(id, { role: "bot", kind: "options", card: { title: "Send on your behalf?", options } });`,
       ].join("\n"),
       "server/lines.ts": `export function reportLine(id: string): string { return \`Report \${id} is saved for later.\`; }`,
@@ -578,6 +581,7 @@ describe("the guard", () => {
       "server/a.ts line: Finished at  … ",
       "server/a.ts notification:  …  finished the job",
       "server/a.ts notice: Switched to  …  after the limit.",
+      "server/a.ts status row: Waiting for this computer.",
       "server/a.ts card card: Send on your behalf?",
       "server/lines.ts line: Report  …  is saved for later.",
     ]);

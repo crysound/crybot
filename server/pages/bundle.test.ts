@@ -1,10 +1,10 @@
-import { mkdirSync, mkdtempSync, realpathSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, renameSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { open, readdir, realpath, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { pageSignature, PageBundleError, readPageBundle } from "./bundle.ts";
+import { botFileSource, pageSignature, PageBundleError, readBotPageBundle, readPageBundle } from "./bundle.ts";
 
 // The real file system, wrapped so a test can change a folder at the moment it is listed.
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -13,6 +13,31 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 });
 
 const folder = () => realpathSync(mkdtempSync(join(tmpdir(), "cry-page-bundle-")));
+
+it.each([undefined, "/home/cua/workspace/screens/s2", "/home/crybot-s2/workspace"])("maps bot files without access using guest root %s", async (vmGuestRoot) => {
+  const vmWorkspace = folder();
+  try {
+    mkdirSync(join(vmWorkspace, "site"));
+    writeFileSync(join(vmWorkspace, "site/index.html"), "host page");
+    const folders = async () => ({ roots: [], vmWorkspace, vmGuestRoot });
+    const path = `${vmGuestRoot ?? "/home/cua/workspace"}/site`;
+    expect((await readBotPageBundle(path, folders)).files[0]?.data.toString()).toBe("host page");
+    expect(await botFileSource(`${path}/index.html`, folders)).toBe(join(vmWorkspace, "site/index.html"));
+  } finally { rmSync(vmWorkspace, { recursive: true, force: true }); }
+});
+
+it.each(["folder", "explicit"] as const)("reads screen aliases through %s access even with a host mapping", async (source) => {
+  const { screenFilesFixture } = await import("../testing/screen-files-fixture.ts");
+  const f = await screenFilesFixture();
+  try {
+    await f.access.writeFile("site/index.html", Buffer.from("screen page"));
+    const vmGuestRoot = "/home/crybot-s2/workspace";
+    const folders = async () => ({ roots: [], vmWorkspace: f.workspace, vmGuestRoot, ...(source === "folder" ? { access: f.access } : {}) });
+    const access = source === "explicit" ? f.access : undefined;
+    expect((await readBotPageBundle(`${vmGuestRoot}/site`, folders, access)).files[0]?.data.toString()).toBe("screen page");
+    expect(await botFileSource(`${vmGuestRoot}/site/index.html`, folders, access)).toBe("/home/cua/workspace/screens/s2/site/index.html");
+  } finally { await f.cleanup(); }
+});
 
 describe("readPageBundle", () => {
   it("does not follow its folder swapped for a link while it is being read", async () => {

@@ -820,8 +820,9 @@ export class SessionRegistry {
   feishuUnionIdForPerson(person: string | undefined): string | undefined {
     if (!person) return undefined;
     this.prune();
-    const identities = new Set(this.sessions.filter(session => !session.token && !session.owner &&
-      !this.personal(session.scopes) && personKey(session) === person && session.accessIdentity?.startsWith("feishu:"))
+    const sessions = this.sessions.filter(session => !this.personal(session.scopes) && personKey(session) === person);
+    if (sessions.some(session => !session.accessIdentity?.startsWith("feishu:"))) return undefined;
+    const identities = new Set(sessions.filter(session => !session.token && !session.owner)
       .map(session => session.accessIdentity!.slice("feishu:".length)));
     return identities.size === 1 ? [...identities][0] : undefined;
   }

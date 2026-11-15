@@ -1,3 +1,4 @@
+import { localVmConfigSchema, localVmScreens } from "../local-vm-settings.ts";
 import { liveSavePatch } from "../live-config.ts";
 import { signInEnvRefusal } from "../sign-in-env.ts";
 import * as boat from "../boat.ts";
@@ -87,6 +88,8 @@ export interface ConfigRouteDeps {
   localVmModeChangeBusy: Pick<BusyFlag, "set">;
   /** Called before a Local VM mode change is saved; once it is saved, the returned call ends the holds no path reads any more. */
   localVmModeChanging(): () => void;
+  localVmScreensChanged?(layoutChanged: boolean): Promise<void>;
+  localVmTurnsBusy?(): boolean;
   providerConfigBusy: BusyFlag;
   computerProviderConfigTransitions: Pick<Set<RemoteComputerProvider>, "add" | "delete">;
   managedBoatOwners(): boat.ManagedBoatOwner[];
@@ -131,6 +134,7 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
       const body = await readBody(req);
       if (hostedModels && ["instances", "anthropic", "openai", "openrouter", "openaiCompat", "xai", "mistral", "cerebras", "groq", "greenference", "modelgo", "meta", "opencodeGo"].some(key => Object.hasOwn(body, key))) return json(res, 403, { error: HOSTED_PROVIDER_SETTINGS_ERROR });
       const patch = parseConfigPatchForPerson(body);
+      if (patch.localVm) localVmConfigSchema.parse({ ...cfg.localVm, ...patch.localVm });
       if (patch.profile && ownProfile) {
         // The address is the verified claim's; a profile names no other.
         const { email: _email, ...own } = patch.profile;
@@ -262,7 +266,10 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
         ...(changingVpsAlias ? ["vps" as const] : []),
       ];
       providerConfigBusy.set(true);
-      const changingLocalVmMode = patch.localVm?.mode !== undefined && patch.localVm.mode !== localVmMode(cfg);
+      const nextVmConfig = { ...cfg, localVm: { ...cfg.localVm, ...patch.localVm } };
+      const changingScreenCount = localVmScreens(nextVmConfig) !== localVmScreens(cfg);
+      const changingScreenLayout = (localVmScreens(nextVmConfig) > 1) !== (localVmScreens(cfg) > 1);
+      const changingLocalVmMode = (patch.localVm?.mode !== undefined && patch.localVm.mode !== localVmMode(cfg)) || changingScreenLayout;
       if (changingLocalVmMode) localVmModeChangeBusy.set(true);
       try {
         for (const provider of transitioningProviders) {
@@ -357,7 +364,7 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
         }
 
         if (changingLocalVmMode) {
-          if (localVmActiveThreads.size > 0 || localVmLifecycleBusy.size > 0 || localVmImageBusy.get()) {
+          if ((changingScreenLayout && deps.localVmTurnsBusy?.()) || localVmActiveThreads.size > 0 || localVmLifecycleBusy.size > 0 || localVmImageBusy.get()) {
             return json(res, 409, { error: "stop Local VM turns and setup actions before changing the Local VM isolation mode" });
           }
           if (localVmMode(cfg) === "per-bot" && patch.localVm?.mode === "shared") {
@@ -538,6 +545,9 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
       });
       let configWriteCommitted = false;
       const enginesBefore = engineLaunches(providerConfigs());
+      if (changingLocalVmMode && ((changingScreenLayout && deps.localVmTurnsBusy?.()) || localVmActiveThreads.size > 0 || localVmLifecycleBusy.size > 0 || localVmImageBusy.get())) {
+        return json(res, 409, { error: "stop Local VM turns and setup actions before changing the Local VM layout" });
+      }
       const localVmModeChanged = changingLocalVmMode ? localVmModeChanging() : null;
       const externalSecretStorage = url.searchParams.get("secretStorage") === "external";
       try {
@@ -598,6 +608,11 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
       }
       for (const key of resetKeys) if (key) forgetKey(key);
       localVmModeChanged?.();
+      let localVmWarning: string | undefined;
+      if (patch.localVm && changingScreenCount) {
+        try { await deps.localVmScreensChanged?.(changingScreenLayout); }
+        catch { localVmWarning = "Settings saved, but Local VM screens could not be reconfigured. Retry or restart the app."; console.warn(localVmWarning); }
+      }
       postiz?.configSaved(patch);
       // A saved key reaches an engine through the environment its status read uses, often with no reload.
       registry.forgetSnapshots();
@@ -676,7 +691,7 @@ export function createConfigRoutes(deps: ConfigRouteDeps): RouteHandler {
         finalized.acknowledgements.every(Boolean),
         removedBrowserProfileIds.length === 1 ? "The browser profile" : "The browser profiles",
       );
-      return json(res, 200, configForAccess(finalized.value, auth));
+      return json(res, 200, { ...configForAccess(finalized.value, auth) as Record<string, unknown>, ...(localVmWarning ? { warning: localVmWarning } : {}) });
       } finally {
         for (const provider of transitioningProviders) computerProviderConfigTransitions.delete(provider);
         if (changingLocalVmMode) localVmModeChangeBusy.set(false);
