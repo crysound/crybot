@@ -1,10 +1,11 @@
+import type { ScreenListPayload } from "../../shared/local-vm-screens";
 // @vitest-environment happy-dom
 import { createElement } from "react";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setLocale } from "@/lib/i18n";
-import { LocalVmScreens, type ScreenListPayload } from "./LocalVmScreens";
+import { LocalVmScreens } from "./LocalVmScreens";
 
 const fixture = vi.hoisted(() => ({ requests: [] as Array<{ path: string; body: Record<string, unknown> }>, refuse: false, waitForTake: null as Promise<void> | null }));
 vi.mock("@/state/store", () => ({

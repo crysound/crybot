@@ -137,7 +137,7 @@ describe("surface pin provenance against the real server", () => {
     });
     await new Promise<void>(resolve => boatServer.listen(0, "127.0.0.1", resolve));
     boatApi = `http://127.0.0.1:${(boatServer.address() as { port: number }).port}`;
-    writeFileSync(join(data, "config.json"), JSON.stringify({ instances: { claude: {
+    writeFileSync(join(data, "config.json"), JSON.stringify({ localVm: { mode: "shared", screens: 1 }, instances: { claude: {
       driver: "claudeAgent", config: { cli: join(ROOT, "server/testing/fake-claude-cli.ts") },
       // The first computer call is what reaches the Boat, as with a real model.
       environment: { FAKE_CLAUDE_MODE: "slow", FAKE_CLAUDE_DUMP: dumpFile, FAKE_CLAUDE_SLOW_FINISH_GATE: finishFile, FAKE_CLAUDE_USES_CLOUD_COMPUTER: "1" },
