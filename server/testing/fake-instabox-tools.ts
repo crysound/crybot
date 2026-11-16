@@ -28,7 +28,7 @@ export async function fakeInstaboxTools(options: Options = {}) {
       leaseRequests.push({ method: req.method!, path: url.pathname, body, idempotencyKey: req.headers["idempotency-key"] });
       if (!parts[5] || parts.length !== 6 || !["PUT", "DELETE"].includes(req.method!)) { res.writeHead(404); res.end(); return; }
       if (req.method === "PUT") {
-        if (!body || Object.keys(body).length !== 1 || !Number.isInteger(body.ttlSeconds) || body.ttlSeconds <= 0) { res.writeHead(400); res.end(); return; }
+        if (!body || Object.keys(body).length !== 1 || !Number.isInteger(body.ttlSeconds) || body.ttlSeconds < 30 || body.ttlSeconds > 3600) { res.writeHead(400); res.end(); return; }
         state.suspended = false;
       }
       res.writeHead(204); res.end(); return;

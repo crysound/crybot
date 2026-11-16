@@ -26,6 +26,7 @@ const INSTABOX_COPY_MAX_BYTES = 256 * MiB;
 const INSTABOX_SCREENSHOT_MAX_BYTES = 16 * MiB;
 let activeCopies = 0;
 const BACKGROUND_MAX_MS = 2 * 60 * 60_000;
+const ACTIVITY_LEASE_TTL_SECONDS = 3600;
 const resultText = (result: InstaboxExecResult): CloudComputerResult => text(JSON.stringify({
   ok: result.exitCode === 0 && !result.timedOut, ...result,
 }), result.exitCode !== 0 || result.timedOut);
@@ -132,7 +133,7 @@ const activityLeases = new Map<string, ActivityLease>();
 const activityLeasePath = (lease: ActivityLease) => `/v1/machines/${lease.machineId}/activity-leases/${encodeURIComponent(lease.id)}`;
 
 async function putActivityLease(lease: ActivityLease): Promise<void> {
-  const response = await lease.request("PUT", activityLeasePath(lease), { body: { ttlSeconds: BACKGROUND_MAX_MS / 1000 } });
+  const response = await lease.request("PUT", activityLeasePath(lease), { body: { ttlSeconds: ACTIVITY_LEASE_TTL_SECONDS } });
   await response.body?.cancel();
   if (!response.ok) throw new Error("Activity lease rejected");
 }

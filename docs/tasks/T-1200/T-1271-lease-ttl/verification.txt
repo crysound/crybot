@@ -1,0 +1,20 @@
+crybot-link-deps
+通过。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/<非 e2e 测试文件> --maxWorkers=1
+8 个文件逐文件通过，共 68 项。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/<e2e 测试文件> --maxWorkers=1
+8 个 e2e 文件逐文件连续三轮通过，共 339 项次；VNC 三轮均 32 项通过。
+
+TMPDIR=/tmp CRYBOT_CDP_CHROME=/usr/bin/chromium pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+连续三轮通过，每轮 32 项。
+
+pnpm exec tsc -p tsconfig.server.json
+通过。
+
+pnpm exec oxlint --deny-warnings server/instabox/computer-tools.ts server/instabox/computer-tools.e2e.test.ts server/testing/fake-instabox-tools.ts
+通过，0 警告。
+
+git diff --check
+通过。
