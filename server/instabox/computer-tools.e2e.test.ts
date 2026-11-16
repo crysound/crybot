@@ -279,12 +279,16 @@ describe("InstaBox tools through an isolated HTTP machine fixture", () => {
     const started = json(await runInstaboxComputerTool(fixture.machines, machineId, "exec", { command: "true", background: true }, signal(), folder, fixture.request));
     const path = fixture.leaseRequests[0].path;
     expect(path).toMatch(/^\/v1\/machines\/fixture-machine\/activity-leases\/crybot-[0-9a-f-]{36}$/);
-    expect(fixture.leaseRequests[0]).toMatchObject({ body: { ttlSeconds: 7200 }, idempotencyKey: undefined });
+    expect(fixture.leaseRequests[0]).toMatchObject({ body: { ttlSeconds: 3600 }, idempotencyKey: undefined });
     await runInstaboxComputerTool(fixture.machines, machineId, "exec_status", { process_id: started.processId, wait_seconds: 3 }, signal(), folder, fixture.request);
     expect(fixture.leaseRequests.map(request => `${request.method} ${request.path}`)).toEqual([
       `PUT ${path}`,
       `DELETE ${path}`,
     ]);
+  });
+
+  it("rejects activity lease TTLs above the API limit", async () => {
+    await expect(fixture.request("PUT", `/v1/machines/${machineId}/activity-leases/fixture-lease`, { body: { ttlSeconds: 3601 } })).rejects.toMatchObject({ status: 400 });
   });
 
   it("keeps the lease while a background job is still running", async () => {
@@ -303,13 +307,30 @@ describe("InstaBox tools through an isolated HTTP machine fixture", () => {
     ]);
   });
 
+  it("renews the lease with the maximum API TTL", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    try {
+      const started = json(await runInstaboxComputerTool(fixture.machines, machineId, "exec", { command: "sleep 1", background: true }, signal(), folder, fixture.request));
+      const path = fixture.leaseRequests[0].path;
+      await vi.advanceTimersByTimeAsync(30 * 60_000);
+      await expect.poll(() => fixture.leaseRequests.length).toBe(2);
+      expect(fixture.leaseRequests).toEqual([
+        { method: "PUT", path, body: { ttlSeconds: 3600 }, idempotencyKey: undefined },
+        { method: "PUT", path, body: { ttlSeconds: 3600 }, idempotencyKey: undefined },
+      ]);
+      await runInstaboxComputerTool(fixture.machines, machineId, "exec_status", { process_id: started.processId, wait_seconds: 3 }, signal(), folder, fixture.request);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it.each([false, true])("shares one lease across five background commands (concurrent %s)", async concurrent => {
     const start = () => runInstaboxComputerTool(fixture.machines, machineId, "exec", { command: "true", background: true }, signal(), folder, fixture.request);
     const started: CloudComputerResult[] = [];
     if (concurrent) started.push(...await Promise.all(Array.from({ length: 5 }, start)));
     else for (let index = 0; index < 5; index++) started.push(await start());
     const path = fixture.leaseRequests[0].path;
-    expect(fixture.leaseRequests).toEqual(Array.from({ length: 5 }, () => ({ method: "PUT", path, body: { ttlSeconds: 7200 }, idempotencyKey: undefined })));
+    expect(fixture.leaseRequests).toEqual(Array.from({ length: 5 }, () => ({ method: "PUT", path, body: { ttlSeconds: 3600 }, idempotencyKey: undefined })));
     for (const [index, result] of started.entries()) {
       expect(fixture.leaseRequests.filter(request => request.method === "DELETE")).toHaveLength(0);
       const status = json(await call("exec_status", { process_id: json(result).processId, wait_seconds: 3 }));
