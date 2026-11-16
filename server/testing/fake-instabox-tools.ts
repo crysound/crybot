@@ -1,7 +1,8 @@
 import { createServer } from "node:http";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import type { InstaboxExecRequest, InstaboxExecResult, InstaboxMachines, InstaboxRequest } from "../instabox/machine.ts";
+import { createInstaboxRequest } from "../instabox/client.ts";
+import type { InstaboxExecRequest, InstaboxExecResult, InstaboxMachines } from "../instabox/machine.ts";
 
 type Request = { method: string; path: string; machineId: string; exec?: InstaboxExecRequest; data?: Uint8Array; mode?: string };
 type Options = {
@@ -12,7 +13,7 @@ type Options = {
 
 export async function fakeInstaboxTools(options: Options = {}) {
   const requests: Request[] = [];
-  const leaseRequests: Array<{ method: string; path: string; body?: unknown }> = [];
+  const leaseRequests: Array<{ method: string; path: string; body?: unknown; idempotencyKey?: string | string[] }> = [];
   const files = new Map<string, Uint8Array>();
   const state = { suspended: false, resumes: 0, hold: false };
   const server = createServer(async (req, res) => {
@@ -22,6 +23,16 @@ export async function fakeInstaboxTools(options: Options = {}) {
     const chunks: Buffer[] = [];
     for await (const chunk of req) chunks.push(Buffer.from(chunk));
     const bytes = Buffer.concat(chunks);
+    if (parts[4] === "activity-leases") {
+      const body = bytes.length ? JSON.parse(bytes.toString()) : undefined;
+      leaseRequests.push({ method: req.method!, path: url.pathname, body, idempotencyKey: req.headers["idempotency-key"] });
+      if (!parts[5] || parts.length !== 6 || !["PUT", "DELETE"].includes(req.method!)) { res.writeHead(404); res.end(); return; }
+      if (req.method === "PUT") {
+        if (!body || Object.keys(body).length !== 1 || !Number.isInteger(body.ttlSeconds) || body.ttlSeconds <= 0) { res.writeHead(400); res.end(); return; }
+        state.suspended = false;
+      }
+      res.writeHead(204); res.end(); return;
+    }
     const request: Request = { method: req.method!, path: url.searchParams.get("path") ?? url.pathname, machineId: parts[3] };
     if (parts[4] === "exec") request.exec = JSON.parse(bytes.toString()) as InstaboxExecRequest;
     if (req.method === "PUT") { request.data = bytes; request.mode = url.searchParams.get("mode") ?? undefined; }
@@ -100,10 +111,7 @@ export async function fakeInstaboxTools(options: Options = {}) {
     },
     vncUpstream: async () => ({ url, headers: {} }),
   };
-  const request: InstaboxRequest = async (method, path, opts) => {
-    leaseRequests.push({ method, path, body: opts?.body });
-    return new Response(method === "POST" ? JSON.stringify({ id: "fixture-lease" }) : null, { status: 200 });
-  };
+  const request = createInstaboxRequest("fixture-key", url);
   return { machines, request, requests, leaseRequests, files, state, close: async () => {
     server.closeAllConnections();
     await new Promise<void>(resolve => server.close(() => resolve()));

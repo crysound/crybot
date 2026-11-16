@@ -34,7 +34,7 @@ const inputCalls = async () => (await readFile(join(root, "input"))).toString().
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "instabox-tools-fixture-"));
-  remoteRoot = await mkdtemp(join("/tmp", "instabox-tools-remote-"));
+  remoteRoot = await mkdtemp(join(tmpdir(), "instabox-tools-remote-"));
   folder = join(root, "working"); bin = join(root, "bin");
   await mkdir(folder); await mkdir(bin);
   await writeFile(join(root, "image.jpg"), jpeg);
@@ -277,25 +277,29 @@ describe("InstaBox tools through an isolated HTTP machine fixture", () => {
 
   it("keeps a background job awake with an injected lease and releases it on completion", async () => {
     const started = json(await runInstaboxComputerTool(fixture.machines, machineId, "exec", { command: "true", background: true }, signal(), folder, fixture.request));
-    await runInstaboxComputerTool(fixture.machines, machineId, "exec_status", { process_id: started.processId }, signal(), folder, fixture.request);
+    const path = fixture.leaseRequests[0].path;
+    expect(path).toMatch(/^\/v1\/machines\/fixture-machine\/activity-leases\/crybot-[0-9a-f-]{36}$/);
+    expect(fixture.leaseRequests[0]).toMatchObject({ body: { ttlSeconds: 7200 }, idempotencyKey: undefined });
+    await runInstaboxComputerTool(fixture.machines, machineId, "exec_status", { process_id: started.processId, wait_seconds: 3 }, signal(), folder, fixture.request);
     expect(fixture.leaseRequests.map(request => `${request.method} ${request.path}`)).toEqual([
-      "POST /v1/machines/fixture-machine/activity-leases",
-      "DELETE /v1/machines/fixture-machine/activity-leases/fixture-lease",
+      `PUT ${path}`,
+      `DELETE ${path}`,
     ]);
   });
 
   it("keeps the lease while a background job is still running", async () => {
     const started = json(await runInstaboxComputerTool(fixture.machines, machineId, "exec", { command: "sleep 0.5", background: true }, signal(), folder, fixture.request));
+    const path = fixture.leaseRequests[0].path;
     const running = json(await runInstaboxComputerTool(fixture.machines, machineId, "exec_status", { process_id: started.processId }, signal(), folder, fixture.request));
     expect(running).toMatchObject({ processId: started.processId, status: "running" });
     expect(fixture.leaseRequests.map(request => `${request.method} ${request.path}`)).toEqual([
-      "POST /v1/machines/fixture-machine/activity-leases",
+      `PUT ${path}`,
     ]);
     const finished = json(await runInstaboxComputerTool(fixture.machines, machineId, "exec_status", { process_id: started.processId, wait_seconds: 3 }, signal(), folder, fixture.request));
     expect(finished).toMatchObject({ processId: started.processId, status: "finished" });
     expect(fixture.leaseRequests.map(request => `${request.method} ${request.path}`)).toEqual([
-      "POST /v1/machines/fixture-machine/activity-leases",
-      "DELETE /v1/machines/fixture-machine/activity-leases/fixture-lease",
+      `PUT ${path}`,
+      `DELETE ${path}`,
     ]);
   });
 
@@ -304,16 +308,28 @@ describe("InstaBox tools through an isolated HTTP machine fixture", () => {
     const started: CloudComputerResult[] = [];
     if (concurrent) started.push(...await Promise.all(Array.from({ length: 5 }, start)));
     else for (let index = 0; index < 5; index++) started.push(await start());
-    expect(fixture.leaseRequests.filter(request => request.method === "POST").map(request => request.body)).toEqual([
-      { durationSeconds: 7200 },
-      ...Array.from({ length: 4 }, () => ({ leaseId: "fixture-lease", durationSeconds: 7200 })),
-    ]);
+    const path = fixture.leaseRequests[0].path;
+    expect(fixture.leaseRequests).toEqual(Array.from({ length: 5 }, () => ({ method: "PUT", path, body: { ttlSeconds: 7200 }, idempotencyKey: undefined })));
     for (const [index, result] of started.entries()) {
       expect(fixture.leaseRequests.filter(request => request.method === "DELETE")).toHaveLength(0);
       const status = json(await call("exec_status", { process_id: json(result).processId, wait_seconds: 3 }));
       expect(status.status).toBe("finished");
       expect(fixture.leaseRequests.filter(request => request.method === "DELETE")).toHaveLength(index === 4 ? 1 : 0);
     }
+    expect(fixture.leaseRequests.at(-1)).toMatchObject({ method: "DELETE", path });
+  });
+
+  it("discards a rejected lease and acquires a fresh ID for the next job", async () => {
+    const request = vi.fn(fixture.request).mockResolvedValueOnce(new Response(null, { status: 400 }));
+    const start = () => runInstaboxComputerTool(fixture.machines, machineId, "exec", { command: "true", background: true }, signal(), folder, request);
+    const first = json(await start());
+    await call("exec_status", { process_id: first.processId, wait_seconds: 3 });
+    expect(request).toHaveBeenCalledTimes(1);
+    const second = json(await start());
+    await call("exec_status", { process_id: second.processId, wait_seconds: 3 });
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["PUT", "PUT", "DELETE"]);
+    expect(request.mock.calls[1][1]).not.toBe(request.mock.calls[0][1]);
+    expect(request.mock.calls[2][1]).toBe(request.mock.calls[1][1]);
   });
 
   it("covers every advertised tool", () => {
