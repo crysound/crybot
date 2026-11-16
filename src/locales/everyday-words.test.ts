@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import en from "./en.json";
+import zh from "./zh.json";
 
 const english = en as Record<string, string>;
 
@@ -103,6 +104,14 @@ const wordsIn = (text: string, words: readonly Word[] = INTERNAL_WORDS) =>
   words.filter(({ pattern }) => pattern.test(prose(text))).map(({ word, say }) => `"${word}" (say ${say})`);
 
 describe("everyday screens", () => {
+  it("uses Chinese for Auto mode in cloud access and work location preferences", () => {
+    const offending = Object.entries(zh)
+      .filter(([key]) => key.startsWith("botAccess.cloud.") || key.startsWith("botOverview.preference."))
+      .filter(([, text]) => /\bAuto\b/.test(text))
+      .map(([key, text]) => `${key}: ${text}`);
+    expect(offending).toEqual([]);
+  });
+
   it("say what a person knows instead of the app's internal words", () => {
     const offending = Object.entries(english)
       .filter(([key]) => everyday(key) && !Object.hasOwn(ALLOWED, key))

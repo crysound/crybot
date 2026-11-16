@@ -74,3 +74,6 @@ update.error.network # 文案键名，不是域名。
 email.security # 文案键名，不是域名。
 homeLine.local # 文案键名，不是域名。
 keys.boat.link # 文案键名，不是域名。
+botAccess.cloud # 文案键名前缀，不是域名。
+botOverview.preference.auto # 文案键名，不是域名。
+place.auto # 文案键名，不是域名。
