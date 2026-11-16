@@ -1,0 +1,92 @@
+crybot-link-deps
+通过 1，失败 0。
+
+pnpm exec vitest run server/instabox/machines.test.ts --maxWorkers=1
+初次：通过 25，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/client.test.ts --maxWorkers=1
+第 1 轮：通过 6，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1
+第 1 轮：通过 30，失败 0，跳过 0。
+第 2 轮：通过 30，失败 0，跳过 0。
+第 3 轮：通过 30，失败 0，跳过 0。
+
+TMPDIR=/tmp CRYBOT_CDP_CHROME=/usr/bin/chromium pnpm exec vitest run server/instabox/computer-tools.e2e.test.ts --maxWorkers=1
+最终第 1 轮：通过 30，失败 0，跳过 0。
+最终第 2 轮：通过 30，失败 0，跳过 0。
+最终第 3 轮：通过 30，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/core.e2e.test.ts --maxWorkers=1
+第 1 轮：通过 15，失败 0，跳过 0。
+第 2 轮：通过 15，失败 0，跳过 0。
+第 3 轮：通过 15，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/deletion.e2e.test.ts --maxWorkers=1
+第 1 轮：通过 7，失败 0，跳过 0。
+第 2 轮：通过 7，失败 0，跳过 0。
+第 3 轮：通过 7，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/key.test.ts --maxWorkers=1
+第 1 轮：通过 4，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/machine-records.test.ts --maxWorkers=1
+第 1 轮：通过 16，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/machines.test.ts --maxWorkers=1
+第 1 轮：通过 25，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/persistence.test.ts --maxWorkers=1
+第 1 轮：通过 1，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/power.test.ts --maxWorkers=1
+第 1 轮：通过 10，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/preview.e2e.test.ts --maxWorkers=1
+第 1 轮：通过 3，失败 0，跳过 0。
+第 2 轮：通过 3，失败 0，跳过 0。
+第 3 轮：通过 3，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/snapshot-conflicts.e2e.test.ts --maxWorkers=1
+第 1 轮：通过 10，失败 0，跳过 0。
+第 2 轮：通过 10，失败 0，跳过 0。
+第 3 轮：通过 10，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/snapshot-wiring.e2e.test.ts --maxWorkers=1
+第 1 轮：通过 6，失败 0，跳过 0。
+第 2 轮：通过 6，失败 0，跳过 0。
+第 3 轮：通过 6，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+第 1 轮：通过 31，失败 0，跳过 1。
+第 2 轮：通过 31，失败 0，跳过 1。
+第 3 轮：通过 31，失败 0，跳过 1。
+
+TMPDIR=/tmp CRYBOT_CDP_CHROME=/usr/bin/chromium pnpm exec vitest run server/instabox/vnc.e2e.test.ts --maxWorkers=1
+最终第 1 轮：通过 32，失败 0，跳过 0。
+最终第 2 轮：通过 32，失败 0，跳过 0。
+最终第 3 轮：通过 32，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/vnc.test.ts --maxWorkers=1
+第 1 轮：通过 2，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/wiring.e2e.test.ts --maxWorkers=1
+第 1 轮：通过 8，失败 0，跳过 0。
+第 2 轮：通过 8，失败 0，跳过 0。
+第 3 轮：通过 8，失败 0，跳过 0。
+
+TMPDIR=/tmp pnpm exec vitest run server/instabox/wiring.test.ts --maxWorkers=1
+第 1 轮：通过 4，失败 0，跳过 0。
+
+pnpm exec tsc -p tsconfig.server.json
+检查 3 次：通过 3，失败 0。
+
+pnpm exec oxlint --deny-warnings server/instabox/computer-tools.e2e.test.ts server/instabox/computer-tools.ts server/instabox/machines.test.ts server/instabox/machines.ts server/testing/fake-instabox-core.ts server/testing/fake-instabox-tools.ts
+初次：通过 0，失败 1，警告 1。
+修复后检查 3 次：通过 3，失败 0，警告 0。
+
+rg -n 'memoryGiB|spec:|activity-leases|durationSeconds' . --glob '!pnpm-lock.yaml'
+全仓核对：通过 1，失败 0，遗漏的 InstaBox 调用 0。
+
+git diff --check
+通过 1，失败 0。

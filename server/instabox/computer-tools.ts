@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { constants, renameSync, rmSync } from "node:fs";
 import { open } from "node:fs/promises";
 import { basename, join, posix, relative } from "node:path";
@@ -124,10 +124,18 @@ async function copyFile(
 
 const BACKGROUND_ROOT = "/tmp/cry-instabox-background";
 type ActivityLease = {
-  request: InstaboxRequest; machineId: string; id?: string; processes: Set<string>;
+  request: InstaboxRequest; machineId: string; id: string; processes: Set<string>;
   pending: Promise<void>; renew?: ReturnType<typeof setInterval>; expiry?: ReturnType<typeof setTimeout>;
 };
 const activityLeases = new Map<string, ActivityLease>();
+
+const activityLeasePath = (lease: ActivityLease) => `/v1/machines/${lease.machineId}/activity-leases/${encodeURIComponent(lease.id)}`;
+
+async function putActivityLease(lease: ActivityLease): Promise<void> {
+  const response = await lease.request("PUT", activityLeasePath(lease), { body: { ttlSeconds: BACKGROUND_MAX_MS / 1000 } });
+  await response.body?.cancel();
+  if (!response.ok) throw new Error("Activity lease rejected");
+}
 
 async function releaseActivityLease(machineId: string, processId?: string): Promise<void> {
   const lease = activityLeases.get(machineId);
@@ -139,18 +147,12 @@ async function releaseActivityLease(machineId: string, processId?: string): Prom
   activityLeases.delete(machineId);
   clearInterval(lease.renew);
   clearTimeout(lease.expiry);
-  if (!lease.id) return;
-  const path = `/v1/machines/${machineId}/activity-leases/${encodeURIComponent(lease.id)}`;
-  await lease.request("DELETE", path).then(response => response.body?.cancel()).catch(() => {});
+  await lease.request("DELETE", activityLeasePath(lease)).then(response => response.body?.cancel()).catch(() => {});
 }
 
 function renewActivityLease(lease: ActivityLease): Promise<void> {
   lease.pending = lease.pending.then(async () => {
-    if (!lease.id) return;
-    const response = await lease.request("POST", `/v1/machines/${lease.machineId}/activity-leases`, {
-      body: { leaseId: lease.id, durationSeconds: BACKGROUND_MAX_MS / 1000 },
-    });
-    await response.body?.cancel();
+    if (activityLeases.get(lease.machineId) === lease) await putActivityLease(lease);
   }).catch(() => {});
   return lease.pending;
 }
@@ -164,13 +166,10 @@ async function acquireActivityLease(request: InstaboxRequest | undefined, machin
     await renewActivityLease(existing);
     return;
   }
-  const lease: ActivityLease = { request, machineId, processes: new Set([processId]), pending: Promise.resolve() };
+  const lease: ActivityLease = { request, machineId, id: `crybot-${randomUUID()}`, processes: new Set([processId]), pending: Promise.resolve() };
   activityLeases.set(machineId, lease);
   lease.pending = (async () => {
-    const response = await request("POST", `/v1/machines/${machineId}/activity-leases`, { body: { durationSeconds: BACKGROUND_MAX_MS / 1000 } });
-    if (!response.ok) { await response.body?.cancel(); throw new Error("Activity lease rejected"); }
-    const body = await response.json().catch(() => null) as { id?: unknown; leaseId?: unknown } | null;
-    lease.id = typeof body?.id === "string" ? body.id : typeof body?.leaseId === "string" ? body.leaseId : undefined;
+    await putActivityLease(lease);
     lease.renew = setInterval(() => { void renewActivityLease(lease); }, 30 * 60_000);
     lease.expiry = setTimeout(() => { void releaseActivityLease(machineId); }, BACKGROUND_MAX_MS);
     lease.renew.unref?.(); lease.expiry.unref?.();

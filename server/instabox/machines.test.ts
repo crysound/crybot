@@ -10,12 +10,14 @@ const botId = "123456789012-more";
 beforeEach(async () => { fake = await fakeInstaboxCore(); service = createInstaboxMachines(createInstaboxRequest("fixture-key", fake.url)); });
 afterEach(async () => { await fake.close(); });
 
-it.each(["linux", "android"] as const)("creates %s with the shared naming/spec contract, waits, then starts desktop", async template => {
+it.each(["linux", "android"] as const)("creates %s with top-level CPU and memory fields, waits, then starts desktop", async template => {
   const machine = await service.ensureRunning(botId, { template });
   expect(machine).toMatchObject({ name: "crybot-123456789012", state: "running", template });
-  expect(fake.calls.find(call => call.method === "POST" && call.path === "/v1/machines")?.body).toEqual({
+  const body = fake.calls.find(call => call.method === "POST" && call.path === "/v1/machines")?.body;
+  expect(body).not.toHaveProperty("spec");
+  expect(body).toEqual({
     name: "crybot-123456789012", templateId: template === "linux" ? "agent-browser" : "android",
-    spec: { vcpus: 4, memoryGiB: 8 }, autoSuspendAfterSeconds: 600, metadata: { app: "crybot", botId },
+    vcpus: 4, memMiB: 8192, autoSuspendAfterSeconds: 600, metadata: { app: "crybot", botId },
   });
   expect(fake.calls.at(-1)?.body).toEqual({ action: "start", width: 1280, height: 800 });
   expect(fake.calls.filter(call => call.path.includes("operations"))).toHaveLength(2);

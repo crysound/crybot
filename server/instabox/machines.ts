@@ -67,7 +67,7 @@ export function createInstaboxMachines(request: InstaboxRequest, records?: Retur
     if (!machine || machine.state === "deleted") {
       const operation = await lifecycle("POST", "/v1/machines", { body: {
         name: `crybot-${botId.slice(0, 12)}`, templateId: template === "android" ? "android" : "agent-browser",
-        spec: { vcpus: 4, memoryGiB: 8 }, autoSuspendAfterSeconds: 600, metadata: { app: "crybot", botId },
+        vcpus: 4, memMiB: 8192, autoSuspendAfterSeconds: 600, metadata: { app: "crybot", botId },
       } }, botId);
       machine = await read(operation.machineId);
     }

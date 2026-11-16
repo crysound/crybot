@@ -61,6 +61,9 @@ export async function fakeInstaboxCore() {
     };
     if (url.pathname === "/v1/machines") {
       if (req.method === "GET") return send(200, { machines: [...machines.values()] });
+      const fields = new Set(["name", "templateId", "vcpus", "memMiB", "autoSuspendAfterSeconds", "metadata"]);
+      if (Object.keys(body).some(field => !fields.has(field))) return send(400, { error: { code: "unknown_field" } });
+      if ([body.vcpus, body.memMiB].some(value => value !== undefined && !Number.isInteger(value))) return send(400, { error: { code: "invalid_resources" } });
       const id = `machine-${machines.size + 1}`;
       machines.set(id, { id, name: body.name, state: "creating", templateId: body.templateId, metadata: body.metadata ?? {} });
       return finish(id, "running");
